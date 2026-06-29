@@ -1,0 +1,145 @@
+/* ============ БАЗОВЫЕ СТИЛИ И СБРОС ============ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: var(--text-base);
+    height: 100%;
+    overflow: hidden;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-mono);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Убираем выделение текста для игровых элементов */
+.terminal-btn,
+.sidebar-tab,
+.notes-tab,
+.map-marker,
+.board-slot,
+.inventory-card,
+.npc-card,
+.case-card,
+.menu-actions button {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
+/* Скроллбар в стиле терминала */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-active);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-green-dim);
+}
+
+/* Утилиты */
+.hidden {
+    display: none !important;
+}
+
+/* Выделение текста */
+::selection {
+    background: var(--accent-green-dim);
+    color: var(--bg-primary);
+}
+
+/* Фокус для доступности */
+.terminal-btn:focus-visible,
+.terminal-input:focus-visible,
+.sidebar-tab:focus-visible {
+    outline: 2px solid var(--accent-green);
+    outline-offset: 2px;
+}
+
+/* Анимация появления */
+@keyframes terminal-boot {
+    0% {
+        opacity: 0;
+        filter: brightness(0) blur(8px);
+        transform: scale(0.98);
+    }
+    50% {
+        filter: brightness(2) blur(0);
+    }
+    100% {
+        opacity: 1;
+        filter: brightness(1) blur(0);
+        transform: scale(1);
+    }
+}
+
+.app-container {
+    animation: terminal-boot 0.8s ease-out;
+}
+
+/* Эффект при наведении на кнопки */
+.terminal-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.terminal-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 255, 65, 0);
+    transition: background var(--transition-fast);
+    pointer-events: none;
+}
+
+.terminal-btn:hover::after {
+    background: rgba(0, 255, 65, 0.03);
+}
+
+/* Печатный эффект */
+.typewriter-reveal {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 2s steps(30) forwards;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+/* Текст с зелёным оттенком */
+.text-accent {
+    color: var(--accent-green);
+}
+
+.text-dim {
+    color: var(--text-dim);
+    font-style: italic;
+}

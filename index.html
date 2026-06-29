@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0f0a">
+    <meta name="application-name" content="Ghost Signal">
+    <meta name="apple-mobile-web-app-title" content="Ghost Signal">
+    <meta name="description" content="Ghost Signal — детективный терминал. Раскрывайте нераскрытые дела сквозь цифровые помехи.">
+    <title>Ghost Signal | Детективный терминал</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Шрифты -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=VT323&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Наши стили -->
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/terminal.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/effects.css">
+    <link rel="stylesheet" href="assets/css/components/map.css">
+    <link rel="stylesheet" href="assets/css/components/scene.css">
+    <link rel="stylesheet" href="assets/css/components/inventory.css">
+    <link rel="stylesheet" href="assets/css/components/board.css">
+    <link rel="stylesheet" href="assets/css/components/npc.css">
+    <link rel="stylesheet" href="assets/css/components/case-card.css">
+    <link rel="stylesheet" href="assets/css/components/call.css">
+    <link rel="stylesheet" href="assets/css/components/final-answer.css">
+    <link rel="stylesheet" href="assets/css/components/minigames.css">
+    <link rel="stylesheet" href="assets/css/components/notes.css">
+    <link rel="stylesheet" href="assets/css/components/stats.css">
+    <link rel="stylesheet" href="assets/css/components/auth.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+    <!-- Оверлей с помехами -->
+    <div id="static-overlay" class="static-overlay"></div>
+    
+    <!-- Сканирующая линия -->
+    <div class="scan-line"></div>
+    
+    <!-- Основной контейнер -->
+    <div id="app" class="app-container">
+        
+        <!-- Шапка терминала -->
+        <header id="terminal-header" class="terminal-header">
+            <div class="header-left">
+                <span class="badge-text">ДЕЛО №<span id="header-case-id">---</span></span>
+                <span class="header-divider">│</span>
+                <span class="badge-text" id="header-case-title">ОЖИДАНИЕ</span>
+            </div>
+            <div class="header-center">
+                <span class="terminal-logo">GHOST SIGNAL</span>
+            </div>
+            <div class="header-right">
+                <span class="time-display" id="game-clock">
+                    <span class="time-icon">☀️</span>
+                    <span id="game-time">08:00</span>
+                </span>
+                <span class="header-divider">│</span>
+                <span class="day-display">ДЕНЬ <span id="game-day">1</span></span>
+            </div>
+        </header>
+        
+        <!-- Основная область -->
+        <main id="main-content" class="main-content">
+            
+            <!-- Экран: Главное меню -->
+            <section id="screen-main-menu" class="screen active">
+                <div class="menu-container">
+                    <div class="menu-ascii">
+                        <pre>
+    ╔═══════════════════════════════════════════════════╗
+    ║                                                   ║
+    ║   ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗      ║
+    ║  ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝      ║
+    ║  ██║  ███╗███████║██║   ██║███████╗   ██║         ║
+    ║  ██║   ██║██╔══██║██║   ██║╚════██║   ██║         ║
+    ║  ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║         ║
+    ║   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝         ║
+    ║                                                   ║
+    ║   ███████╗██╗ ██████╗ ███╗   ██╗ █████╗ ██╗       ║
+    ║   ██╔════╝██║██╔════╝ ████╗  ██║██╔══██╗██║       ║
+    ║   ███████╗██║██║  ███╗██╔██╗ ██║███████║██║       ║
+    ║   ╚════██║██║██║   ██║██║╚██╗██║██╔══██║██║       ║
+    ║   ███████║██║╚██████╔╝██║ ╚████║██║  ██║███████╗  ║
+    ║   ╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝  ║
+    ║                                                   ║
+    ║           ПОЛИЦЕЙСКИЙ ТЕРМИНАЛ v2.1.7             ║
+    ║                                                   ║ 
+    ╚═══════════════════════════════════════════════════╝
+                        </pre>
+                    </div>
+                    
+                    <div class="menu-info">
+                        <p class="typewriter-text">Доступ разрешён. Добро пожаловать, детектив.</p>
+                        <p class="typewriter-text delay-1">В системе <span id="total-cases">2</span> активных дел.</p>
+                        <p class="typewriter-text delay-2">Раскрыто дел: <span id="solved-cases">0</span></p>
+                        <p class="typewriter-text delay-3">Текущий ранг: <span id="detective-rank">СТАЖЁР</span></p>
+                    </div>
+                    
+                    <nav class="menu-actions">
+                        <button id="btn-open-cases" class="terminal-btn">
+                            [1] ОТКРЫТЬ ДЕЛА
+                        </button>
+                        <button id="btn-continue" class="terminal-btn hidden">
+                            [2] ПРОДОЛЖИТЬ РАССЛЕДОВАНИЕ
+                        </button>
+                        <button id="btn-stats" class="terminal-btn">
+                            [3] СТАТИСТИКА
+                        </button>
+                        <button id="btn-options" class="terminal-btn">
+                            [4] НАСТРОЙКИ
+                        </button>
+                    </nav>
+                    
+                    <div class="menu-footer">
+                        <span class="blinking-cursor">_</span>
+                        <span class="hint-text">Нажмите 1-5 для выбора</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Экран: Список дел -->
+            <section id="screen-cases" class="screen">
+                <div class="screen-header">
+                    <h2>📁 ДЕЛА</h2>
+                    <button class="terminal-btn btn-back" data-screen="screen-main-menu">← НАЗАД</button>
+                </div>
+                <div id="cases-list" class="cases-grid">
+                    <!-- Динамически заполняется -->
+                </div>
+            </section>
+            
+            <!-- Экран: Статистика -->
+            <section id="screen-stats" class="screen">
+                <!-- Рендерится через StatsScreen.render() -->
+            </section>
+            
+            <!-- Экран: Дело (локации, NPC, улики) -->
+            <section id="screen-case-active" class="screen">
+                <div class="case-layout">
+                    <!-- Левая панель: локация/сцена -->
+                    <div class="case-main">
+                        <div class="case-toolbar">
+                            <button class="terminal-btn btn-back" data-screen="screen-cases">← ДЕЛА</button>
+                            <button id="btn-map" class="terminal-btn">🗺️ КАРТА</button>
+                            <button id="btn-wait" class="terminal-btn">⏳ ЖДАТЬ</button>
+                            <button id="btn-hint" class="terminal-btn">💡 ПОДСКАЗКА</button>
+                        </div>
+                        <div id="scene-container" class="scene-container">
+                            <!-- Сцена рендерится здесь -->
+                        </div>
+                    </div>
+                    
+                    <!-- Правая панель: инвентарь, NPC, доска -->
+                    <div class="case-sidebar">
+                        <!-- Вкладки -->
+                        <div class="sidebar-tabs">
+                            <button class="sidebar-tab active" data-tab="tab-inventory">🎒 УЛИКИ</button>
+                            <button class="sidebar-tab" data-tab="tab-npcs">👥 КОНТАКТЫ</button>
+                            <button class="sidebar-tab" data-tab="tab-board">📋 ДОСКА</button>
+                            <button class="sidebar-tab" data-tab="tab-notes">📝 ЗАМЕТКИ</button>
+                        </div>
+                        
+                        <!-- Содержимое вкладок -->
+                        <div class="sidebar-content">
+                            <div id="tab-inventory" class="tab-panel active">
+                                <div id="inventory-list" class="inventory-list"></div>
+                            </div>
+                            <div id="tab-npcs" class="tab-panel">
+                                <div id="npcs-list" class="npcs-list"></div>
+                            </div>
+                            <div id="tab-board" class="tab-panel">
+                                <div id="board-area" class="board-area"></div>
+                            </div>
+                            <div id="tab-notes" class="tab-panel">
+                                <div id="notes-content" class="notes-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Кнопка финального ответа -->
+                <div id="final-answer-area" class="final-answer-area hidden">
+                    <button id="btn-final-answer" class="terminal-btn btn-final">🔍 ОБВИНИТЬ</button>
+                </div>
+            </section>
+            
+            <!-- Экран: Карта города -->
+            <section id="screen-map" class="screen">
+                <div class="screen-header">
+                    <h2>🗺️ КАРТА ГОРОДА</h2>
+                    <button class="terminal-btn btn-back" data-screen="screen-case-active">← НАЗАД</button>
+                </div>
+                <div id="map-container" class="map-container">
+                    <!-- Карта рендерится здесь -->
+                </div>
+            </section>
+            
+        </main>
+        
+        <!-- Подвал терминала -->
+        <footer class="terminal-footer">
+            <span class="status-text">СОЕДИНЕНИЕ: <span class="status-ok">АКТИВНО</span></span>
+            <span class="footer-divider">│</span>
+            <span class="status-text">ПОМЕХИ: <span id="static-level">1%</span></span>
+            <span class="footer-divider">│</span>
+            <span class="status-text typed-cmd">> <span id="footer-cmd">ожидание_команды</span></span>
+        </footer>
+    </div>
+    
+    <!-- Модальное окно (универсальное) -->
+    <div class="modal fade" id="universal-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content terminal-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title"></h5>
+                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modal-body"></div>
+                <div class="modal-footer" id="modal-footer"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- ============ CORE (ядро) ============ -->
+    <script src="assets/js/core/config.js"></script>
+    <script src="assets/js/core/storage.js"></script>
+    <script src="assets/js/core/eventBus.js"></script>
+    
+    <!-- ============ FIREBASE ============ -->
+    <script src="assets/js/firebase/firebase-config.js"></script>
+    <script src="assets/js/firebase/authManager.js"></script>
+    <script src="assets/js/firebase/cloudStorage.js"></script>
+    <script src="assets/js/firebase/syncManager.js"></script>
+    
+    <!-- ============ DATA (данные) ============ -->
+    <script src="assets/data/locations/location-index.js"></script>
+    <script src="assets/data/objects/objects-index.js"></script>
+    <script src="assets/data/npcs/npc-index.js"></script>
+    <script src="assets/data/dialogues/dialogue-index.js"></script>
+    <script src="assets/data/cases/case-001.js"></script>
+    <script src="assets/data/cases/case-002.js"></script>
+    <script src="assets/data/cases/case-index.js"></script>
+    <script src="assets/data/narrative/notes.js"></script>
+    
+    <!-- ============ SYSTEMS (системы) ============ -->
+    <script src="assets/js/systems/gameTime.js"></script>
+    <script src="assets/js/systems/locationManager.js"></script>
+    <script src="assets/js/systems/inventory.js"></script>
+    <script src="assets/js/systems/caseManager.js"></script>
+    <script src="assets/js/systems/board.js"></script>
+    <script src="assets/js/systems/notes.js"></script>
+    <script src="assets/js/systems/answerChecker.js"></script>
+    <script src="assets/js/systems/progressTracker.js"></script>
+    
+    <!-- ============ NPC ============ -->
+    <script src="assets/js/npc/npcManager.js"></script>
+    <script src="assets/js/npc/dialogueEngine.js"></script>
+    <script src="assets/js/npc/callInterface.js"></script>
+    <script src="assets/js/npc/ttsEngine.js"></script>
+    
+    <!-- ============ MINIGAMES ============ -->
+    <script src="assets/js/minigames/minigameBase.js"></script>
+    <script src="assets/js/minigames/minigameCipher.js"></script>
+    <script src="assets/js/minigames/minigameSearch.js"></script>
+    <script src="assets/js/minigames/minigameLock.js"></script>
+    <script src="assets/js/minigames/minigameManager.js"></script>
+    
+    <!-- ============ UI ============ -->
+    <script src="assets/js/ui/loadingScreen.js"></script>
+    <script src="assets/js/ui/notifications.js"></script>
+    <script src="assets/js/ui/clock.js"></script>
+    <script src="assets/js/ui/ambiance.js"></script>
+    <script src="assets/js/ui/soundEffects.js"></script>
+    <script src="assets/js/ui/mapRenderer.js"></script>
+    <script src="assets/js/ui/sceneRenderer.js"></script>
+    <script src="assets/js/ui/inventoryUI.js"></script>
+    <script src="assets/js/ui/boardUI.js"></script>
+    <script src="assets/js/ui/npcListUI.js"></script>
+    <script src="assets/js/ui/caseListUI.js"></script>
+    <script src="assets/js/ui/notesUI.js"></script>
+    <script src="assets/js/ui/radioPlayer.js"></script>
+    <script src="assets/js/ui/statsScreen.js"></script>
+    <script src="assets/js/ui/authUI.js"></script>
+    
+    <!-- ============ APP (точка входа) ============ -->
+    <script src="assets/js/core/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+/* ============ КАРТОЧКИ ДЕЛ ============ */
+
+.case-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 16px;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.case-card:hover {
+    border-color: var(--accent-green-dim);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.05);
+}
+
+.case-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.case-id {
+    font-size: var(--text-xs);
+    color: var(--accent-green);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.case-difficulty {
+    font-size: 12px;
+}
+
+.case-title {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+}
+
+.case-description {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
+    flex: 1;
+    font-family: var(--font-serif);
+}
+
+.case-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.case-badge {
+    font-size: var(--text-xs);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+.case-badge.solved {
+    background: rgba(0, 255, 65, 0.1);
+    color: var(--accent-green);
+}
+
+.case-badge.active {
+    background: rgba(0, 255, 65, 0.1);
+    color: var(--accent-green);
+    animation: pulse-glow 2s infinite;
+}
+
+.case-badge.available {
+    background: rgba(212, 160, 23, 0.1);
+    color: var(--accent-amber);
+}
+
+.case-btn {
+    font-size: var(--text-xs);
+    padding: 6px 14px;
+}
+
+/* Состояния */
+.case-solved {
+    opacity: 0.7;
+    border-color: var(--accent-green-dim);
+}
+
+.case-active {
+    border-color: var(--accent-green);
+}
+
+/* Вступление к сцене */
+.scene-intro-text {
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    color: var(--text-bright);
+    line-height: 1.6;
+    font-style: italic;
+}
+
+.scene-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.highlight-tag {
+    background: rgba(0, 255, 65, 0.05);
+    border: 1px solid var(--border-active);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: var(--text-xs);
+    color: var(--accent-green);
+}

@@ -1,0 +1,175 @@
+/* ============ КАРТА ГОРОДА ============ */
+
+.map-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg-secondary);
+}
+
+.map-wrapper {
+    width: 100%;
+    max-width: 700px;
+    aspect-ratio: 4/3;
+    position: relative;
+}
+
+.map-background {
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse at 30% 40%, rgba(0, 255, 65, 0.03) 0%, transparent 60%),
+        var(--bg-tertiary);
+    border: 1px solid var(--border-active);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Сетка карты */
+.map-grid {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+}
+
+/* Дороги (декоративные) */
+.map-roads {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    /* Дороги будут добавлены через JS или как SVG */
+    background-image: 
+        /* Горизонтальная дорога */
+        linear-gradient(0deg, transparent 48%, rgba(255, 255, 255, 0.05) 48%, rgba(255, 255, 255, 0.05) 52%, transparent 52%);
+    background-size: 100% 25%;
+    background-position: 0 20%;
+}
+
+/* Контейнер маркеров */
+.map-markers {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+/* Маркер локации */
+.map-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 2;
+    transition: transform var(--transition-fast);
+}
+
+.map-marker:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    z-index: 3;
+}
+
+.marker-pin {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-active);
+    transition: all var(--transition-fast);
+    margin: 0 auto 4px;
+}
+
+.marker-icon {
+    font-size: 20px;
+}
+
+.marker-label {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    white-space: nowrap;
+    transition: opacity var(--transition-fast);
+}
+
+.marker-status {
+    text-align: center;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+/* Состояния маркера */
+.marker-current .marker-pin {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.4);
+    animation: marker-pulse 2s infinite;
+    background: rgba(0, 255, 65, 0.1);
+}
+
+.marker-current .marker-label {
+    color: var(--accent-green);
+    opacity: 1;
+}
+
+.marker-available .marker-pin {
+    border-color: var(--accent-green-dim);
+}
+
+.marker-available:hover .marker-pin {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+}
+
+.marker-locked .marker-pin {
+    border-color: var(--text-dim);
+    opacity: 0.5;
+}
+
+.marker-locked .marker-icon {
+    filter: grayscale(1);
+}
+
+@keyframes marker-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 65, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(0, 255, 65, 0.6); }
+}
+
+/* Легенда */
+.map-legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 12px;
+    font-size: var(--text-xs);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.legend-dot.available { background: var(--accent-green-dim); }
+.legend-dot.locked { background: var(--text-dim); }
+.legend-dot.current { 
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}

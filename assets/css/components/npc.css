@@ -1,0 +1,147 @@
+/* ============ КАРТОЧКИ NPC ============ */
+
+.npcs-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-dim);
+}
+
+.npc-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: all var(--transition-fast);
+}
+
+.npc-card:hover {
+    border-color: var(--border-active);
+}
+
+.npc-card.npc-unavailable {
+    opacity: 0.5;
+    filter: grayscale(0.3);
+}
+
+.npc-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.npc-avatar {
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+    border: 1px solid var(--border-active);
+}
+
+.npc-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.npc-name {
+    font-size: var(--text-sm);
+    color: var(--text-bright);
+    font-weight: bold;
+}
+
+.npc-role {
+    font-size: var(--text-xs);
+    color: var(--accent-green);
+}
+
+.npc-mood {
+    font-size: 20px;
+    cursor: help;
+}
+
+.npc-status {
+    font-size: var(--text-xs);
+    padding: 4px 8px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.status-work {
+    background: rgba(0, 255, 65, 0.05);
+    color: var(--accent-green);
+}
+
+.status-home {
+    background: rgba(212, 160, 23, 0.05);
+    color: var(--accent-amber);
+}
+
+.status-sleep {
+    background: rgba(100, 100, 255, 0.05);
+    color: #8888cc;
+}
+
+.status-offline {
+    background: rgba(255, 48, 48, 0.05);
+    color: var(--accent-red-bright);
+}
+
+.npc-description {
+    font-size: var(--text-xs);
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.npc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.npc-actions .terminal-btn {
+    font-size: 10px;
+    padding: 5px 10px;
+    flex: 1;
+    min-width: 70px;
+    text-align: center;
+}
+
+.npc-call-btn {
+    border-color: var(--accent-green-dim) !important;
+}
+
+.npc-chat-btn {
+    border-color: var(--accent-blue) !important;
+}
+
+.npc-visit-btn {
+    border-color: var(--accent-amber) !important;
+}
+
+.npc-wait-btn {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.npc-insights {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--accent-amber);
+    border-top: 1px solid var(--border-color);
+    padding-top: 6px;
+}
+
+/* Анимация при обновлении */
+.npc-card {
+    animation: fade-in 0.3s ease-out;
+}

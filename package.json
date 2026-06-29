@@ -1,0 +1,24 @@
+{
+  "name": "ghost-signal",
+  "version": "1.0.0",
+  "description": "Ghost Signal — детективный терминал. Раскрывайте нераскрытые дела сквозь цифровые помехи.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx live-server --port=3000 --no-browser",
+    "build": "echo 'No build step required — static HTML/CSS/JS'"
+  },
+  "keywords": [
+    "detective",
+    "noir",
+    "mystery",
+    "interactive",
+    "game",
+    "bootstrap"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
