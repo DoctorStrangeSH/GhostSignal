@@ -4,10 +4,8 @@ const CASE_001 = {
     difficulty: 1,
     description: "Мистер Блэквуд, постоялец отеля «Гранд», исчез из запертого номера 304. Дверь закрыта изнутри, окно не открывали. Признаков взлома нет. Администрация отеля просит провести расследование.",
     
-    // Время начала дела
     startTime: { hour: 8, minute: 0, day: 1 },
     
-    // Локации, задействованные в деле
     locations: [
         "police_station",
         "hotel_grand",
@@ -17,13 +15,10 @@ const CASE_001 = {
         "victim_apartment"
     ],
     
-    // Начальная локация при старте дела
     startLocation: "police_station",
     
-    // NPC в деле
     npcs: ["porter", "bartender", "housekeeper"],
     
-    // Ключевые события
     events: [
         {
             id: "intro_briefing",
@@ -77,7 +72,6 @@ const CASE_001 = {
         }
     ],
     
-    // Сцены (кат-сцены и описания локаций)
     scenes: [
         {
             id: "hotel_lobby_intro",
@@ -110,7 +104,6 @@ const CASE_001 = {
         }
     ],
     
-    // Условия для разблокировки локаций
     unlockConditions: [
         {
             locationId: "victim_apartment",
@@ -119,10 +112,34 @@ const CASE_001 = {
         }
     ],
     
-    // Доска расследования
     boardSlots: 4,
     
-    // Финальный вопрос
+    // Цепочки улик
+    evidenceChains: [
+        {
+            id: "chain_001",
+            name: "План побега",
+            requiredEvidence: ["hidden_note", "train_ticket", "torn_photo"],
+            requiredInsights: ["bar_meeting", "planned_escape"],
+            bonusInsight: "full_escape_plan",
+            bonusEvidence: null,
+            description: "Вы восстановили план побега Блэквуда. Он собирался уехать с горничной."
+        }
+    ],
+    
+    // Слежки
+    stakeouts: [
+        {
+            id: "stakeout_alley",
+            locationId: "alley",
+            targetNPC: null,
+            targetTime: { hour: 2, minute: 0 },
+            duration: 30,
+            description: "Наблюдение за переулком в 02:00",
+            reward: { type: 'insight', id: 'alley_night_meeting' }
+        }
+    ],
+    
     finalQuestion: {
         title: "Обвинение",
         text: "Собрав все улики, вы готовы назвать преступника. Кто виновен в исчезновении мистера Блэквуда?",
@@ -153,7 +170,6 @@ const CASE_001 = {
         }
     },
     
-    // Награда
     reward: {
         rankPoints: 1,
         message: "Поздравляем! Вы раскрыли своё первое дело. Звание повышено до «МЛАДШИЙ ДЕТЕКТИВ»."

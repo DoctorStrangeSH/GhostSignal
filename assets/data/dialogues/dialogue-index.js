@@ -3,7 +3,7 @@ const DIALOGUES_INDEX = {
     "dialogue-porter": {
         id: "dialogue-porter",
         npcId: "porter",
-        type: "call",  // call | chat | face_to_face
+        type: "call",
         tree: {
             start: "greeting",
             nodes: {
@@ -96,7 +96,7 @@ const DIALOGUES_INDEX = {
                 porter_hint: {
                     speaker: "npc",
                     text: "Я видел их вместе. В баре. Они сидели за одним столиком и о чём-то спорили. Это было за день до исчезновения.",
-                    givesInsight: "porter_testimony",  // Было givesEvidence
+                    givesInsight: "porter_testimony",
                     answers: [
                         { text: "Это ключевая информация. Благодарю.", nextNode: "end_call" }
                     ]
@@ -155,7 +155,7 @@ const DIALOGUES_INDEX = {
                 guest_book_request: {
                     speaker: "npc",
                     text: "Конечно. Вот журнал. Но записи за 14-е число... они испорчены. Словно кто-то специально залил страницу.",
-                    givesInsight: "guest_book_tampered",  // Было givesEvidence
+                    givesInsight: "guest_book_tampered",
                     answers: [
                         { text: "Кто-то пытался скрыть записи?", nextNode: "tampered_book" },
                         { text: "Спасибо, я изучу.", nextNode: "end_call" }
@@ -533,6 +533,281 @@ const DIALOGUES_INDEX = {
                 }
             }
         }
+    },
+
+    // ============ АННА КОВАЛЁВА ============
+    "dialogue-ex-wife": {
+        id: "dialogue-ex-wife",
+        npcId: "ex_wife",
+        type: "call",
+        tree: {
+            start: "greeting",
+            nodes: {
+                greeting: {
+                    speaker: "npc",
+                    text: "Кто это? Если вы из полиции — мне нечего вам сказать.",
+                    mood: "angry",
+                    answers: [
+                        { text: "Я расследую отравление в баре.", nextNode: "poisoning_reaction" },
+                        { text: "Вы были в баре за час до происшествия.", nextNode: "alibi_question" }
+                    ]
+                },
+                poisoning_reaction: {
+                    speaker: "npc",
+                    text: "Отравление? Я ничего не знаю. Мы в разводе уже полгода. Какое мне дело до него?",
+                    mood: "angry",
+                    answers: [
+                        { text: "Вы получили крупные отступные. Но вам было мало?", nextNode: "money_motive" },
+                        { text: "У вас был мотив. Он бросил вас.", nextNode: "emotional_motive" }
+                    ]
+                },
+                alibi_question: {
+                    speaker: "npc",
+                    text: "Да, я была там. И что? Я имею право ходить в бар.",
+                    mood: "angry",
+                    answers: [
+                        { text: "Вы подходили к его столику.", nextNode: "approached_table", condition: "hasInsight:bar_witness" },
+                        { text: "Что вы делали в баре?", nextNode: "bar_reason" }
+                    ]
+                },
+                money_motive: {
+                    speaker: "npc",
+                    text: "Деньги? Ха! Мне хватило. Я купила квартиру, машину. Я не нуждаюсь в его деньгах.",
+                    mood: "angry",
+                    answers: [
+                        { text: "Но вы ненавидите его.", nextNode: "emotional_motive" },
+                        { text: "Где вы были после бара?", nextNode: "after_bar" }
+                    ]
+                },
+                emotional_motive: {
+                    speaker: "npc",
+                    text: "Ненавижу? Может быть. Но это не значит, что я его травила!",
+                    mood: "nervous",
+                    answers: [
+                        { text: "Вы угрожали ему в записке.", nextNode: "note_confrontation", condition: "hasItem:threat_note" },
+                        { text: "Расскажите о вашей ссоре.", nextNode: "fight_details" }
+                    ]
+                },
+                fight_details: {
+                    speaker: "npc",
+                    text: "Мы поссорились. Да. Он сказал, что я никчёмная. Что его новая пассия в сто раз лучше.",
+                    mood: "sad",
+                    answers: [
+                        { text: "Кто его новая пассия?", nextNode: "new_girlfriend" },
+                        { text: "И вы решили отомстить.", nextNode: "revenge_motive" }
+                    ]
+                },
+                new_girlfriend: {
+                    speaker: "npc",
+                    text: "Какая-то девица из бара. Официантка или барменша. Я не знаю. Но он говорил о ней постоянно.",
+                    givesInsight: "new_girlfriend_clue",
+                    answers: [
+                        { text: "Это может быть важно. Продолжайте.", nextNode: "revenge_motive" }
+                    ]
+                },
+                revenge_motive: {
+                    speaker: "npc",
+                    text: "Отомстить? Может, и хотела. Но я не убийца. Я просто хотела, чтобы он страдал. Но не так.",
+                    mood: "nervous",
+                    answers: [
+                        { text: "У вас нашли пузырёк с ядом.", nextNode: "vial_confrontation", condition: "hasItem:poison_vial" },
+                        { text: "Где вы были после бара?", nextNode: "after_bar" }
+                    ]
+                },
+                vial_confrontation: {
+                    speaker: "npc",
+                    text: "Это не моё! Кто-то подбросил! Я никогда не держала яд в руках!",
+                    mood: "nervous",
+                    answers: [
+                        { text: "Отпечатки пальцев совпадают с вашими.", nextNode: "fingerprints", condition: "hasInsight:fingerprints_found" }
+                    ]
+                },
+                fingerprints: {
+                    speaker: "npc",
+                    text: "...Хорошо. Это мой пузырёк. Но я не травила его. Я хотела отравить себя. Он уничтожил мою жизнь, и я не видела смысла жить дальше.",
+                    mood: "breaking",
+                    givesInsight: "suicide_plan",
+                    answers: [
+                        { text: "Но яд оказался в его стакане.", nextNode: "how_happened" }
+                    ]
+                },
+                how_happened: {
+                    speaker: "npc",
+                    text: "Я сидела за стойкой. Держала пузырёк в руке. Потом заказала выпить. Наверное, перепутала... Или кто-то взял его, пока я отвлеклась.",
+                    mood: "sad",
+                    givesInsight: "someone_took_vial",
+                    answers: [
+                        { text: "Кто-то взял ваш пузырёк? Кто?", nextNode: "who_took" }
+                    ]
+                },
+                who_took: {
+                    speaker: "npc",
+                    text: "Я не знаю! Там была толпа. Кто угодно мог протянуть руку. Может, та самая официантка?",
+                    answers: [
+                        { text: "Опишите её.", nextNode: "describe_suspect" }
+                    ]
+                },
+                describe_suspect: {
+                    speaker: "npc",
+                    text: "Молодая. В красном платье. Она крутилась возле стойки всё время. Может, это она взяла яд?",
+                    givesInsight: "woman_in_red",
+                    answers: [
+                        { text: "Я проверю. Спасибо за показания.", nextNode: "end_call" }
+                    ]
+                },
+                approached_table: {
+                    speaker: "npc",
+                    text: "Подходила. Хотела поговорить. Но он даже не взглянул на меня. Сказал: «Уходи, Анна».",
+                    mood: "sad",
+                    answers: [
+                        { text: "И вы ушли?", nextNode: "left_bar" }
+                    ]
+                },
+                left_bar: {
+                    speaker: "npc",
+                    text: "Да. Хлопнула дверью и ушла. Это видели все посетители. Я не подходила к его стакану.",
+                    answers: [
+                        { text: "Кто-то может подтвердить?", nextNode: "witness_question" }
+                    ]
+                },
+                witness_question: {
+                    speaker: "npc",
+                    text: "Бармен. Он видел, как я уходила. Спросите у него.",
+                    answers: [
+                        { text: "Спрошу. Если врёте — вернусь.", nextNode: "end_call" }
+                    ]
+                },
+                bar_reason: {
+                    speaker: "npc",
+                    text: "Просто выпить. Это мой любимый бар. Я не знала, что он там будет.",
+                    answers: [
+                        { text: "Вы не знали? Или следили за ним?", nextNode: "stalking" }
+                    ]
+                },
+                stalking: {
+                    speaker: "npc",
+                    text: "Может, и знала. Он всегда там по вторникам. Но это не преступление — прийти в бар!",
+                    mood: "angry",
+                    answers: [
+                        { text: "Успокойтесь. Продолжим.", nextNode: "after_bar" }
+                    ]
+                },
+                after_bar: {
+                    speaker: "npc",
+                    text: "После бара я поехала домой. Одна. Смотрела телевизор до полуночи.",
+                    answers: [
+                        { text: "Кто-то может подтвердить?", nextNode: "no_alibi" }
+                    ]
+                },
+                no_alibi: {
+                    speaker: "npc",
+                    text: "Нет. Я живу одна. Но это правда.",
+                    answers: [
+                        { text: "Я проверю. Пока всё.", nextNode: "end_call" }
+                    ]
+                },
+                end_call: {
+                    speaker: "npc",
+                    text: "Надеюсь, вы найдёте того, кто это сделал. Он был плохим мужем, но не заслужил смерти.",
+                    mood: "sad",
+                    endDialogue: true
+                }
+            }
+        }
+    },
+
+    // ============ БАРМЕН (ДЕЛО №2) ============
+    "dialogue-bartender-case2": {
+        id: "dialogue-bartender-case2",
+        npcId: "bartender",
+        type: "face_to_face",
+        tree: {
+            start: "greeting",
+            nodes: {
+                greeting: {
+                    speaker: "npc",
+                    text: "Снова вы, детектив. Опять что-то случилось?",
+                    mood: "friendly",
+                    answers: [
+                        { text: "Отравление. Расскажите, что видели.", nextNode: "what_i_saw" },
+                        { text: "Кто подходил к столику жертвы?", nextNode: "who_approached" }
+                    ]
+                },
+                what_i_saw: {
+                    speaker: "npc",
+                    text: "Я видел, как он заказал виски. Потом к нему подошла бывшая жена. Они поругались, она ушла. А через час ему стало плохо.",
+                    givesInsight: "bartender_testimony",
+                    answers: [
+                        { text: "Кто-то ещё подходил к нему?", nextNode: "other_visitors" }
+                    ]
+                },
+                who_approached: {
+                    speaker: "npc",
+                    text: "Дайте подумать... Бывшая жена — Анна. Какой-то мужчина в костюме. И женщина в красном платье.",
+                    answers: [
+                        { text: "Опишите женщину в красном.", nextNode: "red_dress_woman" },
+                        { text: "Мужчина в костюме — кто он?", nextNode: "suit_man" }
+                    ]
+                },
+                other_visitors: {
+                    speaker: "npc",
+                    text: "Да, мужчина в костюме. Сидел у стойки, наблюдал. И женщина в красном — она была возле стойки, когда Анна уронила какую-то склянку.",
+                    givesInsight: "anna_dropped_vial",
+                    answers: [
+                        { text: "Склянку? Опишите.", nextNode: "describe_vial" }
+                    ]
+                },
+                describe_vial: {
+                    speaker: "npc",
+                    text: "Маленький стеклянный пузырёк. Анна быстро подняла его и убрала в сумочку. Но потом отвлеклась — и пузырёк исчез.",
+                    answers: [
+                        { text: "Исчез? Кто-то взял?", nextNode: "someone_took_it" }
+                    ]
+                },
+                someone_took_it: {
+                    speaker: "npc",
+                    text: "Не знаю. В баре было темно. Но женщина в красном крутилась рядом. Может, она?",
+                    givesInsight: "red_dress_suspect",
+                    answers: [
+                        { text: "Опишите её подробнее.", nextNode: "red_dress_woman" }
+                    ]
+                },
+                red_dress_woman: {
+                    speaker: "npc",
+                    text: "Молодая, лет 25. Рыжие волосы. Красное платье, дорогое. Я её раньше не видел здесь.",
+                    answers: [
+                        { text: "Она говорила с жертвой?", nextNode: "red_talked" }
+                    ]
+                },
+                red_talked: {
+                    speaker: "npc",
+                    text: "Нет. Просто сидела и смотрела. Как будто ждала кого-то. А когда ему стало плохо — сразу ушла.",
+                    answers: [
+                        { text: "Подозрительно. Спасибо.", nextNode: "end_case2_talk" }
+                    ]
+                },
+                suit_man: {
+                    speaker: "npc",
+                    text: "Конкурент по бизнесу. Я слышал, они судились за контракт. Он что-то говорил про «последнее предупреждение».",
+                    givesInsight: "business_rival",
+                    answers: [
+                        { text: "Он угрожал жертве?", nextNode: "threats" }
+                    ]
+                },
+                threats: {
+                    speaker: "npc",
+                    text: "Да. Сказал: «Ты пожалеешь». Но это было за неделю до отравления. Не знаю, связано ли.",
+                    answers: [
+                        { text: "Я разберусь. Спасибо, Джо.", nextNode: "end_case2_talk" }
+                    ]
+                },
+                end_case2_talk: {
+                    speaker: "npc",
+                    text: "Удачи, детектив. Надеюсь, вы найдёте, кто это сделал. Портят репутацию моему бару.",
+                    endDialogue: true
+                }
+            }
+        }
     }
 };
 
@@ -542,7 +817,6 @@ function getDialogueById(id) {
 }
 
 function getDialogueForNPC(npcId, condition) {
-    // Проверяем специальные диалоги
     const npc = getNPCById(npcId);
     if (npc?.specialConditions) {
         for (const cond of npc.specialConditions) {
@@ -551,7 +825,6 @@ function getDialogueForNPC(npcId, condition) {
             }
         }
     }
-    // Возвращаем основной диалог
     const dialogueId = npc?.dialogueId;
     return dialogueId ? getDialogueById(dialogueId) : null;
 }

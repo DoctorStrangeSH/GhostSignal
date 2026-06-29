@@ -4,74 +4,91 @@ class SceneRenderer {
         this.currentScene = null;
         this.locationManager = null;
         this.inventory = null;
-        
+
         if (!this.container) {
             console.error('❌ Контейнер сцены не найден:', containerId);
         } else {
             console.log('✅ SceneRenderer готов');
         }
     }
-    
+
     setLocationManager(manager) {
         this.locationManager = manager;
     }
-    
+
     setInventory(inventory) {
         this.inventory = inventory;
     }
-    
+
+    // ========================
+    // ГЛАВНЫЙ МЕТОД РЕНДЕРА
+    // ========================
+
     renderLocation(locationId) {
         if (!this.container) return;
-        
+
         const location = getLocationById(locationId);
         if (!location) {
-            this._showError('Локация не найдена');
+            this._showError('Локация не найдена: ' + locationId);
             return;
         }
-        
+
         this.currentScene = location;
-        
+
+        // Определяем время суток
         let isNight = false;
         let periodName = 'День';
         let timeIcon = '☀️';
-        
+
         try {
             if (this.locationManager?.gameTime) {
                 isNight = this.locationManager.gameTime.isNighttime();
                 periodName = this.locationManager.gameTime.getPeriodName();
                 timeIcon = this.locationManager.gameTime.getIcon();
             }
-        } catch(e) {}
-        
+        } catch (e) {
+            // Игровое время не инициализировано — используем значения по умолчанию
+        }
+
+        // Пробуем получить фоновое изображение
         let bgImage = null;
         if (location.scenes) {
-            bgImage = isNight ? (location.scenes.night || location.scenes.day) : location.scenes.day;
+            bgImage = isNight
+                ? (location.scenes.night || location.scenes.day)
+                : location.scenes.day;
         }
-        
+
+        // Очищаем контейнер
         this.container.innerHTML = '';
-        
+
+        // Рендерим в зависимости от наличия изображения
         if (bgImage) {
             this._renderImageScene(location, bgImage, isNight, timeIcon, periodName);
         } else {
             this._renderPlaceholder(location, isNight, timeIcon, periodName);
         }
-        
+
+        // Анимация появления
         this.container.style.animation = 'none';
-        this.container.offsetHeight;
+        this.container.offsetHeight; // reflow
         this.container.style.animation = 'fade-in 0.4s ease-out';
-        
+
         events.emit('scene:rendered', { locationId, location });
     }
-    
+
+    // ========================
+    // PLACEHOLDER (без картинки)
+    // ========================
+
     _renderPlaceholder(location, isNight, timeIcon, periodName) {
         const items = this.locationManager?.getLocationItems(location.id) || location.defaultItems || [];
         const subLocations = getSubLocations(location.id) || [];
         const npcsHere = this._getNPCsHere(location.id);
-        
+
         const wrapper = document.createElement('div');
         wrapper.className = 'scene-placeholder-wrapper';
-        
-        // Заголовок
+
+        // --- ЗАГОЛОВОК ---
         const header = document.createElement('div');
         header.className = 'scene-placeholder-header';
         header.innerHTML = `
@@ -80,18 +97,20 @@ class SceneRenderer {
             <p class="scene-description">${location.description || ''}</p>
         `;
         wrapper.appendChild(header);
-        
-        // Инфо-панель
+
+        // --- ИНФО-ПАНЕЛЬ ---
         const infoPanel = document.createElement('div');
         infoPanel.className = 'scene-info-panel';
-        
+
+        // Время суток
         infoPanel.innerHTML += `
             <div class="scene-info-badge time-badge">
                 <span class="badge-icon">${timeIcon}</span>
                 <span>${periodName}</span>
             </div>
         `;
-        
+
+        // Тип локации
         const typeInfo = this._getTypeInfo(location.type);
         if (typeInfo) {
             infoPanel.innerHTML += `
@@ -101,7 +120,8 @@ class SceneRenderer {
                 </div>
             `;
         }
-        
+
+        // Часы работы
         if (location.hours && !(location.hours.open === 0 && location.hours.close === 24)) {
             const isOpen = this._isLocationOpenNow(location);
             infoPanel.innerHTML += `
@@ -111,18 +131,18 @@ class SceneRenderer {
                 </div>
             `;
         }
-        
+
         wrapper.appendChild(infoPanel);
-        
-        // NPC
+
+        // --- NPC НА ЛОКАЦИИ ---
         if (npcsHere.length > 0) {
             const npcSection = document.createElement('div');
             npcSection.className = 'scene-section';
             npcSection.innerHTML = '<h3 class="scene-section-title">👥 Присутствуют</h3>';
-            
+
             const npcList = document.createElement('div');
             npcList.className = 'scene-npc-chips';
-            
+
             npcsHere.forEach(npc => {
                 const chip = document.createElement('div');
                 chip.className = 'scene-npc-chip';
@@ -136,53 +156,64 @@ class SceneRenderer {
                 });
                 npcList.appendChild(chip);
             });
-            
+
             npcSection.appendChild(npcList);
             wrapper.appendChild(npcSection);
         }
-        
-        // Объекты
+
+        // --- ОБЪЕКТЫ ДЛЯ ОСМОТРА ---
         if (items.length > 0) {
             const objectsSection = document.createElement('div');
             objectsSection.className = 'scene-section';
             objectsSection.innerHTML = '<h3 class="scene-section-title">🔍 Объекты</h3>';
-            
-            const objectsList = document.createElement('div');
-            objectsList.className = 'scene-objects-grid';
-            
+
+            const objectsGrid = document.createElement('div');
+            objectsGrid.className = 'scene-objects-grid';
+
             items.forEach(itemId => {
                 const obj = getObjectById(itemId);
+                const name = obj?.name || this._formatItemName(itemId);
+                const icon = obj?.icon || '📌';
+                const isEvidence = obj?.isEvidence || false;
+                const takeable = obj?.takeable || false;
+
                 const card = document.createElement('div');
                 card.className = 'scene-object-card';
                 card.innerHTML = `
-                    <span class="object-card-icon">${obj?.icon || '📌'}</span>
-                    <span class="object-card-name">${obj?.name || this._formatItemName(itemId)}</span>
-                    ${obj?.isEvidence ? '<span class="object-card-badge">УЛИКА</span>' : ''}
-                    ${obj?.takeable ? '<span class="object-card-take">✋</span>' : '<span class="object-card-take static">👁️</span>'}
+                    <span class="object-card-icon">${icon}</span>
+                    <span class="object-card-name">${name}</span>
+                    ${isEvidence ? '<span class="object-card-badge">УЛИКА</span>' : ''}
+                    ${takeable
+                        ? '<span class="object-card-take">✋</span>'
+                        : '<span class="object-card-take static">👁️</span>'
+                    }
                 `;
-                
+
                 card.addEventListener('click', () => {
                     this._onObjectClick(itemId, obj);
+                    // Анимация нажатия
                     card.style.transform = 'scale(0.95)';
-                    setTimeout(() => card.style.transform = '', 150);
+                    setTimeout(() => {
+                        card.style.transform = '';
+                    }, 150);
                 });
-                
-                objectsList.appendChild(card);
+
+                objectsGrid.appendChild(card);
             });
-            
-            objectsSection.appendChild(objectsList);
+
+            objectsSection.appendChild(objectsGrid);
             wrapper.appendChild(objectsSection);
         }
-        
-        // Подлокации
+
+        // --- ПОДЛОКАЦИИ ---
         if (subLocations.length > 0) {
             const subSection = document.createElement('div');
             subSection.className = 'scene-section';
             subSection.innerHTML = '<h3 class="scene-section-title">🚪 Войти</h3>';
-            
+
             const subList = document.createElement('div');
             subList.className = 'scene-sublocations-list';
-            
+
             subLocations.forEach(sub => {
                 const btn = document.createElement('button');
                 btn.className = 'scene-sublocation-btn';
@@ -199,23 +230,30 @@ class SceneRenderer {
                 });
                 subList.appendChild(btn);
             });
-            
+
             subSection.appendChild(subList);
             wrapper.appendChild(subSection);
         }
-        
+
         this.container.appendChild(wrapper);
     }
-    
+
+    // ========================
+    // СЦЕНА С ИЗОБРАЖЕНИЕМ
+    // ========================
+
     _renderImageScene(location, bgImage, isNight, timeIcon, periodName) {
+        // Фоновое изображение
         const imageWrapper = document.createElement('div');
         imageWrapper.className = 'scene-image-wrapper';
         imageWrapper.style.backgroundImage = `url(${bgImage})`;
-        
+
+        // Виньетка
         const vignette = document.createElement('div');
         vignette.className = 'scene-vignette';
         imageWrapper.appendChild(vignette);
-        
+
+        // Верхняя информационная плашка
         const topBar = document.createElement('div');
         topBar.className = 'scene-top-bar';
         topBar.innerHTML = `
@@ -224,18 +262,22 @@ class SceneRenderer {
             <span class="scene-top-time">${timeIcon} ${periodName}</span>
         `;
         imageWrapper.appendChild(topBar);
-        
+
+        // Интерактивные зоны для объектов
         const items = this.locationManager?.getLocationItems(location.id) || location.defaultItems || [];
         items.forEach(itemId => {
             const zone = this._createClickZone(itemId);
-            if (zone) imageWrapper.appendChild(zone);
+            if (zone) {
+                imageWrapper.appendChild(zone);
+            }
         });
-        
+
+        // Подлокации (если есть)
         const subLocations = getSubLocations(location.id);
         if (subLocations.length > 0) {
             const subPanel = document.createElement('div');
             subPanel.className = 'scene-subpanel';
-            
+
             subLocations.forEach(sub => {
                 const btn = document.createElement('button');
                 btn.className = 'scene-subpanel-btn';
@@ -248,12 +290,13 @@ class SceneRenderer {
                 });
                 subPanel.appendChild(btn);
             });
-            
+
             imageWrapper.appendChild(subPanel);
         }
-        
+
         this.container.appendChild(imageWrapper);
-        
+
+        // Кнопка «Карта»
         const mapBtn = document.createElement('button');
         mapBtn.className = 'scene-map-btn';
         mapBtn.innerHTML = '🗺️';
@@ -263,11 +306,15 @@ class SceneRenderer {
         });
         this.container.appendChild(mapBtn);
     }
-    
+
+    // ========================
+    // КЛИКАБЕЛЬНЫЕ ЗОНЫ
+    // ========================
+
     _createClickZone(itemId) {
         const coords = this._getObjectCoords(itemId);
         if (!coords) return null;
-        
+
         const zone = document.createElement('div');
         zone.className = 'scene-click-zone';
         zone.style.cssText = `
@@ -277,15 +324,83 @@ class SceneRenderer {
             height: ${coords[3]}%;
         `;
         zone.dataset.object = itemId;
-        
+
         const obj = getObjectById(itemId);
         zone.title = obj?.name || this._formatItemName(itemId);
-        
-        zone.addEventListener('click', () => this._onObjectClick(itemId, obj));
-        
+
+        zone.addEventListener('click', () => {
+            this._onObjectClick(itemId, obj);
+        });
+
         return zone;
     }
-    
+
+    // ========================
+    // КЛИК ПО ОБЪЕКТУ
+    // ========================
+
+    _onObjectClick(itemId, obj) {
+        if (!obj) {
+            obj = getObjectById(itemId);
+        }
+
+        const name = obj?.name || this._formatItemName(itemId);
+        const description = obj?.description || 'Описание отсутствует.';
+        const examineText = obj?.interactions?.examine?.text || description;
+        const isEvidence = obj?.isEvidence || false;
+        const takeable = obj?.takeable || false;
+
+        // Отправляем событие взаимодействия (для инвентаря и т.д.)
+        events.emit('object:interact', {
+            itemId: itemId,
+            locationId: this.currentScene?.id
+        });
+
+        // Показываем модальное окно с описанием
+        events.emit('modal:show', {
+            title: `${obj?.icon || '📌'} ${name}`,
+            body: `
+                <div style="
+                    font-family: var(--font-serif);
+                    font-size: 15px;
+                    color: var(--text-primary);
+                    line-height: 1.7;
+                ">
+                    <p>${examineText}</p>
+                    ${isEvidence ? `
+                        <p style="
+                            color: var(--accent-amber);
+                            margin-top: 10px;
+                            padding: 8px 12px;
+                            background: rgba(212, 160, 23, 0.05);
+                            border-left: 3px solid var(--accent-amber);
+                        ">📌 <strong>Это улика.</strong> Может пригодиться на доске расследования.</p>
+                    ` : ''}
+                    ${takeable ? `
+                        <p style="
+                            color: var(--accent-green);
+                            margin-top: 6px;
+                        ">✋ Предмет можно взять с собой.</p>
+                    ` : `
+                        <p style="
+                            color: var(--text-dim);
+                            margin-top: 6px;
+                            font-style: italic;
+                        ">👁️ Этот предмет нельзя унести с собой.</p>
+                    `}
+                </div>
+            `,
+            footer: `
+                ${takeable ? '<span style="font-size: 11px; color: var(--text-dim); margin-right: auto;">Добавлено в инвентарь</span>' : ''}
+                <button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ</button>
+            `
+        });
+    }
+
+    // ========================
+    // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    // ========================
+
     _showError(message) {
         this.container.innerHTML = `
             <div class="scene-error">
@@ -294,100 +409,82 @@ class SceneRenderer {
             </div>
         `;
     }
-    
-    _onObjectClick(itemId, obj) {
-        if (!obj) obj = getObjectById(itemId);
-        const name = obj?.name || this._formatItemName(itemId);
-        
-        // Отправляем событие взаимодействия
-        events.emit('object:interact', { 
-            itemId, 
-            locationId: this.currentScene?.id 
-        });
-        
-        // Показываем модальное окно с описанием предмета
-        const description = obj?.description || 'Нет описания';
-        const interactions = obj?.interactions || {};
-        const examineText = interactions.examine?.text || description;
-        
-        events.emit('modal:show', {
-            title: `${obj?.icon || '📌'} ${name}`,
-            body: `
-                <div style="font-family: var(--font-serif); font-size: 14px; color: var(--text-primary); line-height: 1.7;">
-                    <p>${examineText}</p>
-                    ${obj?.isEvidence ? '<p style="color: var(--accent-amber); margin-top: 8px;">📌 Это улика. Она может пригодиться в расследовании.</p>' : ''}
-                    ${obj?.takeable ? '<p style="color: var(--accent-green); margin-top: 8px;">✋ Этот предмет можно взять с собой.</p>' : '<p style="color: var(--text-dim); margin-top: 8px;">👁️ Этот предмет нельзя унести.</p>'}
-                </div>
-            `,
-            footer: `
-                ${obj?.takeable ? '<span style="font-size: 11px; color: var(--text-dim);">Предмет добавлен в инвентарь</span>' : ''}
-                <button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ</button>
-            `
-        });
-    }
-    
+
     _getNPCsHere(locationId) {
         try {
             return window.app?.npcManager?.getNPCsAtLocation(locationId) || [];
-        } catch(e) {
+        } catch (e) {
             return [];
         }
     }
-    
+
     _getTypeInfo(type) {
         const types = {
-            'public': { icon: '🏢', label: 'Публичное место' },
-            'private': { icon: '🏠', label: 'Частная территория' },
-            'crime_scene': { icon: '🚨', label: 'Место преступления' },
-            'evening_venue': { icon: '🍸', label: 'Вечернее заведение' },
-            'street': { icon: '🏚️', label: 'Улица' }
+            'public':          { icon: '🏢', label: 'Публичное место' },
+            'private':         { icon: '🏠', label: 'Частная территория' },
+            'crime_scene':     { icon: '🚨', label: 'Место преступления' },
+            'evening_venue':   { icon: '🍸', label: 'Вечернее заведение' },
+            'street':          { icon: '🏚️', label: 'Улица' }
         };
         return types[type] || null;
     }
-    
+
     _isLocationOpenNow(location) {
         try {
             const hour = this.locationManager?.gameTime?.hour || 12;
             const { open, close } = location.hours;
-            if (close > open) return hour >= open && hour < close;
-            return hour >= open || hour < close;
-        } catch(e) {
+
+            if (close > open) {
+                return hour >= open && hour < close;
+            } else {
+                return hour >= open || hour < close;
+            }
+        } catch (e) {
             return true;
         }
     }
-    
+
     _getObjectCoords(itemId) {
         const coordsMap = {
-            'bed': [15, 50, 30, 25],
-            'bed_304': [15, 50, 30, 25],
-            'window_304': [70, 15, 20, 30],
-            'wardrobe': [5, 15, 20, 35],
-            'mirror': [50, 15, 15, 25],
-            'carpet_stain': [40, 70, 25, 15],
-            'dumpster': [60, 55, 25, 30],
-            'graffiti_wall': [5, 10, 30, 40],
-            'broken_lamp': [75, 20, 10, 15],
-            'bar_counter': [30, 40, 40, 15],
-            'desk': [20, 35, 35, 25],
-            'bookshelf': [65, 10, 25, 35],
-            'safe': [45, 25, 15, 20],
-            'photo_frame': [55, 15, 10, 12]
+            'bed':            [15, 50, 30, 25],
+            'bed_304':        [15, 50, 30, 25],
+            'window_304':     [70, 15, 20, 30],
+            'wardrobe':       [5,  15, 20, 35],
+            'mirror':         [50, 15, 15, 25],
+            'carpet_stain':   [40, 70, 25, 15],
+            'dumpster':       [60, 55, 25, 30],
+            'graffiti_wall':  [5,  10, 30, 40],
+            'broken_lamp':    [75, 20, 10, 15],
+            'bar_counter':    [30, 40, 40, 15],
+            'desk':           [20, 35, 35, 25],
+            'bookshelf':      [65, 10, 25, 35],
+            'safe':           [45, 25, 15, 20],
+            'photo_frame':    [55, 15, 10, 12]
         };
         return coordsMap[itemId] || null;
     }
-    
+
     _formatItemName(id) {
         const names = {
-            'bed': 'Кровать', 'bed_304': 'Кровать',
-            'window_304': 'Окно', 'wardrobe': 'Шкаф',
-            'mirror': 'Зеркало', 'carpet_stain': 'Пятно на ковре',
-            'guest_book': 'Журнал регистрации', 'lobby_phone': 'Телефон',
-            'bar_counter': 'Барная стойка', 'jukebox': 'Музыкальный автомат',
-            'back_door': 'Чёрный ход', 'dumpster': 'Мусорный бак',
-            'graffiti_wall': 'Стена с граффити', 'broken_lamp': 'Разбитый фонарь',
-            'desk': 'Письменный стол', 'bookshelf': 'Книжный шкаф',
-            'safe': 'Сейф', 'photo_frame': 'Фоторамка',
-            'hidden_suitcase': 'Спрятанный чемодан'
+            'bed':              'Кровать',
+            'bed_304':          'Кровать',
+            'window_304':       'Окно',
+            'wardrobe':         'Шкаф',
+            'mirror':           'Зеркало',
+            'carpet_stain':     'Пятно на ковре',
+            'guest_book':       'Журнал регистрации',
+            'lobby_phone':      'Телефон на стойке',
+            'bar_counter':      'Барная стойка',
+            'jukebox':          'Музыкальный автомат',
+            'back_door':        'Чёрный ход',
+            'dumpster':         'Мусорный бак',
+            'graffiti_wall':    'Стена с граффити',
+            'broken_lamp':      'Разбитый фонарь',
+            'desk':             'Письменный стол',
+            'bookshelf':        'Книжный шкаф',
+            'safe':             'Сейф',
+            'photo_frame':      'Фоторамка',
+            'hidden_suitcase':  'Спрятанный чемодан'
         };
         return names[id] || id.replace(/_/g, ' ');
     }

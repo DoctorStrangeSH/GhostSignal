@@ -1,0 +1,44 @@
+/* ============ ОБУЧЕНИЕ ============ */
+
+.tutorial-step {
+    text-align: center;
+}
+
+.tutorial-step p {
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.tutorial-progress {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+}
+
+.tutorial-highlight {
+    animation: tutorial-pulse 1.5s infinite !important;
+    z-index: 100 !important;
+    position: relative;
+}
+
+.tutorial-highlight::after {
+    content: '';
+    position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border: 2px solid var(--accent-amber);
+    border-radius: 8px;
+    pointer-events: none;
+    animation: tutorial-border 1.5s infinite;
+}
+
+@keyframes tutorial-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(212, 160, 23, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(212, 160, 23, 0.6); }
+}
+
+@keyframes tutorial-border {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}

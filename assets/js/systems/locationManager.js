@@ -6,21 +6,21 @@ class LocationManager {
         this.visitedLocations = new Set();
         this._listeners = [];
     }
-    
+
     // Проверить, доступна ли локация сейчас
     isLocationAvailable(locationId) {
         const location = getLocationById(locationId);
         if (!location) return false;
-        
+
         // Проверяем, разблокирована ли
         if (!this.unlockedLocations.has(locationId) && !location.unlockedByDefault) {
             return false;
         }
-        
+
         // Проверяем часы работы
         const currentHour = this.gameTime.hour;
         const { open, close } = location.hours;
-        
+
         if (close > open) {
             // Обычный режим: открыто с open до close
             if (currentHour < open || currentHour >= close) return false;
@@ -29,10 +29,10 @@ class LocationManager {
             if (currentHour < open && currentHour >= close) return false;
         }
         // Если open === close (0 и 24) — круглосуточно
-        
+
         return true;
     }
-    
+
     // Разблокировать локацию
     unlockLocation(locationId) {
         if (!this.unlockedLocations.has(locationId)) {
@@ -47,7 +47,7 @@ class LocationManager {
         }
         return false;
     }
-    
+
     // Переместиться в локацию
     travelTo(locationId) {
         const location = getLocationById(locationId);
@@ -55,7 +55,7 @@ class LocationManager {
             console.error('Локация не найдена:', locationId);
             return false;
         }
-        
+
         if (!this.isLocationAvailable(locationId)) {
             const currentHour = this.gameTime.hour;
             const { open, close } = location.hours;
@@ -66,32 +66,32 @@ class LocationManager {
             });
             return false;
         }
-        
+
         const prevLocation = this.currentLocation;
         this.currentLocation = locationId;
         this.visitedLocations.add(locationId);
-        
+
         // Тратим время на перемещение (если не первое действие)
         if (prevLocation && prevLocation !== locationId) {
             this.gameTime.advance(CONFIG.time.costs.travel);
         }
-        
+
         // Уведомляем
         events.emit('location:changed', {
             locationId,
             location,
             previousLocation: prevLocation
         });
-        
+
         events.emit('notification:show', {
             message: `Перемещение: ${location.name}`,
             type: 'info',
             duration: 2000
         });
-        
+
         return true;
     }
-    
+
     // Получить список доступных локаций на карте
     getAvailableMapLocations() {
         return getMapLocations().filter(loc => {
@@ -104,37 +104,42 @@ class LocationManager {
             isCurrent: loc.id === this.currentLocation
         }));
     }
-    
+
     // Получить подлокации текущей локации
     getCurrentSubLocations() {
         if (!this.currentLocation) return [];
-        return getSubLocations(this.currentLocation).filter(loc => 
+        return getSubLocations(this.currentLocation).filter(loc =>
             this.isLocationAvailable(loc.id)
         );
     }
-    
+
     // Получить предметы на локации с учётом времени суток
     getLocationItems(locationId) {
         const location = getLocationById(locationId);
         if (!location) return [];
-        
+
         let items = [...location.defaultItems];
-        
-        // Добавляем ночные предметы
-        if (location.nightOnlyItems && this.gameTime.isNighttime()) {
+
+        // Ночные предметы
+        if (location.nightOnlyItems && this.gameTime?.isNighttime()) {
             items = [...items, ...location.nightOnlyItems];
         }
-        
+
+        // Погодные предметы
+        if (window.app?.weatherSystem) {
+            items = window.app.weatherSystem.getModifiedItems(locationId, items);
+        }
+
         return items;
     }
-    
+
     // Получить NPC на локации
     getLocationNPCs(locationId) {
         const location = getLocationById(locationId);
         if (!location) return [];
         return location.npcsPresent || [];
     }
-    
+
     // Подписаться на изменения
     onChange(callback) {
         this._listeners.push(callback);
@@ -142,7 +147,7 @@ class LocationManager {
             this._listeners = this._listeners.filter(cb => cb !== callback);
         };
     }
-    
+
     // Сериализация
     toJSON() {
         return {
@@ -151,7 +156,7 @@ class LocationManager {
             visitedLocations: [...this.visitedLocations]
         };
     }
-    
+
     // Восстановление
     static fromJSON(json, gameTime) {
         const manager = new LocationManager(gameTime);

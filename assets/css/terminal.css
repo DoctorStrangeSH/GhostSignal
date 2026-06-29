@@ -1,6 +1,5 @@
 /* ============ ОВЕРЛЕИ И ЭФФЕКТЫ ============ */
 
-/* Статический шум */
 .static-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -13,7 +12,6 @@
     animation: static-shift 0.5s steps(5) infinite;
 }
 
-/* Сканирующая линия */
 .scan-line {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -81,6 +79,18 @@
 }
 
 .time-icon {
+    font-size: 14px;
+}
+
+.weather-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+}
+
+#weather-icon {
     font-size: 14px;
 }
 

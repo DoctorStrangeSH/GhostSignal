@@ -5,40 +5,28 @@ const NPCS_INDEX = {
         role: "Ночной портье",
         description: "Пожилой мужчина с усталыми глазами. Работает в отеле «Гранд» уже 20 лет. Знает всех постояльцев.",
         icon: "👨🏻",
-        avatar: "assets/images/npcs/porter.jpg",
+        avatar: null,
         mood: "nervous",
 
-        // Расписание
         schedule: {
-            // Когда бодрствует
-            awake: { start: 18, end: 6 },  // С 18:00 до 06:00
-            // Когда на работе
-            atWork: { start: 20, end: 6 },  // С 20:00 до 06:00
-            // Когда спит
-            sleeps: { start: 6, end: 18 },  // С 06:00 до 18:00
-            // Где находится в разное время
+            awake: { start: 18, end: 6 },
+            atWork: { start: 20, end: 6 },
+            sleeps: { start: 6, end: 18 },
             locations: {
                 work: "hotel_grand",
                 home: "staff_quarters"
             },
-            // Выходные (дни)
             daysOff: [],
-            // Особые дни
             exceptions: []
         },
 
-        // Доступность
         availableForCall: true,
         availableForChat: true,
-
-        // Связанные диалоги
         dialogueId: "dialogue-porter",
 
-        // Улики, которые может дать
-        canGiveEvidence: ["guest_book_access"],
+        canGiveEvidence: [],
         canGiveInsights: ["suspicious_visitor"],
 
-        // Условия для особых диалогов
         specialConditions: [
             {
                 id: "nervous_breakdown",
@@ -54,7 +42,7 @@ const NPCS_INDEX = {
         role: "Бармен",
         description: "Крупный мужчина с добродушной улыбкой. Владелец бара «У Джо». Всегда готов выслушать.",
         icon: "👨🏾",
-        avatar: "assets/images/npcs/bartender.jpg",
+        avatar: null,
         mood: "friendly",
 
         schedule: {
@@ -72,7 +60,8 @@ const NPCS_INDEX = {
         availableForCall: true,
         availableForChat: true,
         dialogueId: "dialogue-bartender",
-        canGiveEvidence: ["matchbox"],
+
+        canGiveEvidence: [],
         canGiveInsights: ["bar_meeting_details", "suspicious_couple"],
 
         specialConditions: [
@@ -90,7 +79,7 @@ const NPCS_INDEX = {
         role: "Горничная",
         description: "Молодая женщина, работает в отеле полгода. Выглядит встревоженной. Избегает зрительного контакта.",
         icon: "👩🏻",
-        avatar: "assets/images/npcs/housekeeper.jpg",
+        avatar: null,
         mood: "anxious",
 
         schedule: {
@@ -106,8 +95,9 @@ const NPCS_INDEX = {
         },
 
         availableForCall: true,
-        availableForChat: false,  // Только звонки
+        availableForChat: false,
         dialogueId: "dialogue-housekeeper",
+
         canGiveEvidence: [],
         canGiveInsights: ["mary_alibi", "mary_suspicion"],
 
@@ -126,7 +116,7 @@ const NPCS_INDEX = {
         role: "Начальник участка",
         description: "Ваш непосредственный начальник. Суров, но справедлив. Выдаёт дела и ордеры.",
         icon: "👮",
-        avatar: "assets/images/npcs/sergeant.jpg",
+        avatar: null,
         mood: "professional",
 
         schedule: {
@@ -144,10 +134,10 @@ const NPCS_INDEX = {
         availableForCall: true,
         availableForChat: true,
         dialogueId: "dialogue-sergeant",
+
         canGiveEvidence: ["search_warrant"],
         canGiveInsights: ["case_background"],
 
-        // Сержант выдаёт ордер, когда собрано достаточно улик
         specialConditions: [
             {
                 id: "issue_warrant",
@@ -157,6 +147,7 @@ const NPCS_INDEX = {
             }
         ]
     },
+
     ex_wife: {
         id: "ex_wife",
         name: "Анна Ковалёва",
@@ -180,13 +171,19 @@ const NPCS_INDEX = {
 
         availableForCall: true,
         availableForChat: false,
-        dialogueId: null,  // TODO: добавить диалог
+        dialogueId: "dialogue-ex-wife",
 
         canGiveEvidence: [],
         canGiveInsights: ["ex_wife_motive"],
 
-        specialConditions: []
-    },
+        specialConditions: [
+            {
+                id: "confront_with_note",
+                condition: "hasItem:threat_note",
+                dialogueId: "dialogue-ex-wife"
+            }
+        ]
+    }
 };
 
 // Вспомогательные функции
@@ -197,7 +194,7 @@ function getNPCById(id) {
 function getNPCsByLocation(locationId) {
     return Object.values(NPCS_INDEX).filter(npc => {
         return npc.schedule.locations.work === locationId ||
-            npc.schedule.locations.home === locationId;
+               npc.schedule.locations.home === locationId;
     });
 }
 

@@ -1,11 +1,8 @@
 // ============================================
 // КОНФИГУРАЦИЯ FIREBASE
 // ============================================
-// ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ КОНСОЛИ FIREBASE:
-// https://console.firebase.google.com/
-// ============================================
 
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDtLOw-KR46NOQeHSXt3Y-S8ZIeUttPlQY",
     authDomain: "ghostsignal-47a15.firebaseapp.com",
     projectId: "ghostsignal-47a15",
@@ -14,7 +11,6 @@ const firebaseConfig = {
     appId: "1:114137750345:web:79fb645a9f3b0732b41898"
 };
 
-// Инициализация Firebase (если библиотека загружена)
 let firebaseApp = null;
 let firebaseAuth = null;
 let firestoreDB = null;
@@ -33,7 +29,7 @@ function initFirebase() {
         console.log('✅ Firebase инициализирован');
         return true;
     } catch (e) {
-        console.error('❌ Ошибка инициализации Firebase:', e);
+        console.warn('⚠️ Ошибка Firebase. Работаем офлайн.');
         return false;
     }
 }
