@@ -9,20 +9,23 @@
     <meta name="theme-color" content="#0a0f0a">
     <meta name="application-name" content="Ghost Signal">
     <meta name="apple-mobile-web-app-title" content="Ghost Signal">
-    <meta name="description"
-        content="Ghost Signal — детективный терминал. Раскрывайте нераскрытые дела сквозь цифровые помехи.">
+    <meta name="description" content="Ghost Signal — нуарный детективный терминал.">
     <title>Ghost Signal | Детективный терминал</title>
 
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
 
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Шрифты -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=VT323&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap"
         rel="stylesheet">
 
+    <!-- Стили -->
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/terminal.css">
@@ -47,14 +50,21 @@
     <link rel="stylesheet" href="assets/css/components/tutorial.css">
     <link rel="stylesheet" href="assets/css/components/achievements.css">
     <link rel="stylesheet" href="assets/css/components/options.css">
+    <link rel="stylesheet" href="assets/css/components/npc-portraits.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 
 <body>
+    <!-- Оверлей с помехами -->
     <div id="static-overlay" class="static-overlay"></div>
+
+    <!-- Сканирующая линия -->
     <div class="scan-line"></div>
 
+    <!-- Основной контейнер -->
     <div id="app" class="app-container">
+
+        <!-- Шапка терминала -->
         <header id="terminal-header" class="terminal-header">
             <div class="header-left">
                 <span class="badge-text">ДЕЛО №<span id="header-case-id">---</span></span>
@@ -79,7 +89,10 @@
             </div>
         </header>
 
+        <!-- Основная область -->
         <main id="main-content" class="main-content">
+
+            <!-- Экран: Главное меню -->
             <section id="screen-main-menu" class="screen active">
                 <div class="menu-container">
                     <div class="menu-ascii">
@@ -101,9 +114,8 @@
     ║   ╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝  ║
     ║                                                   ║
     ║           ПОЛИЦЕЙСКИЙ ТЕРМИНАЛ v2.1.7             ║
-    ║                                                   ║ 
-    ╚═══════════════════════════════════════════════════╝
-</pre>
+    ║                                                   ║
+    ╚═══════════════════════════════════════════════════╝</pre>
                     </div>
 
                     <div class="menu-info">
@@ -127,6 +139,7 @@
                 </div>
             </section>
 
+            <!-- Экран: Список дел -->
             <section id="screen-cases" class="screen">
                 <div class="screen-header">
                     <h2>📁 ДЕЛА</h2>
@@ -135,8 +148,10 @@
                 <div id="cases-list" class="cases-grid"></div>
             </section>
 
+            <!-- Экран: Статистика -->
             <section id="screen-stats" class="screen"></section>
 
+            <!-- Экран: Дело -->
             <section id="screen-case-active" class="screen">
                 <div class="case-layout">
                     <div class="case-main">
@@ -158,16 +173,16 @@
                         </div>
                         <div class="sidebar-content">
                             <div id="tab-inventory" class="tab-panel active">
-                                <div id="inventory-list" class="inventory-list"></div>
+                                <div id="inventory-list"></div>
                             </div>
                             <div id="tab-npcs" class="tab-panel">
-                                <div id="npcs-list" class="npcs-list"></div>
+                                <div id="npcs-list"></div>
                             </div>
                             <div id="tab-board" class="tab-panel">
-                                <div id="board-area" class="board-area"></div>
+                                <div id="board-area"></div>
                             </div>
                             <div id="tab-notes" class="tab-panel">
-                                <div id="notes-content" class="notes-content"></div>
+                                <div id="notes-content"></div>
                             </div>
                         </div>
                     </div>
@@ -177,6 +192,7 @@
                 </div>
             </section>
 
+            <!-- Экран: Карта -->
             <section id="screen-map" class="screen">
                 <div class="screen-header">
                     <h2>🗺️ КАРТА ГОРОДА</h2>
@@ -184,8 +200,10 @@
                 </div>
                 <div id="map-container" class="map-container"></div>
             </section>
+
         </main>
 
+        <!-- Подвал -->
         <footer class="terminal-footer">
             <span class="status-text">СОЕДИНЕНИЕ: <span class="status-ok">АКТИВНО</span></span>
             <span class="footer-divider">│</span>
@@ -195,6 +213,7 @@
         </footer>
     </div>
 
+    <!-- Универсальная модалка -->
     <div class="modal fade" id="universal-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content terminal-modal">
@@ -208,30 +227,66 @@
         </div>
     </div>
 
+    <!-- ============ БИБЛИОТЕКИ ============ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+    <!-- ============ CORE ============ -->
     <script src="assets/js/core/config.js"></script>
     <script src="assets/js/core/storage.js"></script>
     <script src="assets/js/core/eventBus.js"></script>
 
+    <!-- ============ FIREBASE ============ -->
     <script src="assets/js/firebase/firebase-config.js"></script>
     <script src="assets/js/firebase/authManager.js"></script>
     <script src="assets/js/firebase/cloudStorage.js"></script>
     <script src="assets/js/firebase/syncManager.js"></script>
 
-    <script src="assets/data/locations/location-index.js"></script>
-    <script src="assets/data/objects/objects-index.js"></script>
-    <script src="assets/data/npcs/npc-index.js"></script>
-    <script src="assets/data/dialogues/dialogue-index.js"></script>
-    <script src="assets/data/cases/case-001.js"></script>
-    <script src="assets/data/cases/case-002.js"></script>
+    <!-- ============ ЯДРО ДАННЫХ ============ -->
+    <script src="assets/data/core-init.js"></script>
+
+    <!-- ============ ДЕЛО №1 ============ -->
+    <script src="assets/data/cases/case-001/locations.js"></script>
+    <script src="assets/data/cases/case-001/npcs.js"></script>
+    <script src="assets/data/cases/case-001/objects.js"></script>
+    <script src="assets/data/cases/case-001/evidence.js"></script>
+    <script src="assets/data/cases/case-001/endings.js"></script>
+    <script src="assets/data/cases/case-001/story.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/porter.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/bartender.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/housekeeper.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/sergeant.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/elias.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/wife.js"></script>
+    <script src="assets/data/cases/case-001/dialogues/coroner.js"></script>
+    <script src="assets/data/cases/case-001/index.js"></script>
+
+    <!-- ============ ДЕЛО №2 ============ -->
+    <script src="assets/data/cases/case-002/locations.js"></script>
+    <script src="assets/data/cases/case-002/npcs.js"></script>
+    <script src="assets/data/cases/case-002/objects.js"></script>
+    <script src="assets/data/cases/case-002/evidence.js"></script>
+    <script src="assets/data/cases/case-002/endings.js"></script>
+    <script src="assets/data/cases/case-002/story.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/anna.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/bartender_case2.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/woman_in_red.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/rival.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/pharmacist.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/waiter.js"></script>
+    <script src="assets/data/cases/case-002/dialogues/journalist.js"></script>
+    <script src="assets/data/cases/case-002/index.js"></script>
+
+    <!-- ============ ИНДЕКС ДЕЛ ============ -->
     <script src="assets/data/cases/case-index.js"></script>
+
+    <!-- ============ НАРРАТИВ ============ -->
     <script src="assets/data/narrative/notes.js"></script>
     <script src="assets/data/narrative/newspapers.js"></script>
 
+    <!-- ============ SYSTEMS ============ -->
     <script src="assets/js/systems/gameTime.js"></script>
     <script src="assets/js/systems/locationManager.js"></script>
     <script src="assets/js/systems/inventory.js"></script>
@@ -247,12 +302,16 @@
     <script src="assets/js/systems/tutorial.js"></script>
     <script src="assets/js/systems/achievements.js"></script>
     <script src="assets/js/systems/difficulty.js"></script>
+    <script src="assets/js/systems/interrogation.js"></script>
+    <script src="assets/js/systems/alternateEndings.js"></script>
 
+    <!-- ============ NPC ============ -->
     <script src="assets/js/npc/npcManager.js"></script>
     <script src="assets/js/npc/dialogueEngine.js"></script>
     <script src="assets/js/npc/callInterface.js"></script>
     <script src="assets/js/npc/ttsEngine.js"></script>
 
+    <!-- ============ MINIGAMES ============ -->
     <script src="assets/js/minigames/minigameBase.js"></script>
     <script src="assets/js/minigames/minigameCipher.js"></script>
     <script src="assets/js/minigames/minigameSearch.js"></script>
@@ -262,6 +321,7 @@
     <script src="assets/js/minigames/minigamePhotorobot.js"></script>
     <script src="assets/js/minigames/minigameManager.js"></script>
 
+    <!-- ============ UI ============ -->
     <script src="assets/js/ui/loadingScreen.js"></script>
     <script src="assets/js/ui/notifications.js"></script>
     <script src="assets/js/ui/clock.js"></script>
@@ -280,7 +340,12 @@
     <script src="assets/js/ui/newspaperUI.js"></script>
     <script src="assets/js/ui/jukebox.js"></script>
     <script src="assets/js/ui/ambianceDetails.js"></script>
+    <script src="assets/js/ui/detectiveThoughts.js"></script>
+    <script src="assets/js/ui/locationIntro.js"></script>
+    <script src="assets/js/ui/deductionScreen.js"></script>
+    <script src="assets/js/ui/ambientSounds.js"></script>
 
+    <!-- ============ APP ============ -->
     <script src="assets/js/core/app.js"></script>
 </body>
 
