@@ -1,0 +1,44 @@
+/* ============ НАСТРОЙКИ ============ */
+
+.options-menu h4 {
+    color: var(--accent-amber);
+    font-size: 14px;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.difficulty-options {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.diff-btn {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    letter-spacing: 1px;
+}
+
+.diff-btn.active {
+    border-color: var(--accent-amber-glow) !important;
+    background: rgba(240, 192, 64, 0.06);
+    box-shadow: 0 0 10px rgba(240, 192, 64, 0.2);
+}
+
+.diff-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.options-menu hr {
+    border-color: rgba(212, 160, 23, 0.1);
+    margin: 18px 0;
+}
+
+.options-menu .terminal-btn {
+    margin-bottom: 6px;
+}

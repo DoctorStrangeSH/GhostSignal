@@ -1,0 +1,170 @@
+/* ============ КАРТОЧКИ NPC ============ */
+
+.npcs-empty {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-dim);
+}
+
+.npc-card {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(212, 160, 23, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.npc-card:hover {
+    border-color: rgba(212, 160, 23, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.npc-card.npc-unavailable {
+    opacity: 0.45;
+    filter: grayscale(0.4);
+}
+
+.npc-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.npc-avatar {
+    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+    border: 2px solid rgba(212, 160, 23, 0.3);
+    filter: grayscale(0.5) contrast(1.1) brightness(0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.npc-avatar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 25%, transparent 35%, rgba(0,0,0,0.5) 100%);
+    border-radius: 50%;
+}
+
+.npc-card.npc-hostile .npc-avatar {
+    border-color: var(--accent-red-bright);
+    filter: grayscale(0.7) contrast(1.2) brightness(0.5) sepia(0.2);
+}
+
+.npc-card.npc-friendly .npc-avatar {
+    border-color: var(--accent-amber);
+    filter: grayscale(0.2) contrast(1.05) brightness(0.9);
+}
+
+.npc-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.npc-name {
+    font-size: 14px;
+    color: var(--text-bright);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.npc-role {
+    font-size: 11px;
+    color: var(--accent-amber);
+    letter-spacing: 1px;
+}
+
+.npc-mood {
+    font-size: 22px;
+    cursor: help;
+}
+
+.npc-status {
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    display: inline-block;
+    letter-spacing: 1px;
+}
+
+.status-work {
+    background: rgba(240, 192, 64, 0.06);
+    color: var(--accent-amber-glow);
+    border: 1px solid rgba(240, 192, 64, 0.2);
+}
+
+.status-home {
+    background: rgba(180, 150, 100, 0.05);
+    color: var(--noir-sepia);
+    border: 1px solid rgba(180, 150, 100, 0.2);
+}
+
+.status-sleep {
+    background: rgba(58, 96, 144, 0.05);
+    color: var(--accent-blue-light);
+    border: 1px solid rgba(58, 96, 144, 0.2);
+}
+
+.status-offline {
+    background: rgba(192, 57, 43, 0.05);
+    color: var(--accent-red-bright);
+    border: 1px solid rgba(192, 57, 43, 0.2);
+}
+
+.npc-description {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.npc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.npc-actions .terminal-btn {
+    font-size: 10px;
+    padding: 7px 12px;
+    flex: 1;
+    min-width: 70px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.npc-call-btn { border-color: rgba(240, 192, 64, 0.3) !important; }
+.npc-chat-btn { border-color: rgba(58, 96, 144, 0.3) !important; }
+.npc-visit-btn { border-color: rgba(180, 150, 100, 0.3) !important; }
+.npc-talk-btn { border-color: var(--accent-amber) !important; }
+
+.npc-wait-btn {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.npc-insights {
+    margin-top: 10px;
+    font-size: 10px;
+    color: var(--accent-amber);
+    border-top: 1px solid rgba(212, 160, 23, 0.1);
+    padding-top: 8px;
+    letter-spacing: 1px;
+}
+
+.npc-card {
+    animation: fade-in 0.3s ease-out;
+}

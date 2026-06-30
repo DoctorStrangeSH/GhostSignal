@@ -1,0 +1,55 @@
+:root {
+    /* Нуарная палитра — тёмное дерево, сепия, янтарь */
+    --bg-primary: #0d0a08;
+    --bg-secondary: #12100d;
+    --bg-tertiary: #1a1612;
+    --bg-elevated: #221d18;
+    --bg-card: #1e1a15;
+
+    --text-primary: #c8b89a;
+    --text-secondary: #8a7b65;
+    --text-dim: #5a4d3a;
+    --text-bright: #e8d8c0;
+
+    /* Акценты */
+    --accent-amber: #d4a017;
+    --accent-amber-dim: #8b6914;
+    --accent-amber-glow: #f0c040;
+    --accent-red: #6b2020;
+    --accent-red-bright: #c0392b;
+    --accent-blue: #1a3050;
+    --accent-blue-light: #3a6090;
+
+    /* Типографика */
+    --font-mono: 'Courier Prime', 'Courier New', monospace;
+    --font-pixel: 'VT323', monospace;
+    --font-serif: 'EB Garamond', 'Georgia', serif;
+
+    --text-base: 16px;
+    --text-sm: 14px;
+    --text-xs: 12px;
+    --text-lg: 20px;
+    --text-xl: 28px;
+
+    /* Размеры */
+    --header-height: 52px;
+    --footer-height: 34px;
+    --sidebar-width: 380px;
+
+    /* Анимации */
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow: 600ms ease;
+
+    /* Тени */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 12px rgba(240, 192, 64, 0.15);
+
+    /* Радиусы */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}

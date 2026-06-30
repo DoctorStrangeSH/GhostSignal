@@ -1,0 +1,148 @@
+/* ============ КАРТОЧКИ ДЕЛ ============ */
+
+.case-card {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(212, 160, 23, 0.12);
+    border-radius: 14px;
+    padding: 22px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.case-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent-amber), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.case-card:hover {
+    border-color: var(--accent-amber);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 160, 23, 0.15);
+    transform: translateY(-3px);
+}
+
+.case-card:hover::before {
+    opacity: 1;
+}
+
+.case-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.case-id {
+    font-size: 11px;
+    color: var(--accent-amber);
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.case-difficulty {
+    font-size: 13px;
+}
+
+.case-title {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-bright);
+    font-family: var(--font-serif);
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.case-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    flex: 1;
+    font-family: var(--font-serif);
+    line-height: 1.5;
+}
+
+.case-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.case-badge {
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.case-badge.solved {
+    background: rgba(240, 192, 64, 0.08);
+    color: var(--accent-amber-glow);
+    border: 1px solid rgba(240, 192, 64, 0.2);
+}
+
+.case-badge.active {
+    background: rgba(240, 192, 64, 0.1);
+    color: var(--accent-amber-glow);
+    border: 1px solid rgba(240, 192, 64, 0.3);
+    animation: pulse-glow 2s infinite;
+}
+
+.case-badge.available {
+    background: rgba(180, 150, 100, 0.05);
+    color: var(--noir-sepia);
+    border: 1px solid rgba(180, 150, 100, 0.2);
+}
+
+.case-btn {
+    font-size: 11px;
+    padding: 8px 18px;
+    letter-spacing: 1px;
+}
+
+/* Состояния */
+.case-solved {
+    opacity: 0.65;
+}
+
+.case-active {
+    border-color: rgba(240, 192, 64, 0.3);
+}
+
+/* Вступление к сцене */
+.scene-intro-text {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--text-bright);
+    line-height: 1.8;
+    font-style: italic;
+}
+
+.scene-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.highlight-tag {
+    background: rgba(240, 192, 64, 0.05);
+    border: 1px solid rgba(240, 192, 64, 0.2);
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 11px;
+    color: var(--accent-amber-glow);
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+}

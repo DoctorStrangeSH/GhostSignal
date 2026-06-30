@@ -1,0 +1,130 @@
+/* ============ АТМОСФЕРА ЛОКАЦИЙ ============ */
+
+/* Бар — тёплый свет, джаз */
+body.loc-bar .app-container {
+    --ambient-tint: rgba(255, 160, 40, 0.05);
+}
+
+body.loc-bar .scan-line {
+    background: linear-gradient(90deg, transparent, rgba(255, 180, 60, 0.08), transparent);
+}
+
+body.loc-bar .static-overlay {
+    opacity: 0.015 !important;
+}
+
+/* Переулок — холодный мрак */
+body.loc-alley .app-container {
+    --ambient-tint: rgba(20, 25, 40, 0.12);
+}
+
+body.loc-alley .static-overlay {
+    opacity: 0.04 !important;
+}
+
+body.loc-alley .scan-line {
+    background: linear-gradient(90deg, transparent, rgba(100, 120, 160, 0.05), transparent);
+}
+
+/* Отель — приглушённый свет */
+body.loc-hotel .app-container {
+    --ambient-tint: rgba(200, 170, 120, 0.04);
+}
+
+/* Участок — нейтральный, холодный */
+body.loc-station .app-container {
+    --ambient-tint: rgba(200, 200, 220, 0.02);
+}
+
+/* Особняк — холодная роскошь */
+body.loc-mansion .app-container {
+    --ambient-tint: rgba(180, 170, 160, 0.03);
+}
+
+/* Морг — холодный, стерильный */
+body.loc-morgue .app-container {
+    --ambient-tint: rgba(200, 220, 240, 0.04);
+}
+
+/* Аптека — травяной, тёплый */
+body.loc-pharmacy .app-container {
+    --ambient-tint: rgba(180, 200, 140, 0.03);
+}
+
+/* Редакция — шумная, яркая */
+body.loc-newspaper .app-container {
+    --ambient-tint: rgba(255, 255, 240, 0.03);
+}
+
+/* Офис — строгий, деловой */
+body.loc-office .app-container {
+    --ambient-tint: rgba(200, 200, 210, 0.02);
+}
+
+/* Вокзал — шумный, эхо */
+body.loc-train .app-container {
+    --ambient-tint: rgba(180, 180, 190, 0.04);
+}
+
+/* ============ НОЧНОЙ СВЕТ В ПОМЕЩЕНИЯХ ============ */
+
+body.night-time.loc-hotel .app-container {
+    --ambient-tint: rgba(255, 200, 100, 0.05);
+}
+
+body.night-time.loc-bar .app-container {
+    --ambient-tint: rgba(255, 180, 60, 0.07);
+}
+
+body.night-time.loc-station .app-container {
+    --ambient-tint: rgba(200, 200, 220, 0.04);
+}
+
+body.night-time.loc-mansion .app-container {
+    --ambient-tint: rgba(220, 200, 160, 0.04);
+}
+
+body.night-time.loc-morgue .app-container {
+    --ambient-tint: rgba(200, 220, 250, 0.05);
+}
+
+body.night-time.loc-pharmacy .app-container {
+    --ambient-tint: rgba(200, 220, 160, 0.04);
+}
+
+body.night-time.loc-newspaper .app-container {
+    --ambient-tint: rgba(255, 250, 230, 0.04);
+}
+
+body.night-time.loc-office .app-container {
+    --ambient-tint: rgba(220, 220, 240, 0.03);
+}
+
+body.night-time.loc-train .app-container {
+    --ambient-tint: rgba(200, 200, 210, 0.05);
+}
+
+/* Вечер */
+body.evening-time.loc-hotel .app-container {
+    --ambient-tint: rgba(255, 180, 80, 0.03);
+}
+
+body.evening-time.loc-bar .app-container {
+    --ambient-tint: rgba(255, 150, 40, 0.04);
+}
+
+/* ============ ДОЖДЬ В ПЕРЕУЛКЕ ============ */
+
+body.weather-rain.loc-alley .static-overlay {
+    opacity: 0.06 !important;
+}
+
+body.weather-fog.loc-alley .app-container::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 995;
+    background: rgba(180, 190, 200, 0.06);
+    backdrop-filter: blur(1px);
+}
