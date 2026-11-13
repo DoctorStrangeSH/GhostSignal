@@ -69,6 +69,7 @@ class NPCListUI {
             scheduled: 'ОЖИДАЕТ ПЕРЕДАЧИ',
             delivered: 'ПЕРЕДАНО',
             withheld: 'СКРЫТО',
+            betrayal: 'НАРУШЕНА ЛОЯЛЬНОСТЬ',
             delayed: 'ОТЛОЖЕНО',
             expired: 'НЕ ДОШЛО',
             duplicate: 'ПОВТОР'
@@ -95,6 +96,9 @@ class NPCListUI {
             } else if (item.type === 'withheld') {
                 headline = `${from} скрыл сведения от ${to}`;
                 detail = `Затрагивался ${protectedName}. Причина: защита отношений.`;
+            } else if (item.type === 'betrayal') {
+                headline = `${from} нарушил защиту ${protectedName}`;
+                detail = 'Под давлением персонаж перестал хранить сведения в тайне и передал их дальше.';
             } else if (item.type === 'delayed') {
                 headline = `${from} → ${to} · передача отложена`;
                 detail = item.summary || 'Участники пока не могут связаться.';
