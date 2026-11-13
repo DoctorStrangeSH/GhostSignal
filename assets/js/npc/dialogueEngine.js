@@ -438,6 +438,10 @@ class DialogueEngine {
             const progress = this.relationshipService?.getGoalProgress(npcId, goalId) ?? 0;
             return Number.isFinite(threshold) && progress >= threshold;
         }
+        const investigationCondition = conditionStr.match(/^npc_investigation_outcome:([a-z0-9_:-]{1,64}):(corroborated|disputed|no_independent_evidence)$/i);
+        if (investigationCondition) {
+            return Boolean(npcId && this.relationshipService?.getInvestigationOutcome?.(npcId, investigationCondition[1]) === investigationCondition[2].toLowerCase());
+        }
         if (conditionStr.startsWith('npc_action_completed:')) {
             const ruleId = conditionStr.slice('npc_action_completed:'.length);
             return Boolean(npcId && this.relationshipService?.hasCompletedInteraction?.(npcId, ruleId));
