@@ -284,7 +284,7 @@ test("NPCSocialNetwork records loyalty protection and withholds a report while t
 test("NPCSocialNetwork records a betrayal when pressure breaks a character loyalty", () => {
     const { memory, motivations, network, advance } = createHarness();
     const sourceEvent = { dialogueId: "dialogue-joe", nodeId: "final-answer", answerText: "Я больше не стану покрывать Томаса." };
-    for (let i = 0; i < 8; i++) memory.recordAnswerSelected("bartender", sourceEvent.dialogueId, "pressure-" + i, { text: i === 7 ? sourceEvent.answerText : "Вы продолжаете давить на меня.", tone: "threatening" });
+    for (let i = 0; i < 8; i++) memory.recordAnswerSelected("bartender", sourceEvent.dialogueId, i === 7 ? sourceEvent.nodeId : "pressure-" + i, { text: i === 7 ? sourceEvent.answerText : "Вы продолжаете давить на меня.", tone: "threatening" });
     const loyalty = motivations.getEffectiveLoyalty("bartender", "waiter");
     assert.equal(loyalty.protects, false);
     const result = network.publish("bartender", { id: "joe-breaks-silence", kind: "detective_behavior", sourceName: "Джо", targetNpcId: "waiter", text: "Томас рассказал мне о разговоре с детективом." }, sourceEvent);
