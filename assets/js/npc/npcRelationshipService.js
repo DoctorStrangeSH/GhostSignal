@@ -161,7 +161,11 @@ class NPCRelationshipService {
                         goalNpcId: typeof conditions.requiresGoalNpcId === 'string' ? conditions.requiresGoalNpcId : item.fromNpcId,
                         goalStatus: ['active', 'completed', 'abandoned'].includes(conditions.requiresGoalStatus) ? conditions.requiresGoalStatus : null,
                         goalProgressAtLeast: this._optionalClamp(conditions.requiresGoalProgressAtLeast, 0, 20),
-                        goalProgressBelow: this._optionalClamp(conditions.requiresGoalProgressBelow, 0, 20)
+                        goalProgressBelow: this._optionalClamp(conditions.requiresGoalProgressBelow, 0, 20),
+                        // Rumors belong to the acting NPC; never consult another character's private knowledge.
+                        fromRumorId: typeof conditions.fromRumorId === 'string' && /^[a-z0-9_:-]{1,100}$/i.test(conditions.fromRumorId) ? conditions.fromRumorId : null,
+                        fromRumorStatus: ['unverified', 'corroborated', 'disputed'].includes(conditions.fromRumorStatus) ? conditions.fromRumorStatus : null,
+                        fromRumorConfidenceAtLeast: this._optionalClamp(conditions.fromRumorConfidenceAtLeast, 0, 100)
                     },
                     summary: String(item.summary || '').slice(0, 240)
                 };
@@ -361,6 +365,12 @@ class NPCRelationshipService {
         if (conditions.fromPressureBelow !== null && fromPressure >= conditions.fromPressureBelow) return false;
         if (conditions.toPressureAtLeast !== null && toPressure < conditions.toPressureAtLeast) return false;
         if (conditions.toPressureBelow !== null && toPressure >= conditions.toPressureBelow) return false;
+        if (conditions.fromRumorId) {
+            const rumor = this.memoryService?.getRumors(rule.fromNpcId)?.find(item => item.id === conditions.fromRumorId);
+            if (!rumor) return false;
+            if (conditions.fromRumorStatus && rumor.status !== conditions.fromRumorStatus) return false;
+            if (conditions.fromRumorConfidenceAtLeast !== null && rumor.confidence < conditions.fromRumorConfidenceAtLeast) return false;
+        }
         if (conditions.goalId) {
             const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
             if (!goal) return false;
