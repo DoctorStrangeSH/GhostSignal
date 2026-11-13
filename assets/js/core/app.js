@@ -15,6 +15,7 @@ class App {
         this.caseListUI = null;
         this.npcManager = null;
         this.npcMemoryService = null;
+        this.npcMotivationService = null;
         this.npcSocialNetwork = null;
         this.npcListUI = null;
         this.dialogueEngine = null;
@@ -112,8 +113,11 @@ class App {
         this.npcManager = NPCManager.fromJSON(this.progress.npcData, this.gameTime, this.inventory, this.progress.activeCase);
         this.npcMemoryService = NPCMemoryService.fromJSON(this.progress.npcMemoryData, this.progress.activeCase);
         this.npcManager.setMemoryService(this.npcMemoryService);
+        this.npcMotivationService = new NPCMotivationService(this.npcMemoryService);
         this.npcSocialNetwork = NPCSocialNetwork.fromJSON(this.progress.npcSocialData, this.npcMemoryService, this.npcManager, this.gameTime);
         const activeSocialCase = this.progress.activeCase ? getCaseById(this.progress.activeCase) : null;
+        if (activeSocialCase) this.npcMotivationService.setCase(activeSocialCase);
+        this.npcSocialNetwork.setMotivationService(this.npcMotivationService);
         if (activeSocialCase) this.npcSocialNetwork.setCase(activeSocialCase);
         this.npcManager.setSocialNetwork(this.npcSocialNetwork);
         this.npcListUI = new NPCListUI('npcs-list'); this.npcListUI.setNPCManager(this.npcManager);
