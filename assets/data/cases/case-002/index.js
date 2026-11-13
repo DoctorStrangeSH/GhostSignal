@@ -129,6 +129,7 @@ const CASE_002 = {
     npcRelationships: {
         bonds: [
             { id: "joe-thomas-colleagues", fromNpcId: "bartender", toNpcId: "waiter", relationship: "coworkers", label: "Коллеги по бару", trust: 80, reciprocal: true },
+            { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true },
             { id: "sisters-anna-eva", fromNpcId: "ex_wife", toNpcId: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, reciprocal: true },
             { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true }
         ],
