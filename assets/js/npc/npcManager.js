@@ -105,7 +105,7 @@ class NPCManager {
     }
 
     getSocialEventLog(limit = 12, npcId = null) {
-        return this.socialNetwork?.getEventLog(limit, npcId) || [];
+        return this.socialNetwork?.getKnownEventLog(limit, npcId) || [];
     }
 
     getNPCsAtLocation(locationId) {
