@@ -40,6 +40,23 @@ const CASE_001 = {
     // === ЖИВЫЕ ОТНОШЕНИЯ NPC ===
     // Эти связи скрыты от детектива, пока не подтверждены в разговоре или уликой.
     npcRelationships: {
+        goals: [
+            {
+                id: "protect_mary", npcId: "porter", title: "Не оставить Мэри одну",
+                description: "Фрэнк хочет убедиться, что Мэри в безопасности и не несёт весь груз одна.",
+                priority: 90, target: 2
+            },
+            {
+                id: "maintain_bar_community", npcId: "bartender", title: "Сохранить связи бара",
+                description: "Джо старается не потерять людей, которые поддерживают его бар и друг друга.",
+                priority: 75, target: 2
+            },
+            {
+                id: "keep_in_touch_with_mills", npcId: "bartender", title: "Оставаться на связи с Миллсом",
+                description: "Джо хочет понимать, что происходит в участке, не вмешиваясь в расследование.",
+                priority: 55, target: 1
+            }
+        ],
         bonds: [
             { id: "porter-housekeeper", fromNpcId: "porter", toNpcId: "housekeeper", relationship: "protective_colleagues", label: "Коллеги, почти семья", trust: 82, reciprocal: true },
             { id: "porter-bartender", fromNpcId: "porter", toNpcId: "bartender", relationship: "neighborhood_friends", label: "Давние знакомые", trust: 64, reciprocal: true },
@@ -50,6 +67,7 @@ const CASE_001 = {
             {
                 id: "porter-checks-mary", relationshipId: "porter-housekeeper",
                 fromNpcId: "porter", toNpcId: "housekeeper", interaction: "support",
+                goalId: "protect_mary", goalProgress: 1,
                 channel: "phone",
                 initialDelayMinutes: 90, everyMinutes: 240,
                 minTrust: 55, fromPressureBelow: 75, toPressureBelow: 75,
@@ -68,6 +86,7 @@ const CASE_001 = {
             {
                 id: "frank-reconciles-mary", relationshipId: "porter-housekeeper",
                 fromNpcId: "porter", toNpcId: "housekeeper", interaction: "reconcile",
+                goalId: "protect_mary", goalProgress: 1,
                 channel: "phone",
                 initialDelayMinutes: 240, everyMinutes: 240,
                 maxTrust: 58, fromPressureBelow: 35, toPressureBelow: 35,
@@ -77,6 +96,7 @@ const CASE_001 = {
             {
                 id: "joe-checks-mills", relationshipId: "bartender-sergeant",
                 fromNpcId: "bartender", toNpcId: "sergeant", interaction: "support",
+                goalId: "keep_in_touch_with_mills", goalProgress: 1,
                 channel: "phone",
                 initialDelayMinutes: 180, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 45, fromPressureBelow: 75,
@@ -86,6 +106,7 @@ const CASE_001 = {
             {
                 id: "joe-and-elias-catch-up", relationshipId: "elias-bartender",
                 fromNpcId: "bartender", toNpcId: "elias", interaction: "support",
+                goalId: "maintain_bar_community", goalProgress: 1,
                 channel: "phone",
                 initialDelayMinutes: 180, everyMinutes: 360,
                 minTrust: 50, trustDelta: 1, reciprocalTrustDelta: 1,
