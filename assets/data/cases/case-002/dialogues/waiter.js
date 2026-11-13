@@ -199,7 +199,7 @@ const DIALOGUE_WAITER = {
                         text: "Не вздумай менять показания, иначе обвиню тебя в соучастии.",
                         nextNode: "end_waiter",
                         tone: "threatening",
-                        cooperationDelta: -20,
+                        cooperationDelta: -25,
                         report: {
                             id: "detective-threatened-thomas-after-testimony",
                             kind: "detective_behavior",
