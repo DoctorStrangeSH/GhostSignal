@@ -200,7 +200,7 @@ const CASE_002 = {
                 initialDelayMinutes: 90, everyMinutes: 240,
                 minTrust: 70, fromPressureBelow: 85, toPressureBelow: 85,
                 trustDelta: 1, reciprocalTrustDelta: 2,
-                toCooperationDelta: 8,
+                toCooperationDelta: 12,
                 summary: "Ева позвонила Анне, чтобы убедиться, что та не осталась одна."
             },
             {
