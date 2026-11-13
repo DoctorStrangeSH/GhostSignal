@@ -20,6 +20,12 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
                     {
+                        text: "Что показала ваша проверка истории Томаса?",
+                        nextNode: "lora_no_confirmation",
+                        tone: "direct",
+                        condition: "npc_investigation_outcome:lora-questions-joe-about-threat:no_independent_evidence"
+                    },
+                    {
                         text: "Вы потребовали у Джо подтверждений истории о Томасе?",
                         nextNode: "lora_checked_threat",
                         tone: "cautious",
@@ -45,6 +51,16 @@ const DIALOGUE_JOURNALIST = {
                             toNpcId: "journalist"
                         }
                     }
+                ]
+            },
+
+            lora_no_confirmation: {
+                speaker: "npc",
+                text: "Я связалась с Джо. Он повторил услышанное, но сам угроз не наблюдал. Это не второе независимое свидетельство. Пока я не нашла подтверждений — и не стану представлять эту историю как доказанный факт.",
+                mood: "serious",
+                answers: [
+                    { text: "Спасибо, что отделяете факты от пересказов.", nextNode: "investigation", tone: "reassuring" },
+                    { text: "Продолжайте проверку, но не давите на Томаса.", nextNode: "investigation", tone: "cautious" }
                 ]
             },
 
