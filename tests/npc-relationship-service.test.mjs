@@ -95,7 +95,7 @@ test("NPCRelationshipService initializes authored bonds but hides them until evi
     assert.deepEqual(Array.from(result.revealed), ["a-b"]);
     assert.equal(relationships.isKnownRelationship("a-b"), true);
     assert.equal(relationships.getKnownRelationshipsForNPC("a")[0].name, "Борис");
-    assert.equal(relationships.getKnownRelationshipsForNPC("a")[0].statusLabel, "Сдержанные отношения");
+    assert.equal(relationships.getKnownRelationshipsForNPC("a")[0].statusLabel, "Хорошие отношения");
 });
 
 test("NPCRelationshipService runs autonomous support only when both NPCs can meet", () => {
