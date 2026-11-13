@@ -49,6 +49,8 @@ class EventController {
             app.progress.activeCase = app.caseManager.currentCase?.id;
             app.npcMemoryService?.setCase(data.caseData.id);
             app.npcSocialNetwork?.setCase(data.caseData);
+            app.npcManager?.setMemoryService(app.npcMemoryService);
+            app.npcManager?.setSocialNetwork(app.npcSocialNetwork);
             app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
             app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
             app.progress.caseData = app.caseManager.toJSON();
