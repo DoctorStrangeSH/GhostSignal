@@ -28,6 +28,12 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Похоже, люди вокруг всё ещё помогают вам держаться.",
+                        nextNode: "community_support",
+                        tone: "reassuring",
+                        condition: "npc_goal_completed:maintain_bar_community"
+                    },
+                    {
                         text: "Помните, как вы давили на меня в прошлый раз? Я не забыл.",
                         nextNode: "remembers_threat",
                         tone: "direct",
@@ -58,6 +64,24 @@ const DIALOGUE_BARTENDER_CASE2 = {
                             toNpcId: "bartender"
                         }
                     }
+                ]
+            },
+
+            community_support: {
+                speaker: "npc",
+                text: "Не ожидал, что Лора напишет просто узнать, как я. А Элиас ещё в первом деле зашёл поговорить. Наверное, бар держится не только на мне. Иногда нужно позволить людям быть рядом.",
+                mood: "grateful",
+                innerThought: "Люди не исчезли, когда стало трудно. Я должен помнить об этом.",
+                answers: [
+                    {
+                        text: "Не обязательно справляться со всем в одиночку.",
+                        nextNode: "retell",
+                        tone: "reassuring",
+                        memorySummary: "Детектив поддержал Джо, напомнив, что рядом есть люди.",
+                        memoryTags: ["player_reassured"],
+                        memoryImportance: 2
+                    },
+                    { text: "Вернёмся к вечеру отравления.", nextNode: "retell", tone: "direct" }
                 ]
             },
 
