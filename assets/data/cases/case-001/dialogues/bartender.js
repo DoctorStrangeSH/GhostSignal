@@ -20,7 +20,15 @@ const DIALOGUE_BARTENDER = {
                 answers: [
                     { text: "Я по делу, Джо. Расскажи мне о Блэквуде.", nextNode: "about_blackwood" },
                     { text: "Виски подождёт. Сначала — информация.", nextNode: "business_first" },
-                    { text: "Наливай. И рассказывай всё, что знаешь.", nextNode: "drink_and_talk" }
+                    { text: "Наливай. И рассказывай всё, что знаешь.", nextNode: "drink_and_talk" },
+                    {
+                        text: "Не заставляй меня повторять, Джо. Я знаю, что ты что-то скрываешь.",
+                        nextNode: "business_first",
+                        tone: "threatening",
+                        memorySummary: "Детектив пригрозил Джо, требуя рассказать правду.",
+                        memoryTags: ["player_threatened"],
+                        memoryImportance: 4
+                    }
                 ]
             },
 
@@ -95,7 +103,14 @@ const DIALOGUE_BARTENDER = {
                 mood: "impressed",
                 innerThought: "Элиас? Или кто-то ещё?",
                 answers: [
-                    { text: "Спасибо, Джо. Ты очень помог.", nextNode: "end_talk" }
+                    {
+                        text: "Спасибо, Джо. Ты очень помог.",
+                        nextNode: "end_talk",
+                        tone: "reassuring",
+                        memorySummary: "Детектив искренне поблагодарил Джо за помощь.",
+                        memoryTags: ["player_reassured"],
+                        memoryImportance: 3
+                    }
                 ]
             },
 
