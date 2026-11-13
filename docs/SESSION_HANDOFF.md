@@ -335,3 +335,20 @@ npm run build
 - NPCRelationshipService v2 должен переносить текущее доверие через worldTrusts. Case-local discovery и расписания при этом остаются отдельными.
 - Последний подтверждённый CI на HEAD ae8e137: 100 JS, 113/113 тестов, validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43446773933) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43446780426).
 - Ручной браузерный переход case-001 → case-002 всё ещё не выполнялся.
+
+
+## Личные цели и автономные действия NPC — 2026-11-13
+
+- NPCRelationshipService v3: глобальные worldTrusts и worldGoals. worldGoals[npcId][goalId] содержит title, description, priority, target, progress, status, createdInCaseId, updatedAt, history (лимит 40).
+- В npcRelationships.goals авторятся цели; автономные взаимодействия указывают goalId, goalNpcId и goalProgress. goalNpcId позволяет событию одного NPC продвигать цель другого (например, журналистка поддерживает бармена).
+- Прогресс засчитывается только после реального выполнения автономного действия (после расписания/доступности/условий). maxOccurrences предотвращает повторное начисление после одноразового действия.
+- Условия автономных действий: requiresGoalId, requiresGoalNpcId, requiresGoalStatus, requiresGoalProgressAtLeast, requiresGoalProgressBelow. Важно: goalId — награда/цель действия; requiresGoalId — отдельное предусловие, не смешивать.
+- API: getGoalProgress(npcId, goalId), isGoalCompleted(npcId, goalId), getPersonalGoals(npcId). Сырые цели/история не выводятся в досье автоматически.
+- DialogueEngine conditions: npc_goal_completed:<id>, npc_goal_progress_at_least:<id>:N. Джо в case-002 имеет ветку community_support, доступную только если межделовая цель maintain_bar_community завершена.
+- Авторские цели: case-001 — protect_mary, maintain_bar_community, keep_in_touch_with_mills; case-002 — maintain_bar_community, protect_staff, protect_sister, publish_exclusive, keep_in_touch_with_mills.
+- Автономный сюжет: Лора отправляет Джо настойчивое сообщение за эксклюзив через 8 игровых часов (один раз); это конфликт и влияет на доверие, одновременно продвигая publish_exclusive. Ева звонит Анне; Джо поддерживает Томаса; Фрэнк поддерживает Мэри.
+- Валидатор проверяет владельцев, target/priority, ссылки из autonomousInteractions, prerequisites и диалоговые ссылки.
+- Последний подтверждённый CI на HEAD a404677: 100 JS, 116/116 тестов, validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449199159) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449211944).
+- Следующая обязательная ручная проверка: ускорить игровое время, проверить тайминги/одноразовость Лоры, переход case-001 → case-002, сохранение и восстановление goal progress. CI не заменяет игровой прогон.
+
+**Следующий ИИ:** сначала проверь актуальный HEAD и Actions. Не меняй main и не сливай PR без разрешения. Расширяй личные цели на другие повторяющиеся NPC, но сюжетные последствия связывай с доказательствами и доступностью. Не раскрывай скрытые события автоматически. Следи, чтобы время не обрабатывало один и тот же одноразовый rule повторно после save/load.
