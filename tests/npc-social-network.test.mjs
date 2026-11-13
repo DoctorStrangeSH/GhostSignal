@@ -151,13 +151,83 @@ test("NPCSocialNetwork persists pending deliveries and prevents duplicate public
     }, { dialogueId: "dialogue-waiter", nodeId: "greeting", answerText: "Я видел это." });
     assert.equal(duplicate.reason, "already_published");
     const snapshot = network.toJSON();
-    assert.equal(snapshot.version, 1);
+    assert.equal(snapshot.version, 2);
     assert.equal(snapshot.cases["case-002"].pending.length, 1);
     assert.equal(snapshot.cases["case-002"].publishedIds.includes("social-test-report"), true);
     context.snapshot = snapshot;
     context.memory = memory;
     const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", context);
     assert.equal(restored.getPendingDeliveries().length, 1);
+});
+
+
+test("NPCSocialNetwork keeps a chronological, attributed timeline of scheduled and delivered contacts", () => {
+    const { memory, network, advance } = createHarness();
+    publish(memory, network, { targetNpcId: "detective" });
+
+    const scheduled = network.getEventLog(10);
+    assert.equal(scheduled[0].type, "scheduled");
+    assert.equal(scheduled[0].fromName, "Томас");
+    assert.equal(scheduled[0].toName, "Джо");
+    assert.equal(scheduled[0].channel, "in_person");
+    assert.equal(scheduled[0].time, "18:00");
+    assert.equal(scheduled[0].summary.includes("пригрозил"), true);
+
+    advance(15);
+    const delivered = network.getEventLog(10);
+    assert.equal(delivered[0].type, "delivered");
+    assert.equal(delivered[0].fromNpcId, "waiter");
+    assert.equal(delivered[0].toNpcId, "bartender");
+    assert.equal(delivered[0].path.join(">"), "waiter>bartender");
+    assert.equal(network.getEventLog(10, "bartender").every(item =>
+        item.fromNpcId === "bartender" || item.toNpcId === "bartender" || item.protectedNpcId === "bartender"
+    ), true);
+});
+
+test("NPCSocialNetwork explains withheld information without exposing the protected report", () => {
+    const { memory, network } = createHarness();
+    const sourceEvent = { dialogueId: "dialogue-eva", nodeId: "sister", answerText: "Анна не виновата." };
+    memory.recordAnswerSelected("woman_in_red", sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText });
+    network.publish("woman_in_red", {
+        id: "protected-timeline-entry", kind: "detective_behavior", sourceName: "Ева",
+        targetNpcId: "ex_wife", text: "Секретные сведения о деле."
+    }, sourceEvent);
+
+    const withheld = network.getEventLog(10).find(item => item.type === "withheld");
+    assert.equal(withheld.fromName, "Ева");
+    assert.equal(withheld.toName, "Лора");
+    assert.equal(withheld.protectedNpcName, "Анна");
+    assert.equal(withheld.reason, "protecting_relationship");
+    assert.equal(withheld.summary.includes("Секретные сведения"), false);
+});
+
+test("NPCSocialNetwork logs a failed contact only once while retries continue", () => {
+    const { memory, network, advance, availability } = createHarness();
+    availability.bartender.location = "police_station";
+    publish(memory, network, { targetNpcId: "detective" });
+
+    advance(15);
+    advance(15);
+    const delayed = network.getEventLog(20).filter(item => item.type === "delayed");
+    assert.equal(delayed.length, 1);
+    assert.equal(network.getPendingDeliveries().length, 1);
+});
+
+test("NPCSocialNetwork migrates old saves and persists the social event timeline", () => {
+    const { memory, network, context } = createHarness();
+    publish(memory, network, { targetNpcId: "detective" });
+    const snapshot = network.toJSON();
+    assert.equal(snapshot.version, 2);
+    assert.equal(snapshot.cases["case-002"].eventLog.length >= 2, true);
+
+    context.snapshot = snapshot;
+    context.memory = memory;
+    const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", context);
+    assert.equal(restored.getEventLog(10).length, network.getEventLog(10).length);
+
+    context.legacySnapshot = { currentCaseId: "case-002", cases: { "case-002": { pending: [], delivered: [], withheld: [], publishedIds: [] } } };
+    const legacy = vm.runInContext("NPCSocialNetwork.fromJSON(legacySnapshot, memory, npcManager, clock)", context);
+    assert.equal(legacy.getEventLog(10).length, 0);
 });
 
 test("NPCSocialNetwork refuses to publish an event that the source NPC never witnessed", () => {
