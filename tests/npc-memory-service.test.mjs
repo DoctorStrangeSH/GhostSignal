@@ -111,7 +111,7 @@ test("NPCMemoryService clamps trust and round-trips versioned per-case saves", (
     assert.equal(restored.getMemory("housekeeper"), null);
     restored.setCase("case-001");
     assert.equal(restored.getMemory("housekeeper").conversations, 1);
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
 });
 
 test("NPCMemoryService tracks psychological pressure and migrates older NPC snapshots", () => {
@@ -143,7 +143,7 @@ test("NPCMemoryService tracks psychological pressure and migrates older NPC snap
     });
     assert.equal(memory.getPressure("waiter"), 20);
     assert.equal(memory.getPsychologicalState("waiter", { pressureThreshold: 20 }).disposition, "overwhelmed");
-    assert.equal(memory.toJSON().version, 8);
+    assert.equal(memory.toJSON().version, 9);
 });
 
 test("NPCMemoryService records a deliberate lie as exposed only when its source is confronted", () => {
@@ -340,7 +340,7 @@ test("NPCMemoryService migrates version 4 memories with no rumor history", () =>
         }
     }, "case-002");
 
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
     assert.equal(restored.getRumors("waiter").length, 0);
     assert.equal(restored.getMemory("waiter").rumors.length, 0);
     assert.equal(restored.getTrust("waiter"), 61);
@@ -384,7 +384,7 @@ test("NPCMemoryService migrates v5 rumors without losing their source", () => {
     const NPCMemoryService = loadService();
     const restored = NPCMemoryService.fromJSON({ version: 5, currentCaseId: "case-002", cases: { "case-002": { bartender: { rumors: [{ id: "legacy-rumor", kind: "detective_behavior", text: "Старый слух", reportedBy: "waiter", reportedByName: "Томас", status: "unverified" }] } } } }, "case-002");
     const [rumor] = restored.getRumors("bartender");
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
     assert.equal(rumor.reportedBy, "waiter");
     assert.equal(rumor.confidence, 60);
     assert.equal(rumor.corroborations.length, 0);
@@ -415,7 +415,7 @@ test("NPCMemoryService preserves testimony revisions and excludes superseded cla
 
     const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
     assert.equal(restored.getClaimHistory("waiter", "waiter-revised").length, 2);
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
     assert.equal(restored.recordClaim("waiter", { id: "bad-revision", revisesClaimId: "missing", topic: "kane-presence", value: "unknown" }).reason, "revision_source_not_found");
 });
 
@@ -423,7 +423,7 @@ test("NPCMemoryService migrates v6 claims as active version one", () => {
     const NPCMemoryService = loadService();
     const restored = NPCMemoryService.fromJSON({ version: 6, currentCaseId: "case-002", cases: { "case-002": { waiter: { claims: [{ id: "old-claim", topic: "topic", value: "value" }] } } } }, "case-002");
     const claim = restored.getStatementById("old-claim");
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
     assert.equal(claim.version, 1);
     assert.equal(claim.status, "active");
     assert.equal(claim.revisionOf, null);
@@ -464,14 +464,90 @@ test("NPCMemoryService records false accusations, applies lasting consequences a
     assert.equal(memory.resolveAccusation("waiter", "thomas-complicity", "false").reason, "already_resolved");
     const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
     assert.equal(restored.getAccusations("waiter")[0].status, "false");
-    assert.equal(restored.toJSON().version, 8);
+    assert.equal(restored.toJSON().version, 9);
 });
 
-test("NPCMemoryService migrates v7 memories with an empty accusation ledger", () => {
+test("NPCMemoryService migrates v8 memories with an empty long-term people ledger", () => {
     const NPCMemoryService = loadService();
-    const restored = NPCMemoryService.fromJSON({ version: 7, currentCaseId: "case-002", cases: { "case-002": { waiter: { trust: 50 } } } }, "case-002");
-    assert.equal(restored.toJSON().version, 8);
+    const restored = NPCMemoryService.fromJSON({ version: 8, currentCaseId: "case-002", cases: { "case-002": { waiter: { trust: 50 } } } }, "case-002");
+    assert.equal(restored.toJSON().version, 9);
+    assert.deepEqual(restored.getLongTermProfile("waiter"), { npcId: "waiter", trust: 50, familiarity: 0, interactions: 0, lastSeenCaseId: null, memoryCount: 0, disposition: "unfamiliar" });
     assert.equal(restored.getAccusations("waiter").length, 0);
+});
+
+test("NPCMemoryService carries lasting impressions and trust into a later investigation", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-001");
+    memory.recordDialogueStarted("bartender", "dialogue-bartender");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "greeting", {
+        text: "Не заставляй меня повторять, Джо. Я знаю, что ты скрываешь.",
+        tone: "threatening",
+        memorySummary: "Детектив пригрозил Джо, требуя рассказать правду.",
+        memoryTags: ["player_threatened"],
+        memoryImportance: 4
+    });
+
+    const profile = memory.getLongTermProfile("bartender");
+    assert.equal(profile.familiarity, 1);
+    assert.equal(profile.disposition, "cautious");
+    assert.equal(profile.trust < 50, true);
+    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_threatened"), true);
+    assert.equal(memory.getLongTermMemories("bartender")[0].caseId, "case-001");
+
+    const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
+    restored.recordDialogueStarted("bartender", "dialogue-bartender-case2");
+    assert.equal(restored.getMemory("bartender").trust, profile.trust);
+    assert.equal(restored.getLongTermProfile("bartender").familiarity, 2);
+    assert.equal(restored.hasLongTermMemoryTag("bartender", "player_threatened"), true);
+});
+
+test("NPCMemoryService remembers promises kept or broken beyond the case that created them", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-001");
+    memory.recordPromise("porter", {
+        id: "find-mary", text: "Я выясню, что случилось с Мэри.",
+        fulfillment: { type: "case_solved", caseId: "case-001" }
+    });
+    assert.equal(memory.settlePromisesForCase("case-001", "solved")[0].status, "fulfilled");
+    assert.equal(memory.hasLongTermMemoryTag("porter", "promise_kept"), true);
+    const trustAfterKeeping = memory.getLongTermProfile("porter").trust;
+    assert.equal(trustAfterKeeping > 50, true);
+
+    memory.setCase("case-002");
+    memory.recordDialogueStarted("porter", "followup");
+    assert.equal(memory.getMemory("porter").trust, trustAfterKeeping);
+    assert.equal(memory.getLongTermMemories("porter").some(item => item.type === "promise_kept"), true);
+});
+
+test("NPCMemoryService makes a false accusation a lasting reason for distrust", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-001");
+    memory.recordAccusation("housekeeper", {
+        id: "false-accusation", text: "Детектив обвинил Мэри в исчезновении."
+    });
+    memory.resolveAccusation("housekeeper", "false-accusation", "false", "Улика доказала, что Мэри не причастна.");
+    assert.equal(memory.getLongTermProfile("housekeeper").trust, 45);
+    assert.equal(memory.hasLongTermMemoryTag("housekeeper", "false_accusation"), true);
+
+    memory.setCase("case-002");
+    memory.recordDialogueStarted("housekeeper", "later-meeting");
+    assert.equal(memory.getMemory("housekeeper").trust, 45);
+});
+
+test("NPCMemoryService bounds long-term memory without discarding the strongest events", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-001");
+    for (let i = 0; i < 70; i++) {
+        memory.recordAnswerSelected("bartender", "dialogue", "node-" + i, {
+            text: "Детектив угрожает Джо " + i,
+            tone: "threatening",
+            memoryImportance: i === 0 ? 5 : 3,
+            memoryTags: i === 0 ? ["critical_betrayal"] : ["player_threatened"]
+        });
+    }
+    assert.equal(memory.getLongTermProfile("bartender").memoryCount, 60);
+    assert.equal(memory.hasLongTermMemoryTag("bartender", "critical_betrayal"), true);
+    assert.equal(memory.getLongTermMemories("bartender", { limit: 100 }).length, 60);
 });
 
 test("NPCMemoryService safely accepts saves created before NPC memory existed", () => {
