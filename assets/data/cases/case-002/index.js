@@ -170,7 +170,6 @@ const CASE_002 = {
                 minTrust: 55, fromPressureBelow: 70, toPressureBelow: 50,
                 trustDelta: 2, reciprocalTrustDelta: 1,
                 toCooperationDelta: 10,
-                toCooperationDelta: 10,
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
             {
