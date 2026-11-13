@@ -519,7 +519,7 @@ test("Thomas can narrow an active statement after intimidation, without changing
 
     assert.equal(memory.hasClaim("waiter", "waiter-kane-at-poisoning"), true);
     const threat = engine.getAvailableAnswers().find(answer =>
-        answer.cooperationDelta === -20 && answer.nextNode === "end_waiter"
+        answer.cooperationDelta === -25 && answer.nextNode === "end_waiter"
     );
     assert.equal(threat?.isAvailable, true);
     engine.selectAnswer(threat.index);
