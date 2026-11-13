@@ -35,6 +35,7 @@ function createHarness() {
             maxHops: 2, retryMinutes: 15, expiryMinutes: 240,
             edges: [
                 { id: "waiter-joe", from: "waiter", to: "bartender", relationship: "coworkers", label: "Коллеги", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
+                { id: "joe-waiter", from: "bartender", to: "waiter", relationship: "coworkers", label: "Коллеги", trust: 70, channel: "in_person", delayMinutes: 20, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: false },
                 { id: "joe-press", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true },
                 { id: "eva-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 20, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: ["ex_wife"], withholdIfTargetProtected: true },
                 { id: "eva-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
