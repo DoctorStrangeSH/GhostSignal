@@ -215,6 +215,8 @@ class NPCRelationshipService {
         for (const id of ids) {
             if (typeof id !== 'string' || !validIds.has(id) || state.knownRelationshipIds.includes(id)) continue;
             state.knownRelationshipIds.push(id);
+            if (!state.relationships[id]) state.relationships[id] = { interactionCount: 0, lastInteractionAt: null, discoveredAt: null };
+            state.relationships[id].discoveredAt = this._now();
             const record = { relationshipId: id, method: discovery.method, sourceId: discovery.sourceId, atGameMinute: this._now() };
             state.discoveryLog.push(record);
             revealed.push(id);
