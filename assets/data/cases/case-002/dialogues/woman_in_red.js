@@ -19,7 +19,23 @@ const DIALOGUE_WOMAN_IN_RED = {
                 innerThought: "Она ждала меня. Это настораживает.",
                 answers: [
                     { text: "Кто вы такая?", nextNode: "identity" },
+                    {
+                        text: "Вы связывались с Анной после нашего разговора?",
+                        nextNode: "eva_protected_anna",
+                        tone: "calm",
+                        condition: "npc_action_completed:eva-protects-anna-after-pressure"
+                    },
                     { text: "Вы были здесь в ночь отравления.", nextNode: "that_night" }
+                ]
+            },
+
+            eva_protected_anna: {
+                speaker: "npc",
+                text: "Я позвонила ей снова. Анна была напугана. Я попросила её не оставаться одной — но это не означает, что я собираюсь прятать от вас правду. Я расскажу о том, что действительно видела.",
+                mood: "protective",
+                answers: [
+                    { text: "Спасибо. Я проверю показания без давления на Анну.", nextNode: "that_night", tone: "reassuring", trustDelta: 2 },
+                    { text: "Мне важно знать, что вы сами наблюдали.", nextNode: "that_night", tone: "direct" }
                 ]
             },
 
