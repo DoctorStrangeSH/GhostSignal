@@ -31,11 +31,24 @@ const DIALOGUE_WAITER = {
                 mood: "scared",
                 innerThought: "Он напуган. Кто-то угрожал ему?",
                 answers: [
-                    { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm", cooperationDelta: 2 },
+                    {
+                        text: "Я хочу вернуться к твоим прежним показаниям.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning"
+                    },
+                    {
+                        text: "Я хочу вернуться к твоим прежним показаниям.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2"
+                    },
                     {
                         text: "Если ты скрываешь информацию — это соучастие.",
                         nextNode: "threat",
                         tone: "aggressive",
+                        cooperationDelta: -12,
                         report: {
                             id: "detective-threatened-thomas",
                             kind: "detective_behavior",
@@ -49,6 +62,7 @@ const DIALOGUE_WAITER = {
                         text: "Я считаю, что ты помог Кейну отравить Блэквуда. Ты соучастник.",
                         nextNode: "threat",
                         tone: "threatening",
+                        cooperationDelta: -20,
                         accusation: { id: "thomas-complicity", text: "Детектив обвинил Томаса в соучастии с Кейном." },
                         report: {
                             id: "detective-accused-thomas-of-complicity",
@@ -96,6 +110,7 @@ const DIALOGUE_WAITER = {
                         tone: "reassuring",
                         trustDelta: 4,
                         pressureDelta: -8,
+                        cooperationDelta: 20,
                         condition: "all:trust_at_least:53&pressure_below:15",
                         promise: {
                             id: "thomas-family-protection",
@@ -116,6 +131,7 @@ const DIALOGUE_WAITER = {
                         text: "Я ошибся. Ты не помогал Кейну. Прости, что обвинил тебя.",
                         nextNode: "end_waiter",
                         tone: "reassuring",
+                        cooperationDelta: 16,
                         condition: "has_accusation:thomas-complicity",
                         resolveAccusation: {
                             id: "thomas-complicity",
@@ -140,7 +156,23 @@ const DIALOGUE_WAITER = {
                 mood: "scared",
                 innerThought: "Томас не отказывается навсегда. Ему нужно доказать, что его семья защищена.",
                 answers: [
-                    { text: "Я вернусь, когда у меня будет официальный план защиты.", nextNode: "end_waiter", tone: "reassuring", pressureDelta: -3 }
+                    { text: "Я вернусь, когда у меня будет официальный план защиты.", nextNode: "end_waiter", tone: "reassuring", pressureDelta: -3, cooperationDelta: 4 },
+                    {
+                        text: "Джо говорил с тобой после смены? Он не оставит тебя одного.",
+                        nextNode: "joe_support",
+                        tone: "reassuring",
+                        condition: "cooperation_at_least:60"
+                    }
+                ]
+            },
+
+            joe_support: {
+                speaker: "npc",
+                text: "Да. Джо подошёл после смены и сказал, что не оставит меня одного. Я не ожидал, что он так за меня вступится. Это помогает, но мама всё ещё под угрозой. Пока я не буду уверен в её безопасности, подписывать подробные показания не могу.",
+                mood: "relieved",
+                innerThought: "Поддержка Джо действительно помогла Томасу, но не сняла угрозу его семье.",
+                answers: [
+                    { text: "Понимаю. Сначала решу вопрос с безопасностью твоей матери.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 4 }
                 ]
             },
 
@@ -162,7 +194,45 @@ const DIALOGUE_WAITER = {
                 },
                 answers: [
                     { text: "Посмотри на эту фотографию. Хочу уточнить твои показания.", nextNode: "protection_revision", tone: "direct", condition: "hasItem:bar_photo" },
-                    { text: "Ты поступил правильно, Томас.", nextNode: "end_waiter", tone: "reassuring" }
+                    { text: "Ты поступил правильно, Томас.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 5 },
+                    {
+                        text: "Не вздумай менять показания, иначе обвиню тебя в соучастии.",
+                        nextNode: "end_waiter",
+                        tone: "threatening",
+                        cooperationDelta: -20,
+                        report: {
+                            id: "detective-threatened-thomas-after-testimony",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
+                            sourceName: "Томас",
+                            text: "Детектив пригрозил мне после того, как я дал показания. Теперь я боюсь говорить с ним."
+                        }
+                    }
+                ]
+            },
+
+            testimony_reconsiders: {
+                speaker: "npc",
+                text: "Я больше не могу подтверждать прежнюю формулировку. Я видел Кейна рядом со столиком, но не могу сказать, что видел, как он что-то подсыпал в стакан. После того разговора я испугался и сказал больше, чем мог подтвердить. Не хочу, чтобы мои слова снова использовали против меня.",
+                mood: "withdrawn",
+                innerThought: "Томас не утверждает, что Кейна не было. Он сужает показания до того, что готов подтвердить лично. Предыдущая версия остаётся в истории, но больше не считается его действующим заявлением.",
+                claim: {
+                    id: "waiter-kane-at-poisoning-reconsidered",
+                    revisesActiveClaimTopic: true,
+                    revisionReason: "Томас отказался подтверждать детали после давления и уточнил границы личного наблюдения.",
+                    topic: "kane-presence-during-poisoning",
+                    value: "near-victim-table-before-collapse",
+                    summary: "Томас подтверждает, что видел Кейна рядом со столиком, но отказывается утверждать, что видел попадание порошка в стакан.",
+                    sourceName: "Томас",
+                    location: "Бар «У Джо»",
+                    timeLabel: "Незадолго до ухудшения состояния Блэквуда",
+                    circumstances: "Повторное показание после давления; свидетель обеспокоен безопасностью семьи.",
+                    directObservation: true
+                },
+                answers: [
+                    { text: "Я не буду заставлять тебя подтверждать то, чего ты не видел. Спасибо за уточнение.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 8 },
+                    { text: "Ты уже дал показания. Не меняй их.", nextNode: "end_waiter", tone: "threatening", cooperationDelta: -12 }
                 ]
             },
 
@@ -185,7 +255,7 @@ const DIALOGUE_WAITER = {
                     directObservation: true
                 },
                 answers: [
-                    { text: "Спасибо, что уточнил. Так показания будут точнее.", nextNode: "end_waiter", tone: "reassuring" }
+                    { text: "Спасибо, что уточнил. Так показания будут точнее.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 8 }
                 ]
             },
 
@@ -195,8 +265,8 @@ const DIALOGUE_WAITER = {
                 mood: "panicked",
                 innerThought: "Перегнул. Нужно успокоить.",
                 answers: [
-                    { text: "Успокойся. Я не обвиняю тебя. Давай поговорим спокойно.", nextNode: "he_saw", tone: "reassuring" },
-                    { text: "Я могу сделать так, что тебе станет ещё страшнее.", nextNode: "waiter_hesitates", tone: "threatening" }
+                    { text: "Успокойся. Я не обвиняю тебя. Давай поговорим спокойно.", nextNode: "he_saw", tone: "reassuring", cooperationDelta: 12 },
+                    { text: "Я могу сделать так, что тебе станет ещё страшнее.", nextNode: "waiter_hesitates", tone: "threatening", cooperationDelta: -20 }
                 ]
             },
 
