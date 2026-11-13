@@ -136,6 +136,14 @@ class DialogueEngine {
                     );
                 }
             }
+            if (answer.revealSocialEvents && this.socialNetwork) {
+                const discovery = answer.revealSocialEvents;
+                this.socialNetwork.revealEventsForReport(discovery.reportId, {
+                    ...discovery,
+                    method: 'dialogue',
+                    sourceId: `${this.currentDialogue.id}:${this.currentNode.id}:${answerIndex}`
+                });
+            }
             this._notifyMemoryChanged();
         }
 
