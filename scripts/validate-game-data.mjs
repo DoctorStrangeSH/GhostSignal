@@ -256,6 +256,17 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC goal progress condition.");
             }
             if (goalProgressCondition) npcGoalConditions.push({ npcId: dialogue.npcId, goalId: goalProgressCondition[1], dialogueId: id, nodeId });
+            if (answer.condition?.startsWith("npc_investigation_outcome:")) {
+                const match = answer.condition.match(/^npc_investigation_outcome:([a-z0-9_:-]{1,64}):(corroborated|disputed|no_independent_evidence)$/i);
+                const exists = match && Object.values(data.cases).some(gameCase =>
+                    (gameCase.npcs || []).includes(dialogue.npcId) &&
+                    (gameCase.npcRelationships?.autonomousInteractions || []).some(rule =>
+                        rule.id === match[1] && rule.fromNpcId === dialogue.npcId &&
+                        typeof rule.investigatesRumorId === "string" && rule.investigatesRumorId === rule.fromRumorId
+                    )
+                );
+                if (!exists) errors.push("Dialogue " + id + "/" + nodeId + " references an invalid NPC rumor investigation.");
+            }
             if (answer.condition?.startsWith("npc_action_completed:")) {
                 const ruleId = answer.condition.slice("npc_action_completed:".length);
                 if (!/^[a-z0-9_:-]{1,64}$/i.test(ruleId)) {
@@ -370,6 +381,10 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
             }
         }
         const conditions = rule?.conditions && typeof rule.conditions === "object" ? rule.conditions : rule;
+        if (rule?.investigatesRumorId !== undefined &&
+            (typeof rule.investigatesRumorId !== "string" || rule.investigatesRumorId !== conditions?.fromRumorId)) {
+            errors.push("Case " + id + " NPC investigation must reference its own rumor condition: " + rule.id);
+        }
         if (conditions?.fromRumorId !== undefined &&
             (typeof conditions.fromRumorId !== "string" || !/^[a-z0-9_:-]{1,100}$/i.test(conditions.fromRumorId))) {
             errors.push("Case " + id + " NPC interaction has invalid rumor ID: " + rule.id);
