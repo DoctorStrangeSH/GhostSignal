@@ -134,7 +134,7 @@ class NPCListUI {
                                 <div class="npc-rumors-heading">СВЕДЕНИЯ О ДЕТЕКТИВЕ</div>
                                 ${[...npc.rumors].slice(-2).reverse().map(rumor => `
                                     <div class="npc-rumor">
-                                        <span>ОТ ${rumor.reportedByName || 'СВИДЕТЕЛЯ'} · ${{ unverified: 'НЕПРОВЕРЕНО', corroborated: 'ПОДТВЕРЖДЕНО', disputed: 'ОСПАРИВАЕТСЯ' }[rumor.status] || 'НЕПРОВЕРЕНО'}</span>
+                                        <span>ПЕРЕДАЛ ${rumor.reportedByName || 'СВИДЕТЕЛЬ'}${rumor.originalSourceName && rumor.originalSourceName !== rumor.reportedByName ? ' · ИСТОЧНИК: ' + rumor.originalSourceName : ''} · ${{ unverified: 'НЕПРОВЕРЕНО', corroborated: 'ПОДТВЕРЖДЕНО', disputed: 'ОСПАРИВАЕТСЯ' }[rumor.status] || 'НЕПРОВЕРЕНО'}</span>
                                         <p>${rumor.text}</p>
                                     </div>
                                 `).join('')}
