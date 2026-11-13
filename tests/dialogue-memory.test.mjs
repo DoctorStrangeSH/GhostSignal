@@ -833,3 +833,38 @@ test("Kane's partial alibi admission stays hidden without Thomas's testimony", (
     assert.equal(engine.getAvailableAnswers().find(item => item.nextNode === "partial_return")?.isAvailable, false);
     assert.equal(inventory.hasInsight("full_confession_kane"), false);
 });
+
+test("Kane's opening follows the latest testimony instead of repeating a superseded alibi", () => {
+    const { engine, inventory, memory, context } = createDialogueHarness();
+    assert.equal(engine.startDialogue("dialogue-rival-full"), true);
+    assert.equal(engine.currentNode.id, "confrontation");
+
+    inventory.insights.push("waiter_saw_poisoning");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "partial_return").index);
+
+    const versionCount = memory.getMemory("business_rival").claims.length;
+    assert.equal(engine.startDialogue("dialogue-rival-full"), true);
+    assert.equal(engine.currentNode.id, "revised_opening");
+    assert.match(engine.currentNode.text, /исправил своё алиби/);
+    assert.equal(memory.getMemory("business_rival").claims.length, versionCount);
+    assert.equal(memory.getMemory("business_rival").claims.find(item => item.id === "kane-left-before-poisoning").status, "superseded");
+
+    context.savedMemory = memory.toJSON();
+    const loaded = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    engine.setMemoryService(loaded);
+    assert.equal(engine.startDialogue("dialogue-rival-full"), true);
+    assert.equal(engine.currentNode.id, "revised_opening");
+
+    inventory.insights.push("full_confession_kane");
+    assert.equal(engine.startDialogue("dialogue-rival-full"), true);
+    assert.equal(engine.currentNode.id, "post_confession_opening");
+    assert.match(engine.currentNode.text, /подписал признание/);
+    assert.equal(engine.selectAnswer(0).id, "post_confession_end");
+});
+
+test("dialogues without entry rules retain their original opening", () => {
+    const { engine } = createDialogueHarness();
+    assert.equal(engine.startDialogue("dialogue-journalist"), true);
+    assert.equal(engine.currentNode.id, "greeting");
+});
