@@ -360,3 +360,24 @@ npm run build
 
 - Важная нарративная защита: Joe/Elias catch-up (case-001) и Lora checks Joe (case-002) имеют maxOccurrences: 1. Иначе повторные взаимодействия могли бы завершить maintain_bar_community без обоих сюжетных этапов, после чего Джо упоминал бы поддержку Лоры, которой ещё не было.
 - Последний подтверждённый CI на HEAD 88f366a: 100 JS, 118/118 tests, validator 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450190072) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450197252).
+
+## Cooperation readiness и динамические показания — 2026-11-13
+
+- Последний кодовый HEAD: 7f450b2588bb151dbd15621643a776afe7589959.
+- NPCMemoryService v10: cooperation 0–100 и cooperationHistory per case. getCooperationState(npcId, profile) возвращает score/state/label; getPsychologicalState добавляет только state/label.
+- Итоговый score учитывает текущую готовность, текущее доверие/давление и долговременное доверие. cooperationResistance и cooperationThresholds — индивидуальные настройки NPC.
+- Ответы могут задавать cooperationDelta; promises поддерживают fulfilledCooperationDelta и brokenCooperationDelta; legacy promises мигрируют к +10/-18. Исходы обвинений также меняют готовность.
+- NPCRelationshipService normalizes fromCooperationDelta / toCooperationDelta и применяет их после успешного автономного взаимодействия. Поддержка и примирение Джо с Томасом — одноразовые события; поддержка Евы/Лоры также может повышать готовность близких/друзей.
+- DialogueEngine conditions: cooperation_at_least:N, cooperation_below:N, cooperation_state:<state>, has_claim:<id>, has_claim_topic:<topic>. hiddenWhenUnavailable:true скрывает конкретный ответ, пока условие ложно.
+- NPCManager удаляет raw cooperation score/history из публичного memory payload; NPCListUI показывает только текстовый статус сотрудничества.
+- Томас: после официальных показаний детектив может снова запугать его. При следующем разговоре, если готовность упала до reluctant, появляется скрытая до выполнения условий опция пересмотреть показания. Узел создаёт claim с revisesActiveClaimTopic:true; recordClaim разрешает такую ревизию только при ровно одном активном claim на тему. Предыдущая версия сохраняется как superseded; новая становится active. Никаких evidence/insight не выдаётся.
+- Валидатор проверяет cooperation profile/ranges, relationship deltas, answer deltas, promise deltas и ссылки на claims из составных условий.
+- CI на HEAD 7f450b2: 100 JS, 123/123 tests, 0 fail; validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453446694) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453456859).
+
+### Следующий шаг
+1. Провести ручной прогон: Томас даёт официальное показание → детектив угрожает → повторный разговор → новая версия показания; проверить claim history и отсутствие автоматического evidence/insight.
+2. Повторить сценарий при поддержке Джо и проверить, что поддержка реально меняет порог доступности ветки.
+3. Проверить save/load до обещания, после обещания, после угрозы и после пересмотра показаний.
+4. Добавить похожую механику другим NPC только при наличии сюжетной причины; не превращать любое изменение отношений в автоматическую смену фактов.
+
+PR #1 остаётся открытым; main не менялась и не сливалась.
