@@ -133,6 +133,7 @@ class App {
         this.dialogueEngine.setMemoryService(this.npcMemoryService);
         this.dialogueEngine.setMotivationService(this.npcMotivationService);
         this.dialogueEngine.setSocialNetwork(this.npcSocialNetwork);
+        this.dialogueEngine.setRelationshipService(this.npcRelationshipService);
         this.callInterface = new CallInterface(); this.callInterface.setDialogueEngine(this.dialogueEngine);
 
         this.ttsEngine = new TTSEngine();
