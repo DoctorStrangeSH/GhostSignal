@@ -6,7 +6,7 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 9;
+        this.version = 10;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.people = this._clone(snapshot?.people || {});
@@ -140,6 +140,8 @@ class NPCMemoryService {
             caseMemory[npcId] = {
                 trust: this._ensurePerson(npcId)?.trust ?? 50,
                 pressure: 0,
+                cooperation: 50,
+                cooperationHistory: [],
                 conversations: 0,
                 dialogueHistory: [],
                 presentedEvidence: [],
@@ -153,6 +155,8 @@ class NPCMemoryService {
         const memory = caseMemory[npcId];
         memory.trust = Number.isFinite(memory.trust) ? Math.max(0, Math.min(100, memory.trust)) : 50;
         memory.pressure = Number.isFinite(memory.pressure) ? Math.max(0, Math.min(100, memory.pressure)) : 0;
+        memory.cooperation = Number.isFinite(memory.cooperation) ? Math.max(0, Math.min(100, memory.cooperation)) : 50;
+        memory.cooperationHistory = Array.isArray(memory.cooperationHistory) ? memory.cooperationHistory : [];
         memory.conversations = Number.isInteger(memory.conversations) ? Math.max(0, memory.conversations) : 0;
         memory.dialogueHistory = Array.isArray(memory.dialogueHistory) ? memory.dialogueHistory : [];
         memory.presentedEvidence = Array.isArray(memory.presentedEvidence) ? memory.presentedEvidence : [];
@@ -246,8 +250,13 @@ class NPCMemoryService {
             answerText: answer.text || '',
             tone: answer.tone || 'neutral',
             trustDelta,
-            pressureDelta
+            pressureDelta,
+            cooperationDelta: Number.isFinite(answer.cooperationDelta)
+                ? Math.max(-25, Math.min(25, answer.cooperationDelta)) : 0
         });
+        if (Number.isFinite(answer.cooperationDelta) && answer.cooperationDelta !== 0) {
+            this.adjustCooperation(npcId, answer.cooperationDelta, 'player_answer:' + (answer.tone || 'neutral'));
+        }
         const tone = answer.tone || 'neutral';
         const memorableTones = {
             reassuring: { importance: 3, tag: 'player_reassured', sentiment: 'positive' },
@@ -301,9 +310,19 @@ class NPCMemoryService {
         if (memory.claims.some(existing => existing.id === claim.id)) {
             return { added: false, reason: 'duplicate_claim', contradictions: this.getContradictions() };
         }
+        const activeTopicClaims = claim.revisesActiveClaimTopic === true
+            ? memory.claims.filter(existing => existing.topic === claim.topic && existing.status !== 'superseded')
+            : [];
+        if (claim.revisesActiveClaimTopic === true && activeTopicClaims.length !== 1) {
+            return {
+                added: false,
+                reason: activeTopicClaims.length ? 'revision_source_ambiguous' : 'active_claim_not_found',
+                contradictions: this.getContradictions()
+            };
+        }
         const previous = claim.revisesClaimId
             ? memory.claims.find(existing => existing.id === claim.revisesClaimId)
-            : null;
+            : activeTopicClaims[0] || null;
         if (claim.revisesClaimId && !previous) {
             return { added: false, reason: 'revision_source_not_found', contradictions: this.getContradictions() };
         }
@@ -559,6 +578,19 @@ class NPCMemoryService {
         return this.getStatements().find(statement => statement.id === statementId) || null;
     }
 
+    hasClaim(npcId, claimId) {
+        return Boolean(this.cases[this.currentCaseId]?.[npcId]?.claims?.some(claim =>
+            claim.id === claimId && claim.status !== 'superseded'
+        ));
+    }
+
+    hasClaimTopic(npcId, topic) {
+        if (!npcId || !topic) return false;
+        return Boolean(this.cases[this.currentCaseId]?.[npcId]?.claims?.some(claim =>
+            claim.topic === topic && claim.status !== 'superseded'
+        ));
+    }
+
     getClaimHistory(npcId, claimId) {
         const claims = this.cases[this.currentCaseId]?.[npcId]?.claims || [];
         let current = claims.find(claim => claim.id === claimId);
@@ -737,6 +769,61 @@ class NPCMemoryService {
         return this.cases[this.currentCaseId]?.[npcId]?.pressure ?? 0;
     }
 
+    _adjustCooperationMemory(memory, npcId, delta, reason = 'unspecified') {
+        if (!memory || !Number.isFinite(delta)) return null;
+        const before = Number.isFinite(memory.cooperation) ? Math.max(0, Math.min(100, memory.cooperation)) : 50;
+        const after = Math.max(0, Math.min(100, before + Math.max(-25, Math.min(25, delta))));
+        memory.cooperation = after;
+        memory.cooperationHistory = Array.isArray(memory.cooperationHistory) ? memory.cooperationHistory : [];
+        if (after === before) return after;
+        const entry = { delta: after - before, before, after, reason: String(reason || 'unspecified').slice(0, 100), at: Date.now() };
+        memory.cooperationHistory.push(entry);
+        if (memory.cooperationHistory.length > 40) memory.cooperationHistory.splice(0, memory.cooperationHistory.length - 40);
+        this._append(memory, { type: 'cooperation_changed', ...entry });
+        return after;
+    }
+
+    adjustCooperation(npcId, delta, reason = 'unspecified') {
+        const memory = this._ensureNPC(npcId);
+        return this._adjustCooperationMemory(memory, npcId, delta, reason);
+    }
+
+    getCooperationState(npcId, profile = {}) {
+        if (!npcId || !this.currentCaseId) return null;
+        const memory = this.cases[this.currentCaseId]?.[npcId] || {};
+        const base = Number.isFinite(memory.cooperation) ? Math.max(0, Math.min(100, memory.cooperation)) : 50;
+        const trust = Number.isFinite(memory.trust) ? Math.max(0, Math.min(100, memory.trust)) : 50;
+        const pressure = Number.isFinite(memory.pressure) ? Math.max(0, Math.min(100, memory.pressure)) : 0;
+        const longTermTrust = this.people?.[npcId]?.trust ?? 50;
+        const resistance = Number.isFinite(profile.cooperationResistance)
+            ? Math.max(0, Math.min(1, profile.cooperationResistance)) : 0.35;
+        const score = Math.max(0, Math.min(100,
+            base + (trust - 50) * 0.2 + (longTermTrust - 50) * 0.1 - pressure * (1 - resistance) * 0.35
+        ));
+        const thresholds = profile.cooperationThresholds || {};
+        const withdrawn = Number.isFinite(thresholds.withdrawn) ? thresholds.withdrawn : 20;
+        const reluctant = Number.isFinite(thresholds.reluctant) ? thresholds.reluctant : 40;
+        const guarded = Number.isFinite(thresholds.guarded) ? thresholds.guarded : 60;
+        const willing = Number.isFinite(thresholds.willing) ? thresholds.willing : 80;
+        const state = score <= withdrawn ? 'withdrawn'
+            : score <= reluctant ? 'reluctant'
+            : score <= guarded ? 'guarded'
+            : score <= willing ? 'willing' : 'ready';
+        const labels = {
+            withdrawn: 'Отказывается сотрудничать',
+            reluctant: 'Неохотно сотрудничает',
+            guarded: 'Осторожно готов говорить',
+            willing: 'Готов сотрудничать',
+            ready: 'Открыт к сотрудничеству'
+        };
+        return {
+            score: Math.round(score * 10) / 10,
+            state,
+            label: profile.cooperationLabels?.[state] || labels[state],
+            pressureResistance: resistance
+        };
+    }
+
     hasExposedLie(npcId, claimId) {
         return this.cases[this.currentCaseId]?.[npcId]?.liesExposed?.includes(claimId) || false;
     }
@@ -771,7 +858,11 @@ class NPCMemoryService {
             trust: memory.trust,
             pressure: memory.pressure,
             pressureThreshold,
-            liesExposed: memory.liesExposed.length
+            liesExposed: memory.liesExposed.length,
+            cooperation: (() => {
+                const state = this.getCooperationState(npcId, profile);
+                return state ? { state: state.state, label: state.label } : null;
+            })()
         };
     }
 
@@ -825,13 +916,14 @@ class NPCMemoryService {
         accusation.resolvedAt = Date.now();
         accusation.resolutionReason = String(reason || '').slice(0, 500);
         const effects = {
-            false: { trust: -10, pressure: 8 },
-            retracted: { trust: -3, pressure: 2 },
-            substantiated: { trust: 1, pressure: -2 }
+            false: { trust: -10, pressure: 8, cooperation: -18 },
+            retracted: { trust: -3, pressure: 2, cooperation: -8 },
+            substantiated: { trust: 1, pressure: -2, cooperation: 3 }
         }[outcome];
         const lastingEffects = { false: -5, retracted: -2, substantiated: 0.5 };
         memory.trust = Math.max(0, Math.min(100, memory.trust + effects.trust));
         memory.pressure = Math.max(0, Math.min(100, memory.pressure + effects.pressure));
+        this._adjustCooperationMemory(memory, npcId, effects.cooperation, 'accusation:' + outcome);
         this._append(memory, { type: 'accusation_resolved', accusationId, outcome, reason: accusation.resolutionReason, trustDelta: effects.trust, pressureDelta: effects.pressure });
         this._recordLongTermMemory(npcId, {
             type: 'accusation_resolved',
@@ -869,6 +961,8 @@ class NPCMemoryService {
             fulfillment: this._clone(fulfillment),
             fulfilledTrustDelta: Number.isFinite(promise.fulfilledTrustDelta) ? promise.fulfilledTrustDelta : 3,
             brokenTrustDelta: Number.isFinite(promise.brokenTrustDelta) ? promise.brokenTrustDelta : -6,
+            fulfilledCooperationDelta: Number.isFinite(promise.fulfilledCooperationDelta) ? promise.fulfilledCooperationDelta : 10,
+            brokenCooperationDelta: Number.isFinite(promise.brokenCooperationDelta) ? promise.brokenCooperationDelta : -18,
             status: 'pending',
             createdAt: Date.now(),
             resolvedAt: null,
@@ -909,6 +1003,7 @@ class NPCMemoryService {
                 const delta = Number.isFinite(promise.fulfilledTrustDelta) ? promise.fulfilledTrustDelta : 3;
                 memory.trust = Math.max(0, Math.min(100, (Number.isFinite(memory.trust) ? memory.trust : 50) + delta));
                 memory.pressure = Math.max(0, Math.min(100, (Number.isFinite(memory.pressure) ? memory.pressure : 0) - 2));
+                this._adjustCooperationMemory(memory, npcId, promise.fulfilledCooperationDelta, 'promise_fulfilled:' + promise.id);
                 this._append(memory, { type: 'promise_fulfilled', promiseId: promise.id, trustDelta: delta });
                 this._recordLongTermMemory(npcId, {
                     type: 'promise_kept', summary: promise.text, sentiment: 'positive', importance: 4,
@@ -941,6 +1036,11 @@ class NPCMemoryService {
                 promise.resolutionEvent = { type: 'case_' + outcome, caseId };
                 memory.trust = Math.max(0, Math.min(100, (Number.isFinite(memory.trust) ? memory.trust : 50) + delta));
                 memory.pressure = Math.max(0, Math.min(100, (Number.isFinite(memory.pressure) ? memory.pressure : 0) + (fulfilledByOutcome ? -2 : 5)));
+                this._adjustCooperationMemory(
+                    memory, npcId,
+                    fulfilledByOutcome ? promise.fulfilledCooperationDelta : promise.brokenCooperationDelta,
+                    (fulfilledByOutcome ? 'promise_fulfilled:' : 'promise_broken:') + promise.id
+                );
                 this._append(memory, {
                     type: fulfilledByOutcome ? 'promise_fulfilled' : 'promise_broken',
                     promiseId: promise.id,
