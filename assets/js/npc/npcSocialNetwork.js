@@ -11,6 +11,7 @@ class NPCSocialNetwork {
         this.npcManager = npcManager;
         this.gameTime = gameTime;
         this.motivationService = null;
+        this.relationshipService = null;
         this.caseConfig = null;
     }
 
@@ -25,6 +26,23 @@ class NPCSocialNetwork {
         this.motivationService = service || null;
         this.motivationService?.setMemoryService(this.memoryService);
         return Boolean(this.motivationService);
+    }
+
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
+        this.relationshipService?.setSocialNetwork(this);
+        return Boolean(this.relationshipService);
+    }
+
+    recordRelationshipEvent(type, details = {}) {
+        const allowed = ['relationship_support', 'relationship_conflict', 'relationship_reconciled', 'relationship_avoidance'];
+        if (!allowed.includes(type) || !details.relationshipId || !details.fromNpcId || !details.toNpcId) return null;
+        return this._recordEvent(type, {
+            ...details,
+            reportId: 'relationship:' + details.relationshipId,
+            reportKind: 'relationship',
+            path: [details.fromNpcId, details.toNpcId]
+        });
     }
 
     setCase(caseData) {
@@ -128,7 +146,12 @@ class NPCSocialNetwork {
             pressureScore: Number.isFinite(details.pressureScore) ? details.pressureScore : null,
             reason: details.reason || null,
             path: Array.isArray(details.path) ? [...details.path] : [],
-            dueAt: Number.isFinite(details.dueAt) ? details.dueAt : null
+            dueAt: Number.isFinite(details.dueAt) ? details.dueAt : null,
+            relationshipId: details.relationshipId || null,
+            trustBefore: Number.isFinite(details.trustBefore) ? details.trustBefore : null,
+            trustAfter: Number.isFinite(details.trustAfter) ? details.trustAfter : null,
+            statusBefore: details.statusBefore || null,
+            statusAfter: details.statusAfter || null
         };
         state.eventLog.push(event);
         if (state.eventLog.length > 300) {
@@ -181,6 +204,10 @@ class NPCSocialNetwork {
                         pressureScore: motiveDecision?.pressure ?? null,
                         summary: `Сведения затрагивали ${this._name(report.targetNpcId)}; передача остановлена из-за защитной связи.`
                     });
+                    this.relationshipService?.recordInteraction(fromNpcId, report.targetNpcId, 'protection', {
+                        trustDelta: 2, reciprocalTrustDelta: 1, channel: edge.channel,
+                        summary: `${this._name(fromNpcId)} сохранил сведения, чтобы защитить ${this._name(report.targetNpcId)}.`
+                    });
                 }
                 continue;
             }
@@ -201,6 +228,10 @@ class NPCSocialNetwork {
                         loyaltyScore: motiveDecision.score,
                         pressureScore: motiveDecision.pressure,
                         summary: `Защитная связь с ${this._name(report.targetNpcId)} не выдержала давления.`
+                    });
+                    this.relationshipService?.recordInteraction(fromNpcId, report.targetNpcId, 'betrayal', {
+                        trustDelta: -20, reciprocalTrustDelta: -20, channel: edge.channel,
+                        summary: `${this._name(fromNpcId)} передал сведения, несмотря на прежнюю защитную связь с ${this._name(report.targetNpcId)}.`
                     });
                 }
             }
@@ -335,6 +366,10 @@ class NPCSocialNetwork {
             });
             if (!received.received) continue;
             delivered++;
+            this.relationshipService?.recordInteraction(item.fromNpcId, item.toNpcId, 'shared_information', {
+                trustDelta: 1, reciprocalTrustDelta: 1, channel: item.channel,
+                summary: `${this._name(item.fromNpcId)} поделился сведениями с ${this._name(item.toNpcId)}.`
+            });
             if (item.canForward && item.hops < this.caseConfig.maxHops) {
                 this._queueOutgoing(item.toNpcId, item.report, item.sourceEvent, {
                     originalSourceNpcId: item.originalSourceNpcId,
@@ -350,6 +385,7 @@ class NPCSocialNetwork {
 
     getRelationshipsForNPC(npcId) {
         if (!npcId || !this.caseConfig) return [];
+        if (this.relationshipService) return this.relationshipService.getKnownRelationshipsForNPC(npcId);
         const links = new Map();
         for (const edge of this.caseConfig.edges.filter(item => item.from === npcId || item.to === npcId)) {
             const otherNpcId = edge.from === npcId ? edge.to : edge.from;
