@@ -44,12 +44,84 @@ const CASE_002 = {
         edges: [
             { id: "waiter-to-bartender", from: "waiter", to: "bartender", relationship: "coworkers", label: "Коллеги по бару", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
             { id: "bartender-to-waiter", from: "bartender", to: "waiter", relationship: "coworkers", label: "Коллеги по бару", trust: 70, channel: "in_person", delayMinutes: 20, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: false },
-            { id: "bartender-to-journalist", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 40, minTrustToShare: 50, shareTypes: ["detective_behavior"], protectsNpcIds: ["waiter"], withholdIfTargetProtected: true, canForward: true },
+            { id: "bartender-to-journalist", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 40, minTrustToShare: 50, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: true },
             { id: "journalist-to-bartender", from: "journalist", to: "bartender", relationship: "source", label: "Источник в баре", trust: 55, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: false },
             { id: "eva-to-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 15, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
             { id: "anna-to-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: false },
-            { id: "eva-protects-anna-from-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 30, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: ["ex_wife"], withholdIfTargetProtected: true, canForward: false }
+            { id: "eva-protects-anna-from-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 30, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: false }
         ]
+    },
+
+    // === МОТИВЫ И ЛОЯЛЬНОСТЬ NPC ===
+    // Скрытая авторская модель: не показывается игроку напрямую.
+    // Давление снижает эффективную лояльность с учётом личных приоритетов персонажа.
+    npcMotivations: {
+        bartender: {
+            motives: [
+                { id: "protect_staff", weight: 85, pressureResistance: 0.55 },
+                { id: "keep_bar_open", weight: 65, pressureResistance: 0.20 }
+            ],
+            loyalties: [
+                { npcId: "waiter", strength: 86, protectThreshold: 62, appliesTo: ["detective_behavior"], motiveId: "protect_staff", reason: "protecting_colleague" }
+            ]
+        },
+        woman_in_red: {
+            motives: [
+                { id: "protect_sister", weight: 100, pressureResistance: 0.72 },
+                { id: "avoid_public_scandal", weight: 35, pressureResistance: 0.12 }
+            ],
+            loyalties: [
+                { npcId: "ex_wife", strength: 96, protectThreshold: 60, appliesTo: ["detective_behavior"], motiveId: "protect_sister", reason: "protecting_sister" }
+            ]
+        },
+        ex_wife: {
+            motives: [
+                { id: "protect_family", weight: 75, pressureResistance: 0.58 },
+                { id: "regain_dignity", weight: 55, pressureResistance: 0.28 }
+            ],
+            loyalties: [
+                { npcId: "woman_in_red", strength: 78, protectThreshold: 56, appliesTo: ["detective_behavior"], motiveId: "protect_family", reason: "protecting_sister" }
+            ]
+        },
+        journalist: {
+            motives: [
+                { id: "publish_exclusive", weight: 90, pressureResistance: 0.18 },
+                { id: "protect_sources", weight: 65, pressureResistance: 0.62 }
+            ],
+            loyalties: [
+                { npcId: "bartender", strength: 72, protectThreshold: 54, appliesTo: ["detective_behavior"], motiveId: "protect_sources", reason: "protecting_source" }
+            ]
+        },
+        waiter: {
+            motives: [
+                { id: "keep_job", weight: 90, pressureResistance: 0.18 },
+                { id: "repay_bartender", weight: 55, pressureResistance: 0.52 }
+            ],
+            loyalties: [
+                { npcId: "bartender", strength: 68, protectThreshold: 52, appliesTo: ["detective_behavior"], motiveId: "repay_bartender", reason: "protecting_employer" }
+            ]
+        },
+        business_rival: {
+            motives: [
+                { id: "protect_reputation", weight: 90, pressureResistance: 0.24 },
+                { id: "win_business_war", weight: 80, pressureResistance: 0.10 }
+            ],
+            loyalties: []
+        },
+        pharmacist: {
+            motives: [
+                { id: "protect_license", weight: 85, pressureResistance: 0.16 },
+                { id: "professional_conscience", weight: 70, pressureResistance: 0.68 }
+            ],
+            loyalties: []
+        },
+        sergeant: {
+            motives: [
+                { id: "protect_investigation", weight: 85, pressureResistance: 0.70 },
+                { id: "avoid_department_scandal", weight: 55, pressureResistance: 0.22 }
+            ],
+            loyalties: []
+        }
     },
 
     // === СОБЫТИЯ ===
