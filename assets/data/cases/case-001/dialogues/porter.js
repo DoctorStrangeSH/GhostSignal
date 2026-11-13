@@ -199,6 +199,7 @@ const DIALOGUE_PORTER = {
             porter_defends: {
                 speaker: "npc",
                 text: "Вы не понимаете. Мэри... она как дочь мне. Она не могла. Просто не могла.",
+                revealRelationships: ["porter-housekeeper"],
                 mood: "sad",
                 innerThought: "Эмоциональная привязанность. Он может покрывать её.",
                 givesInsight: "porter_protects_mary",
