@@ -700,6 +700,37 @@ class NPCMemoryService {
         return changes;
     }
 
+    getCaseSocialSummary(caseId = this.currentCaseId) {
+        const caseMemory = this.cases[caseId];
+        if (!caseMemory) return { caseId, npcs: {} };
+        const npcs = {};
+        for (const [npcId, memory] of Object.entries(caseMemory)) {
+            if (npcId === '__journal') continue;
+            const promises = Array.isArray(memory.promises) ? memory.promises : [];
+            const rumors = Array.isArray(memory.rumors) ? memory.rumors : [];
+            const claims = Array.isArray(memory.claims) ? memory.claims : [];
+            npcs[npcId] = {
+                trust: Number.isFinite(memory.trust) ? Math.max(0, Math.min(100, memory.trust)) : 50,
+                promises: {
+                    pending: promises.filter(item => item.status === 'pending').length,
+                    fulfilled: promises.filter(item => item.status === 'fulfilled').length,
+                    broken: promises.filter(item => item.status === 'broken').length
+                },
+                rumors: {
+                    unverified: rumors.filter(item => item.status === 'unverified').length,
+                    corroborated: rumors.filter(item => item.status === 'corroborated').length,
+                    disputed: rumors.filter(item => item.status === 'disputed').length
+                },
+                claims: {
+                    active: claims.filter(item => item.status !== 'superseded').length,
+                    superseded: claims.filter(item => item.status === 'superseded').length
+                },
+                liesExposed: Array.isArray(memory.liesExposed) ? memory.liesExposed.length : 0
+            };
+        }
+        return { caseId, npcs };
+    }
+
     toJSON() {
         return {
             version: this.version,

@@ -429,6 +429,23 @@ test("NPCMemoryService migrates v6 claims as active version one", () => {
     assert.equal(claim.revisionOf, null);
 });
 
+test("NPCMemoryService summarizes case-scoped trust, promises, rumors and testimony for endings", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    memory.adjustTrust("waiter", -20);
+    memory.recordPromise("waiter", { id: "protect-family", text: "Защитить семью", fulfillment: { type: "insight_gained", insightId: "full_confession_kane" } });
+    memory.recordPromise("bartender", { id: "deliver-recording", text: "Передать запись", fulfillment: { type: "item_acquired", itemId: "recording" } });
+    memory.recordClaim("waiter", { id: "statement-v1", topic: "topic", value: "first" });
+    memory.recordClaim("waiter", { id: "statement-v2", revisesClaimId: "statement-v1", topic: "topic", value: "second" });
+    const summary = memory.getCaseSocialSummary("case-002");
+    assert.equal(summary.npcs.waiter.trust, 30);
+    assert.equal(summary.npcs.waiter.promises.pending, 1);
+    assert.equal(summary.npcs.waiter.claims.active, 1);
+    assert.equal(summary.npcs.waiter.claims.superseded, 1);
+    assert.equal(summary.npcs.bartender.promises.pending, 1);
+    assert.deepEqual(Object.keys(memory.getCaseSocialSummary("case-001").npcs), []);
+});
+
 test("NPCMemoryService safely accepts saves created before NPC memory existed", () => {
     const NPCMemoryService = loadService();
     const memory = NPCMemoryService.fromJSON(null, "case-001");

@@ -196,7 +196,8 @@ class EventController {
                 const ending = app.alternateEndings?.determineEnding(
                     caseData,
                     app.inventory,
-                    app.caseManager?.evidenceFound || 0
+                    app.caseManager?.evidenceFound || 0,
+                    { npcMemoryService: app.npcMemoryService }
                 );
                 if (ending) {
                     events.emit('ending:determined', { caseId, ending });
