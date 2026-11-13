@@ -172,6 +172,10 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 !/^familiarity_at_least:[0-9]+([.][0-9]+)?$/.test(answer.condition)) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid familiarity condition.");
             }
+            if (answer.condition?.startsWith("long_term_disposition:") &&
+                !["unfamiliar", "warm", "open", "cautious", "guarded", "hostile"].includes(answer.condition.slice("long_term_disposition:".length))) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid long-term disposition condition.");
+            }
             if (answer.nextNode && !nodes[answer.nextNode]) {
                 errors.push("Dialogue " + id + "/" + nodeId + " points to missing node: " + answer.nextNode);
             }
