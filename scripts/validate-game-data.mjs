@@ -381,6 +381,23 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
             }
         }
         const conditions = rule?.conditions && typeof rule.conditions === "object" ? rule.conditions : rule;
+        if (conditions?.requiresActionId !== undefined) {
+            const prerequisite = (relationshipConfig.autonomousInteractions || []).find(candidate =>
+                candidate.id === conditions.requiresActionId && candidate.fromNpcId === rule.fromNpcId
+            );
+            if (!prerequisite || prerequisite.id === rule.id) {
+                errors.push("Case " + id + " NPC action has invalid prerequisite: " + rule.id);
+            } else if (conditions.requiresInvestigationOutcome !== undefined &&
+                (!prerequisite.investigatesRumorId || !["corroborated", "disputed", "no_independent_evidence"].includes(conditions.requiresInvestigationOutcome))) {
+                errors.push("Case " + id + " NPC action has invalid prerequisite investigation outcome: " + rule.id);
+            }
+            const age = conditions.requiresActionAgeMinutes;
+            if (age !== undefined && (!Number.isFinite(age) || age < 0 || age > 10080)) {
+                errors.push("Case " + id + " NPC action has invalid prerequisite delay: " + rule.id);
+            }
+        } else if (conditions?.requiresInvestigationOutcome !== undefined || conditions?.requiresActionAgeMinutes !== undefined) {
+            errors.push("Case " + id + " NPC action has an orphaned prerequisite condition: " + rule.id);
+        }
         if (rule?.investigatesRumorId !== undefined &&
             (typeof rule.investigatesRumorId !== "string" || rule.investigatesRumorId !== conditions?.fromRumorId)) {
             errors.push("Case " + id + " NPC investigation must reference its own rumor condition: " + rule.id);
