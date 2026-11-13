@@ -455,3 +455,8 @@ PR #1 остаётся открытым; main не менялась и не сл
 ## Динамические вступления NPC (Kane stateful opening)
 
 Добавлен `tree.entryRules: [{ condition, nodeId }]` в `DialogueEngine.startDialogue` с fallback на `tree.start`. Авторство `case-002/dialogues/rival.js`: сначала `hasInsight:full_confession_kane → post_confession_opening`, затем `has_claim:kane-admits-return-to-bar → revised_opening`, иначе `confrontation`. Валидатор теперь учитывает альтернативные стартовые узлы при проверке достижимости и проверяет корректность `entryRules`. Тесты охватывают первое интервью, ревизию с восстановлением сохранения, полный финальный этап и совместимость старых диалогов. Проверить актуальные GitHub Actions; PR #1 не сливать без указания пользователя.
+
+
+## Следующий этап: контекстные вступления + исправление доказательственной цепочки
+
+`DialogueEngine` теперь поддерживает `not:<condition>` и `case_has_claim:<npcId>:<claimId>` (записанное в деле активное свидетельство). В `case-002/dialogues/rival.js` полное признание через Томаса требует отсутствия его версии v2; при v2 можно использовать независимые материалы Лоры (`hard_evidence_kane`) и улику Джо (`kane_stole_vial`). У Томаса, Анны и Лоры появились `tree.entryRules` с актуальными вступлениями. Тесты проверяют блокировку слабого пути и альтернативу. CI сначала обнаружил регрессию: при новом вступлении Томаса пропадала возможность пересмотреть показания после запугивания. Исправлено в `b8775647`; [CI успешно](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43482394677). Новая версия `waiter-kane-at-poisoning-reconsidered` также ведёт к собственному вступлению. Сохранить main, не сливать PR #1 без разрешения владельца.
