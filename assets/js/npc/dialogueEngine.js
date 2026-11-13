@@ -429,6 +429,18 @@ class DialogueEngine {
             const disposition = this.memoryService?.getLongTermProfile(npcId)?.disposition;
             return disposition === conditionStr.slice('long_term_disposition:'.length);
         }
+        const goalProgressCondition = conditionStr.match(/^npc_goal_progress_at_least:([a-z0-9_:-]{1,64}):([0-9]+)$/i);
+        if (goalProgressCondition) {
+            const [, goalId, rawProgress] = goalProgressCondition;
+            const threshold = Number(rawProgress);
+            const progress = this.relationshipService?.getGoalProgress(npcId, goalId) ?? 0;
+            return Number.isFinite(threshold) && progress >= threshold;
+        }
+        if (conditionStr.startsWith('npc_goal_completed:')) {
+            return Boolean(this.relationshipService?.isGoalCompleted(
+                npcId, conditionStr.slice('npc_goal_completed:'.length)
+            ));
+        }
 
         if (conditionStr.startsWith('motive:')) {
             return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
