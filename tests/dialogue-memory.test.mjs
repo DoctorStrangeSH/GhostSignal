@@ -743,3 +743,39 @@ test("Eva can describe her own protective action only after it happened", () => 
     assert.equal(engine.selectAnswer(answer.index).id, "eva_protected_anna");
     assert.match(engine.currentNode.text, /позвонила ей снова/i);
 });
+
+test("Kane cannot confess through a casual conversation without corroborating clues", () => {
+    const { engine, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-rival-full");
+    const whyAnswer = engine.getAvailableAnswers().find(item => item.nextNode === "why");
+    assert.equal(whyAnswer?.isAvailable, true);
+    engine.selectAnswer(whyAnswer.index);
+    assert.equal(engine.currentNode.id, "why");
+
+    const confession = engine.getAvailableAnswers().find(item => item.nextNode === "confession");
+    assert.equal(confession?.isAvailable, false);
+    assert.equal(engine.selectAnswer(confession.index).error, "Условие не выполнено");
+    assert.equal(inventory.hasInsight("full_confession_kane"), false);
+    const pause = engine.getAvailableAnswers().find(item => item.nextNode === "interview_paused");
+    assert.equal(pause?.isAvailable, true);
+    assert.equal(engine.selectAnswer(pause.index).id, "interview_paused");
+
+    inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    const withEvidence = engine.getAvailableAnswers().find(item => item.nextNode === "confession");
+    assert.equal(withEvidence?.isAvailable, true);
+    assert.equal(engine.selectAnswer(withEvidence.index).id, "confession");
+});
+
+test("Kane's vial confrontation leads to evidence assessment, not an instant detailed confession", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "caught_in_lie").index);
+    const vial = engine.getAvailableAnswers().find(item =>
+        item.text.startsWith("Тогда объясните, что вы сделали с пузырьком.")
+    );
+    assert.equal(vial?.isAvailable, true);
+    assert.equal(engine.selectAnswer(vial.index).id, "why");
+});
