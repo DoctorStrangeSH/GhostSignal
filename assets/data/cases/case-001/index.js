@@ -37,6 +37,53 @@ const CASE_001 = {
         "coroner"
     ],
     
+    // === ЖИВЫЕ ОТНОШЕНИЯ NPC ===
+    // Эти связи скрыты от детектива, пока не подтверждены в разговоре или уликой.
+    npcRelationships: {
+        bonds: [
+            { id: "porter-housekeeper", fromNpcId: "porter", toNpcId: "housekeeper", relationship: "protective_colleagues", label: "Коллеги, почти семья", trust: 82, reciprocal: true },
+            { id: "porter-bartender", fromNpcId: "porter", toNpcId: "bartender", relationship: "neighborhood_friends", label: "Давние знакомые", trust: 64, reciprocal: true },
+            { id: "elias-bartender", fromNpcId: "elias", toNpcId: "bartender", relationship: "regulars", label: "Знакомые из бара", trust: 61, reciprocal: true }
+        ],
+        autonomousInteractions: [
+            {
+                id: "porter-checks-mary", relationshipId: "porter-housekeeper",
+                fromNpcId: "porter", toNpcId: "housekeeper", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 90, everyMinutes: 240,
+                minTrust: 55, fromPressureBelow: 75, toPressureBelow: 75,
+                trustDelta: 2, reciprocalTrustDelta: 1,
+                summary: "Фрэнк проверил, как Мэри справляется со сменой."
+            },
+            {
+                id: "mary-snaps-at-frank", relationshipId: "porter-housekeeper",
+                fromNpcId: "housekeeper", toNpcId: "porter", interaction: "conflict",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 180, everyMinutes: 240,
+                fromPressureAtLeast: 45,
+                trustDelta: -5, reciprocalTrustDelta: -3,
+                summary: "Мэри резко ответила Фрэнку, когда тревога взяла верх."
+            },
+            {
+                id: "frank-reconciles-mary", relationshipId: "porter-housekeeper",
+                fromNpcId: "porter", toNpcId: "housekeeper", interaction: "reconcile",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 240, everyMinutes: 240,
+                maxTrust: 58, fromPressureBelow: 35, toPressureBelow: 35,
+                trustDelta: 8, reciprocalTrustDelta: 6,
+                summary: "Фрэнк спокойно поговорил с Мэри и попытался вернуть доверие."
+            },
+            {
+                id: "joe-and-elias-catch-up", relationshipId: "elias-bartender",
+                fromNpcId: "bartender", toNpcId: "elias", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 180, everyMinutes: 360,
+                minTrust: 50, trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Джо и Элиас обменялись новостями за стойкой."
+            }
+        ]
+    },
+
     // === СОБЫТИЯ ===
     events: [
         {
