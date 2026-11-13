@@ -16,7 +16,7 @@ function createHarness() {
         woman_in_red: { name: "Ева", availableForCall: false }
     };
     const context = vm.createContext({ console, Date, getNPCById(id) { return npcNames[id] || null; } });
-    for (const path of ["assets/js/npc/npcMemoryService.js", "assets/js/npc/npcSocialNetwork.js"]) {
+    for (const path of ["assets/js/npc/npcMemoryService.js", "assets/js/npc/npcMotivationService.js", "assets/js/npc/npcSocialNetwork.js"]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
     const clock = { day: 1, hour: 18, minute: 0 };
@@ -31,13 +31,33 @@ function createHarness() {
     const caseData = {
         id: "case-002",
         npcs: ["waiter", "bartender", "journalist", "ex_wife", "woman_in_red"],
+        npcMotivations: {
+            bartender: {
+                motives: [
+                    { id: "protect_staff", weight: 85, pressureResistance: 0.55 },
+                    { id: "keep_bar_open", weight: 65, pressureResistance: 0.20 }
+                ],
+                loyalties: [
+                    { npcId: "waiter", strength: 86, protectThreshold: 62, appliesTo: ["detective_behavior"], motiveId: "protect_staff", reason: "protecting_colleague" }
+                ]
+            },
+            woman_in_red: {
+                motives: [
+                    { id: "protect_sister", weight: 100, pressureResistance: 0.72 },
+                    { id: "avoid_public_scandal", weight: 35, pressureResistance: 0.12 }
+                ],
+                loyalties: [
+                    { npcId: "ex_wife", strength: 96, protectThreshold: 60, appliesTo: ["detective_behavior"], motiveId: "protect_sister", reason: "protecting_sister" }
+                ]
+            }
+        },
         socialNetwork: {
             maxHops: 2, retryMinutes: 15, expiryMinutes: 240,
             edges: [
                 { id: "waiter-joe", from: "waiter", to: "bartender", relationship: "coworkers", label: "Коллеги", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
                 { id: "joe-waiter", from: "bartender", to: "waiter", relationship: "coworkers", label: "Коллеги", trust: 70, channel: "in_person", delayMinutes: 20, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: false },
                 { id: "joe-press", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true },
-                { id: "eva-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 20, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: ["ex_wife"], withholdIfTargetProtected: true },
+                { id: "eva-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 20, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false },
                 { id: "eva-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
                 { id: "anna-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"] }
             ]
@@ -47,7 +67,7 @@ function createHarness() {
     context.availability = availability;
     context.npcManager = npcManager;
     context.caseData = caseData;
-    const setup = vm.runInContext("(() => { const memory = new NPCMemoryService(null, 'case-002'); const network = new NPCSocialNetwork(null, memory, npcManager, clock); network.setCase(caseData); return { memory, network }; })()", context);
+    const setup = vm.runInContext("(() => { const memory = new NPCMemoryService(null, 'case-002'); const motivations = new NPCMotivationService(memory); const network = new NPCSocialNetwork(null, memory, npcManager, clock); network.setMotivationService(motivations); network.setCase(caseData); return { memory, motivations, network }; })()", context);
     return {
         ...setup, context, clock, availability,
         advance(minutes) {
@@ -198,7 +218,7 @@ test("NPCSocialNetwork explains withheld information without exposing the protec
     assert.equal(withheld.fromName, "Ева");
     assert.equal(withheld.toName, "Лора");
     assert.equal(withheld.protectedNpcName, "Анна");
-    assert.equal(withheld.reason, "protecting_relationship");
+    assert.equal(withheld.reason, "loyalty_protection");
     assert.equal(withheld.summary.includes("Секретные сведения"), false);
 });
 
@@ -229,6 +249,55 @@ test("NPCSocialNetwork migrates old saves and persists the social event timeline
     context.legacySnapshot = { currentCaseId: "case-002", cases: { "case-002": { pending: [], delivered: [], withheld: [], publishedIds: [] } } };
     const legacy = vm.runInContext("NPCSocialNetwork.fromJSON(legacySnapshot, memory, npcManager, clock)", context);
     assert.equal(legacy.getEventLog(10).length, 0);
+});
+
+test("NPCMotivationService uses weighted personal motives to resist pressure", () => {
+    const { memory, motivations } = createHarness();
+    assert.equal(motivations.hasMotive("bartender", "protect_staff"), true);
+    assert.equal(motivations.hasMotive("bartender", "invented_motive"), false);
+    const calm = motivations.getEffectiveLoyalty("bartender", "waiter");
+    assert.equal(calm.score, 86);
+    assert.equal(calm.protects, true);
+    assert.equal(calm.pressure, 0);
+    for (let i = 0; i < 5; i++) memory.recordAnswerSelected("bartender", "dialogue-pressure", "calm-" + i, { text: "Я задаю прямой вопрос.", tone: "direct" });
+    const pressured = motivations.getEffectiveLoyalty("bartender", "waiter");
+    assert.equal(pressured.pressure, 10);
+    assert.equal(pressured.score < calm.score, true);
+    assert.equal(pressured.protects, true);
+});
+
+test("NPCSocialNetwork records loyalty protection and withholds a report while the NPC remains loyal", () => {
+    const { memory, network } = createHarness();
+    const sourceEvent = { dialogueId: "dialogue-joe", nodeId: "quiet-answer", answerText: "Томас не имеет к этому отношения." };
+    memory.recordAnswerSelected("bartender", sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: "neutral" });
+    const result = network.publish("bartender", { id: "joe-protects-thomas", kind: "detective_behavior", sourceName: "Джо", targetNpcId: "waiter", text: "Томас рассказал мне о разговоре с детективом." }, sourceEvent);
+    assert.equal(result.published, true);
+    assert.equal(result.queued, 1);
+    const withheld = network.getWithheldReports()[0];
+    assert.equal(withheld.fromNpcId, "bartender");
+    assert.equal(withheld.toNpcId, "journalist");
+    assert.equal(withheld.reason, "loyalty_protection");
+    assert.equal(withheld.motiveId, "protect_staff");
+    assert.equal(withheld.loyaltyScore, 86);
+});
+
+test("NPCSocialNetwork records a betrayal when pressure breaks a character loyalty", () => {
+    const { memory, motivations, network, advance } = createHarness();
+    const sourceEvent = { dialogueId: "dialogue-joe", nodeId: "final-answer", answerText: "Я больше не стану покрывать Томаса." };
+    for (let i = 0; i < 8; i++) memory.recordAnswerSelected("bartender", sourceEvent.dialogueId, "pressure-" + i, { text: i === 7 ? sourceEvent.answerText : "Вы продолжаете давить на меня.", tone: "threatening" });
+    const loyalty = motivations.getEffectiveLoyalty("bartender", "waiter");
+    assert.equal(loyalty.protects, false);
+    const result = network.publish("bartender", { id: "joe-breaks-silence", kind: "detective_behavior", sourceName: "Джо", targetNpcId: "waiter", text: "Томас рассказал мне о разговоре с детективом." }, sourceEvent);
+    assert.equal(result.published, true);
+    assert.equal(result.queued, 2);
+    const betrayal = network.getEventLog(20).find(item => item.type === "betrayal");
+    assert.equal(betrayal.fromNpcId, "bartender");
+    assert.equal(betrayal.toNpcId, "journalist");
+    assert.equal(betrayal.protectedNpcId, "waiter");
+    assert.equal(betrayal.reason, "loyalty_broken");
+    assert.equal(betrayal.pressureScore, 96);
+    advance(30);
+    assert.equal(memory.hasRumor("journalist", "joe-breaks-silence"), true);
 });
 
 test("NPCSocialNetwork refuses to publish an event that the source NPC never witnessed", () => {
