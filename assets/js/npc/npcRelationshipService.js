@@ -139,6 +139,7 @@ class NPCRelationshipService {
                     goalProgress: this._clamp(item.goalProgress, -10, 10, 1),
                     toNpcId: item.toNpcId,
                     interaction: item.interaction,
+                    investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
                     everyMinutes: Math.round(this._clamp(item.everyMinutes, 30, 10080, 240)),
@@ -404,6 +405,40 @@ class NPCRelationshipService {
         }[interaction] || 'relationship_changed';
     }
 
+    _investigateRumor(rule) {
+        const rumorId = rule.investigatesRumorId;
+        if (!rumorId) return null;
+        const rumor = this.memoryService?.getRumors(rule.fromNpcId)?.find(item => item.id === rumorId);
+        if (!rumor) return 'unavailable';
+        // This action represents an actual contact with rule.toNpcId, not omniscient
+        // access to everyone else's private statements.
+        const witnessId = rule.toNpcId;
+        if (witnessId === rumor.reportedBy || witnessId === rumor.originalSourceNpcId) return 'no_independent_evidence';
+        const claims = (this.memoryService?.getMemory(witnessId)?.claims || []).filter(claim =>
+            claim.directObservation === true && claim.status !== 'superseded' &&
+            (claim.corroboratesRumorIds?.includes(rumorId) || claim.refutesRumorIds?.includes(rumorId))
+        );
+        // Ambiguous or conflicting testimony is not a reliable automatic verdict.
+        if (claims.length !== 1) return 'no_independent_evidence';
+        const claim = claims[0];
+        if (claim.refutesRumorIds?.includes(rumorId) && claim.corroboratesRumorIds?.includes(rumorId)) {
+            return 'no_independent_evidence';
+        }
+        if (claim.corroboratesRumorIds?.includes(rumorId)) {
+            return this.memoryService.corroborateRumor(rule.fromNpcId, rumorId, witnessId, claim.id).corroborated
+                ? 'corroborated' : 'no_independent_evidence';
+        }
+        return this.memoryService.challengeRumor(rule.fromNpcId, rumorId, witnessId, claim.id).challenged
+            ? 'disputed' : 'no_independent_evidence';
+    }
+
+    getInvestigationOutcome(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item => item.id === ruleId);
+        if (!rule?.investigatesRumorId) return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.investigationOutcome || null;
+    }
+
     _applyInteraction(rule, now) {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
@@ -423,6 +458,7 @@ class NPCRelationshipService {
         }
 
         const state = this._ensureState();
+        if (rule.investigatesRumorId) state.rules[rule.id].investigationOutcome = this._investigateRumor(rule);
         const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
             interactionCount: 0, lastInteractionAt: null, discoveredAt: null
         });
