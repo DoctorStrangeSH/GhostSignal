@@ -124,6 +124,7 @@ class App {
 
         this.dialogueEngine = new DialogueEngine(this.inventory, this.gameTime);
         this.dialogueEngine.setMemoryService(this.npcMemoryService);
+        this.dialogueEngine.setMotivationService(this.npcMotivationService);
         this.dialogueEngine.setSocialNetwork(this.npcSocialNetwork);
         this.callInterface = new CallInterface(); this.callInterface.setDialogueEngine(this.dialogueEngine);
 
