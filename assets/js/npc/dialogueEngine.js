@@ -409,6 +409,23 @@ class DialogueEngine {
             return Boolean(this.relationshipService?.isKnownRelationship(conditionStr.slice('relationship_known:'.length)));
         }
 
+        if (conditionStr.startsWith('long_term_memory:')) {
+            return Boolean(npcId && this.memoryService?.hasLongTermMemoryTag(npcId, conditionStr.slice('long_term_memory:'.length)));
+        }
+        const longTermTrust = conditionStr.match(/^long_term_trust_(at_least|below):(\\d+(?:\\.\\d+)?)$/);
+        if (longTermTrust) {
+            const [, operator, rawThreshold] = longTermTrust;
+            const threshold = Number(rawThreshold);
+            const trust = this.memoryService?.getLongTermProfile(npcId)?.trust ?? 50;
+            if (!Number.isFinite(threshold)) return false;
+            return operator === 'at_least' ? trust >= threshold : trust < threshold;
+        }
+        if (conditionStr.startsWith('familiarity_at_least:')) {
+            const threshold = Number(conditionStr.slice('familiarity_at_least:'.length));
+            const familiarity = this.memoryService?.getLongTermProfile(npcId)?.familiarity ?? 0;
+            return Number.isFinite(threshold) && familiarity >= threshold;
+        }
+
         if (conditionStr.startsWith('motive:')) {
             return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
         }
