@@ -211,7 +211,7 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                     }
                 }
                 const cooperationCondition = condition.match(/^cooperation_(at_least|below):([0-9]+(?:[.][0-9]+)?)$/);
-                if (condition.startsWith("cooperation_") && !cooperationCondition) {
+                if (/^cooperation_(at_least|below):/.test(condition) && !cooperationCondition) {
                     errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperation threshold condition.");
                 }
                 if (cooperationCondition && Number(cooperationCondition[2]) > 100) {
