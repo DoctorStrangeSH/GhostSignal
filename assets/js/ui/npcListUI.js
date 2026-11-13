@@ -10,6 +10,7 @@ class NPCListUI {
         events.on('npcs:loaded', () => this.render());
         events.on('time:changed', () => this.render());
         events.on('npc:memory_changed', () => this.render());
+        events.on('npc:social_network_changed', () => this.render());
         events.on('npc:contradiction_presented', () => this.render());
         this.render();
     }
@@ -48,13 +49,89 @@ class NPCListUI {
             return;
         }
         
-        // Рендерим карточки
-        this.container.innerHTML = npcs.map(npc => this._createNPCCard(npc)).join('');
+        // Хроника контактов идёт перед карточками и обновляется вместе с социальной сетью.
+        const socialEvents = this.npcManager.getSocialEventLog?.(10) || [];
+        this.container.innerHTML = this._createSocialEventLog(socialEvents) + npcs.map(npc => this._createNPCCard(npc)).join('');
         
         // Вешаем обработчики
         this._bindEvents();
     }
     
+    _escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+
+    _createSocialEventLog(socialEvents) {
+        const labels = {
+            reported: 'ЗАПИСАНО',
+            scheduled: 'ОЖИДАЕТ ПЕРЕДАЧИ',
+            delivered: 'ПЕРЕДАНО',
+            withheld: 'СКРЫТО',
+            delayed: 'ОТЛОЖЕНО',
+            expired: 'НЕ ДОШЛО',
+            duplicate: 'ПОВТОР'
+        };
+        const channelLabels = { in_person: 'личная встреча', phone: 'звонок', message: 'сообщение' };
+        const entries = (socialEvents || []).map(item => {
+            const from = this._escapeHTML(item.fromName || 'Неизвестный');
+            const to = this._escapeHTML(item.toName || 'неизвестному адресату');
+            const protectedName = this._escapeHTML(item.protectedNpcName || 'близкого человека');
+            const channel = this._escapeHTML(channelLabels[item.channel] || 'контакт');
+            const time = this._escapeHTML(`ДЕНЬ ${item.day || 1} · ${item.time || '--:--'}`);
+            const status = this._escapeHTML(labels[item.type] || 'СОБЫТИЕ');
+            let headline = '';
+            let detail = '';
+
+            if (item.type === 'reported') {
+                headline = `${from} сообщил о поведении детектива`;
+            } else if (item.type === 'scheduled') {
+                headline = `${from} → ${to} · ${channel}`;
+                detail = 'Передача запланирована, ожидает подходящего времени и доступности участников.';
+            } else if (item.type === 'delivered') {
+                headline = `${from} передал сведения: ${to}`;
+                detail = item.summary || 'Содержание сообщения не записано.';
+            } else if (item.type === 'withheld') {
+                headline = `${from} скрыл сведения от ${to}`;
+                detail = `Затрагивался ${protectedName}. Причина: защита отношений.`;
+            } else if (item.type === 'delayed') {
+                headline = `${from} → ${to} · передача отложена`;
+                detail = item.summary || 'Участники пока не могут связаться.';
+            } else if (item.type === 'expired') {
+                headline = `${from} → ${to} · сообщение не дошло`;
+                detail = 'Окно доставки истекло до того, как контакт состоялся.';
+            } else {
+                headline = `${from} → ${to} · повторная передача не выполнена`;
+                detail = 'Получатель уже располагал этими сведениями.';
+            }
+
+            return `
+                <article class="npc-social-event event-${this._escapeHTML(item.type)}">
+                    <div class="npc-social-event-meta">
+                        <span>${time}</span><strong>${status}</strong>
+                    </div>
+                    <div class="npc-social-event-title">${this._escapeHTML(headline)}</div>
+                    ${detail ? `<p>${this._escapeHTML(detail)}</p>` : ''}
+                </article>
+            `;
+        }).join('');
+
+        return `
+            <section class="npc-social-log" aria-label="Хроника социальных контактов">
+                <header class="npc-social-log-header">
+                    <div>
+                        <span class="npc-social-log-kicker">ДЕЛО · СОЦИАЛЬНАЯ СЕТЬ</span>
+                        <h3>ХРОНИКА КОНТАКТОВ</h3>
+                    </div>
+                    <span class="npc-social-log-count">${socialEvents.length}</span>
+                </header>
+                <p class="npc-social-log-caption">Передачи сведений, задержки и решения скрыть информацию.</p>
+                ${entries || '<div class="npc-social-log-empty">Пока не зафиксировано ни одной передачи между контактами.</div>'}
+            </section>
+        `;
+    }
+
     _createNPCCard(npc) {
         const statusIcons = {
             'at_work': '💼',
