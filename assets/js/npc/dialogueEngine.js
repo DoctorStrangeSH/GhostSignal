@@ -454,6 +454,28 @@ class DialogueEngine {
             return operator === 'at_least' ? loyalty.score >= threshold : loyalty.score < threshold;
         }
 
+        const cooperation = npcId
+            ? this.memoryService?.getCooperationState(npcId, npc?.psychology)
+            : null;
+        const cooperationThreshold = conditionStr.match(/^cooperation_(at_least|below):([0-9]+(?:[.][0-9]+)?)$/);
+        if (cooperationThreshold) {
+            const [, operator, rawThreshold] = cooperationThreshold;
+            const threshold = Number(rawThreshold);
+            if (!Number.isFinite(threshold)) return false;
+            return operator === 'at_least'
+                ? (cooperation?.score ?? 50) >= threshold
+                : (cooperation?.score ?? 50) < threshold;
+        }
+        if (conditionStr.startsWith('cooperation_state:')) {
+            return cooperation?.state === conditionStr.slice('cooperation_state:'.length);
+        }
+        if (conditionStr.startsWith('has_claim:')) {
+            return Boolean(npcId && this.memoryService?.hasClaim(npcId, conditionStr.slice('has_claim:'.length)));
+        }
+        if (conditionStr.startsWith('has_claim_topic:')) {
+            return Boolean(npcId && this.memoryService?.hasClaimTopic(npcId, conditionStr.slice('has_claim_topic:'.length)));
+        }
+
         if (conditionStr.startsWith('trust_at_least:')) {
             const threshold = Number(conditionStr.slice('trust_at_least:'.length));
             return Number.isFinite(threshold) && (psychology?.trust ?? 50) >= threshold;
