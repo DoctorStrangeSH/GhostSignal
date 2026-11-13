@@ -575,3 +575,67 @@ test("completed autonomous actions are visible only to their actual initiator an
     loaded.setCase(caseData);
     assert.equal(loaded.hasCompletedInteraction("a", "support-a-b"), true);
 });
+
+test("NPC independently verifies a delivered rumor only after a scheduled witness contact", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "verify-claim", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "support", channel: "message",
+            initialDelayMinutes: 60, everyMinutes: 60, maxOccurrences: 1,
+            fromRumorId: "lead", investigatesRumorId: "lead", trustDelta: 0,
+            summary: "Алекс проверил сведения у Бориса."
+        }]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({ caseData: { npcRelationships: config } });
+    memory.receiveSocialRumor("a", { id: "lead", kind: "detective_behavior", text: "Услышанное." }, {
+        fromNpcId: "third_party", originalSourceNpcId: "third_party",
+        sourceEvent: { dialogueId: "source", nodeId: "claim", answerText: "Я видел." },
+        recipientTrust: 80
+    });
+    memory.recordClaim("b", {
+        id: "independent-witness", topic: "lead", value: "confirmed",
+        directObservation: true, corroboratesRumorIds: ["lead"]
+    });
+    assert.equal(relationships.getInvestigationOutcome("a", "verify-claim"), null);
+    assert.equal(memory.getRumors("a")[0].status, "unverified");
+    advance(59);
+    assert.equal(memory.getRumors("a")[0].status, "unverified");
+    assert.equal(advance(1).changed, 1);
+    assert.equal(relationships.getInvestigationOutcome("a", "verify-claim"), "corroborated");
+    assert.equal(memory.getRumors("a")[0].status, "corroborated");
+    assert.equal(relationships.getInvestigationOutcome("b", "verify-claim"), null);
+
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const loaded = vm.runInContext("NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)", context);
+    loaded.setCase(caseData);
+    assert.equal(loaded.getInvestigationOutcome("a", "verify-claim"), "corroborated");
+    advance(180);
+    assert.equal(memory.getRumors("a")[0].corroborations.length, 1);
+});
+
+test("NPC checking the original reporter records insufficient evidence, never automatic proof", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "verify-origin", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "support", channel: "message",
+            initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
+            fromRumorId: "lead", investigatesRumorId: "lead"
+        }]
+    };
+    const { memory, relationships, advance } = createHarness({ caseData: { npcRelationships: config } });
+    memory.receiveSocialRumor("a", { id: "lead", kind: "detective_behavior", text: "Услышанное." }, {
+        fromNpcId: "b", originalSourceNpcId: "b",
+        sourceEvent: { dialogueId: "b", nodeId: "1", answerText: "Мой рассказ." },
+        recipientTrust: 80
+    });
+    memory.recordClaim("b", {
+        id: "source-repeat", topic: "lead", value: "confirmed",
+        directObservation: true, corroboratesRumorIds: ["lead"]
+    });
+    advance(30);
+    assert.equal(relationships.getInvestigationOutcome("a", "verify-origin"), "no_independent_evidence");
+    assert.equal(memory.getRumors("a")[0].status, "unverified");
+});
