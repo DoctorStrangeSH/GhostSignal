@@ -123,7 +123,7 @@ registerData('npc', {
         psychology: {
             opennessThreshold: 56, pressureThreshold: 28, calmPressureLimit: 7,
             cooperationResistance: 0.12,
-            cooperationThresholds: { withdrawn: 18, reluctant: 38, guarded: 58, willing: 78 },
+            cooperationThresholds: { withdrawn: 18, reluctant: 48, guarded: 58, willing: 78 },
             cooperationLabels: {
                 withdrawn: "Закрылся от следствия",
                 reluctant: "Боится говорить",
