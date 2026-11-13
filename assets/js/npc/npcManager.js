@@ -91,6 +91,8 @@ class NPCManager {
         if (memory) {
             delete memory.relationshipTrusts;
             delete memory.rumors;
+            delete memory.cooperation;
+            delete memory.cooperationHistory;
         }
         const knownRelationships = this.relationshipService?.getKnownRelationshipsForNPC(npcId) ||
             this.socialNetwork?.getRelationshipsForNPC(npcId) || [];
