@@ -134,6 +134,41 @@ test("NPCMemoryService persists witness cooperation and applies promise outcomes
     assert.equal(restored.toJSON().version, 10);
 });
 
+test("NPCMemoryService applies safe cooperation defaults to promises from older saves", () => {
+    const NPCMemoryService = loadService();
+    const memory = NPCMemoryService.fromJSON({
+        version: 9,
+        currentCaseId: "case-002",
+        cases: {
+            "case-002": {
+                waiter: {
+                    trust: 50, pressure: 0,
+                    promises: [{
+                        id: "legacy-kept", caseId: "case-002", status: "pending",
+                        fulfillment: { type: "insight_gained", insightId: "family_protected" },
+                        fulfilledTrustDelta: 3, brokenTrustDelta: -6
+                    }]
+                },
+                bartender: {
+                    trust: 50, pressure: 0,
+                    promises: [{
+                        id: "legacy-broken", caseId: "case-002", status: "pending",
+                        fulfillment: { type: "case_solved", caseId: "case-002" },
+                        fulfilledTrustDelta: 3, brokenTrustDelta: -6
+                    }]
+                }
+            }
+        }
+    }, "case-002");
+
+    memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "family_protected" });
+    assert.equal(memory.getMemory("waiter").cooperation, 60);
+    memory.settlePromisesForCase("case-002", "failed");
+    assert.equal(memory.getMemory("bartender").cooperation, 32);
+    assert.equal(memory.getPromises("waiter")[0].status, "fulfilled");
+    assert.equal(memory.getPromises("bartender")[0].status, "broken");
+});
+
 test("NPCMemoryService safely revises the single active claim on a topic", () => {
     const NPCMemoryService = loadService();
     const memory = new NPCMemoryService(null, "case-002");
