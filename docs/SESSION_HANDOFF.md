@@ -352,3 +352,7 @@ npm run build
 - Следующая обязательная ручная проверка: ускорить игровое время, проверить тайминги/одноразовость Лоры, переход case-001 → case-002, сохранение и восстановление goal progress. CI не заменяет игровой прогон.
 
 **Следующий ИИ:** сначала проверь актуальный HEAD и Actions. Не меняй main и не сливай PR без разрешения. Расширяй личные цели на другие повторяющиеся NPC, но сюжетные последствия связывай с доказательствами и доступностью. Не раскрывай скрытые события автоматически. Следи, чтобы время не обрабатывало один и тот же одноразовый rule повторно после save/load.
+
+
+- Дополнительно journalist.js: когда личная цель journalist/publish_exclusive завершена автономным сообщением Джо, Лора в следующем разговоре открывает deadline_followup. Она прямо говорит, что уже написала Джо и дала понять, что дедлайн не будет ждать. Условие — npc_goal_completed:publish_exclusive; до события ветка скрыта.
+- CI на code HEAD 3e813be: 100 JS, 118/118 tests, 0 fail; validator 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449843052) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449855592).
