@@ -445,3 +445,7 @@
 
 - Добавлена ответная ветка Лоры: после завершения publish_exclusive она сообщает детективу, что уже написала Джо и потребовала комментарий до дедлайна. Ветка проверяется через npc_goal_completed и не доступна до автономного действия.
 - Последний CI на кодовом коммите 3e813be: 100 JS, 118/118 тестов, 0 ошибок; валидатор: 2 дела / 14 локаций / 13 NPC / 61 объект / 14 диалогов. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449843052) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449855592).
+
+
+- Одноразовые сюжетные вехи Джо/Элиаса и Лоры/Джо ограничены maxOccurrences: 1. Это не позволяет повторным звонкам случайно завершить цель и открыть реплику, ссылающуюся на событие, которого не было.
+- Последний подтверждённый CI на HEAD 88f366a: 100 JS, 118/118 тестов, валидатор: 2 дела / 14 локаций / 13 NPC / 61 объект / 14 диалогов. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450190072) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450197252).
