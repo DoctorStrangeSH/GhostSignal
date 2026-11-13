@@ -4,7 +4,7 @@
  */
 class NPCSocialNetwork {
     constructor(snapshot = null, memoryService = null, npcManager = null, gameTime = null) {
-        this.version = 1;
+        this.version = 2;
         this.currentCaseId = snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.memoryService = memoryService;
@@ -59,13 +59,17 @@ class NPCSocialNetwork {
     _ensureState(caseId = this.currentCaseId) {
         if (!caseId) return null;
         if (!this.cases[caseId] || typeof this.cases[caseId] !== 'object') {
-            this.cases[caseId] = { pending: [], delivered: [], withheld: [], publishedIds: [] };
+            this.cases[caseId] = { pending: [], delivered: [], withheld: [], publishedIds: [], eventLog: [], nextEventId: 1 };
         }
         const state = this.cases[caseId];
         state.pending = Array.isArray(state.pending) ? state.pending : [];
         state.delivered = Array.isArray(state.delivered) ? state.delivered : [];
         state.withheld = Array.isArray(state.withheld) ? state.withheld : [];
         state.publishedIds = Array.isArray(state.publishedIds) ? state.publishedIds : [];
+        state.eventLog = Array.isArray(state.eventLog) ? state.eventLog : [];
+        state.nextEventId = Number.isInteger(state.nextEventId) && state.nextEventId > 0
+            ? state.nextEventId
+            : state.eventLog.length + 1;
         return state;
     }
 
@@ -82,6 +86,39 @@ class NPCSocialNetwork {
             if (npc?.name) return npc.name;
         }
         return npcId;
+    }
+
+    _recordEvent(type, details = {}) {
+        const state = this._ensureState();
+        if (!state) return null;
+        const now = this._now();
+        const minuteOfDay = now % 1440;
+        const hour = Math.floor(minuteOfDay / 60);
+        const minute = minuteOfDay % 60;
+        const event = {
+            id: `${this.currentCaseId}:social:${state.nextEventId++}`,
+            type,
+            atGameMinute: now,
+            day: Math.floor(now / 1440) + 1,
+            time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+            fromNpcId: details.fromNpcId || null,
+            fromName: details.fromNpcId ? this._name(details.fromNpcId) : null,
+            toNpcId: details.toNpcId || null,
+            toName: details.toNpcId ? this._name(details.toNpcId) : null,
+            reportId: details.reportId || null,
+            reportKind: details.reportKind || null,
+            summary: String(details.summary || '').slice(0, 240),
+            channel: details.channel || null,
+            relationship: details.relationship || null,
+            protectedNpcId: details.protectedNpcId || null,
+            protectedNpcName: details.protectedNpcId ? this._name(details.protectedNpcId) : null,
+            reason: details.reason || null,
+            path: Array.isArray(details.path) ? [...details.path] : [],
+            dueAt: Number.isFinite(details.dueAt) ? details.dueAt : null
+        };
+        state.eventLog.push(event);
+        if (state.eventLog.length > 300) state.eventLog.splice(0, state.eventLog.length - 300);
+        return event;
     }
 
     _queueOutgoing(fromNpcId, report, sourceEvent, context) {
@@ -106,6 +143,13 @@ class NPCSocialNetwork {
                         protectedNpcId: report.targetNpcId, relationship: edge.relationship,
                         atGameMinute: now, reason: 'protecting_relationship'
                     });
+                    this._recordEvent('withheld', {
+                        fromNpcId, toNpcId: edge.to, reportId: report.id,
+                        reportKind: report.kind, protectedNpcId: report.targetNpcId,
+                        relationship: edge.relationship, channel: edge.channel,
+                        path: [...path, edge.to], reason: 'protecting_relationship',
+                        summary: `Сведения затрагивали ${this._name(report.targetNpcId)}; передача остановлена из-за защитной связи.`
+                    });
                 }
                 continue;
             }
@@ -124,6 +168,11 @@ class NPCSocialNetwork {
                 path: [...path, edge.to], hops: context.hops + 1,
                 canForward: edge.canForward,
                 recipientTrust: this.memoryService?.getRelationshipTrust(edge.to, fromNpcId) ?? 50
+            });
+            this._recordEvent('scheduled', {
+                fromNpcId, toNpcId: edge.to, reportId: report.id, reportKind: report.kind,
+                summary: report.text, channel: edge.channel, relationship: edge.relationship,
+                path: [...path, edge.to], dueAt: now + edge.delayMinutes
             });
             queued++;
         }
@@ -145,6 +194,10 @@ class NPCSocialNetwork {
         const state = this._ensureState();
         if (state.publishedIds.includes(report.id)) return { published: false, reason: 'already_published' };
         state.publishedIds.push(report.id);
+        this._recordEvent('reported', {
+            fromNpcId, reportId: report.id, reportKind: report.kind,
+            summary: report.text, reason: 'source_dialogue'
+        });
         const queued = this._queueOutgoing(fromNpcId, report, sourceEvent, {
             originalSourceNpcId: fromNpcId,
             originalSourceName: report.sourceName || this._name(fromNpcId),
@@ -173,7 +226,7 @@ class NPCSocialNetwork {
 
     processDueDeliveries() {
         const state = this._ensureState();
-        if (!state || !this.memoryService) return { delivered: 0, deferred: 0, expired: 0 };
+        if (!state || !this.memoryService) return { delivered: 0, deferred: 0, expired: 0, processed: 0 };
         const now = this._now();
         const due = state.pending.filter(item => Number.isFinite(item.dueAt) && item.dueAt <= now)
             .sort((a, b) => a.dueAt - b.dueAt);
@@ -184,10 +237,26 @@ class NPCSocialNetwork {
             if (item.expiresAt < now) {
                 state.pending = state.pending.filter(entry => entry.id !== item.id);
                 state.delivered.push({ id: item.id, status: 'expired', atGameMinute: now });
+                this._recordEvent('expired', {
+                    fromNpcId: item.fromNpcId, toNpcId: item.toNpcId, reportId: item.rumorId,
+                    reportKind: item.report?.kind, summary: item.report?.text,
+                    channel: item.channel, relationship: item.relationship,
+                    path: item.path, reason: 'delivery_window_expired'
+                });
                 expired++;
                 continue;
             }
             if (!this._canDeliver(item)) {
+                if (!item.deferLogged) {
+                    this._recordEvent('delayed', {
+                        fromNpcId: item.fromNpcId, toNpcId: item.toNpcId, reportId: item.rumorId,
+                        reportKind: item.report?.kind, channel: item.channel,
+                        relationship: item.relationship, path: item.path,
+                        reason: 'participants_unavailable',
+                        summary: 'Передача отложена: участники пока не могут связаться.'
+                    });
+                    item.deferLogged = true;
+                }
                 item.dueAt = Math.min(now + this.caseConfig.retryMinutes, item.expiresAt);
                 deferred++;
                 continue;
@@ -206,6 +275,12 @@ class NPCSocialNetwork {
                 id: item.id, rumorId: item.rumorId, fromNpcId: item.fromNpcId,
                 toNpcId: item.toNpcId, status: received.received ? 'delivered' : 'duplicate',
                 atGameMinute: now
+            });
+            this._recordEvent(received.received ? 'delivered' : 'duplicate', {
+                fromNpcId: item.fromNpcId, toNpcId: item.toNpcId, reportId: item.rumorId,
+                reportKind: item.report?.kind, summary: item.report?.text,
+                channel: item.channel, relationship: item.relationship, path: item.path,
+                reason: received.received ? null : 'already_received'
             });
             if (!received.received) continue;
             delivered++;
@@ -247,6 +322,15 @@ class NPCSocialNetwork {
             });
         }
         return [...links.values()].map(link => ({ ...link, label: link.labels.join(' · ') }));
+    }
+
+    getEventLog(limit = 30, npcId = null) {
+        const log = this._ensureState()?.eventLog || [];
+        const relevant = npcId
+            ? log.filter(item => item.fromNpcId === npcId || item.toNpcId === npcId || item.protectedNpcId === npcId)
+            : log;
+        const safeLimit = Number.isInteger(limit) ? Math.max(1, Math.min(100, limit)) : 30;
+        return this._clone(relevant.slice(-safeLimit).reverse());
     }
 
     getPendingDeliveries() { return this._clone(this._ensureState()?.pending || []); }
