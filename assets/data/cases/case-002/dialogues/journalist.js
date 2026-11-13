@@ -19,6 +19,12 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
+                    {
+                        text: "Вы уже успели поговорить с Джо после нашего разговора?",
+                        nextNode: "deadline_followup",
+                        tone: "direct",
+                        condition: "npc_goal_completed:publish_exclusive"
+                    },
                     { text: "С чего вы взяли, что мне нужен Кейн?", nextNode: "how_she_knows", tone: "cautious" },
                     {
                         text: "Вы что-то слышали о моём разговоре с Томасом?",
@@ -32,6 +38,17 @@ const DIALOGUE_JOURNALIST = {
                             toNpcId: "journalist"
                         }
                     }
+                ]
+            },
+
+            deadline_followup: {
+                speaker: "npc",
+                text: "Я написала Джо сама. Попросила комментарий и дала понять, что дедлайн ждать не будет. Он не обязан отвечать, но я не собираюсь сидеть сложа руки, пока другие решают, какую правду можно печатать.",
+                mood: "determined",
+                innerThought: "Она уже действует без меня. Если не дать ей проверяемые факты, история может уйти в печать раньше времени.",
+                answers: [
+                    { text: "Не публикуйте то, чего пока не можете доказать.", nextNode: "why_not_publish", tone: "cautious" },
+                    { text: "Покажите документы. Я помогу проверить факты.", nextNode: "investigation", tone: "reassuring" }
                 ]
             },
 
