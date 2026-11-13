@@ -7,10 +7,15 @@ class DialogueEngine {
         this.dialogueHistory = [];
         this.onNodeChange = null;
         this.memoryService = null;
+        this.motivationService = null;
     }
 
     setMemoryService(service) {
         this.memoryService = service || null;
+    }
+
+    setMotivationService(service) {
+        this.motivationService = service || null;
     }
 
     setSocialNetwork(service) {
@@ -374,6 +379,18 @@ class DialogueEngine {
         const psychology = npcId
             ? this.memoryService?.getPsychologicalState(npcId, npc?.psychology)
             : null;
+
+        if (conditionStr.startsWith('motive:')) {
+            return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
+        }
+        const loyaltyCondition = conditionStr.match(/^loyalty_(at_least|below):([^:]+):(\\d+(?:\\.\\d+)?)$/);
+        if (loyaltyCondition) {
+            const [, operator, protectedNpcId, rawThreshold] = loyaltyCondition;
+            const threshold = Number(rawThreshold);
+            const loyalty = npcId && this.motivationService?.getEffectiveLoyalty(npcId, protectedNpcId);
+            if (!loyalty || !Number.isFinite(threshold)) return false;
+            return operator === 'at_least' ? loyalty.score >= threshold : loyalty.score < threshold;
+        }
 
         if (conditionStr.startsWith('trust_at_least:')) {
             const threshold = Number(conditionStr.slice('trust_at_least:'.length));
