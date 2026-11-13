@@ -798,3 +798,38 @@ test("Kane's procedural objection is discussed only after his autonomous respons
     assert.equal(engine.selectAnswer(answer.index).id, "kane_formal_objection");
     assert.match(engine.currentNode.text, /возражения в протокол/i);
 });
+
+test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
+    const { engine, inventory, memory, context } = createDialogueHarness();
+    inventory.insights.push("waiter_saw_poisoning");
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    assert.equal(engine.getAvailableAnswers().find(item => item.nextNode === "confession")?.isAvailable, false);
+
+    const partial = engine.getAvailableAnswers().find(item => item.nextNode === "partial_return");
+    assert.equal(partial?.isAvailable, true);
+    assert.equal(engine.selectAnswer(partial.index).id, "partial_return");
+    const statements = memory.getMemory("business_rival").claims;
+    const original = statements.find(item => item.id === "kane-left-before-poisoning");
+    const revision = statements.find(item => item.id === "kane-admits-return-to-bar");
+    assert.equal(original.status, "superseded");
+    assert.equal(original.supersededBy, revision.id);
+    assert.equal(revision.revisionOf, original.id);
+    assert.equal(revision.version, 2);
+    assert.equal(memory.hasClaim("business_rival", original.id), false);
+    assert.equal(memory.hasClaim("business_rival", revision.id), true);
+    assert.equal(inventory.hasInsight("full_confession_kane"), false);
+
+    context.savedMemory = memory.toJSON();
+    const loaded = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    assert.equal(loaded.hasClaim("business_rival", revision.id), true);
+    assert.equal(loaded.getMemory("business_rival").claims.find(item => item.id === original.id).status, "superseded");
+});
+
+test("Kane's partial alibi admission stays hidden without Thomas's testimony", () => {
+    const { engine, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    assert.equal(engine.getAvailableAnswers().find(item => item.nextNode === "partial_return")?.isAvailable, false);
+    assert.equal(inventory.hasInsight("full_confession_kane"), false);
+});
