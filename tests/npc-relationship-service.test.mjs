@@ -334,6 +334,7 @@ test("case 001 and case 002 both use the shared relationship authoring schema", 
         assert.equal(Array.isArray(data.npcRelationships?.bonds), true, path);
         assert.equal(data.npcRelationships.bonds.length > 0, true, path);
         assert.equal(Array.isArray(data.npcRelationships?.autonomousInteractions), true, path);
+        assert.equal(data.npcRelationships.bonds.some(bond => bond.id === "bartender-sergeant"), true, path);
         for (const rule of data.npcRelationships.autonomousInteractions) {
             assert.equal(data.npcRelationships.bonds.some(bond => bond.id === rule.relationshipId), true, rule.id);
         }
