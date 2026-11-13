@@ -104,7 +104,35 @@ const DIALOGUE_RIVAL_FULL = {
                         tone: "direct",
                         condition: "all:hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial"
                     },
+                    {
+                        text: "Томас видел, как вы вернулись в зал. Ваше прежнее алиби неверно.",
+                        nextNode: "partial_return",
+                        tone: "direct",
+                        condition: "hasInsight:waiter_saw_poisoning"
+                    },
                     { text: "Пока мне недостаточно доказательств. Я вернусь к этому разговору.", nextNode: "interview_paused", tone: "calm" }
+                ]
+            },
+
+            partial_return: {
+                speaker: "npc",
+                text: "Да, я выходил в коридор, а потом вернулся в зал. Я сказал, что ушёл раньше, потому что боялся, что меня обвинят только из-за ссоры с Блэквудом. Но возвращение в зал не доказывает, что я отравил его.",
+                mood: "guarded",
+                claim: {
+                    id: "kane-admits-return-to-bar",
+                    topic: "kane-presence-during-poisoning",
+                    value: "returned-to-bar",
+                    summary: "Кейн исправил прежнее алиби: признал возвращение в зал после выхода в коридор, но отрицает отравление",
+                    sourceName: "Виктор Кейн",
+                    location: "Допросная",
+                    timeLabel: "Повторный разговор после сопоставления показаний",
+                    circumstances: "Уточнение собственных слов после предъявления показаний Томаса",
+                    revisesClaimId: "kane-left-before-poisoning",
+                    revisionReason: "confronted_with_witness"
+                },
+                answers: [
+                    { text: "Я зафиксировал изменение ваших показаний.", nextNode: "interview_paused", tone: "calm" },
+                    { text: "Теперь объясните, что произошло дальше.", nextNode: "why", tone: "direct" }
                 ]
             },
 
