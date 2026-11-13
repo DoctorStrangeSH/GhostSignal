@@ -67,6 +67,7 @@ function createDialogueHarness() {
                 maxHops: 2,
                 edges: [
                     { from: "waiter", to: "bartender", relationship: "coworkers", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
+                    { from: "bartender", to: "waiter", relationship: "coworkers", trust: 80, channel: "in_person", delayMinutes: 20, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: false },
                     { from: "bartender", to: "journalist", relationship: "source", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true }
                 ]
             }
