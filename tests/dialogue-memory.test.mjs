@@ -966,3 +966,63 @@ test("Anna and Lora use their own completed experiences as repeat openings", () 
     engine.startDialogue("dialogue-journalist");
     assert.equal(engine.currentNode.id, "lora_second_check_opening");
 });
+
+test("Thomas explains an honest photo correction without being labeled a liar", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "near-victim-table-before-collapse", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "revised_testimony_opening");
+    const reason = engine.getAvailableAnswers().find(item => item.nextNode === "revision_photo_reason");
+    assert.equal(reason?.isAvailable, true);
+    engine.selectAnswer(reason.index);
+    assert.match(engine.currentNode.text, /фотографии/);
+    assert.equal(memory.getAccusations("waiter").length, 0);
+    assert.equal(memory.hasClaim("waiter", "waiter-kane-at-poisoning-v2"), true);
+});
+
+test("unfounded accusation after Thomas corrects testimony harms cooperation and creates a social report", () => {
+    const { engine, memory, advance } = createDialogueHarness();
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "near-victim-table-before-collapse", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    const before = memory.getMemory("waiter").cooperation;
+    const accusation = engine.getAvailableAnswers().find(item => item.accusation?.id === "thomas-lied-about-poisoning");
+    assert.equal(accusation?.isAvailable, true);
+    engine.selectAnswer(accusation.index);
+    assert.equal(engine.currentNode.id, "unfounded_lie_accusation");
+    assert.ok(memory.getMemory("waiter").cooperation < before);
+    assert.equal(memory.getAccusations("waiter").some(item => item.id === "thomas-lied-about-poisoning"), true);
+    advance(15);
+    assert.equal(memory.hasRumor("bartender", "detective-accused-thomas-after-correction"), true);
+    engine.selectAnswer(0);
+    assert.equal(engine.currentNode.id, "end_waiter_guarded");
+    assert.doesNotMatch(engine.currentNode.text, /больше не буду молчать/);
+});
+
+test("Thomas names detective pressure as the cause of his later retraction", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-reconsidered", topic: "kane-presence-during-poisoning",
+        value: "near-victim-table-before-collapse", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    const ask = engine.getAvailableAnswers().find(item => item.nextNode === "revision_under_pressure_reason");
+    assert.equal(ask?.isAvailable, true);
+    engine.selectAnswer(ask.index);
+    assert.match(engine.currentNode.text, /пригрозили/);
+    assert.equal(memory.getAccusations("waiter").length, 0);
+});
