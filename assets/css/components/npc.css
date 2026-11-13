@@ -290,3 +290,11 @@
     font-size: 9px;
     line-height: 1.45;
 }
+
+/* Accusations remain visible so apologies never erase their consequences. */
+.npc-accusations { margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(180, 70, 70, 0.18); }
+.npc-accusations-heading { margin-bottom: 6px; color: var(--text-dim); font-size: 8px; letter-spacing: 1.2px; }
+.npc-accusation { margin-top: 5px; padding: 6px 8px; border-left: 2px solid rgba(180, 70, 70, 0.55); background: rgba(180, 70, 70, 0.035); }
+.npc-accusation > span { color: var(--text-dim); font-size: 8px; letter-spacing: 0.7px; }
+.npc-accusation p { margin: 3px 0 0; color: var(--text-secondary); font-size: 9px; line-height: 1.45; }
+.npc-accusation-false > span { color: var(--accent-red-bright); }

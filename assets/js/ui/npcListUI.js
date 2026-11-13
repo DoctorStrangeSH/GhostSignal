@@ -129,6 +129,18 @@ class NPCListUI {
                                 `).join('')}
                             </div>
                         ` : ''}
+                        ${npc.memory.accusations?.length ? `
+                            <div class="npc-accusations">
+                                <div class="npc-accusations-heading">ОБВИНЕНИЯ ДЕТЕКТИВА</div>
+                                ${[...npc.memory.accusations].slice(-2).reverse().map(accusation => {
+                                    const labels = { pending: 'НЕ СНЯТО', false: 'ЛОЖНОЕ ОБВИНЕНИЕ', retracted: 'ОТОЗВАНО', substantiated: 'ПОДТВЕРЖДЕНО' };
+                                    return `<div class="npc-accusation accusation-${accusation.status}">
+                                        <span>${labels[accusation.status] || 'ЗАПИСАНО'}</span>
+                                        <p>${accusation.text}</p>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
                         ${npc.promises?.length ? `
                             <div class="npc-promises">
                                 <div class="npc-promises-heading">ОБЕЩАНИЯ ДЕТЕКТИВА</div>

@@ -51,6 +51,8 @@ class AlternateEndings {
                 paragraphs.push(rules.lowTrust);
             }
             if (npc.rumors.disputed > 0 && rules.disputedRumor) paragraphs.push(rules.disputedRumor);
+            if (npc.accusations.false > 0 && rules.falseAccusation) paragraphs.push(rules.falseAccusation);
+            if (npc.accusations.pending > 0 && rules.pendingAccusation) paragraphs.push(rules.pendingAccusation);
         }
         if (!paragraphs.length) return ending;
         return {

@@ -43,6 +43,19 @@ const DIALOGUE_WAITER = {
                             text: "Детектив пригрозил обвинить меня в соучастии, когда я испугался рассказать правду.",
                             recipients: [{ npcId: "bartender", recipientTrust: 80 }]
                         }
+                    },
+                    {
+                        text: "Я считаю, что ты помог Кейну отравить Блэквуда. Ты соучастник.",
+                        nextNode: "threat",
+                        tone: "threatening",
+                        accusation: { id: "thomas-complicity", text: "Детектив обвинил Томаса в соучастии с Кейном." },
+                        report: {
+                            id: "detective-accused-thomas-of-complicity",
+                            kind: "detective_behavior",
+                            sourceName: "Томас",
+                            text: "Детектив обвинил меня в соучастии с Кейном, хотя я был напуган и не помогал ему.",
+                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
+                        }
                     }
                 ]
             },
@@ -96,6 +109,24 @@ const DIALOGUE_WAITER = {
                         nextNode: "waiter_hesitates",
                         tone: "calm",
                         condition: "any:trust_below:53&pressure_at_least:15"
+                    },
+                    {
+                        text: "Я ошибся. Ты не помогал Кейну. Прости, что обвинил тебя.",
+                        nextNode: "end_waiter",
+                        tone: "reassuring",
+                        condition: "has_accusation:thomas-complicity",
+                        resolveAccusation: {
+                            id: "thomas-complicity",
+                            outcome: "false",
+                            reason: "Томас рассказал об угрозах Кейна; детектив признал обвинение ложным и извинился."
+                        },
+                        report: {
+                            id: "detective-apologized-to-thomas",
+                            kind: "detective_behavior",
+                            sourceName: "Томас",
+                            text: "Детектив признал, что ошибочно обвинил меня в соучастии, и извинился.",
+                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
+                        }
                     }
                 ]
             },

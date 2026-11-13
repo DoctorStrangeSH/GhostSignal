@@ -92,6 +92,16 @@ class DialogueEngine {
             if (answer.promise) {
                 this.memoryService.recordPromise(this.currentDialogue.npcId, answer.promise);
             }
+            if (answer.accusation) {
+                this.memoryService.recordAccusation(this.currentDialogue.npcId, {
+                    ...answer.accusation,
+                    dialogueId: this.currentDialogue.id,
+                    nodeId: this.currentNode.id
+                });
+            }
+            if (answer.resolveAccusation) {
+                this.memoryService.resolveAccusation(this.currentDialogue.npcId, answer.resolveAccusation.id, answer.resolveAccusation.outcome, answer.resolveAccusation.reason);
+            }
             if (answer.report?.id && Array.isArray(answer.report.recipients)) {
                 for (const recipient of answer.report.recipients) {
                     const recipientConfig = typeof recipient === 'string' ? { npcId: recipient } : recipient;
@@ -373,6 +383,10 @@ class DialogueEngine {
         if (conditionStr.startsWith('heard_rumor:')) {
             const rumorId = conditionStr.slice('heard_rumor:'.length);
             return Boolean(npcId && this.memoryService?.hasRumor(npcId, rumorId));
+        }
+        if (conditionStr.startsWith('has_accusation:')) {
+            const accusationId = conditionStr.slice('has_accusation:'.length);
+            return Boolean(npcId && this.memoryService?.hasAccusation(npcId, accusationId));
         }
         if (conditionStr.startsWith('lie_exposed:')) {
             const claimId = conditionStr.slice('lie_exposed:'.length);

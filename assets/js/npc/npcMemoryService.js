@@ -6,7 +6,7 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 7;
+        this.version = 8;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
@@ -38,6 +38,7 @@ class NPCMemoryService {
                 claims: [],
                 liesExposed: [],
                 relationshipTrusts: {},
+                accusations: [],
                 lastInteraction: null
             };
         }
@@ -60,6 +61,11 @@ class NPCMemoryService {
             typeof memory.relationshipTrusts === 'object' && !Array.isArray(memory.relationshipTrusts)
             ? memory.relationshipTrusts
             : {};
+        memory.accusations = Array.isArray(memory.accusations) ? memory.accusations : [];
+        for (const accusation of memory.accusations) {
+            if (!['pending', 'false', 'retracted', 'substantiated'].includes(accusation.status)) accusation.status = 'pending';
+            accusation.basisEvidenceIds = Array.isArray(accusation.basisEvidenceIds) ? accusation.basisEvidenceIds : [];
+        }
         memory.rumors = Array.isArray(memory.rumors) ? memory.rumors : [];
         for (const rumor of memory.rumors) {
             rumor.sourceTrust = Number.isFinite(rumor.sourceTrust)
@@ -600,6 +606,58 @@ class NPCMemoryService {
         return memory.trust;
     }
 
+    recordAccusation(npcId, accusation) {
+        if (!npcId || !accusation?.id || !accusation?.text) return { recorded: false, reason: 'invalid_accusation' };
+        const memory = this._ensureNPC(npcId);
+        if (!memory) return { recorded: false, reason: 'invalid_context' };
+        if (memory.accusations.some(item => item.id === accusation.id)) return { recorded: false, reason: 'already_recorded' };
+        const stored = {
+            id: accusation.id,
+            text: String(accusation.text).slice(0, 300),
+            status: 'pending',
+            basisEvidenceIds: Array.isArray(accusation.basisEvidenceIds)
+                ? [...new Set(accusation.basisEvidenceIds.filter(id => typeof id === 'string' && id.trim()))]
+                : [],
+            dialogueId: accusation.dialogueId || null,
+            nodeId: accusation.nodeId || null,
+            createdAt: Date.now(),
+            resolvedAt: null,
+            resolutionReason: null
+        };
+        memory.accusations.push(stored);
+        this._append(memory, { type: 'accusation_made', accusationId: stored.id, text: stored.text });
+        return { recorded: true, accusation: this._clone(stored) };
+    }
+
+    getAccusations(npcId) {
+        const memory = this.cases[this.currentCaseId]?.[npcId];
+        return Array.isArray(memory?.accusations) ? this._clone(memory.accusations) : [];
+    }
+
+    hasAccusation(npcId, accusationId) {
+        return this.cases[this.currentCaseId]?.[npcId]?.accusations?.some(item => item.id === accusationId) || false;
+    }
+
+    resolveAccusation(npcId, accusationId, outcome, reason = '') {
+        if (!['false', 'retracted', 'substantiated'].includes(outcome)) return { resolved: false, reason: 'invalid_outcome' };
+        const memory = this._ensureNPC(npcId);
+        const accusation = memory?.accusations.find(item => item.id === accusationId);
+        if (!accusation) return { resolved: false, reason: 'accusation_not_found' };
+        if (accusation.status !== 'pending') return { resolved: false, reason: 'already_resolved' };
+        accusation.status = outcome;
+        accusation.resolvedAt = Date.now();
+        accusation.resolutionReason = String(reason || '').slice(0, 500);
+        const effects = {
+            false: { trust: -10, pressure: 8 },
+            retracted: { trust: -3, pressure: 2 },
+            substantiated: { trust: 1, pressure: -2 }
+        }[outcome];
+        memory.trust = Math.max(0, Math.min(100, memory.trust + effects.trust));
+        memory.pressure = Math.max(0, Math.min(100, memory.pressure + effects.pressure));
+        this._append(memory, { type: 'accusation_resolved', accusationId, outcome, reason: accusation.resolutionReason, trustDelta: effects.trust, pressureDelta: effects.pressure });
+        return { resolved: true, accusation: this._clone(accusation), trust: memory.trust, pressure: memory.pressure };
+    }
+
     recordPromise(npcId, promise) {
         const fulfillment = promise?.fulfillment;
         const validFulfillment = fulfillment && (
@@ -725,7 +783,13 @@ class NPCMemoryService {
                     active: claims.filter(item => item.status !== 'superseded').length,
                     superseded: claims.filter(item => item.status === 'superseded').length
                 },
-                liesExposed: Array.isArray(memory.liesExposed) ? memory.liesExposed.length : 0
+                liesExposed: Array.isArray(memory.liesExposed) ? memory.liesExposed.length : 0,
+                accusations: {
+                    pending: (Array.isArray(memory.accusations) ? memory.accusations : []).filter(item => item.status === 'pending').length,
+                    false: (Array.isArray(memory.accusations) ? memory.accusations : []).filter(item => item.status === 'false').length,
+                    retracted: (Array.isArray(memory.accusations) ? memory.accusations : []).filter(item => item.status === 'retracted').length,
+                    substantiated: (Array.isArray(memory.accusations) ? memory.accusations : []).filter(item => item.status === 'substantiated').length
+                }
             };
         }
         return { caseId, npcs };
