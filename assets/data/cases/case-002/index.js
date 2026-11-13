@@ -127,6 +127,33 @@ const CASE_002 = {
     // === ЖИВЫЕ ОТНОШЕНИЯ NPC ===
     // Базовые связи и автономные действия; скрытые сведения открываются только после подтверждения.
     npcRelationships: {
+        goals: [
+            {
+                id: "maintain_bar_community", npcId: "bartender", title: "Сохранить связи бара",
+                description: "Джо старается удержать вокруг бара людей, которым ещё можно доверять.",
+                priority: 75, target: 2
+            },
+            {
+                id: "protect_staff", npcId: "bartender", title: "Защитить своих сотрудников",
+                description: "Джо не хочет, чтобы Томас расплачивался за чужие решения.",
+                priority: 95, target: 2
+            },
+            {
+                id: "protect_sister", npcId: "woman_in_red", title: "Защитить Анну",
+                description: "Ева пытается удержать сестру от нового публичного скандала и одиночества.",
+                priority: 100, target: 1
+            },
+            {
+                id: "publish_exclusive", npcId: "journalist", title: "Получить эксклюзив",
+                description: "Лора стремится первой опубликовать историю об отравлении, не потеряв источник.",
+                priority: 85, target: 1
+            },
+            {
+                id: "keep_in_touch_with_mills", npcId: "bartender", title: "Оставаться на связи с Миллсом",
+                description: "Джо не хочет терять осторожный контакт с сержантом.",
+                priority: 55, target: 1
+            }
+        ],
         bonds: [
             { id: "joe-thomas-colleagues", fromNpcId: "bartender", toNpcId: "waiter", relationship: "coworkers", label: "Коллеги по бару", trust: 80, reciprocal: true },
             { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true },
@@ -137,6 +164,7 @@ const CASE_002 = {
             {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                goalId: "protect_staff", goalProgress: 1,
                 channel: "in_person", requiresSameLocation: true,
                 initialDelayMinutes: 120, everyMinutes: 180,
                 minTrust: 55, fromPressureBelow: 70, toPressureBelow: 50,
@@ -155,6 +183,7 @@ const CASE_002 = {
             {
                 id: "joe-thomas-reconcile", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "reconcile",
+                goalId: "protect_staff", goalProgress: 1,
                 channel: "in_person", requiresSameLocation: true,
                 initialDelayMinutes: 240, everyMinutes: 240,
                 maxTrust: 55, fromPressureBelow: 35, toPressureBelow: 35,
@@ -164,6 +193,7 @@ const CASE_002 = {
             {
                 id: "eva-calls-anna", relationshipId: "sisters-anna-eva",
                 fromNpcId: "woman_in_red", toNpcId: "ex_wife", interaction: "support",
+                goalId: "protect_sister", goalProgress: 1,
                 channel: "phone",
                 initialDelayMinutes: 90, everyMinutes: 240,
                 minTrust: 70, fromPressureBelow: 85, toPressureBelow: 85,
@@ -171,8 +201,19 @@ const CASE_002 = {
                 summary: "Ева позвонила Анне, чтобы убедиться, что та не осталась одна."
             },
             {
+                id: "lora-presses-joe", relationshipId: "joe-lora-source",
+                fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
+                channel: "message",
+                initialDelayMinutes: 480, everyMinutes: 480, maxOccurrences: 1,
+                minTrust: 35,
+                trustDelta: -2, reciprocalTrustDelta: -1,
+                goalId: "publish_exclusive", goalNpcId: "journalist", goalProgress: 1,
+                summary: "Лора прислала Джо настойчивое сообщение: ей нужен эксклюзив до утра."
+            },
+            {
                 id: "lora-checks-joe", relationshipId: "joe-lora-source",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "support",
+                goalId: "maintain_bar_community", goalNpcId: "bartender", goalProgress: 1,
                 channel: "message",
                 initialDelayMinutes: 300, everyMinutes: 360,
                 minTrust: 50, fromPressureBelow: 65,
