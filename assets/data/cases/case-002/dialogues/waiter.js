@@ -25,16 +25,32 @@ const DIALOGUE_WAITER = {
     tree: {
         start: "greeting",
         entryRules: [
+            { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
             { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
         ],
         nodes: {
+            reconsidered_testimony_opening: {
+                speaker: "npc",
+                text: "Я уже объяснил, что после угрозы сказал больше, чем могу подтвердить. Я помню Кейна у столика, но не стану утверждать, будто видел сам момент отравления.",
+                mood: "guarded",
+                answers: [
+                    { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
             revised_testimony_opening: {
                 speaker: "npc",
                 text: "Детектив, я уже уточнил показания после фотографии. Я видел Кейна рядом со столиком, но не видел, как порошок попал в стакан. Я не стану снова говорить, будто видел больше.",
                 mood: "guarded",
                 answers: [
+                    {
+                        text: "Если тебе трудно говорить после нашего прошлого разговора, давай уточним показания.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Спасибо за точность. Других вопросов пока нет.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
@@ -44,6 +60,13 @@ const DIALOGUE_WAITER = {
                 mood: "nervous",
                 answers: [
                     { text: "Посмотри на фотографию: давай уточним, что именно ты видел.", nextNode: "protection_revision", tone: "calm", condition: "hasItem:bar_photo" },
+                    {
+                        text: "Я хочу вернуться к твоим прежним показаниям.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Спасибо. Я проверю твои показания.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
