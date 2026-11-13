@@ -40,6 +40,7 @@ const authoredNpcClaims = new Set();
 const authoredNpcClaimTopics = new Set();
 const expandCondition = condition => {
     if (typeof condition !== "string" || !condition) return [];
+    if (condition.startsWith("not:")) return expandCondition(condition.slice(4));
     const compound = condition.match(/^(all|any):(.*)$/);
     return compound ? compound[2].split("&").flatMap(part => expandCondition(part.trim())) : [condition];
 };
@@ -248,6 +249,11 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 }
             }
             for (const condition of expandCondition(answer.condition)) {
+                if (condition.startsWith("case_has_claim:")) {
+                    const match = condition.match(/^case_has_claim:([a-z0-9_:-]{1,64}):([a-z0-9_:-]{1,100})$/i);
+                    if (!match) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid recorded case-claim condition.");
+                    else npcClaimConditions.push({ npcId: match[1], claimId: match[2], dialogueId: id, nodeId });
+                }
                 if (condition.startsWith("has_claim:")) {
                     const claimId = condition.slice("has_claim:".length);
                     if (!/^[a-z0-9_:-]{1,80}$/i.test(claimId)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid active-claim condition.");
