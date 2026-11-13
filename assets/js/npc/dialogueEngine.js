@@ -478,6 +478,25 @@ class DialogueEngine {
             return Boolean(npcId && this.memoryService?.hasClaimTopic(npcId, conditionStr.slice('has_claim_topic:'.length)));
         }
 
+        // A character reacts only to rumors they personally received. Corroboration
+        // and challenge must come from independent, authored direct observations.
+        const rumorStatusCondition = conditionStr.match(/^rumor_status:([a-z0-9_:-]{1,80}):(unverified|corroborated|disputed)$/i);
+        if (rumorStatusCondition) {
+            const [, rumorId, expectedStatus] = rumorStatusCondition;
+            const rumor = npcId && this.memoryService?.getRumors(npcId)
+                ?.find(item => item.id === rumorId);
+            return rumor?.status === expectedStatus.toLowerCase();
+        }
+        const rumorConfidenceCondition = conditionStr.match(/^rumor_confidence_at_least:([a-z0-9_:-]{1,80}):([0-9]+)$/i);
+        if (rumorConfidenceCondition) {
+            const [, rumorId, rawThreshold] = rumorConfidenceCondition;
+            const threshold = Number(rawThreshold);
+            const rumor = npcId && this.memoryService?.getRumors(npcId)
+                ?.find(item => item.id === rumorId);
+            return Boolean(rumor && Number.isFinite(threshold) && threshold <= 100 &&
+                rumor.confidence >= threshold);
+        }
+
         if (conditionStr.startsWith('trust_at_least:')) {
             const threshold = Number(conditionStr.slice('trust_at_least:'.length));
             return Number.isFinite(threshold) && (psychology?.trust ?? 50) >= threshold;
