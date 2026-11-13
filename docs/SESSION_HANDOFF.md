@@ -12,10 +12,20 @@ Updated: 2026-11-13
 
 ## Current verified baseline
 
-Latest confirmed CI after the controller extraction:
-- JavaScript syntax check: 95 files passed.
-- Game-data validation: 2 cases, 14 locations, 13 NPCs, 59 objects, 14 dialogues.
-- Unit and controller tests: 30 passed, 0 failed.
+Latest confirmed CI on the current cooperation/testimony pass:
+- JavaScript syntax check: 100 files passed.
+- Game-data validation: 2 cases, 14 locations, 13 NPCs, 61 objects, 14 dialogues.
+- Unit and controller tests: 123 passed, 0 failed.
+- Push CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453753566
+- PR CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453767603 (last observed in progress when this note was written).
+
+Run locally:
+```bash
+npm run check
+npm run validate:data
+npm test
+npm run build
+```
 
 Run locally:
 ```bash
