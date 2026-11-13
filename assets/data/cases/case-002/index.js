@@ -169,6 +169,7 @@ const CASE_002 = {
                 initialDelayMinutes: 120, everyMinutes: 180,
                 minTrust: 55, fromPressureBelow: 70, toPressureBelow: 50,
                 trustDelta: 2, reciprocalTrustDelta: 1,
+                toCooperationDelta: 10,
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
             {
@@ -188,6 +189,7 @@ const CASE_002 = {
                 initialDelayMinutes: 240, everyMinutes: 240,
                 maxTrust: 55, fromPressureBelow: 35, toPressureBelow: 35,
                 trustDelta: 8, reciprocalTrustDelta: 6,
+                toCooperationDelta: 6,
                 summary: "Джо признал, что был слишком резок, и попытался помириться с Томасом."
             },
             {
