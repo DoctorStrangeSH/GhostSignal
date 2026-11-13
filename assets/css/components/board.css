@@ -104,3 +104,137 @@
     border-color: var(--accent-amber);
     background: rgba(212, 160, 23, 0.04);
 }
+
+/* ============ ЖУРНАЛ ПОКАЗАНИЙ ============ */
+.testimony-journal {
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid rgba(212, 160, 23, 0.18);
+    border-radius: var(--radius-md);
+    background: linear-gradient(145deg, rgba(212, 160, 23, 0.035), rgba(0, 0, 0, 0.12));
+}
+.testimony-journal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(212, 160, 23, 0.16);
+}
+.testimony-journal-kicker {
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 2px;
+}
+.testimony-journal-header h3 {
+    margin: 3px 0 0;
+    color: var(--accent-amber-glow);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+}
+.testimony-count { color: var(--text-dim); font-size: 10px; white-space: nowrap; }
+.testimony-list {
+    display: grid;
+    gap: 7px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 10px 3px 4px 0;
+}
+.testimony-entry {
+    padding: 10px 11px;
+    border-left: 2px solid rgba(212, 160, 23, 0.45);
+    background: rgba(0, 0, 0, 0.16);
+}
+.testimony-entry-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--accent-amber);
+    font-size: 10px;
+}
+.testimony-entry-heading span { color: var(--text-dim); font-size: 9px; text-align: right; }
+.testimony-entry p {
+    margin: 6px 0;
+    color: var(--text-primary);
+    font-family: var(--font-serif);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.testimony-entry-meta {
+    display: grid;
+    gap: 3px;
+    color: var(--text-dim);
+    font-size: 9px;
+}
+.testimony-compare {
+    display: grid;
+    gap: 7px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.testimony-compare-title {
+    color: var(--accent-amber);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+}
+.testimony-compare label, .testimony-conflict label {
+    color: var(--text-dim);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+}
+.testimony-compare .terminal-input, .testimony-conflict .terminal-input {
+    width: 100%;
+    min-width: 0;
+    font-size: 11px;
+}
+.testimony-result-note {
+    padding: 9px 10px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+}
+.testimony-conflict {
+    display: grid;
+    gap: 8px;
+    padding: 11px;
+    border: 1px solid rgba(192, 57, 43, 0.35);
+    background: rgba(192, 57, 43, 0.055);
+}
+.testimony-conflict > strong {
+    color: var(--accent-red-bright);
+    font-size: 9px;
+    letter-spacing: 1.2px;
+}
+.testimony-conflict > div {
+    padding-left: 9px;
+    border-left: 2px solid rgba(192, 57, 43, 0.35);
+    color: var(--text-primary);
+    font-family: var(--font-serif);
+    font-size: 12px;
+    line-height: 1.45;
+}
+.testimony-prepared {
+    display: grid;
+    gap: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid rgba(76, 175, 120, 0.35);
+    background: rgba(76, 175, 120, 0.055);
+    font-size: 10px;
+}
+.testimony-prepared strong { color: var(--accent-green); letter-spacing: 1px; }
+.testimony-prepared span { color: var(--text-primary); }
+.testimony-prepared small { color: var(--text-dim); line-height: 1.4; }
+.testimony-empty {
+    padding: 20px 10px;
+    color: var(--text-dim);
+    font-size: 11px;
+    text-align: center;
+}
+@media (max-width: 576px) {
+    .testimony-journal { padding: 10px; }
+    .testimony-entry-heading { flex-direction: column; gap: 3px; }
+    .testimony-entry-heading span { text-align: left; }
+}

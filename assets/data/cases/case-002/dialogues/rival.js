@@ -3,6 +3,34 @@ const DIALOGUE_RIVAL_FULL = {
     npcId: "business_rival",
     type: "face_to_face",
 
+    contradictionReactions: {
+        "kane-presence-during-poisoning": {
+            text: "Вы сопоставили мои слова с показаниями Томаса. Хорошо, я вернулся в зал после короткого выхода в коридор. Но это ещё не доказывает, что я подходил к столику Блэквуда. Томас мог видеть только то, что хотел увидеть.",
+            mood: "defensive",
+            givesInsight: "kane_alibi_broken",
+            answers: [
+                { text: "Томас видел, как вы подсыпали порошок в стакан.", nextNode: "caught_in_lie", tone: "direct", condition: "lie_exposed:kane-left-before-poisoning" },
+                { text: "Почему вы солгали о том, что уехали из бара?", nextNode: "why", tone: "direct", condition: "pressure_at_least:20" },
+                { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
+            ]
+        }
+    },
+
+    evidenceReactions: {
+        bar_photo: {
+            text: "Фотография доказывает лишь то, что я был в баре. Она не показывает, что я подходил к столику Блэквуда.",
+            mood: "defensive"
+        },
+        poison_vial: {
+            text: "Я не обязан объяснять вам каждый пузырёк. Вы строите обвинение на догадках.",
+            mood: "cold"
+        },
+        prescription_copy: {
+            text: "Рецепт подтверждает покупку снотворного Анной. Но он ничего не говорит о том, кто подменил содержимое.",
+            mood: "guarded"
+        }
+    },
+
     context: {
         title: "Допросная",
         text: "Кейн сидит за столом в допросной. Без галстука. Без лоска. Просто уставший человек, на которого давят стены.",
@@ -14,12 +42,37 @@ const DIALOGUE_RIVAL_FULL = {
         nodes: {
             confrontation: {
                 speaker: "npc",
-                text: "Значит, вы всё-таки докопались. Я думал, у меня есть ещё пара дней. Но вы оказались... эффективным.",
+                text: "Я ушёл из бара до того, как Блэквуду стало плохо. К его столику я не подходил. Вы можете проверить время — я уже был в коридоре.",
                 mood: "defeated",
-                innerThought: "Он не отрицает. Это упрощает дело.",
+                innerThought: "Он заранее подготовил алиби. Нужно сопоставить его слова с показаниями свидетелей.",
+                claim: {
+                    id: "kane-left-before-poisoning",
+                    topic: "kane-presence-during-poisoning",
+                    value: "left-before-poisoning",
+                    summary: "Кейн утверждает, что покинул бар до отравления и не подходил к столику",
+                    sourceName: "Виктор Кейн",
+                    location: "Офис Виктора Кейна",
+                    timeLabel: "Допрос после сбора свидетельств",
+                    circumstances: "Алиби изложено в ответ на вопрос о его присутствии в баре",
+                    deception: { deliberate: true, motive: "self_preservation" }
+                },
                 answers: [
+                    { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "hasInsight:waiter_saw_poisoning" },
                     { text: "Расскажите, зачем вы это сделали.", nextNode: "why", tone: "calm" },
-                    { text: "Вы убили человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                    { text: "Вы пытались убить человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                ]
+            },
+
+            caught_in_lie: {
+                speaker: "npc",
+                text: "Томас? Он молодой и напуганный. Вы уверены, что правильно его поняли? Я вышел в коридор, но к столику Блэквуда не возвращался.",
+                mood: "defensive",
+                innerThought: "Кейн пытается обесценить показания свидетеля. Его алиби больше не выглядит надёжным.",
+                givesInsight: "kane_alibi_broken",
+                answers: [
+                    { text: "Бармен тоже видел, как вы забрали пузырёк.", nextNode: "why", tone: "direct", condition: "hasInsight:kane_stole_vial" },
+                    { text: "Тогда объясните, что вы сделали с пузырьком.", nextNode: "final_decision", tone: "direct", condition: "hasInsight:kane_stole_vial" },
+                    { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
                 ]
             },
 
@@ -56,7 +109,7 @@ const DIALOGUE_RIVAL_FULL = {
 
             final_decision: {
                 speaker: "npc",
-                text: "Я купил цианид. Для себя — на случай, если не смогу жить с позором. Но в баре я увидел Анну. Она уронила пузырёк со снотворным. И я подумал: «Вот он — шанс». Я подменил содержимое.",
+                text: "Я купил цианид под видом реактива для лаборатории. Сначала держал его для себя — на случай, если не смогу жить с позором. В баре я увидел, как Анна уронила пузырёк со снотворным. Я поднял его через салфетку, а потом в уборной перелил туда цианид из своей склянки. Вернулся и дождался, когда Блэквуд отвлечётся. После первого глотка он понял, что происходит. Я оставил пузырёк под столом — хотел, чтобы полиция нашла только отпечатки Анны.",
                 mood: "cold",
                 innerThought: "Импульсивное решение. Или спланированное?",
                 answers: [

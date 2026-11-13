@@ -6,6 +6,23 @@ class DialogueEngine {
         this.currentNode = null;
         this.dialogueHistory = [];
         this.onNodeChange = null;
+        this.memoryService = null;
+    }
+
+    setMemoryService(service) {
+        this.memoryService = service || null;
+    }
+
+    _recordNodeMemory(node) {
+        const npcId = this.currentDialogue?.npcId;
+        if (!npcId || !this.memoryService || !node) return;
+        this.memoryService.recordNodeVisited(npcId, this.currentDialogue.id, node);
+        this._notifyMemoryChanged();
+    }
+
+    _notifyMemoryChanged() {
+        if (!this.memoryService) return;
+        events.emit('npc:memory_changed', this.memoryService.toJSON());
     }
     
     // Начать диалог
@@ -35,7 +52,11 @@ class DialogueEngine {
             speaker: startNode.speaker,
             text: startNode.text
         });
-        
+
+        if (this.memoryService) {
+            this.memoryService.recordDialogueStarted(dialogue.npcId, dialogue.id);
+            this._recordNodeMemory(this.currentNode);
+        }
         this._processNodeEffects(startNode);
         
         if (this.gameTime) {
@@ -61,6 +82,34 @@ class DialogueEngine {
             return { error: 'Условие не выполнено' };
         }
         
+        if (this.memoryService && this.currentDialogue?.npcId) {
+            this.memoryService.recordAnswerSelected(
+                this.currentDialogue.npcId,
+                this.currentDialogue.id,
+                this.currentNode.id,
+                answer
+            );
+            if (answer.promise) {
+                this.memoryService.recordPromise(this.currentDialogue.npcId, answer.promise);
+            }
+            if (answer.report?.id && Array.isArray(answer.report.recipients)) {
+                for (const recipientNpcId of answer.report.recipients) {
+                    this.memoryService.shareExperience(
+                        this.currentDialogue.npcId,
+                        recipientNpcId,
+                        answer.report,
+                        {
+                            dialogueId: this.currentDialogue.id,
+                            nodeId: this.currentNode.id,
+                            answerText: answer.text,
+                            tone: answer.tone || 'neutral'
+                        }
+                    );
+                }
+            }
+            this._notifyMemoryChanged();
+        }
+
         // Если диалог завершается
         if (answer.nextNode === 'end_call' || answer.nextNode === 'end_talk' || 
             answer.nextNode === 'end_briefing' || answer.nextNode === 'end_elias' ||
@@ -78,6 +127,7 @@ class DialogueEngine {
                     speaker: endNode.speaker,
                     text: endNode.text
                 });
+                this._recordNodeMemory(this.currentNode);
                 this._processNodeEffects(endNode);
             }
             
@@ -99,7 +149,8 @@ class DialogueEngine {
             speaker: nextNode.speaker,
             text: nextNode.text
         });
-        
+
+        this._recordNodeMemory(this.currentNode);
         this._processNodeEffects(nextNode);
         
         if (this.gameTime) {
@@ -141,10 +192,118 @@ class DialogueEngine {
         return [...this.dialogueHistory];
     }
     
+    // Предъявить собранную улику текущему персонажу.
+    presentEvidence(evidenceId) {
+        const dialogue = this.currentDialogue;
+        const npcId = dialogue?.npcId;
+        if (!dialogue || !npcId || !evidenceId) return { success: false, reason: 'no_active_dialogue' };
+        const evidenceObject = getObjectById(evidenceId);
+        const isCollectedEvidence = this.inventory?.hasItem?.(evidenceId) ||
+            this.inventory?.evidence?.includes(evidenceId);
+        if (!isCollectedEvidence || !evidenceObject?.isEvidence) {
+            return { success: false, reason: 'evidence_not_available' };
+        }
+
+        if (this.memoryService) {
+            const recorded = this.memoryService.recordEvidencePresented(npcId, dialogue.id, evidenceId);
+            if (!recorded.recorded) return { success: false, reason: recorded.reason };
+        }
+
+        const reaction = dialogue.evidenceReactions?.[evidenceId];
+        const object = getObjectById(evidenceId);
+        const node = {
+            id: `evidence_${evidenceId}`,
+            speaker: 'npc',
+            text: reaction?.text || `Вы показываете ${object?.name || 'улику'}. Персонаж внимательно изучает её, но пока не готов сделать вывод.`,
+            mood: reaction?.mood || 'serious',
+            givesInsight: reaction?.givesInsight || null,
+            claim: reaction?.claim || null,
+            answers: reaction?.answers || this.currentNode?.answers || []
+        };
+
+        this.currentNode = node;
+        this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
+        this._recordNodeMemory(node);
+        this._processNodeEffects(node);
+        if (this.gameTime) this.gameTime.advance(CONFIG.time.costs.dialogue);
+        if (this.onNodeChange) this.onNodeChange(this.currentNode);
+        return { success: true, reaction: Boolean(reaction), node: this.currentNode };
+    }
+
+    // Предъявить NPC заранее сопоставленные несовместимые показания.
+    presentPreparedContradiction() {
+        const dialogue = this.currentDialogue;
+        const npcId = dialogue?.npcId;
+        if (!dialogue || !npcId || !this.memoryService) {
+            return { success: false, reason: 'no_active_dialogue' };
+        }
+
+        const prepared = this.memoryService.getPreparedConfrontation(npcId);
+        if (!prepared) return { success: false, reason: 'no_prepared_confrontation' };
+
+        const reaction = dialogue.contradictionReactions?.[prepared.topic] || null;
+        const first = prepared.contradiction.first;
+        const second = prepared.contradiction.second;
+        const responseText = reaction?.text ||
+            `Вы предъявляете два несовместимых показания: «${first.summary}» и «${second.summary}». Персонаж перечитывает записи и просит время, чтобы обдумать ответ.`;
+
+        if (!this.memoryService.recordConfrontation(npcId, reaction?.givesInsight || null)) {
+            return { success: false, reason: 'already_confronted' };
+        }
+
+        const node = {
+            id: `contradiction_${prepared.topic}`,
+            speaker: 'npc',
+            text: responseText,
+            mood: reaction?.mood || 'guarded',
+            givesInsight: reaction?.givesInsight || null,
+            claim: reaction?.claim || null,
+            answers: reaction?.answers || this.currentNode?.answers || []
+        };
+
+        this.currentNode = node;
+        this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
+        this._recordNodeMemory(node);
+        this._processNodeEffects(node);
+        events.emit('npc:contradiction_presented', {
+            npcId,
+            topic: prepared.topic,
+            firstId: prepared.firstId,
+            secondId: prepared.secondId
+        });
+        this._notifyMemoryChanged();
+
+        if (this.gameTime) this.gameTime.advance(CONFIG.time.costs.dialogue);
+        if (this.onNodeChange) this.onNodeChange(this.currentNode);
+        return { success: true, reaction: Boolean(reaction), node: this.currentNode };
+    }
+
     // ============ ВНУТРЕННИЕ МЕТОДЫ ============
     
     _processNodeEffects(node) {
         if (!node) return;
+
+        if (node.claim && this.memoryService && this.currentDialogue?.npcId) {
+            const result = this.memoryService.recordClaim(
+                this.currentDialogue.npcId,
+                {
+                    ...node.claim,
+                    dialogueId: this.currentDialogue.id,
+                    nodeId: node.id
+                }
+            );
+            const discovered = (result.contradictions || []).filter(item =>
+                item.first.id === node.claim.id || item.second.id === node.claim.id
+            );
+            if (discovered.length) {
+                events.emit('npc:contradiction_detected', {
+                    npcId: this.currentDialogue.npcId,
+                    dialogueId: this.currentDialogue.id,
+                    contradictions: discovered
+                });
+            }
+            if (result.added) this._notifyMemoryChanged();
+        }
         
         // Выдача улики
         if (node.givesEvidence) {
@@ -164,6 +323,15 @@ class DialogueEngine {
     
     _checkCondition(conditionStr) {
         if (!conditionStr) return true;
+
+        if (conditionStr.startsWith('all:')) {
+            return conditionStr.slice(4).split('&').map(part => part.trim())
+                .filter(Boolean).every(part => this._checkCondition(part));
+        }
+        if (conditionStr.startsWith('any:')) {
+            return conditionStr.slice(4).split('&').map(part => part.trim())
+                .filter(Boolean).some(part => this._checkCondition(part));
+        }
         
         // hasItem:itemId
         if (conditionStr.startsWith('hasItem:')) {
@@ -177,6 +345,40 @@ class DialogueEngine {
             return this.inventory?.hasInsight(insightId) || false;
         }
         
+        const npcId = this.currentDialogue?.npcId;
+        const npc = npcId && typeof getNPCById === 'function' ? getNPCById(npcId) : null;
+        const psychology = npcId
+            ? this.memoryService?.getPsychologicalState(npcId, npc?.psychology)
+            : null;
+
+        if (conditionStr.startsWith('trust_at_least:')) {
+            const threshold = Number(conditionStr.slice('trust_at_least:'.length));
+            return Number.isFinite(threshold) && (psychology?.trust ?? 50) >= threshold;
+        }
+        if (conditionStr.startsWith('trust_below:')) {
+            const threshold = Number(conditionStr.slice('trust_below:'.length));
+            return Number.isFinite(threshold) && (psychology?.trust ?? 50) < threshold;
+        }
+        if (conditionStr.startsWith('pressure_at_least:')) {
+            const threshold = Number(conditionStr.slice('pressure_at_least:'.length));
+            return Number.isFinite(threshold) && (psychology?.pressure ?? 0) >= threshold;
+        }
+        if (conditionStr.startsWith('pressure_below:')) {
+            const threshold = Number(conditionStr.slice('pressure_below:'.length));
+            return Number.isFinite(threshold) && (psychology?.pressure ?? 0) < threshold;
+        }
+        if (conditionStr.startsWith('heard_rumor:')) {
+            const rumorId = conditionStr.slice('heard_rumor:'.length);
+            return Boolean(npcId && this.memoryService?.hasRumor(npcId, rumorId));
+        }
+        if (conditionStr.startsWith('lie_exposed:')) {
+            const claimId = conditionStr.slice('lie_exposed:'.length);
+            return Boolean(npcId && this.memoryService?.hasExposedLie(npcId, claimId));
+        }
+        if (conditionStr.startsWith('disposition:')) {
+            return psychology?.disposition === conditionStr.slice('disposition:'.length);
+        }
+
         // evidence_count:N
         if (conditionStr.startsWith('evidence_count:')) {
             const count = parseInt(conditionStr.replace('evidence_count:', ''));

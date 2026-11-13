@@ -77,12 +77,26 @@ class Inventory {
         return true;
     }
 
-    // Удалить улику из списка evidence (при переносе на доску)
+    // Удалить улику из доступного пула при переносе на доску.
     removeFromEvidence(evidenceId) {
         const index = this.evidence.indexOf(evidenceId);
-        if (index !== -1) {
-            this.evidence.splice(index, 1);
+        if (index === -1) return false;
+
+        this.evidence.splice(index, 1);
+        events.emit('inventory:changed', { action: 'remove_evidence', itemId: evidenceId });
+        return true;
+    }
+
+    // Вернуть ранее собранную улику в доступный пул после снятия с доски.
+    addToEvidence(evidenceId) {
+        const object = getObjectById(evidenceId);
+        if (!object?.isEvidence || !this.items.includes(evidenceId) || this.evidence.includes(evidenceId)) {
+            return false;
         }
+
+        this.evidence.push(evidenceId);
+        events.emit('inventory:changed', { action: 'restore_evidence', itemId: evidenceId });
+        return true;
     }
 
     // Проверить наличие предмета

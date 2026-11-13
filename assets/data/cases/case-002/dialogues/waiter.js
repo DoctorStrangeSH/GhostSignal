@@ -2,10 +2,23 @@ const DIALOGUE_WAITER = {
     id: "dialogue-waiter",
     npcId: "waiter",
     type: "face_to_face",
-    
+
+    evidenceReactions: {
+        bar_photo: {
+            text: "Да, это Кейн. Я помню этот костюм и то, как он сидел у стойки. На фотографии он ещё не подошёл к столику Блэквуда.",
+            mood: "nervous",
+            givesInsight: "kane_identified_in_photo"
+        },
+        poison_vial: {
+            text: "Похоже на тот самый пузырёк. Я видел, как Кейн поднял его через салфетку, а потом спрятал в карман.",
+            mood: "scared",
+            givesInsight: "waiter_identifies_vial"
+        }
+    },
+
     context: {
         title: "Подсобка бара",
-        text: "Вы находите Томаса в подсобке. Он nervously крутит полотенце и избегает зрительного контакта. Ему не больше двадцати.",
+        text: "Вы находите Томаса в подсобке. Он нервно крутит полотенце и избегает зрительного контакта. Ему не больше двадцати.",
         mood: "tense"
     },
 
@@ -19,29 +32,39 @@ const DIALOGUE_WAITER = {
                 innerThought: "Он напуган. Кто-то угрожал ему?",
                 answers: [
                     { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm" },
-                    { text: "Если ты скрываешь информацию — это соучастие.", nextNode: "threat", tone: "aggressive" }
+                    {
+                        text: "Если ты скрываешь информацию — это соучастие.",
+                        nextNode: "threat",
+                        tone: "aggressive",
+                        report: {
+                            id: "detective-threatened-thomas",
+                            kind: "detective_behavior",
+                            sourceName: "Томас",
+                            text: "Детектив пригрозил обвинить меня в соучастии, когда я испугался рассказать правду.",
+                            recipients: ["bartender"]
+                        }
+                    }
                 ]
             },
 
             he_saw: {
                 speaker: "npc",
-                text: "Я... я видел мужчину. В костюме. Он сидел у стойки. Когда женщина уронила пузырёк, он поднял его и положил в карман.",
+                text: "Я... я видел мужчину. В костюме. Он сидел у стойки. Когда женщина уронила пузырёк, он поднял его через сложенную салфетку и положил в карман.",
                 mood: "scared",
                 innerThought: "Ещё одно подтверждение! Кейн украл пузырёк.",
                 givesInsight: "waiter_confirms_theft",
                 answers: [
-                    { text: "Ты видел, что было дальше?", nextNode: "what_next" }
+                    { text: "Ты видел, что было дальше?", nextNode: "what_next", tone: "calm" }
                 ]
             },
 
             what_next: {
                 speaker: "npc",
-                text: "Да. Когда бармен отвернулся, мужчина подошёл к столику жертвы. Он что-то сыпал в стакан. Белый порошок. Я хотел крикнуть, но... испугался.",
+                text: "Да. Мужчина ненадолго выходил в коридор. Когда вернулся, дождался, пока бармен отвернётся, подошёл к столику жертвы и что-то ссыпал в стакан. Белый порошок. Я хотел крикнуть, но... испугался.",
                 mood: "ashamed",
                 innerThought: "Он видел момент отравления. И молчал из страха.",
-                givesInsight: "waiter_saw_poisoning",
                 answers: [
-                    { text: "Почему ты не рассказал это сразу?", nextNode: "why_silent" }
+                    { text: "Почему ты не рассказал это сразу?", nextNode: "why_silent", tone: "calm" }
                 ]
             },
 
@@ -52,17 +75,59 @@ const DIALOGUE_WAITER = {
                 innerThought: "Кейн угрожал свидетелю. Это отягчает вину.",
                 givesInsight: "kane_threatened_witness",
                 answers: [
-                    { text: "Теперь ты в безопасности. Я защищу тебя.", nextNode: "protection" }
+                    {
+                        text: "Я обеспечу охрану твоей семьи и сделаю так, чтобы Кейн больше не мог вам угрожать. Обещаю. Но мне нужны официальные показания.",
+                        nextNode: "protection",
+                        tone: "reassuring",
+                        trustDelta: 4,
+                        pressureDelta: -8,
+                        condition: "all:trust_at_least:53&pressure_below:15",
+                        promise: {
+                            id: "thomas-family-protection",
+                            text: "Обеспечить безопасность семьи Томаса и лишить Кейна возможности угрожать им",
+                            caseId: "case-002",
+                            fulfillment: { type: "insight_gained", insightId: "full_confession_kane" },
+                            fulfilledTrustDelta: 6,
+                            brokenTrustDelta: -8
+                        }
+                    },
+                    {
+                        text: "Я понимаю, что тебе страшно. Не стану давить. Вернёмся к этому, когда смогу обеспечить защиту.",
+                        nextNode: "waiter_hesitates",
+                        tone: "calm",
+                        condition: "any:trust_below:53&pressure_at_least:15"
+                    }
+                ]
+            },
+
+            waiter_hesitates: {
+                speaker: "npc",
+                text: "Я хочу помочь, детектив. Но Кейн знает, где живёт моя мать. Пока я не буду уверен, что она в безопасности, я не смогу подписать показания.",
+                mood: "scared",
+                innerThought: "Томас не отказывается навсегда. Ему нужно доказать, что его семья защищена.",
+                answers: [
+                    { text: "Я вернусь, когда у меня будет официальный план защиты.", nextNode: "end_waiter", tone: "reassuring", pressureDelta: -3 }
                 ]
             },
 
             protection: {
                 speaker: "npc",
-                text: "Правда? Вы... вы можете? Спасибо. Я дам показания. Я расскажу всё, что видел.",
+                text: "Правда? Вы... вы можете? Спасибо. Я дам официальные показания. Я расскажу всё, что видел.",
                 mood: "relieved",
-                innerThought: "Ещё один свидетель против Кейна.",
+                innerThought: "Томас наконец решился выступить свидетелем.",
+                givesInsight: "waiter_saw_poisoning",
+                claim: {
+                    id: "waiter-kane-at-poisoning",
+                    topic: "kane-presence-during-poisoning",
+                    value: "present-at-bar-during-poisoning",
+                    summary: "Томас видел, как Кейн вернулся к столику Блэквуда и подсыпал порошок",
+                    sourceName: "Томас",
+                    location: "Бар «У Джо»",
+                    timeLabel: "Вечер отравления",
+                    circumstances: "Официальное показание после согласования защиты семьи свидетеля"
+                },
                 answers: [
-                    { text: "Ты поступил правильно, Томас.", nextNode: "end_waiter" }
+                    { text: "Ты поступил правильно, Томас.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
 
@@ -72,7 +137,8 @@ const DIALOGUE_WAITER = {
                 mood: "panicked",
                 innerThought: "Перегнул. Нужно успокоить.",
                 answers: [
-                    { text: "Успокойся. Просто расскажи правду.", nextNode: "he_saw" }
+                    { text: "Успокойся. Я не обвиняю тебя. Давай поговорим спокойно.", nextNode: "he_saw", tone: "reassuring" },
+                    { text: "Я могу сделать так, что тебе станет ещё страшнее.", nextNode: "waiter_hesitates", tone: "threatening" }
                 ]
             },
 

@@ -7,12 +7,12 @@ registerData('evidence', {
         id: "chain_002_poison_path",
         name: "Путь яда",
         caseId: "case-002",
-        requiredEvidence: ["poison_vial", "prescription_copy", "lora_notes"],
+        requiredEvidence: ["poison_vial", "prescription_copy", "bar_photo"],
         requiredInsights: ["kane_bought_cyanide", "someone_took_vial", "rival_took_vial_confirmed"],
         bonusInsight: "full_poison_path",
         bonusEvidence: null,
         description: "Вы проследили путь яда от аптеки до стакана Блэквуда. Кейн купил цианид в той же аптеке, где Анна приобрела снотворное. Он украл пузырёк Анны, заменил содержимое и подсыпал яд в стакан. Идеальное преступление, которое разрушила одна свидетельница.",
-        narrative: "Аптека на углу. Два покупателя. Один день. Анна купила снотворное — она хотела умереть. Кейн купил цианид — он хотел убить. Когда Анна уронила пузырёк у стойки бара, Кейн поднял его. Но вернул не сразу. Сначала он заменил содержимое. А потом — подсыпал яд в стакан Блэквуда."
+        narrative: "Аптека на углу. Два покупателя. Один день. Анна купила снотворное, намереваясь покончить с собой. Кейн приобрёл цианид под видом лабораторного реактива и использовал её пузырёк, чтобы направить подозрение на неё. Когда Анна уронила пузырёк у стойки бара, Кейн поднял его через салфетку. В уборной он заменил содержимое на цианид, а затем вернулся к столику. А потом — подсыпал яд в стакан Блэквуда."
     },
     
     chain_002_witnesses: {
@@ -31,7 +31,7 @@ registerData('evidence', {
         id: "chain_002_sisters",
         name: "Сёстры",
         caseId: "case-002",
-        requiredEvidence: ["red_scarf", "threat_note", "lora_notes"],
+        requiredEvidence: ["red_scarf", "threat_note", "prescription_copy"],
         requiredInsights: ["sisters_revealed", "suicide_plan", "someone_took_vial"],
         bonusInsight: "sisters_full_story",
         bonusEvidence: null,

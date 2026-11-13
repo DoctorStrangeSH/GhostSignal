@@ -76,6 +76,7 @@ class InvestigationBoard {
 
         this.evidenceOnBoard = this.evidenceOnBoard.filter(id => id !== evidenceId);
 
+        events.emit('inventory:restore_evidence', evidenceId);
         events.emit('board:updated', { action: 'remove', evidenceId, slotId });
         return evidenceId;
     }
@@ -128,8 +129,13 @@ class InvestigationBoard {
 
     // Сбросить доску
     reset() {
+        const evidenceToRestore = [...this.evidenceOnBoard];
         this.slots.forEach(s => s.evidenceId = null);
         this.evidenceOnBoard = [];
+
+        evidenceToRestore.forEach(evidenceId => {
+            events.emit('inventory:restore_evidence', evidenceId);
+        });
         events.emit('board:updated', { action: 'reset' });
     }
 

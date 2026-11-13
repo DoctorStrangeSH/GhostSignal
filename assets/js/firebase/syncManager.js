@@ -4,82 +4,113 @@ class SyncManager {
         this.cloudStorage = cloudStorage;
         this.storage = storageManager;
         this.syncInProgress = false;
-        
+        this.hasConflict = Boolean(this.storage.get('cloud_conflict_backup'));
+
         this._bindEvents();
     }
-    
+
     _bindEvents() {
-        // При входе — синхронизируем
         events.on('auth:login', () => {
             this.syncFromCloud();
         });
-        
-        // При выходе — сохраняем локально
+
         events.on('auth:logout', () => {
             console.log('💾 Работаем локально');
         });
     }
-    
-    // Синхронизация: облако → локально
+
+    // Синхронизация с сохранением обеих версий при конфликте.
     async syncFromCloud() {
         if (this.syncInProgress) return;
         this.syncInProgress = true;
-        
+
         try {
             const cloudData = await this.cloudStorage.loadFromCloud();
-            
+            const localData = this.storage.loadProgress();
+
             if (cloudData) {
-                const localData = this.storage.loadProgress();
-                
-                // Определяем, какие данные новее
                 if (!localData || this._isCloudNewer(cloudData, localData)) {
-                    // Облачные данные новее — загружаем
-                    this.storage.saveProgress(cloudData);
-                    console.log('☁️→💾 Данные синхронизированы из облака');
-                    
-                    events.emit('notification:show', {
-                        message: 'Прогресс загружен из облака',
-                        type: 'success',
-                        duration: 3000
-                    });
-                    
-                    // Перезагружаем игру
-                    events.emit('sync:reload_needed');
-                } else {
-                    // Локальные данные новее — отправляем в облако
+                    // Не перезаписываем активное расследование автоматически.
+                    if (localData?.activeCase) {
+                        this.storage.set('cloud_conflict_backup', cloudData);
+                        this.hasConflict = true;
+                        events.emit('sync:conflict', { activeCase: localData.activeCase });
+                    } else {
+                        this.storage.saveProgress(cloudData);
+                        events.emit('notification:show', {
+                            message: 'Прогресс загружен из облака',
+                            type: 'success',
+                            duration: 3000
+                        });
+                        events.emit('sync:reload_needed');
+                    }
+                } else if (!this.hasConflict) {
                     await this.cloudStorage.saveToCloud(localData);
                     console.log('💾→☁️ Данные отправлены в облако');
                 }
-            } else {
-                // В облаке пусто — отправляем локальные
-                const localData = this.storage.loadProgress();
-                if (localData) {
-                    await this.cloudStorage.saveToCloud(localData);
-                }
+            } else if (localData && !this.hasConflict) {
+                await this.cloudStorage.saveToCloud(localData);
             }
         } catch (error) {
             console.error('❌ Ошибка синхронизации:', error);
+        } finally {
+            this.syncInProgress = false;
         }
-        
-        this.syncInProgress = false;
     }
-    
-    // Сохранить и локально и в облако
+
+    // Сохранить локально; облако обновляется только если нет неразрешённого конфликта.
     async saveEverywhere(progressData) {
-        // Локально
         this.storage.saveProgress(progressData);
-        
-        // В облако (если онлайн и авторизован)
-        if (this.authManager.isUserLoggedIn()) {
-            await this.cloudStorage.saveToCloud(progressData);
+        const localData = this.storage.loadProgress();
+
+        if (this.hasConflict || this.storage.get('cloud_conflict_backup')) {
+            return false;
         }
+
+        if (this.authManager.isUserLoggedIn()) {
+            return this.cloudStorage.saveToCloud(localData);
+        }
+        return true;
     }
-    
+
+    // Пользователь явно выбирает, какую версию оставить.
+    async resolveConflict(strategy) {
+        const cloudBackup = this.storage.get('cloud_conflict_backup');
+        if (!cloudBackup) return false;
+
+        if (strategy === 'cloud') {
+            this.storage.saveProgress(cloudBackup);
+            this.storage.remove('cloud_conflict_backup');
+            this.hasConflict = false;
+            events.emit('sync:reload_needed');
+            return true;
+        }
+
+        if (strategy === 'local') {
+            const localData = this.storage.loadProgress();
+            const saved = await this.cloudStorage.saveToCloud(localData);
+            if (!saved) return false;
+
+            this.storage.remove('cloud_conflict_backup');
+            this.hasConflict = false;
+            return true;
+        }
+
+        return false;
+    }
+
     _isCloudNewer(cloudData, localData) {
-        // Простое сравнение: если в облаке больше раскрытых дел
+        const cloudUpdatedAt = Number(cloudData?._sync?.updatedAt) || 0;
+        const localUpdatedAt = Number(localData?._sync?.updatedAt) || 0;
+
+        if (cloudUpdatedAt !== localUpdatedAt) {
+            if (!cloudUpdatedAt) return false;
+            if (!localUpdatedAt) return true;
+            return cloudUpdatedAt > localUpdatedAt;
+        }
+
         const cloudSolved = cloudData?.solvedCases?.length || 0;
         const localSolved = localData?.solvedCases?.length || 0;
-        
         return cloudSolved > localSolved;
     }
 }

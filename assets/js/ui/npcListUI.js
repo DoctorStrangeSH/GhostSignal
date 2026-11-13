@@ -9,6 +9,8 @@ class NPCListUI {
         this.npcManager = manager;
         events.on('npcs:loaded', () => this.render());
         events.on('time:changed', () => this.render());
+        events.on('npc:memory_changed', () => this.render());
+        events.on('npc:contradiction_presented', () => this.render());
         this.render();
     }
     
@@ -103,6 +105,44 @@ class NPCListUI {
                     ${!npc.available ? `<button class="terminal-btn npc-wait-btn" disabled>⏳ НЕДОСТУПЕН</button>` : ''}
                 </div>
                 
+                ${npc.memory ? `
+                    <div class="npc-memory">
+                        <div class="npc-memory-heading"><span>ДОВЕРИЕ</span><strong>${npc.memory.trust}%</strong></div>
+                        <div class="npc-trust-track"><span style="width: ${npc.memory.trust}%;"></span></div>
+                        <div class="npc-memory-meta">Разговоров: ${npc.memory.conversations} · Улик предъявлено: ${npc.memory.presentedEvidence.length}</div>
+                        ${npc.psychology ? `
+                            <div class="npc-psychology-state state-${npc.psychology.disposition}">
+                                <span>СОСТОЯНИЕ</span><strong>${npc.psychology.label}</strong>
+                            </div>
+                        ` : ''}
+                        ${npc.memory.liesExposed?.length ? `
+                            <div class="npc-lies-exposed">⚠ Раскрыто ложных показаний: ${npc.memory.liesExposed.length}</div>
+                        ` : ''}
+                        ${npc.rumors?.length ? `
+                            <div class="npc-rumors">
+                                <div class="npc-rumors-heading">СВЕДЕНИЯ О ДЕТЕКТИВЕ</div>
+                                ${[...npc.rumors].slice(-2).reverse().map(rumor => `
+                                    <div class="npc-rumor">
+                                        <span>ОТ ${rumor.reportedByName || 'СВИДЕТЕЛЯ'} · НЕПРОВЕРЕНО</span>
+                                        <p>${rumor.text}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${npc.promises?.length ? `
+                            <div class="npc-promises">
+                                <div class="npc-promises-heading">ОБЕЩАНИЯ ДЕТЕКТИВА</div>
+                                ${[...npc.promises].slice(-2).reverse().map(promise => {
+                                    const labels = { pending: 'ОЖИДАЕТ', fulfilled: 'ВЫПОЛНЕНО', broken: 'НАРУШЕНО' };
+                                    return `<div class="npc-promise promise-${promise.status}">
+                                        <span>${labels[promise.status] || 'ЗАПИСАНО'}</span>
+                                        <p>${promise.text}</p>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
                 ${npc.insightsGiven && npc.insightsGiven.length > 0 ? `
                     <div class="npc-insights">💡 Поделился информацией: ${npc.insightsGiven.length}</div>
                 ` : ''}

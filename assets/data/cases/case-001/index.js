@@ -9,7 +9,7 @@ const CASE_001 = {
     description: "Мистер Блэквуд, постоялец отеля «Гранд», исчез из запертого номера 304. Дверь закрыта изнутри, окно не открывали. Признаков взлома нет. Администрация отеля просит провести расследование.",
     
     // === ВРЕМЯ СТАРТА ===
-    startTime: { hour: 8, minute: 0, day: 1 },
+    startTime: { hour: 20, minute: 0, day: 1 },
     
     // === ЛОКАЦИИ ===
     locations: [
@@ -57,6 +57,12 @@ const CASE_001 = {
             action: "accept_case"
         },
         {
+            id: "chain_trick_revealed",
+            trigger: "insight:chain_trick",
+            type: "notification",
+            message: "Цепочку можно было закрыть снаружи крючком из проволоки. Проверьте, не оставила ли Мэри объяснение этого трюка."
+        },
+        {
             id: "discover_diary",
             trigger: "item_acquired:victim_diary",
             type: "narrative",
@@ -84,7 +90,7 @@ const CASE_001 = {
         },
         {
             id: "all_evidence_found",
-            trigger: "evidence_count:5",
+            trigger: "evidence_count:6",
             type: "narrative",
             title: "Картина проясняется",
             text: "У вас достаточно улик. Блэквуд планировал побег с горничной, но что-то пошло не так. Пора составить обвинение."
@@ -105,7 +111,7 @@ const CASE_001 = {
             locationId: "hotel_room_304",
             trigger: "first_visit:hotel_room_304",
             text: "Номер 304. Беспорядок. Кровать смята. На ковре — тёмное пятно. Окно закрыто. Зеркало висит криво — за ним что-то виднеется.",
-            highlightObjects: ["bed_304", "carpet_stain", "window_304", "mirror"]
+            highlightObjects: ["bed_304", "carpet_stain", "window_304", "door_chain", "mirror"]
         },
         {
             id: "bar_intro",
@@ -142,16 +148,8 @@ const CASE_001 = {
     boardSlots: 4,
     
     // === ЦЕПОЧКИ УЛИК ===
-    evidenceChains: [
-        {
-            id: "chain_001",
-            name: "План побега",
-            requiredEvidence: ["hidden_note", "train_ticket", "torn_photo"],
-            requiredInsights: ["bar_meeting", "planned_escape"],
-            bonusInsight: "full_escape_plan",
-            description: "Вы восстановили план побега Блэквуда. Он собирался уехать с горничной."
-        }
-    ],
+    // Canonical chain definitions are registered in the matching evidence.js file.
+    evidenceChains: [],
     
     // === СЛЕЖКИ ===
     stakeouts: [

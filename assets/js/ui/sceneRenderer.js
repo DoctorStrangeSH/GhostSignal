@@ -78,11 +78,29 @@ class SceneRenderer {
 
         wrapper.appendChild(navBar);
 
+        // Атмосферная панель сцены: тип локации и время суток задают визуальный тон.
+        const sceneType = String(location.type || 'default').replace(/[^a-z0-9_-]/gi, '');
+        const sceneArt = document.createElement('div');
+        sceneArt.className = `scene-art scene-art-${sceneType} ${isNight ? 'is-night' : 'is-day'}`;
+        sceneArt.setAttribute('role', 'img');
+        sceneArt.setAttribute('aria-label', `${location.name}, ${periodName.toLowerCase()}`);
+
+        const artIcon = document.createElement('span');
+        artIcon.className = 'scene-art-icon';
+        artIcon.setAttribute('aria-hidden', 'true');
+        artIcon.textContent = location.icon || '📍';
+
+        const artCaption = document.createElement('span');
+        artCaption.className = 'scene-art-caption';
+        artCaption.textContent = periodName.toUpperCase();
+
+        sceneArt.append(artIcon, artCaption);
+        wrapper.appendChild(sceneArt);
+
         // === ЗАГОЛОВОК ===
         const header = document.createElement('div');
         header.className = 'scene-placeholder-header';
         header.innerHTML = `
-            <div class="scene-icon-large">${location.icon || '📍'}</div>
             <h2 class="scene-title">${location.name}</h2>
             <p class="scene-description">${location.description || ''}</p>
         `;

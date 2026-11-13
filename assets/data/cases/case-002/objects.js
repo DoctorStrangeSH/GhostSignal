@@ -7,7 +7,7 @@ registerData('object', {
         id: "overturned_glass", name: "Опрокинутый стакан", type: "evidence",
         description: "Стакан с остатками жидкости. Пахнет горьким миндалём — характерный запах цианида.",
         icon: "🥃", takeable: true, isEvidence: true, weight: 1,
-        interactions: { examine: { text: "На дне стакана — белый осадок. Цианид. Яд был подсыпан в напиток. Профессионально и быстро.", timeCost: 5, givesInsight: "cyanide_poison" } }
+        interactions: { examine: { text: "На дне стакана — белый осадок. Цианид. Под ножкой стола вы замечаете маленький пузырёк, прикрытый салфеткой. Кто-то оставил его так, чтобы он выглядел случайно обронённым.", timeCost: 5, givesInsight: "cyanide_poison", spawnsItem: "poison_vial" } }
     },
     red_scarf: {
         id: "red_scarf", name: "Красный шарф", type: "evidence",
@@ -17,9 +17,15 @@ registerData('object', {
     },
     poison_vial: {
         id: "poison_vial", name: "Пузырёк из-под яда", type: "evidence",
-        description: "Маленький стеклянный пузырёк. Этикетка стёрта. На стекле — отпечатки пальцев.",
+        description: "Маленький стеклянный пузырёк. Этикетка стёрта. На стекле — отпечатки Анны; крышка и горлышко тщательно протёрты.",
         icon: "🧪", takeable: true, isEvidence: true, weight: 1,
-        interactions: { examine: { text: "Отпечатки принадлежат Анне Ковалёвой. Но яд внутри — не снотворное, а цианид. Кто-то заменил содержимое.", timeCost: 10, givesInsight: "fingerprints_found" } }
+        interactions: { examine: { text: "Отпечатки на стекле принадлежат Анне Ковалёвой. На крышке нет пригодных для сравнения следов. Внутри — цианид, хотя Анна покупала хлоралгидрат. Кто-то подменил содержимое, стараясь не оставить своих отпечатков.", timeCost: 10, givesInsight: "fingerprints_found" } }
+    },
+    anna_desk: {
+        id: "anna_desk", name: "Письменный стол Анны", type: "container",
+        description: "Небольшой стол у окна. В ящике — счета, старые письма и смятая записка.",
+        icon: "🗄️", takeable: false,
+        interactions: { examine: { text: "Под стопкой счетов лежит записка, написанная рукой Анны. Она угрожала Блэквуду, но дата показывает: записка появилась до того, как Кейн украл пузырёк.", timeCost: 5, spawnsItem: "threat_note", givesInsight: "angry_writer" } }
     },
     threat_note: {
         id: "threat_note", name: "Записка с угрозами", type: "evidence",
@@ -61,13 +67,13 @@ registerData('object', {
         id: "press_photos", name: "Фотографии прессы", type: "static_object",
         description: "Стена с фотографиями городской хроники за последний месяц.",
         icon: "📸", takeable: false,
-        interactions: { examine: { text: "Фото бара в ночь отравления. На снимке видно: Кейн наклоняется и поднимает пузырёк Анны!", timeCost: 10, givesInsight: "photo_evidence", spawnsItem: "bar_photo" } }
+        interactions: { examine: { text: "Контактный отпечаток с плёнки фотографа, снимавшего пятничный вечер в баре. На дальнем плане Кейн наклоняется у стойки и поднимает небольшой предмет через салфетку.", timeCost: 10, givesInsight: "photo_evidence", spawnsItem: "bar_photo" } }
     },
     bar_photo: {
         id: "bar_photo", name: "Фотография из бара", type: "evidence",
         description: "Снимок бара в ночь отравления. Кейн у стойки, Анна отворачивается, пузырёк исчезает.",
         icon: "📸", takeable: true, isEvidence: true, weight: 0,
-        interactions: { examine: { text: "Вот он — момент кражи. Кейн поднимает пузырёк и кладёт в карман. Фото не врёт.", timeCost: 5, givesInsight: "kane_caught" } }
+        interactions: { examine: { text: "Кейн поднимает небольшой предмет через салфетку и убирает его в карман. Сам предмет на кадре неразличим, но время совпадает с рассказами Евы и официанта. Это подтверждение их показаний, а не самостоятельное доказательство содержимого пузырька.", timeCost: 5, givesInsight: "kane_caught" } }
     },
     rival_desk: {
         id: "rival_desk", name: "Стол Кейна", type: "container",

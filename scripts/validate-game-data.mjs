@@ -1,0 +1,237 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import vm from "node:vm";
+
+const root = resolve(".");
+const html = readFileSync(resolve(root, "index.html"), "utf8");
+const dataScripts = html.split("<script src=").slice(1).map(chunk => chunk.match(/^["']([^"']+)["']/)?.[1]).filter(path => path?.startsWith("assets/data/") && path.endsWith(".js"));
+
+if (dataScripts.length === 0) {
+    process.stderr.write("No game data scripts were found in index.html." + String.fromCharCode(10));
+    process.exit(1);
+}
+
+const sandbox = vm.createContext({
+    console: { log() {}, warn() {}, error() {} },
+    window: {}
+});
+
+for (const scriptPath of dataScripts) {
+    const source = readFileSync(resolve(root, scriptPath), "utf8");
+    vm.runInContext(source, sandbox, { filename: scriptPath });
+}
+
+vm.runInContext(
+    "globalThis.__ghostSignalData = { cases: CASES_INDEX, locations: window.LOCATIONS_INDEX, npcs: window.NPCS_INDEX, objects: window.OBJECTS_INDEX, dialogues: window.DIALOGUES_INDEX, evidenceChains: window.EVIDENCE_CHAINS, endings: window.ENDINGS };",
+    sandbox
+);
+
+const data = sandbox.__ghostSignalData;
+const errors = [];
+const insightSources = new Set();
+const acquirableItems = new Set();
+const dialogueReferences = new Set();
+const checkRef = (registry, id, label) => {
+    if (typeof id === "string" && id && !registry[id]) errors.push(label + " references missing ID: " + id);
+};
+
+for (const [id, location] of Object.entries(data.locations)) {
+    if (location.id !== id) errors.push("Location key/id mismatch: " + id);
+    if (!location.hours || !Number.isFinite(location.hours.open) || !Number.isFinite(location.hours.close)) {
+        errors.push("Location has invalid opening hours: " + id);
+    } else if (location.hours.open < 0 || location.hours.open > 23 || location.hours.close < 0 || location.hours.close > 24) {
+        errors.push("Location hours are outside the 0–24 range: " + id);
+    }
+    if (location.requiresItem) checkRef(data.objects, location.requiresItem, "Location " + id + " requirement");
+    for (const itemId of [...(location.defaultItems || []), ...(location.nightOnlyItems || [])]) {
+        checkRef(data.objects, itemId, "Location " + id);
+        acquirableItems.add(itemId);
+    }
+    for (const npcId of location.npcsPresent || []) checkRef(data.npcs, npcId, "Location " + id);
+    if (location.parentLocation) checkRef(data.locations, location.parentLocation, "Location " + id);
+    if (location.mapPosition) {
+        const { x, y } = location.mapPosition;
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 100 || y < 0 || y > 100) {
+            errors.push("Location has invalid map coordinates: " + id);
+        }
+    }
+}
+
+for (const [id, npc] of Object.entries(data.npcs)) {
+    if (npc.id !== id) errors.push("NPC key/id mismatch: " + id);
+    if (npc.dialogueId) {
+        checkRef(data.dialogues, npc.dialogueId, "NPC " + id);
+        dialogueReferences.add(npc.dialogueId);
+    }
+    for (const itemId of npc.canGiveEvidence || []) {
+        checkRef(data.objects, itemId, "NPC " + id);
+        acquirableItems.add(itemId);
+    }
+    for (const insightId of npc.canGiveInsights || []) insightSources.add(insightId);
+    for (const condition of npc.specialConditions || []) {
+        if (condition.dialogueId) {
+            checkRef(data.dialogues, condition.dialogueId, "NPC condition " + id);
+            dialogueReferences.add(condition.dialogueId);
+        }
+        if (condition.condition?.startsWith("hasItem:")) checkRef(data.objects, condition.condition.slice(8), "NPC condition " + id);
+        if (condition.condition?.startsWith("hasInsight:")) insightSources.add(condition.condition.slice(11));
+    }
+    for (const hour of [npc.schedule?.awake?.start, npc.schedule?.awake?.end, npc.schedule?.sleeps?.start, npc.schedule?.sleeps?.end, npc.schedule?.atWork?.start, npc.schedule?.atWork?.end]) {
+        if (hour !== undefined && (!Number.isInteger(hour) || hour < 0 || hour > 23)) errors.push("NPC has invalid schedule hour: " + id + " (" + hour + ")");
+    }
+    for (const locationId of Object.values(npc.schedule?.locations || {})) {
+        if (locationId) checkRef(data.locations, locationId, "NPC schedule " + id);
+    }
+}
+
+for (const [id, object] of Object.entries(data.objects)) {
+    if (object.id !== id) errors.push("Object key/id mismatch: " + id);
+    for (const [action, interaction] of Object.entries(object.interactions || {})) {
+        if (interaction.spawnsItem) {
+            checkRef(data.objects, interaction.spawnsItem, "Object " + id + "/" + action);
+            acquirableItems.add(interaction.spawnsItem);
+        }
+        if (interaction.givesInsight) insightSources.add(interaction.givesInsight);
+        if (interaction.revealsObject) {
+            checkRef(data.objects, interaction.revealsObject, "Object " + id + "/" + action);
+            acquirableItems.add(interaction.revealsObject);
+        }
+        if (interaction.requiresItem) checkRef(data.objects, interaction.requiresItem, "Object " + id + "/" + action);
+        if (interaction.condition?.startsWith("hasItem:")) checkRef(data.objects, interaction.condition.slice(8), "Object condition " + id);
+        if (interaction.condition?.startsWith("hasInsight:")) insightSources.add(interaction.condition.slice(11));
+    }
+}
+
+for (const [id, dialogue] of Object.entries(data.dialogues)) {
+    if (dialogue.id !== id) errors.push("Dialogue key/id mismatch: " + id);
+    if (dialogue.npcId) checkRef(data.npcs, dialogue.npcId, "Dialogue " + id);
+    const nodes = dialogue.tree?.nodes || {};
+    if (!dialogue.tree?.start || !nodes[dialogue.tree.start]) {
+        errors.push("Dialogue has missing start node: " + id);
+    }
+
+    const reachableNodes = new Set();
+    const pendingNodes = dialogue.tree?.start && nodes[dialogue.tree.start] ? [dialogue.tree.start] : [];
+    while (pendingNodes.length) {
+        const currentNodeId = pendingNodes.pop();
+        if (reachableNodes.has(currentNodeId)) continue;
+        reachableNodes.add(currentNodeId);
+        for (const answer of nodes[currentNodeId]?.answers || []) {
+            if (answer.nextNode && nodes[answer.nextNode] && !reachableNodes.has(answer.nextNode)) pendingNodes.push(answer.nextNode);
+        }
+    }
+
+    for (const nodeId of Object.keys(nodes)) {
+        if (!reachableNodes.has(nodeId)) errors.push("Dialogue " + id + " contains unreachable node: " + nodeId);
+    }
+
+    if (!dialogueReferences.has(id)) errors.push("Dialogue is not linked to any NPC: " + id);
+
+    for (const [nodeId, node] of Object.entries(nodes)) {
+        if (node.givesEvidence) {
+            checkRef(data.objects, node.givesEvidence, "Dialogue " + id + "/" + nodeId);
+            acquirableItems.add(node.givesEvidence);
+        }
+        if (node.spawnsItem) {
+            checkRef(data.objects, node.spawnsItem, "Dialogue " + id + "/" + nodeId);
+            acquirableItems.add(node.spawnsItem);
+        }
+        if (node.givesInsight) insightSources.add(node.givesInsight);
+        for (const answer of node.answers || []) {
+            if (answer.condition?.startsWith("hasItem:")) checkRef(data.objects, answer.condition.slice(8), "Dialogue condition " + id + "/" + nodeId);
+            if (answer.condition?.startsWith("hasInsight:")) insightSources.add(answer.condition.slice(11));
+            if (answer.nextNode && !nodes[answer.nextNode]) {
+                errors.push("Dialogue " + id + "/" + nodeId + " points to missing node: " + answer.nextNode);
+            }
+        }
+    }
+}
+
+for (const [id, gameCase] of Object.entries(data.cases)) {
+    if (gameCase.id !== id) errors.push("Case key/id mismatch: " + id);
+    if (!gameCase.startTime || !Number.isInteger(gameCase.startTime.hour) || gameCase.startTime.hour < 0 || gameCase.startTime.hour > 23 || !Number.isInteger(gameCase.startTime.minute) || gameCase.startTime.minute < 0 || gameCase.startTime.minute > 59) errors.push("Case has invalid start time: " + id);
+    checkRef(data.locations, gameCase.startLocation, "Case " + id + " start location");
+    for (const locationId of gameCase.locations || []) checkRef(data.locations, locationId, "Case " + id);
+    for (const npcId of gameCase.npcs || []) checkRef(data.npcs, npcId, "Case " + id);
+    for (const scene of gameCase.scenes || []) {
+        checkRef(data.locations, scene.locationId, "Case scene " + (scene.id || id));
+        for (const objectId of [...(scene.highlightObjects || []), ...(scene.nightOnlyObjects || [])]) {
+            checkRef(data.objects, objectId, "Case scene " + (scene.id || id));
+            acquirableItems.add(objectId);
+        }
+    }
+    for (const condition of gameCase.unlockConditions || []) {
+        checkRef(data.locations, condition.locationId, "Case unlock condition " + id);
+        checkRef(data.objects, condition.requiresItem, "Case unlock condition " + id);
+        const locationRequirement = data.locations[condition.locationId]?.requiresItem;
+        if (locationRequirement && locationRequirement !== condition.requiresItem) errors.push("Case " + id + " unlock item disagrees with location " + condition.locationId + ": " + condition.requiresItem + " vs " + locationRequirement);
+    }
+    for (const event of gameCase.events || []) {
+        if (event.trigger?.startsWith("item_acquired:")) checkRef(data.objects, event.trigger.slice(14), "Case event " + id + "/" + event.id);
+        if (event.trigger?.startsWith("insight:")) insightSources.add(event.trigger.slice(8));
+    }
+    for (const stakeout of gameCase.stakeouts || []) {
+        checkRef(data.locations, stakeout.locationId, "Stakeout " + stakeout.id);
+        if (stakeout.reward?.type === "insight" && stakeout.reward.id) insightSources.add(stakeout.reward.id);
+    }
+    for (const chain of gameCase.evidenceChains || []) {
+        for (const objectId of chain.requiredEvidence || []) {
+            checkRef(data.objects, objectId, "Evidence chain " + chain.id);
+            if (!acquirableItems.has(objectId)) errors.push("Evidence chain " + chain.id + " requires an item with no acquisition path: " + objectId);
+        }
+        for (const insightId of chain.requiredInsights || []) if (!insightSources.has(insightId)) errors.push("Evidence chain " + chain.id + " requires an insight with no source: " + insightId);
+        if (chain.bonusInsight) insightSources.add(chain.bonusInsight);
+    }
+    if (gameCase.correctDeduction?.suspect && !(gameCase.npcs || []).includes(gameCase.correctDeduction.suspect)) {
+        errors.push("Correct deduction suspect is not part of case " + id + ": " + gameCase.correctDeduction.suspect);
+    }
+}
+
+for (const [id, chain] of Object.entries(data.evidenceChains || {})) {
+    if (chain.id !== id) errors.push("Evidence chain key/id mismatch: " + id);
+    for (const objectId of chain.requiredEvidence || []) {
+        checkRef(data.objects, objectId, "Registered evidence chain " + id);
+        if (!acquirableItems.has(objectId)) errors.push("Registered evidence chain " + id + " requires an item with no acquisition path: " + objectId);
+    }
+    for (const insightId of chain.requiredInsights || []) if (!insightSources.has(insightId)) errors.push("Registered evidence chain " + id + " requires an insight with no source: " + insightId);
+    if (chain.bonusInsight) insightSources.add(chain.bonusInsight);
+}
+
+for (const [id, gameCase] of Object.entries(data.cases)) {
+    for (const event of gameCase.events || []) {
+        if (event.trigger?.startsWith("insight:") && !insightSources.has(event.trigger.slice(8))) {
+            errors.push("Case event " + id + "/" + event.id + " listens for an insight with no source: " + event.trigger.slice(8));
+        }
+    }
+    for (const chain of gameCase.evidenceChains || []) {
+        for (const insightId of chain.requiredInsights || []) {
+            if (!insightSources.has(insightId)) errors.push("Evidence chain " + chain.id + " requires an insight with no source: " + insightId);
+        }
+    }
+}
+
+for (const [caseId] of Object.entries(data.cases)) {
+    const caseEndings = Object.values(data.endings || {}).filter(ending => ending.caseId === caseId);
+    if (!caseEndings.some(ending => ending.condition === "default")) errors.push("Case " + caseId + " has no default ending");
+    if (!caseEndings.some(ending => ending.condition && ending.condition !== "default" && !ending.condition.startsWith("evidence_count_"))) errors.push("Case " + caseId + " has no confession-based ending");
+    if (!Object.values(data.evidenceChains || {}).some(chain => chain.caseId === caseId)) errors.push("Case " + caseId + " has no registered evidence chains");
+}
+
+for (const [id, ending] of Object.entries(data.endings || {})) {
+    if (ending.id !== id) errors.push("Ending key/id mismatch: " + id);
+    if (ending.caseId && !data.cases[ending.caseId]) errors.push("Ending " + id + " references missing case: " + ending.caseId);
+}
+
+if (errors.length) {
+    process.stderr.write("Game data validation failed (" + errors.length + " issue(s)):" + String.fromCharCode(10));
+    for (const error of errors) process.stderr.write("- " + error + String.fromCharCode(10));
+    process.exitCode = 1;
+} else {
+    process.stdout.write(
+        "Game data validation passed: " + Object.keys(data.cases).length + " cases, " +
+        Object.keys(data.locations).length + " locations, " +
+        Object.keys(data.npcs).length + " NPCs, " +
+        Object.keys(data.objects).length + " objects, " +
+        Object.keys(data.dialogues).length + " dialogues." + String.fromCharCode(10)
+    );
+}

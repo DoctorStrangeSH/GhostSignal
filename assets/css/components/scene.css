@@ -101,6 +101,112 @@
     cursor: default;
 }
 
+/* ============ КИНОМАТИЧНАЯ ПАНЕЛЬ ЛОКАЦИИ ============ */
+
+.scene-art {
+    --scene-glow: rgba(240, 192, 64, 0.16);
+    position: relative;
+    min-height: 170px;
+    height: clamp(170px, 22vw, 230px);
+    margin: 0 0 26px;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid rgba(212, 160, 23, 0.22);
+    border-radius: var(--radius-lg);
+    background:
+        radial-gradient(ellipse at 72% 48%, var(--scene-glow), transparent 42%),
+        linear-gradient(115deg, #22241f 0%, #111713 48%, #241b14 100%);
+    box-shadow:
+        inset 0 0 55px rgba(0, 0, 0, 0.58),
+        0 14px 34px rgba(0, 0, 0, 0.24);
+}
+
+.scene-art::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.42;
+    background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.025) 4px),
+        linear-gradient(90deg, transparent 0 8%, rgba(0, 0, 0, 0.18) 8.2% 8.7%, transparent 9% 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 34%, rgba(0, 0, 0, 0.48));
+}
+
+.scene-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(4, 7, 6, 0.72), transparent 58%),
+        radial-gradient(ellipse at 50% 100%, transparent 28%, rgba(0, 0, 0, 0.48) 100%);
+}
+
+.scene-art-public {
+    --scene-glow: rgba(205, 166, 94, 0.2);
+    background:
+        linear-gradient(180deg, rgba(180, 157, 116, 0.08), transparent 50%),
+        radial-gradient(ellipse at 72% 40%, var(--scene-glow), transparent 42%),
+        linear-gradient(115deg, #29251d, #111713 54%, #2a2117);
+}
+
+.scene-art-private {
+    --scene-glow: rgba(104, 128, 145, 0.2);
+    background:
+        radial-gradient(ellipse at 72% 40%, var(--scene-glow), transparent 42%),
+        linear-gradient(120deg, #1d2428, #101514 54%, #1c1b19);
+}
+
+.scene-art-crime_scene {
+    --scene-glow: rgba(168, 55, 43, 0.22);
+    background:
+        radial-gradient(ellipse at 70% 44%, var(--scene-glow), transparent 44%),
+        linear-gradient(115deg, #281b1a, #111413 54%, #211817);
+}
+
+.scene-art-evening_venue {
+    --scene-glow: rgba(222, 133, 59, 0.24);
+    background:
+        radial-gradient(ellipse at 72% 42%, var(--scene-glow), transparent 42%),
+        linear-gradient(115deg, #302116, #15130f 52%, #2b1b13);
+}
+
+.scene-art-street {
+    --scene-glow: rgba(82, 129, 157, 0.22);
+    background:
+        radial-gradient(ellipse at 72% 42%, var(--scene-glow), transparent 42%),
+        linear-gradient(115deg, #18252a, #101513 52%, #1b201e);
+}
+
+.scene-art.is-night {
+    filter: saturate(0.78) brightness(0.82);
+}
+
+.scene-art-icon {
+    position: absolute;
+    left: clamp(24px, 6vw, 70px);
+    bottom: 12%;
+    font-size: clamp(58px, 9vw, 100px);
+    line-height: 1;
+    opacity: 0.72;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.62));
+    transform: translateY(2px);
+}
+
+.scene-art-caption {
+    position: absolute;
+    right: clamp(18px, 5vw, 56px);
+    bottom: 18%;
+    max-width: 54%;
+    color: rgba(240, 211, 151, 0.72);
+    font-family: var(--font-serif);
+    font-size: clamp(16px, 2.4vw, 25px);
+    font-style: italic;
+    letter-spacing: 1px;
+    text-align: right;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
 /* ============ ЗАГОЛОВОК ============ */
 .scene-placeholder-header {
     text-align: center;

@@ -10,11 +10,15 @@ registerData('npc', {
         description: "Элегантная женщина в красном. Развелась с жертвой полгода назад. Получила крупные отступные, но потеряла всё остальное.",
         icon: "👩‍🦰",
         mood: "angry",
+        psychology: {
+            opennessThreshold: 68, pressureThreshold: 55, calmPressureLimit: 12,
+            labels: { cooperative: "Готова говорить", pressured: "Сдерживает гнев", overwhelmed: "На грани срыва", distrustful: "Не доверяет" }
+        },
         schedule: {
             awake: { start: 9, end: 23 },
             atWork: null,
             sleeps: { start: 23, end: 9 },
-            locations: { work: null, home: "victim_apartment" },
+            locations: { work: null, home: "anna_apartment" },
             daysOff: [],
             exceptions: []
         },
@@ -32,6 +36,10 @@ registerData('npc', {
         description: "Рыжеволосая женщина в алом платье. Появляется и исчезает как тень. Сестра Анны, готовая на всё ради неё.",
         icon: "💃",
         mood: "suspicious",
+        psychology: {
+            opennessThreshold: 62, pressureThreshold: 60, calmPressureLimit: 14,
+            labels: { cooperative: "Готова сотрудничать", pressured: "Теряет терпение", overwhelmed: "Срывается", distrustful: "Держит дистанцию" }
+        },
         schedule: {
             awake: { start: 18, end: 4 },
             atWork: null,
@@ -60,6 +68,10 @@ registerData('npc', {
         description: "Седой мужчина в дорогом костюме. Владелец конкурирующей фирмы. Судился с жертвой за крупный контракт.",
         icon: "👨‍💼",
         mood: "cold",
+        psychology: {
+            opennessThreshold: 78, pressureThreshold: 50, calmPressureLimit: 16,
+            labels: { cooperative: "Смягчился", pressured: "Теряет самообладание", overwhelmed: "Сломлен давлением", distrustful: "Закрылся" }
+        },
         schedule: {
             awake: { start: 8, end: 22 },
             atWork: { start: 9, end: 18 },
@@ -82,6 +94,10 @@ registerData('npc', {
         description: "Пожилой мужчина в очках с толстыми линзами. Работает в аптеке 30 лет. Помнит каждую покупку.",
         icon: "👴",
         mood: "cautious",
+        psychology: {
+            opennessThreshold: 60, pressureThreshold: 58, calmPressureLimit: 12,
+            labels: { cooperative: "Готов помочь", pressured: "Насторожен", overwhelmed: "Сильно встревожен", distrustful: "Не доверяет" }
+        },
         schedule: {
             awake: { start: 8, end: 20 },
             atWork: { start: 8, end: 18 },
@@ -104,6 +120,10 @@ registerData('npc', {
         description: "Молодой парень, подрабатывает в баре по вечерам. Видел всё, но боится говорить — Кейн угрожал его семье.",
         icon: "🧑‍🍳",
         mood: "scared",
+        psychology: {
+            opennessThreshold: 56, pressureThreshold: 28, calmPressureLimit: 7,
+            labels: { cooperative: "Начинает доверять", pressured: "Сильно напуган", overwhelmed: "Паника", distrustful: "Боится вас" }
+        },
         schedule: {
             awake: { start: 12, end: 2 },
             atWork: { start: 18, end: 1 },
@@ -126,6 +146,10 @@ registerData('npc', {
         description: "Острая на язык журналистка. Расследовала связи Кейна с криминалом. Может помочь — или помешать.",
         icon: "👩‍💼",
         mood: "ambitious",
+        psychology: {
+            opennessThreshold: 58, pressureThreshold: 62, calmPressureLimit: 15,
+            labels: { cooperative: "Готова поделиться", pressured: "Чувствует давление", overwhelmed: "Раздражена", distrustful: "Не раскрывается" }
+        },
         schedule: {
             awake: { start: 9, end: 1 },
             atWork: null,

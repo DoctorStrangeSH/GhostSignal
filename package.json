@@ -6,7 +6,10 @@
   "scripts": {
     "start": "npx serve .",
     "dev": "npx live-server --port=3000 --no-browser",
-    "build": "echo 'No build step required — static HTML/CSS/JS'"
+    "build": "npm run check && npm run validate:data && npm test",
+    "check": "node scripts/check-syntax.mjs",
+    "test": "node --test",
+    "validate:data": "node scripts/validate-game-data.mjs"
   },
   "keywords": [
     "detective",
@@ -20,5 +23,8 @@
   "license": "MIT",
   "devDependencies": {
     "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

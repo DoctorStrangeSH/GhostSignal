@@ -19,7 +19,7 @@ const DIALOGUE_SERGEANT = {
                 innerThought: "Сержант деловит. Ему нужны факты, а не домыслы.",
                 answers: [
                     { text: "Да, сержант. Дело странное. Номер заперт изнутри, но постоялец исчез.", nextNode: "report_findings" },
-                    { text: "Мне нужен ордер на обыск квартиры Блэквуда.", nextNode: "warrant_request", condition: "evidence_count:3" },
+                    { text: "Мне нужен судебный ордер по делу.", nextNode: "warrant_request", condition: "evidence_count:3" },
                     { text: "Что вы знаете о Блэквуде? Кто он такой?", nextNode: "background_info" }
                 ]
             },
@@ -73,13 +73,13 @@ const DIALOGUE_SERGEANT = {
                 mood: "demanding",
                 innerThought: "Он хочет убедиться, что ордер не будет пустой тратой времени.",
                 answers: [
-                    { text: "У меня есть показания портье, дневник жертвы и фотография.", nextNode: "review_evidence" }
+                    { text: "У меня есть три независимые улики, подтверждающие необходимость обыска и запроса документов.", nextNode: "review_evidence" }
                 ]
             },
 
             review_evidence: {
                 speaker: "npc",
-                text: "Дневник? Фотография? Хорошо. Это серьёзные улики. Я выпишу ордер. Но будьте осторожны — адвокаты Блэквуда будут следить за каждым вашим шагом.",
+                text: "Три независимые улики — достаточное основание обратиться к судье. Я подготовлю ордер на обыск и запрос защищённых документов. В ходатайстве будет указан конкретный объект расследования.",
                 mood: "impressed",
                 innerThought: "Ордер получен. Теперь можно обыскать квартиру.",
                 givesEvidence: "search_warrant",

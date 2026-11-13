@@ -28,7 +28,7 @@ registerData('location', {
         parentLocation: "hotel_grand",
         scenes: { day: null, night: null },
         npcsPresent: [],
-        defaultItems: ["bed_304", "window_304", "wardrobe", "mirror", "carpet_stain"],
+        defaultItems: ["bed_304", "window_304", "door_chain", "wardrobe", "mirror", "carpet_stain"],
         unlockedByDefault: true
     },
     bar_joe: {

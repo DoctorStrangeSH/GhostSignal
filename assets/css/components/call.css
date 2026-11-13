@@ -189,3 +189,41 @@
     .call-avatar-icon { font-size: 52px; width: 90px; height: 90px; }
     .dialogue-message { max-width: 95%; font-size: 13px; }
 }
+
+.dialogue-evidence-tools {
+    padding: 10px 0 12px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.evidence-present-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.evidence-present-row .terminal-input { flex: 1; min-width: 0; }
+.evidence-present-row .terminal-btn { flex: 0 0 auto; font-size: 10px; }
+@media (max-width: 576px) {
+    .evidence-present-row { flex-direction: column; }
+}
+
+.prepared-contradiction {
+    display: grid;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 11px;
+    border: 1px solid rgba(192, 57, 43, 0.35);
+    background: rgba(192, 57, 43, 0.055);
+}
+.prepared-contradiction-kicker {
+    color: var(--accent-red-bright);
+    font-size: 9px;
+    letter-spacing: 1.2px;
+}
+.prepared-contradiction p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-family: var(--font-serif);
+    font-size: 11px;
+    line-height: 1.45;
+}
+.prepared-contradiction p strong { color: var(--accent-amber); }
+.prepared-contradiction .terminal-btn { margin-top: 3px; }

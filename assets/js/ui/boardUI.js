@@ -3,6 +3,7 @@ class BoardUI {
         this.container = document.getElementById(containerId);
         this.board = null;
         this.inventory = null;
+        this.memoryService = null;
         this._draggedEvidence = null;
         this._init();
     }
@@ -16,11 +17,18 @@ class BoardUI {
         this.inventory = inventory;
         this.render();
     }
+
+    setMemoryService(service) {
+        this.memoryService = service || null;
+        this.render();
+    }
     
     _init() {
         if (!this.container) return;
         events.on('board:updated', () => this.render());
         events.on('inventory:changed', () => this.render());
+        events.on('npc:memory_changed', () => this.render());
+        events.on('npc:contradiction_presented', () => this.render());
     }
     
     render() {
@@ -41,6 +49,8 @@ class BoardUI {
                 <h4>📦 Доступные улики:</h4>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
+
+            ${this._renderTestimonyJournal()}
         `;
         
         this._bindEvents();
@@ -157,6 +167,138 @@ class BoardUI {
         // Сброс доски
         this.container.querySelector('#btn-board-reset')?.addEventListener('click', () => {
             if (this.board) this.board.reset();
+        });
+
+        this._bindTestimonyEvents();
+    }
+
+    _escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+
+    _renderTestimonyJournal() {
+        const statements = this.memoryService?.getStatements?.() || [];
+        const prepared = this.memoryService?.getPreparedConfrontation?.() || null;
+        const options = statements.map(statement => {
+            const label = `${statement.sourceName || statement.npcId}: ${statement.summary || statement.value}`;
+            return `<option value="${this._escapeHTML(statement.id)}">${this._escapeHTML(label)}</option>`;
+        }).join('');
+        const preparedTarget = prepared
+            ? (prepared.contradiction.first.npcId === prepared.targetNpcId
+                ? prepared.contradiction.first.sourceName
+                : prepared.contradiction.second.sourceName)
+            : '';
+
+        return `
+            <section class="testimony-journal" aria-labelledby="testimony-journal-title">
+                <div class="testimony-journal-header">
+                    <div>
+                        <span class="testimony-journal-kicker">АРХИВ РАССЛЕДОВАНИЯ</span>
+                        <h3 id="testimony-journal-title">📜 ЖУРНАЛ ПОКАЗАНИЙ</h3>
+                    </div>
+                    <span class="testimony-count">${statements.length} записей</span>
+                </div>
+                ${statements.length ? `
+                    <div class="testimony-list">
+                        ${statements.map(statement => `
+                            <article class="testimony-entry">
+                                <div class="testimony-entry-heading">
+                                    <strong>${this._escapeHTML(statement.sourceName || statement.npcId)}</strong>
+                                    <span>${this._escapeHTML(statement.timeLabel || 'Время не указано')}</span>
+                                </div>
+                                <p>${this._escapeHTML(statement.summary || statement.value)}</p>
+                                <div class="testimony-entry-meta">
+                                    <span>📍 ${this._escapeHTML(statement.location || 'Место не указано')}</span>
+                                    ${statement.circumstances ? `<span>${this._escapeHTML(statement.circumstances)}</span>` : ''}
+                                </div>
+                            </article>
+                        `).join('')}
+                    </div>
+                    <div class="testimony-compare">
+                        <div class="testimony-compare-title">СОПОСТАВИТЬ ДВА ПОКАЗАНИЯ</div>
+                        <label for="testimony-first">Первое показание</label>
+                        <select id="testimony-first" class="terminal-input">
+                            <option value="">Выберите запись...</option>${options}
+                        </select>
+                        <label for="testimony-second">Второе показание</label>
+                        <select id="testimony-second" class="terminal-input">
+                            <option value="">Выберите запись...</option>${options}
+                        </select>
+                        <button id="btn-compare-testimony" class="terminal-btn" type="button">СОПОСТАВИТЬ</button>
+                        <div id="testimony-comparison-result" aria-live="polite"></div>
+                    </div>
+                    ${prepared ? `
+                        <div class="testimony-prepared">
+                            <strong>ДОПРОС ПОДГОТОВЛЕН</strong>
+                            <span>Противоречие готово к предъявлению: ${this._escapeHTML(preparedTarget || prepared.targetNpcId)}.</span>
+                            <small>Начните разговор с выбранным персонажем — кнопка предъявления появится в окне диалога.</small>
+                        </div>
+                    ` : ''}
+                ` : `
+                    <div class="testimony-empty">Показаний пока нет. Разговаривайте со свидетелями и фиксируйте их утверждения.</div>
+                `}
+            </section>
+        `;
+    }
+
+    _bindTestimonyEvents() {
+        const compareButton = this.container.querySelector('#btn-compare-testimony');
+        compareButton?.addEventListener('click', () => {
+            const firstId = this.container.querySelector('#testimony-first')?.value;
+            const secondId = this.container.querySelector('#testimony-second')?.value;
+            const result = this.memoryService?.compareStatements(firstId, secondId);
+            const output = this.container.querySelector('#testimony-comparison-result');
+            if (!output || !result) return;
+
+            const messages = {
+                missing_selection: 'Выберите оба показания.',
+                same_statement: 'Нельзя сопоставить одну запись с самой собой.',
+                statement_not_found: 'Одна из записей больше недоступна.',
+                different_topics: 'Эти показания относятся к разным обстоятельствам.',
+                corroboration: 'Показания совпадают и подтверждают друг друга.'
+            };
+            if (result.status !== 'contradiction') {
+                output.innerHTML = `<div class="testimony-result-note">${this._escapeHTML(messages[result.status] || 'Не удалось сопоставить записи.')}</div>`;
+                return;
+            }
+
+            const { first, second } = result.contradiction;
+            const targets = [first, second].filter((item, index, all) =>
+                all.findIndex(candidate => candidate.npcId === item.npcId) === index
+            );
+            output.innerHTML = `
+                <div class="testimony-conflict">
+                    <strong>ОБНАРУЖЕНЫ НЕСОВМЕСТИМЫЕ ПОКАЗАНИЯ</strong>
+                    <div>«${this._escapeHTML(first.summary)}»</div>
+                    <div>«${this._escapeHTML(second.summary)}»</div>
+                    <label for="testimony-target">Кому предъявить противоречие?</label>
+                    <select id="testimony-target" class="terminal-input">
+                        <option value="">Выберите персонажа...</option>
+                        ${targets.map(item => `<option value="${this._escapeHTML(item.npcId)}">${this._escapeHTML(item.sourceName || item.npcId)}</option>`).join('')}
+                    </select>
+                    <button id="btn-prepare-confrontation" class="terminal-btn" type="button">ПОДГОТОВИТЬ ПРЕДЪЯВЛЕНИЕ</button>
+                </div>
+            `;
+
+            output.querySelector('#btn-prepare-confrontation')?.addEventListener('click', () => {
+                const targetNpcId = output.querySelector('#testimony-target')?.value;
+                const prepared = this.memoryService.prepareConfrontation(first.id, second.id, targetNpcId);
+                if (!prepared.prepared) {
+                    const text = prepared.reason === 'already_confronted'
+                        ? 'Эти показания уже предъявлялись этому персонажу.'
+                        : 'Выберите одного из участников показаний.';
+                    events.emit('notification:show', { message: text, type: 'warning', duration: 2800 });
+                    return;
+                }
+                events.emit('notification:show', {
+                    message: 'Противоречие подготовлено. Предъявите его во время разговора с выбранным персонажем.',
+                    type: 'success',
+                    duration: 4000
+                });
+                events.emit('npc:memory_changed', this.memoryService.toJSON());
+            });
         });
     }
     

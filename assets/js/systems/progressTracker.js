@@ -36,6 +36,7 @@ class ProgressTracker {
     // Дело раскрыто
     caseSolved(caseData) {
         const timeSpent = this._calculateTimeSpent();
+        this.caseStartTime = null;
         this.stats.totalTimeSpent += timeSpent;
         this.stats.totalCasesSolved++;
         
@@ -59,6 +60,7 @@ class ProgressTracker {
     // Дело провалено
     caseFailed(caseData) {
         const timeSpent = this._calculateTimeSpent();
+        this.caseStartTime = null;
         this.stats.totalTimeSpent += timeSpent;
         this.stats.totalCasesFailed++;
         
@@ -164,7 +166,10 @@ class ProgressTracker {
     // Сериализация
     toJSON() {
         return {
-            stats: JSON.parse(JSON.stringify(this.stats))
+            stats: JSON.parse(JSON.stringify(this.stats)),
+            caseStartTime: this.caseStartTime,
+            caseHintsUsed: this.caseHintsUsed,
+            caseAttempts: this.caseAttempts
         };
     }
     
@@ -174,6 +179,9 @@ class ProgressTracker {
         if (json?.stats) {
             tracker.stats = json.stats;
         }
+        tracker.caseStartTime = Number.isFinite(json?.caseStartTime) ? json.caseStartTime : null;
+        tracker.caseHintsUsed = Number.isFinite(json?.caseHintsUsed) ? json.caseHintsUsed : 0;
+        tracker.caseAttempts = Number.isFinite(json?.caseAttempts) ? json.caseAttempts : 0;
         return tracker;
     }
 }

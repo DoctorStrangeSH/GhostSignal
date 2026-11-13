@@ -168,3 +168,125 @@
 .npc-card {
     animation: fade-in 0.3s ease-out;
 }
+
+.npc-memory {
+    margin-top: 10px;
+    padding: 9px 10px;
+    border: 1px solid rgba(212, 160, 23, 0.16);
+    background: rgba(212, 160, 23, 0.035);
+}
+.npc-memory-heading {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+.npc-memory-heading strong { color: var(--accent-amber); font-size: 10px; }
+.npc-trust-track {
+    height: 4px;
+    margin: 6px 0;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.npc-trust-track span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-amber));
+}
+.npc-memory-meta { color: var(--text-dim); font-size: 9px; }
+
+/* Psychological state: trust is visible, pressure remains an investigative signal. */
+.npc-psychology-state {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 8px;
+    border: 1px solid rgba(190, 160, 110, 0.18);
+    background: rgba(190, 160, 110, 0.045);
+    font-size: 9px;
+}
+.npc-psychology-state > span {
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+.npc-psychology-state strong {
+    color: var(--text-secondary);
+    text-align: right;
+    font-weight: 600;
+}
+.npc-psychology-state.state-cooperative strong { color: var(--accent-green); }
+.npc-psychology-state.state-pressured strong,
+.npc-psychology-state.state-overwhelmed strong { color: var(--accent-red-bright); }
+.npc-psychology-state.state-distrustful strong { color: var(--accent-amber); }
+.npc-lies-exposed {
+    margin-top: 6px;
+    color: var(--accent-red-bright);
+    font-size: 9px;
+}
+
+/* Long-term promises are part of the NPC's remembered relationship with the detective. */
+.npc-promises {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.npc-promises-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-promise {
+    margin-top: 5px;
+    padding: 6px 8px;
+    border-left: 2px solid rgba(212, 160, 23, 0.45);
+    background: rgba(212, 160, 23, 0.035);
+}
+.npc-promise > span {
+    color: var(--accent-amber);
+    font-size: 8px;
+    letter-spacing: 1px;
+}
+.npc-promise p {
+    margin: 3px 0 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+    line-height: 1.45;
+}
+.npc-promise.promise-fulfilled { border-left-color: var(--accent-green); }
+.npc-promise.promise-fulfilled > span { color: var(--accent-green); }
+.npc-promise.promise-broken { border-left-color: var(--accent-red-bright); }
+.npc-promise.promise-broken > span { color: var(--accent-red-bright); }
+
+/* Reports passed between contacts remain attributed and explicitly unverified. */
+.npc-rumors {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.npc-rumors-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-rumor {
+    margin-top: 5px;
+    padding: 6px 8px;
+    border-left: 2px solid rgba(190, 150, 90, 0.55);
+    background: rgba(190, 150, 90, 0.035);
+}
+.npc-rumor > span {
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 0.7px;
+}
+.npc-rumor p {
+    margin: 3px 0 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+    line-height: 1.45;
+}

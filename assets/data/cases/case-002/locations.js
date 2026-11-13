@@ -3,6 +3,20 @@
 // ============================================
 
 registerData('location', {
+    anna_apartment: {
+        id: "anna_apartment",
+        name: "Квартира Анны",
+        type: "private",
+        description: "Скромная квартира Анны Ковалёвой. После развода она почти не выходит отсюда.",
+        hours: { open: 8, close: 20 },
+        icon: "🏠",
+        mapPosition: { x: 28, y: 68 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["ex_wife"],
+        defaultItems: ["anna_desk"],
+        unlockedByDefault: false,
+        requiresItem: "search_warrant"
+    },
     pharmacy: {
         id: "pharmacy",
         name: "Аптека на углу",
@@ -54,6 +68,6 @@ registerData('location', {
         npcsPresent: [],
         defaultItems: ["bank_records", "safety_deposit_box"],
         unlockedByDefault: false,
-        requiresItem: "bank_subpoena"
+        requiresItem: "search_warrant"
     }
 });

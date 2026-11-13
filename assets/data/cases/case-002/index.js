@@ -6,16 +6,16 @@ const CASE_002 = {
     id: "case-002",
     title: "Отравление в баре «У Джо»",
     difficulty: 2,
-    description: "Посетитель бара найден без сознания за столиком. В его стакане обнаружен яд. Бармен утверждает, что не видел, кто подсыпал отраву. Под подозрением — бывшая жена, конкурент по бизнесу и таинственная незнакомка в красном.",
+    description: "Джонатан Блэквуд найден без сознания после отравления в баре. В стакане обнаружен яд. Бывшая жена и деловой конкурент становятся первыми версиями следствия, а неизвестная женщина в красном может оказаться важным свидетелем.",
     
     // === ВРЕМЯ СТАРТА ===
-    startTime: { hour: 20, minute: 0, day: 1 },
+    startTime: { hour: 0, minute: 30, day: 1 },
     
     // === ЛОКАЦИИ ===
     locations: [
         "police_station",
         "bar_joe",
-        "victim_apartment",
+        "anna_apartment",
         "alley",
         "rival_office",
         "pharmacy",
@@ -43,8 +43,8 @@ const CASE_002 = {
             id: "intro_002",
             trigger: "case_start",
             type: "narrative",
-            title: "Три часа ночи",
-            text: "Телефон звонит в три часа ночи. «Детектив? Это сержант. В баре „У Джо“ — отравление. Посетитель без сознания. Врачи говорят — яд в стакане. Подозреваемых трое: бывшая жена, конкурент и таинственная незнакомка в красном.»",
+            title: "После полуночи",
+            text: "Телефон звонит в половине первого ночи. «Детектив? Это сержант. В баре „У Джо“ произошло отравление. Джонатан Блэквуд без сознания, врачи уже везут его в больницу. В стакане обнаружен яд. Анна, его бывшая жена, была в баре; там же находились конкурент Кейн и неизвестная женщина в красном.»",
             choices: [
                 { text: "Выезжаю немедленно.", next: null, action: "accept_case" },
                 { text: "Есть подозреваемые?", next: "suspects_info" }
@@ -53,7 +53,7 @@ const CASE_002 = {
         {
             id: "suspects_info",
             trigger: "choice",
-            text: "«Бывшая жена — она была там за час до происшествия. И какой-то тип в костюме — сидел у стойки. Плюс незнакомка в красном платье — появилась и исчезла.»",
+            text: "«Анна была в баре незадолго до отравления. Кейн сидел у стойки, а женщина в красном следила за сестрой. Пока это только направления для проверки, не доказательства.»",
             action: "accept_case"
         },
         {
@@ -82,6 +82,13 @@ const CASE_002 = {
             highlightObjects: ["bar_counter", "overturned_glass", "red_scarf"]
         },
         {
+            id: "anna_apartment_visit",
+            locationId: "anna_apartment",
+            trigger: "first_visit:anna_apartment",
+            text: "Квартира Анны выглядит так, будто она давно перестала здесь жить: закрытые шторы, нетронутый чай и бумаги, которые она не решилась выбросить.",
+            highlightObjects: ["anna_desk"]
+        },
+        {
             id: "pharmacy_visit",
             locationId: "pharmacy",
             trigger: "first_visit:pharmacy",
@@ -100,9 +107,14 @@ const CASE_002 = {
     // === УСЛОВИЯ РАЗБЛОКИРОВКИ ===
     unlockConditions: [
         {
+            locationId: "anna_apartment",
+            requiresItem: "search_warrant",
+            message: "Ордер разрешает осмотреть квартиру Анны. Возможно, там остались следы её намерений."
+        },
+        {
             locationId: "bank",
-            requiresItem: "bank_subpoena",
-            message: "Нужна судебная повестка для доступа к банковским записям."
+            requiresItem: "search_warrant",
+            message: "Судебный ордер получен. Теперь можно запросить банковские документы по делу."
         }
     ],
     
@@ -110,24 +122,8 @@ const CASE_002 = {
     boardSlots: 4,
     
     // === ЦЕПОЧКИ УЛИК ===
-    evidenceChains: [
-        {
-            id: "chain_002_poison",
-            name: "Путь яда",
-            requiredEvidence: ["poison_vial", "prescription_copy", "lora_notes"],
-            requiredInsights: ["kane_bought_cyanide", "someone_took_vial"],
-            bonusInsight: "full_poison_path",
-            description: "Вы проследили путь яда: от аптеки до стакана Блэквуда."
-        },
-        {
-            id: "chain_002_witnesses",
-            name: "Свидетели",
-            requiredEvidence: ["bar_photo", "lora_notes"],
-            requiredInsights: ["waiter_saw_poisoning", "bartender_testimony"],
-            bonusInsight: "solid_case",
-            description: "У вас есть показания трёх свидетелей. Дело не развалится в суде."
-        }
-    ],
+    // Canonical chain definitions are registered in the matching evidence.js file.
+    evidenceChains: [],
     
     // === СЛЕЖКИ ===
     stakeouts: [
@@ -181,7 +177,7 @@ const CASE_002 = {
         correctAnswer: "конкурент",
         feedbackCorrect: {
             title: "✅ ДЕЛО РАСКРЫТО",
-            text: "Верно! Виктор Кейн украл пузырёк Анны, заменил снотворное на цианид и подсыпал яд в стакан Блэквуда. Мотив — месть за унижение в суде и разрушенную репутацию. Анна оправдана.",
+            text: "Верно! Виктор Кейн украл пузырёк Анны, заменил снотворное на цианид и подсыпал яд в стакан Блэквуда. Мотив — месть за унижение в суде и разрушенную репутацию. Блэквуд выжил; Анна не причастна к покушению.",
             evidenceSummary: [
                 "Показания бармена — Кейн украл пузырёк",
                 "Показания официанта — видел момент отравления",
