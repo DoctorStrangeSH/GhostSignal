@@ -4,7 +4,7 @@
  */
 class NPCSocialNetwork {
     constructor(snapshot = null, memoryService = null, npcManager = null, gameTime = null) {
-        this.version = 2;
+        this.version = 3;
         this.currentCaseId = snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.memoryService = memoryService;
@@ -68,7 +68,7 @@ class NPCSocialNetwork {
     _ensureState(caseId = this.currentCaseId) {
         if (!caseId) return null;
         if (!this.cases[caseId] || typeof this.cases[caseId] !== 'object') {
-            this.cases[caseId] = { pending: [], delivered: [], withheld: [], publishedIds: [], eventLog: [], nextEventId: 1 };
+            this.cases[caseId] = { pending: [], delivered: [], withheld: [], publishedIds: [], eventLog: [], knownEventIds: [], discoveryLog: [], nextEventId: 1 };
         }
         const state = this.cases[caseId];
         state.pending = Array.isArray(state.pending) ? state.pending : [];
@@ -76,6 +76,8 @@ class NPCSocialNetwork {
         state.withheld = Array.isArray(state.withheld) ? state.withheld : [];
         state.publishedIds = Array.isArray(state.publishedIds) ? state.publishedIds : [];
         state.eventLog = Array.isArray(state.eventLog) ? state.eventLog : [];
+        state.knownEventIds = Array.isArray(state.knownEventIds) ? state.knownEventIds : [];
+        state.discoveryLog = Array.isArray(state.discoveryLog) ? state.discoveryLog : [];
         state.nextEventId = Number.isInteger(state.nextEventId) && state.nextEventId > 0
             ? state.nextEventId
             : state.eventLog.length + 1;
@@ -366,6 +368,54 @@ class NPCSocialNetwork {
             });
         }
         return [...links.values()].map(link => ({ ...link, label: link.labels.join(' · ') }));
+    }
+
+    revealEventsForReport(reportId, discovery = {}) {
+        const state = this._ensureState();
+        const methods = ['dialogue', 'observation', 'document', 'evidence'];
+        if (!state || typeof reportId !== 'string' || !reportId.trim() ||
+            !methods.includes(discovery.method) ||
+            typeof discovery.sourceId !== 'string' || !discovery.sourceId.trim()) {
+            return { revealed: 0, reason: 'invalid_discovery' };
+        }
+
+        const eventTypes = Array.isArray(discovery.eventTypes)
+            ? new Set(discovery.eventTypes.filter(type => typeof type === 'string'))
+            : null;
+        const matches = state.eventLog.filter(item =>
+            item.reportId === reportId &&
+            (!eventTypes || eventTypes.has(item.type)) &&
+            (!discovery.fromNpcId || item.fromNpcId === discovery.fromNpcId) &&
+            (!discovery.toNpcId || item.toNpcId === discovery.toNpcId) &&
+            (!discovery.participantNpcId || item.fromNpcId === discovery.participantNpcId || item.toNpcId === discovery.participantNpcId)
+        );
+
+        let revealed = 0;
+        for (const event of matches) {
+            if (state.knownEventIds.includes(event.id)) continue;
+            state.knownEventIds.push(event.id);
+            state.discoveryLog.push({
+                eventId: event.id,
+                method: discovery.method,
+                sourceId: discovery.sourceId,
+                atGameMinute: this._now()
+            });
+            revealed++;
+        }
+        if (state.discoveryLog.length > 300) state.discoveryLog.splice(0, state.discoveryLog.length - 300);
+        return { revealed, reason: revealed ? null : 'no_new_matching_events' };
+    }
+
+    getKnownEventLog(limit = 30, npcId = null) {
+        const state = this._ensureState();
+        if (!state) return [];
+        const known = new Set(state.knownEventIds);
+        const relevant = state.eventLog.filter(item =>
+            known.has(item.id) &&
+            (!npcId || item.fromNpcId === npcId || item.toNpcId === npcId || item.protectedNpcId === npcId)
+        );
+        const safeLimit = Number.isInteger(limit) ? Math.max(1, Math.min(100, limit)) : 30;
+        return this._clone(relevant.slice(-safeLimit).reverse());
     }
 
     getEventLog(limit = 30, npcId = null) {
