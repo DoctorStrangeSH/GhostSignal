@@ -26,6 +26,7 @@ function createDialogueHarness() {
 
     for (const path of [
         "assets/js/npc/npcMemoryService.js",
+        "assets/js/npc/npcMotivationService.js",
         "assets/js/npc/npcSocialNetwork.js",
         "assets/js/npc/dialogueEngine.js",
         "assets/data/cases/case-002/dialogues/waiter.js",
@@ -60,9 +61,17 @@ function createDialogueHarness() {
                 return { available: true, location: id === "journalist" ? "newspaper_office" : "bar_joe" };
             }
         };
+        const motivationService = new NPCMotivationService(memory);
         const socialNetwork = new NPCSocialNetwork(null, memory, npcManager, gameTime);
+        socialNetwork.setMotivationService(motivationService);
         socialNetwork.setCase({
             id: "case-002", npcs: ["waiter", "bartender", "journalist"],
+            npcMotivations: {
+                bartender: {
+                    motives: [{ id: "protect_staff", weight: 85, pressureResistance: 0.55 }, { id: "keep_bar_open", weight: 65, pressureResistance: 0.20 }],
+                    loyalties: [{ npcId: "waiter", strength: 86, protectThreshold: 62, appliesTo: ["detective_behavior"], motiveId: "protect_staff" }]
+                }
+            },
             socialNetwork: {
                 maxHops: 2,
                 edges: [
@@ -74,8 +83,9 @@ function createDialogueHarness() {
         });
         const engine = new DialogueEngine(inventory, gameTime);
         engine.setMemoryService(memory);
+        engine.setMotivationService(motivationService);
         engine.setSocialNetwork(socialNetwork);
-        return { inventory, memory, engine, gameTime, socialNetwork };
+        return { inventory, memory, engine, gameTime, socialNetwork, motivationService };
     })()`, context);
 
     return {
@@ -86,6 +96,19 @@ function createDialogueHarness() {
         }
     };
 }
+
+test("DialogueEngine supports hidden motive and dynamic loyalty conditions", () => {
+    const { engine, memory, motivationService } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine._checkCondition("motive:protect_staff"), true);
+    assert.equal(engine._checkCondition("loyalty_at_least:waiter:60"), true);
+    assert.equal(engine._checkCondition("loyalty_below:waiter:60"), false);
+    for (let i = 0; i < 8; i++) memory.recordAnswerSelected("bartender", "pressure-dialogue", "pressure-" + i, { text: "Давление продолжается.", tone: "threatening" });
+    assert.equal(motivationService.getEffectiveLoyalty("bartender", "waiter").protects, false);
+    assert.equal(engine._checkCondition("loyalty_below:waiter:60"), true);
+    assert.equal(engine._checkCondition("loyalty_at_least:waiter:60"), false);
+    assert.equal(engine._checkCondition("motive:unknown_motive"), false);
+});
 
 test("DialogueEngine persists NPC conversation history and answer tone", () => {
     const { engine, memory } = createDialogueHarness();
