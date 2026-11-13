@@ -49,7 +49,7 @@ const CASE_001 = {
             {
                 id: "porter-checks-mary", relationshipId: "porter-housekeeper",
                 fromNpcId: "porter", toNpcId: "housekeeper", interaction: "support",
-                channel: "in_person", requiresSameLocation: true,
+                channel: "phone",
                 initialDelayMinutes: 90, everyMinutes: 240,
                 minTrust: 55, fromPressureBelow: 75, toPressureBelow: 75,
                 trustDelta: 2, reciprocalTrustDelta: 1,
@@ -58,7 +58,7 @@ const CASE_001 = {
             {
                 id: "mary-snaps-at-frank", relationshipId: "porter-housekeeper",
                 fromNpcId: "housekeeper", toNpcId: "porter", interaction: "conflict",
-                channel: "in_person", requiresSameLocation: true,
+                channel: "phone",
                 initialDelayMinutes: 180, everyMinutes: 240,
                 fromPressureAtLeast: 45,
                 trustDelta: -5, reciprocalTrustDelta: -3,
@@ -67,7 +67,7 @@ const CASE_001 = {
             {
                 id: "frank-reconciles-mary", relationshipId: "porter-housekeeper",
                 fromNpcId: "porter", toNpcId: "housekeeper", interaction: "reconcile",
-                channel: "in_person", requiresSameLocation: true,
+                channel: "phone",
                 initialDelayMinutes: 240, everyMinutes: 240,
                 maxTrust: 58, fromPressureBelow: 35, toPressureBelow: 35,
                 trustDelta: 8, reciprocalTrustDelta: 6,
@@ -76,7 +76,7 @@ const CASE_001 = {
             {
                 id: "joe-and-elias-catch-up", relationshipId: "elias-bartender",
                 fromNpcId: "bartender", toNpcId: "elias", interaction: "support",
-                channel: "in_person", requiresSameLocation: true,
+                channel: "phone",
                 initialDelayMinutes: 180, everyMinutes: 360,
                 minTrust: 50, trustDelta: 1, reciprocalTrustDelta: 1,
                 summary: "Джо и Элиас обменялись новостями за стойкой."
