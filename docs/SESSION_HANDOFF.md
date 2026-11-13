@@ -327,3 +327,11 @@ npm run build
 - Все автономные действия и recordInteraction обновляют оба слоя. Сброс case-local состояния не очищает глобальные отношения.
 - Раскрытие связи детективу, discoveryLog и расписания остаются case-scoped. Не показывать worldTrusts напрямую в UI.
 - Сохранения NPCRelationshipService v1 без worldTrusts автоматически получают глобальные записи из активного дела при setCase.
+
+
+## Повторяющаяся связь Joe / Sergeant Mills
+
+- В case-001 и case-002 используется одинаковый bond ID bartender-sergeant. Case-001 задаёт стартовое доверие 55 и одно телефонное взаимодействие Джо с Миллсом; case-002 повторно описывает ту же пару с тем же ID.
+- NPCRelationshipService v2 должен переносить текущее доверие через worldTrusts. Case-local discovery и расписания при этом остаются отдельными.
+- Последний подтверждённый CI на HEAD ae8e137: 100 JS, 113/113 тестов, validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43446773933) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43446780426).
+- Ручной браузерный переход case-001 → case-002 всё ещё не выполнялся.
