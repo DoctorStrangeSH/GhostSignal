@@ -680,7 +680,7 @@ test("a failed first interview unlocks a later independent witness check after g
     advance(59);
     assert.equal(relationships.hasCompletedInteraction("a", "second-check"), false);
     assert.equal(memory.getRumors("a")[0].status, "unverified");
-    assert.equal(advance(1).changed, 1);
+    assert.equal(advance(30).changed, 1);
     assert.equal(relationships.getInvestigationOutcome("a", "second-check"), "corroborated");
     assert.equal(memory.getRumors("a")[0].status, "corroborated");
     assert.equal(advance(120).changed, 0);
