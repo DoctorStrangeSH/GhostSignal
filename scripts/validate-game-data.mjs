@@ -356,6 +356,19 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
             }
         }
         const conditions = rule?.conditions && typeof rule.conditions === "object" ? rule.conditions : rule;
+        if (conditions?.fromRumorId !== undefined &&
+            (typeof conditions.fromRumorId !== "string" || !/^[a-z0-9_:-]{1,100}$/i.test(conditions.fromRumorId))) {
+            errors.push("Case " + id + " NPC interaction has invalid rumor ID: " + rule.id);
+        }
+        if (conditions?.fromRumorStatus !== undefined &&
+            (!conditions.fromRumorId || !["unverified", "corroborated", "disputed"].includes(conditions.fromRumorStatus))) {
+            errors.push("Case " + id + " NPC interaction has invalid rumor status condition: " + rule.id);
+        }
+        if (conditions?.fromRumorConfidenceAtLeast !== undefined &&
+            (!conditions.fromRumorId || !Number.isFinite(conditions.fromRumorConfidenceAtLeast) ||
+                conditions.fromRumorConfidenceAtLeast < 0 || conditions.fromRumorConfidenceAtLeast > 100)) {
+            errors.push("Case " + id + " NPC interaction has invalid rumor confidence condition: " + rule.id);
+        }
         if (conditions?.requiresGoalId) {
             const owner = conditions.requiresGoalNpcId || rule.fromNpcId;
             if (!goalIds.has(owner + ":" + conditions.requiresGoalId)) {
