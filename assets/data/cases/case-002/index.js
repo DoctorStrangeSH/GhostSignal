@@ -138,7 +138,7 @@ const CASE_002 = {
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 channel: "in_person", requiresSameLocation: true,
                 initialDelayMinutes: 120, everyMinutes: 180,
-                minTrust: 55, fromPressureBelow: 70, toPressureBelow: 70,
+                minTrust: 55, fromPressureBelow: 70, toPressureBelow: 50,
                 trustDelta: 2, reciprocalTrustDelta: 1,
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
