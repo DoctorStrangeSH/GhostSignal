@@ -121,6 +121,27 @@ test("DialogueEngine does not show Joe's rumor reaction before Thomas reports th
     assert.equal(answers.some(answer => answer.text.includes("Томас рассказал") && answer.isAvailable), false);
 });
 
+test("Thomas can be falsely accused, apologize later and leave a traceable social report", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    const accusation = engine.getAvailableAnswers().find(answer => answer.accusation?.id === "thomas-complicity");
+    assert.equal(accusation?.isAvailable, true);
+    engine.selectAnswer(accusation.index);
+    assert.equal(memory.getAccusations("waiter")[0].status, "pending");
+    assert.equal(memory.hasRumor("bartender", "detective-accused-thomas-of-complicity"), true);
+
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    const apology = engine.getAvailableAnswers().find(answer => answer.resolveAccusation?.id === "thomas-complicity");
+    assert.equal(apology?.isAvailable, true);
+    engine.selectAnswer(apology.index);
+
+    assert.equal(memory.getAccusations("waiter")[0].status, "false");
+    assert.equal(memory.hasRumor("bartender", "detective-apologized-to-thomas"), true);
+    assert.equal(memory.getCaseSocialSummary("case-002").npcs.waiter.accusations.false, 1);
+});
+
 test("Thomas can revise a statement after reviewing new evidence without erasing the original", () => {
     const { engine, memory, inventory } = createDialogueHarness();
     engine.startDialogue("dialogue-waiter");

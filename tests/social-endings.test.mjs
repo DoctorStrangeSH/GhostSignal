@@ -11,7 +11,7 @@ function loadSystems() {
     const endings = {
         perfect: {
             id: "perfect", caseId: "case-002", condition: "full_confession_kane", title: "Идеально", text: "Базовая концовка.",
-            socialConsequences: { waiter: { promiseFulfilled: "Томасу помогли.", promiseBroken: "Томасу не помогли.", lowTrustThreshold: 35, lowTrust: "Томас больше не доверяет детективу." } }
+            socialConsequences: { waiter: { promiseFulfilled: "Томасу помогли.", promiseBroken: "Томасу не помогли.", lowTrustThreshold: 35, lowTrust: "Томас больше не доверяет детективу.", falseAccusation: "Детектив признал ложное обвинение." } }
         },
         partial: {
             id: "partial", caseId: "case-002", condition: "evidence_count_4", title: "Частично", text: "Частичная концовка.",
@@ -45,6 +45,20 @@ test("Perfect ending reflects a fulfilled promise to an NPC", () => {
     assert.match(ending.text, /Базовая концовка/);
     assert.match(ending.text, /Томасу помогли/);
     assert.equal(ending.socialConsequencesApplied, 1);
+});
+
+test("Ending adds the consequence of a false accusation independently of the case result", () => {
+    const { memory, endings } = loadSystems();
+    memory.recordAccusation("waiter", { id: "thomas-complicity", text: "Детектив обвинил Томаса." });
+    memory.resolveAccusation("waiter", "thomas-complicity", "false", "Обвинение опровергнуто.");
+    const ending = endings.determineEnding(
+        { id: "case-002" },
+        { hasInsight: id => id === "full_confession_kane" },
+        6,
+        { npcMemoryService: memory }
+    );
+    assert.equal(ending.id, "perfect");
+    assert.match(ending.text, /Детектив признал ложное обвинение/);
 });
 
 test("Partial ending reflects a broken promise without changing the legal outcome", () => {
