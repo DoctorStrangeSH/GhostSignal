@@ -166,9 +166,10 @@ const CASE_002 = {
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
                 channel: "in_person", requiresSameLocation: true,
-                initialDelayMinutes: 120, everyMinutes: 180,
+                initialDelayMinutes: 120, everyMinutes: 180, maxOccurrences: 1,
                 minTrust: 55, fromPressureBelow: 70, toPressureBelow: 50,
                 trustDelta: 2, reciprocalTrustDelta: 1,
+                toCooperationDelta: 10,
                 toCooperationDelta: 10,
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
@@ -186,7 +187,7 @@ const CASE_002 = {
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "reconcile",
                 goalId: "protect_staff", goalProgress: 1,
                 channel: "in_person", requiresSameLocation: true,
-                initialDelayMinutes: 240, everyMinutes: 240,
+                initialDelayMinutes: 240, everyMinutes: 240, maxOccurrences: 1,
                 maxTrust: 55, fromPressureBelow: 35, toPressureBelow: 35,
                 trustDelta: 8, reciprocalTrustDelta: 6,
                 toCooperationDelta: 6,
@@ -200,6 +201,7 @@ const CASE_002 = {
                 initialDelayMinutes: 90, everyMinutes: 240,
                 minTrust: 70, fromPressureBelow: 85, toPressureBelow: 85,
                 trustDelta: 1, reciprocalTrustDelta: 2,
+                toCooperationDelta: 8,
                 summary: "Ева позвонила Анне, чтобы убедиться, что та не осталась одна."
             },
             {
@@ -220,6 +222,7 @@ const CASE_002 = {
                 initialDelayMinutes: 300, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 50, fromPressureBelow: 65,
                 trustDelta: 1, reciprocalTrustDelta: 1,
+                toCooperationDelta: 5,
                 summary: "Лора написала Джо и уточнила, не нужна ли ему помощь."
             }
         ]
