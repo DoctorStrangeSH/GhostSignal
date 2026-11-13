@@ -142,9 +142,30 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
     for (const rule of entryRules) {
         const validCondition = typeof rule?.condition === "string" &&
             (/^hasInsight:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
-             /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition));
+             /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
+             /^npc_action_received:[a-z0-9_:-]{1,64}$/i.test(rule.condition) ||
+             /^npc_investigation_outcome:[a-z0-9_:-]{1,64}:(corroborated|disputed|no_independent_evidence)$/i.test(rule.condition));
         if (!rule?.nodeId || !nodes[rule.nodeId] || !validCondition) {
             errors.push("Dialogue " + id + " has an invalid conditional entry.");
+        }
+        if (typeof rule?.condition === "string" && rule.condition.startsWith("npc_action_received:")) {
+            const actionId = rule.condition.slice("npc_action_received:".length);
+            if (!Object.values(data.cases).some(gameCase =>
+                (gameCase.npcRelationships?.autonomousInteractions || []).some(action =>
+                    action.id === actionId && action.toNpcId === dialogue.npcId
+                ))) {
+                errors.push("Dialogue " + id + " entry references an action not received by its NPC.");
+            }
+        }
+        if (typeof rule?.condition === "string" && rule.condition.startsWith("npc_investigation_outcome:")) {
+            const parts = rule.condition.split(":");
+            if (!Object.values(data.cases).some(gameCase =>
+                (gameCase.npcRelationships?.autonomousInteractions || []).some(action =>
+                    action.id === parts[1] && action.fromNpcId === dialogue.npcId &&
+                    action.investigatesRumorId === action.fromRumorId
+                ))) {
+                errors.push("Dialogue " + id + " entry references an invalid investigation outcome.");
+            }
         }
         if (typeof rule?.condition === "string" && rule.condition.startsWith("has_claim:") &&
             !Object.values(nodes).some(node => node?.claim?.id === rule.condition.slice("has_claim:".length))) {
