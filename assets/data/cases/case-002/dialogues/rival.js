@@ -59,7 +59,23 @@ const DIALOGUE_RIVAL_FULL = {
                 answers: [
                     { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "hasInsight:waiter_saw_poisoning" },
                     { text: "Расскажите, зачем вы это сделали.", nextNode: "why", tone: "calm" },
+                    {
+                        text: "Вы подали возражение на предыдущий допрос?",
+                        nextNode: "kane_formal_objection",
+                        tone: "direct",
+                        condition: "npc_action_completed:kane-files-objection"
+                    },
                     { text: "Вы пытались убить человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                ]
+            },
+
+            kane_formal_objection: {
+                speaker: "npc",
+                text: "Я попросил сержанта внести мои возражения в протокол. Вы назвали меня убийцей прежде, чем предъявили достаточно доказательств. Я буду отвечать на конкретные вопросы, но не позволю подменять показания догадками.",
+                mood: "guarded",
+                answers: [
+                    { text: "Возражение внесено. Давайте вернёмся к проверяемым фактам.", nextNode: "why", tone: "calm", trustDelta: 2 },
+                    { text: "Документы и свидетели важнее ваших формулировок.", nextNode: "why", tone: "direct" }
                 ]
             },
 
