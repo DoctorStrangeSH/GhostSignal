@@ -191,6 +191,9 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 (!Number.isFinite(answer.cooperationDelta) || answer.cooperationDelta < -25 || answer.cooperationDelta > 25)) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperationDelta.");
             }
+            if (answer.hiddenWhenUnavailable !== undefined && typeof answer.hiddenWhenUnavailable !== "boolean") {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid hiddenWhenUnavailable flag.");
+            }
             for (const field of ["fulfilledCooperationDelta", "brokenCooperationDelta"]) {
                 if (answer.promise?.[field] !== undefined &&
                     (!Number.isFinite(answer.promise[field]) || answer.promise[field] < -25 || answer.promise[field] > 25)) {
