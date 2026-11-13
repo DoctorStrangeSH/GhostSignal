@@ -63,7 +63,7 @@ class EventController {
 
         on('time:changed', () => {
             const result = app.npcSocialNetwork?.processDueDeliveries();
-            if (result && (result.delivered || result.deferred || result.expired)) {
+            if (result && (result.processed || result.delivered || result.deferred || result.expired)) {
                 events.emit('npc:memory_changed', { reason: 'social_delivery', delivered: result.delivered });
                 events.emit('npc:social_network_changed', { reason: 'social_delivery' });
             }
