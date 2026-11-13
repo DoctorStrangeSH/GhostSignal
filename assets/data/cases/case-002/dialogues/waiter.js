@@ -36,7 +36,8 @@ const DIALOGUE_WAITER = {
                 text: "Я уже объяснил, что после угрозы сказал больше, чем могу подтвердить. Я помню Кейна у столика, но не стану утверждать, будто видел сам момент отравления.",
                 mood: "guarded",
                 answers: [
-                    { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter", tone: "reassuring" }
+                    { text: "Почему ты изменил показания после нашего разговора?", nextNode: "revision_under_pressure_reason", tone: "calm" },
+                    { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
             },
             revised_testimony_opening: {
@@ -51,7 +52,52 @@ const DIALOGUE_WAITER = {
                         condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2",
                         hiddenWhenUnavailable: true
                     },
+                    { text: "Что именно заставило тебя уточнить показания?", nextNode: "revision_photo_reason", tone: "calm" },
+                    {
+                        text: "Значит, раньше ты солгал мне и намеренно покрывал Кейна?",
+                        nextNode: "unfounded_lie_accusation",
+                        tone: "aggressive",
+                        cooperationDelta: -15,
+                        accusation: { id: "thomas-lied-about-poisoning", text: "Детектив без доказательств обвинил Томаса в сознательной лжи после добровольного уточнения свидетельства." },
+                        report: {
+                            id: "detective-accused-thomas-after-correction",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
+                            sourceName: "Томас",
+                            text: "Когда я честно уточнил, что видел, детектив обвинил меня в умышленной лжи."
+                        }
+                    },
                     { text: "Спасибо за точность. Других вопросов пока нет.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            revision_under_pressure_reason: {
+                speaker: "npc",
+                text: "Вы сами пригрозили мне соучастием. Я боялся, что меня не отпустят к семье, если я не скажу то, что вы хотели услышать. Но Кейна рядом со столиком я действительно видел.",
+                mood: "hurt",
+                innerThought: "Давление могло исказить формулировку. Сам факт присутствия Кейна Томас не отрицает.",
+                answers: [
+                    { text: "Прости за давление. В деле останется только то, что ты можешь подтвердить.", nextNode: "end_waiter_guarded", tone: "reassuring", cooperationDelta: 6 },
+                    { text: "Ты мог сказать об этом раньше.", nextNode: "end_waiter_guarded", tone: "cold" }
+                ]
+            },
+            revision_photo_reason: {
+                speaker: "npc",
+                text: "На фотографии видно, когда Кейн стоял у стойки. Я восстановил порядок событий и понял, что перепутал момент у столика с тем, что случилось после. Я не хочу, чтобы из моей ошибки сделали доказательство убийства.",
+                mood: "ashamed",
+                innerThought: "Уточнение связано с восстановлением хронологии. Ошибка в восприятии ещё не доказывает умышленный обман.",
+                answers: [
+                    { text: "Это важно. Я проверю хронологию по независимым материалам.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 4 },
+                    { text: "Пока рано решать, кто лгал.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
+            unfounded_lie_accusation: {
+                speaker: "npc",
+                text: "Я пытаюсь исправить свою ошибку, а вы называете меня лжецом? Я не видел, как он подсыпал порошок. Больше я не хочу говорить без свидетеля.",
+                mood: "hurt",
+                innerThought: "Обвинение нанесло вред доверию, но не установило, что Томас лгал сознательно.",
+                answers: [
+                    { text: "Разговор окончен.", nextNode: "end_waiter_guarded", tone: "cold" }
                 ]
             },
             testimony_given_opening: {
@@ -325,6 +371,12 @@ const DIALOGUE_WAITER = {
                 ]
             },
 
+            end_waiter_guarded: {
+                speaker: "npc",
+                text: "Я уже сказал всё, что могу подтвердить. Надеюсь, теперь мои слова запишут точно.",
+                mood: "guarded",
+                endDialogue: true
+            },
             end_waiter: {
                 speaker: "npc",
                 text: "Спасибо, детектив. Я больше не буду молчать. Обещаю.",
