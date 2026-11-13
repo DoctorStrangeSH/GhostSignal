@@ -450,3 +450,8 @@ PR #1 остаётся открытым; main не менялась и не сл
 ## Динамические показания Кейна (2026-11-13)
 
 В `assets/data/cases/case-002/dialogues/rival.js` создана промежуточная ветка `partial_return`, открывающаяся после `waiter_saw_poisoning`. Кейн признаёт возвращение в зал, но НЕ отравление; `claim` с `revisesClaimId: kane-left-before-poisoning` заменяет его старое алиби, не удаляя историю и не создавая полного признания. В `tests/dialogue-memory.test.mjs` проверены состояние `superseded`, `revisionOf`, версия 2, восстановление сохранения, отсутствие `full_confession_kane`. В валидаторе есть проверка связности `revisesClaimId`. На предыдущем HEAD `fc1d5318` CI был успешен; проверить свежий HEAD после документации. PR #1 без разрешения не сливать.
+
+
+## Динамические вступления NPC (Kane stateful opening)
+
+Добавлен `tree.entryRules: [{ condition, nodeId }]` в `DialogueEngine.startDialogue` с fallback на `tree.start`. Авторство `case-002/dialogues/rival.js`: сначала `hasInsight:full_confession_kane → post_confession_opening`, затем `has_claim:kane-admits-return-to-bar → revised_opening`, иначе `confrontation`. Валидатор теперь учитывает альтернативные стартовые узлы при проверке достижимости и проверяет корректность `entryRules`. Тесты охватывают первое интервью, ревизию с восстановлением сохранения, полный финальный этап и совместимость старых диалогов. Проверить актуальные GitHub Actions; PR #1 не сливать без указания пользователя.
