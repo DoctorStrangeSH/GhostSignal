@@ -71,7 +71,7 @@ const DIALOGUE_RIVAL_FULL = {
                 givesInsight: "kane_alibi_broken",
                 answers: [
                     { text: "Бармен тоже видел, как вы забрали пузырёк.", nextNode: "why", tone: "direct", condition: "hasInsight:kane_stole_vial" },
-                    { text: "Тогда объясните, что вы сделали с пузырьком.", nextNode: "final_decision", tone: "direct", condition: "hasInsight:kane_stole_vial" },
+                    { text: "Тогда объясните, что вы сделали с пузырьком.", nextNode: "why", tone: "direct", condition: "hasInsight:kane_stole_vial" },
                     { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
                 ]
             },
@@ -82,8 +82,21 @@ const DIALOGUE_RIVAL_FULL = {
                 mood: "bitter",
                 innerThought: "Он хочет исповедаться. Нужно слушать.",
                 answers: [
-                    { text: "Я слушаю.", nextNode: "confession" }
+                    {
+                        text: "У меня есть показания о порошке и похищенном пузырьке. Расскажите всё по порядку.",
+                        nextNode: "confession",
+                        tone: "direct",
+                        condition: "all:hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial"
+                    },
+                    { text: "Пока мне недостаточно доказательств. Я вернусь к этому разговору.", nextNode: "interview_paused", tone: "calm" }
                 ]
+            },
+
+            interview_paused: {
+                speaker: "npc",
+                text: "И правильно. Я не собираюсь признаваться в том, чего вы не доказали. Если хотите продолжить, принесите факты, а не предположения.",
+                mood: "guarded",
+                endDialogue: true
             },
 
             confession: {
