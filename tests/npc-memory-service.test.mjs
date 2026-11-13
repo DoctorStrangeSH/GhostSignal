@@ -469,16 +469,18 @@ test("NPCMemoryService records false accusations, applies lasting consequences a
 
 test("NPCMemoryService migrates v8 memories with an empty long-term people ledger", () => {
     const NPCMemoryService = loadService();
-    const restored = NPCMemoryService.fromJSON({ version: 8, currentCaseId: "case-002", cases: { "case-002": { waiter: { trust: 50 } } } }, "case-002");
+    const restored = NPCMemoryService.fromJSON({ version: 8, currentCaseId: "case-002", cases: { "case-002": { waiter: { trust: 37 } } } }, "case-002");
     assert.equal(restored.toJSON().version, 9);
+    restored.recordDialogueStarted("waiter", "legacy-save-followup");
     const profile = restored.getLongTermProfile("waiter");
     assert.equal(profile.npcId, "waiter");
-    assert.equal(profile.trust, 50);
-    assert.equal(profile.familiarity, 0);
-    assert.equal(profile.interactions, 0);
-    assert.equal(profile.lastSeenCaseId, null);
-    assert.equal(profile.memoryCount, 0);
-    assert.equal(profile.disposition, "unfamiliar");
+    assert.equal(profile.trust, 37);
+    assert.equal(profile.familiarity, 1);
+    assert.equal(profile.interactions, 1);
+    assert.equal(profile.lastSeenCaseId, "case-002");
+    assert.equal(profile.memoryCount, 1);
+    assert.equal(profile.disposition, "cautious");
+    assert.equal(restored.getMemory("waiter").trust, 37);
     assert.equal(restored.getAccusations("waiter").length, 0);
 });
 
