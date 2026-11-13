@@ -682,3 +682,24 @@ test("Lora reports an inconclusive witness check without treating repeated gossi
     assert.equal(engine.selectAnswer(answer.index).id, "lora_no_confirmation");
     assert.match(engine.currentNode.text, /не второе независимое свидетельство/i);
 });
+
+test("Lora's second interview remains hidden until her follow-up is completed", () => {
+    const { engine } = createDialogueHarness();
+    let completed = false;
+    engine.setRelationshipService({
+        getInvestigationOutcome(npcId, ruleId) {
+            return completed && npcId === "journalist" &&
+                ruleId === "lora-interviews-eva-about-threat"
+                ? "no_independent_evidence" : null;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    const condition = "npc_investigation_outcome:lora-interviews-eva-about-threat:no_independent_evidence";
+    assert.equal(engine.getAvailableAnswers().find(item => item.condition === condition)?.isAvailable, false);
+    completed = true;
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "lora_eva_followup_unverified");
+    assert.match(engine.currentNode.text, /связалась с Евой/i);
+});
