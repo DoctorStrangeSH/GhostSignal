@@ -28,6 +28,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Вы успели поговорить с Томасом после того, что услышали?",
+                        nextNode: "joe_helped_thomas",
+                        tone: "calm",
+                        condition: "npc_action_completed:joe-reassures-thomas-after-threat"
+                    },
+
+                    {
                         text: "Похоже, люди вокруг всё ещё помогают вам держаться.",
                         nextNode: "community_support",
                         tone: "reassuring",
@@ -64,6 +71,16 @@ const DIALOGUE_BARTENDER_CASE2 = {
                             toNpcId: "bartender"
                         }
                     }
+                ]
+            },
+
+            joe_helped_thomas: {
+                speaker: "npc",
+                text: "Да. Я поговорил с Томасом после смены. Он был напуган, но теперь знает, что не останется один. Это не отменяет его показаний и не делает ваши обвинения правдой. Просто я не позволю оставить его без поддержки.",
+                mood: "serious",
+                answers: [
+                    { text: "Я не должен был давить на него. Постараюсь исправить это.", nextNode: "retell", tone: "reassuring", trustDelta: 2 },
+                    { text: "Мне нужны только проверяемые показания.", nextNode: "retell", tone: "direct" }
                 ]
             },
 
