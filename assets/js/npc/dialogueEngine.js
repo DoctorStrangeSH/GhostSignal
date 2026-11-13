@@ -425,6 +425,10 @@ class DialogueEngine {
             const familiarity = this.memoryService?.getLongTermProfile(npcId)?.familiarity ?? 0;
             return Number.isFinite(threshold) && familiarity >= threshold;
         }
+        if (conditionStr.startsWith('long_term_disposition:')) {
+            const disposition = this.memoryService?.getLongTermProfile(npcId)?.disposition;
+            return disposition === conditionStr.slice('long_term_disposition:'.length);
+        }
 
         if (conditionStr.startsWith('motive:')) {
             return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
