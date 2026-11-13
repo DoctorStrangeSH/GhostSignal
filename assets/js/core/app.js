@@ -262,7 +262,10 @@ class App {
                 this.inventory = new Inventory(); this.inventory.addItem('magnifying_glass'); this.inventoryUI.setInventory(this.inventory);
                 this.investigationBoard = new InvestigationBoard(); this.boardUI.setBoard(this.investigationBoard);
                 this.notesManager = new NotesManager(); this.notesUI.setNotesManager(this.notesManager);
-                this.npcManager = new NPCManager(this.gameTime, this.inventory); this.npcListUI.setNPCManager(this.npcManager);
+                this.npcManager = new NPCManager(this.gameTime, this.inventory);
+                this.npcManager.setMemoryService(this.npcMemoryService);
+                this.npcManager.setSocialNetwork(this.npcSocialNetwork);
+                this.npcListUI.setNPCManager(this.npcManager);
                 this.caseManager = new CaseManager(this.gameTime, this.locationManager, this.inventory);
                 this.npcSocialNetwork?.resetCase(this.progress.activeCase);
                 this.progress.npcSocialData = this.npcSocialNetwork?.toJSON();
