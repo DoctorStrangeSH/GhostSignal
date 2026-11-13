@@ -76,6 +76,7 @@ class EventController {
             if (result && (result.processed || result.delivered || result.deferred || result.expired)) {
                 events.emit('npc:memory_changed', { reason: 'social_delivery', delivered: result.delivered });
                 events.emit('npc:social_network_changed', { reason: 'social_delivery' });
+                if (result.delivered) events.emit('npc:relationship_changed', { reason: 'social_relationship_update' });
             }
             const relationships = app.npcRelationshipService?.processDueInteractions();
             if (relationships?.processed) {
