@@ -292,7 +292,7 @@ class NPCRelationshipService {
             statusBefore: beforeStatus.id,
             statusAfter: afterStatus.id
         });
-        return { changed: true, before, after, statusBefore, statusAfter };
+        return { changed: true, before, after, statusBefore: beforeStatus, statusAfter: afterStatus };
     }
 
     recordInteraction(fromNpcId, toNpcId, interaction, options = {}) {
