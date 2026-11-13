@@ -494,3 +494,68 @@ test("case 001 and case 002 both use the shared relationship authoring schema", 
         }
     }
 });
+
+test("autonomous actions wait for a rumor personally received by the acting NPC", () => {
+    const rule = {
+        id: "rumor-driven-support", relationshipId: "a-b",
+        fromNpcId: "a", toNpcId: "b", interaction: "support", channel: "message",
+        initialDelayMinutes: 30, everyMinutes: 30, maxOccurrences: 1,
+        fromRumorId: "detective-threatened-b", fromRumorConfidenceAtLeast: 55,
+        trustDelta: 4, reciprocalTrustDelta: 2, summary: "Алекс поддержал Бориса, узнав об угрозе."
+    };
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", relationship: "friends", trust: 60, reciprocal: true }],
+        autonomousInteractions: [rule]
+    };
+    const { memory, relationships, advance, context } = createHarness({ caseData: { npcRelationships: config } });
+    assert.equal(advance(30).changed, 0);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 60);
+
+    const transmission = {
+        fromNpcId: "b", originalSourceNpcId: "b",
+        sourceEvent: { dialogueId: "dialogue-b", nodeId: "threat", answerText: "Мне угрожали." },
+        recipientTrust: 80, path: ["b", "a"], hops: 1
+    };
+    const report = { id: "detective-threatened-b", kind: "detective_behavior", text: "Детектив угрожал Борису." };
+
+    // Hearing the same rumor only in B's memory cannot trigger A's private decision.
+    assert.equal(memory.receiveSocialRumor("b", report, transmission).received, true);
+    assert.equal(advance(30).changed, 0);
+    assert.equal(memory.receiveSocialRumor("a", report, transmission).received, true);
+    assert.equal(advance(30).changed, 1);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 64);
+    assert.equal(advance(60).changed, 0);
+
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)",
+        context
+    );
+    restored.setCase({ ...context.caseData, npcRelationships: config });
+    assert.equal(restored.processDueInteractions().changed, 0);
+    assert.equal(restored.toJSON().cases["case-relationship-test"].rules["rumor-driven-support"].occurrences, 1);
+});
+
+test("rumor-driven actions can demand corroboration rather than treating gossip as fact", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "verified-action", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+            interaction: "support", channel: "message", initialDelayMinutes: 30, everyMinutes: 30,
+            maxOccurrences: 1, fromRumorId: "witness-report", fromRumorStatus: "corroborated",
+            trustDelta: 3, summary: "Алекс действует только после проверки."
+        }]
+    };
+    const { memory, advance } = createHarness({ caseData: { npcRelationships: config } });
+    assert.equal(memory.receiveSocialRumor("a", {
+        id: "witness-report", kind: "detective_behavior", text: "Сообщение свидетеля."
+    }, {
+        fromNpcId: "b", originalSourceNpcId: "b", recipientTrust: 80, hops: 1,
+        sourceEvent: { dialogueId: "b", nodeId: "1", answerText: "Я видел." }
+    }).received, true);
+    assert.equal(advance(30).changed, 0);
+    // A rumor cannot self-certify: the witness must have a recorded direct observation.
+    assert.equal(memory.corroborateRumor("a", "witness-report", "b", "absent").corroborated, false);
+    assert.equal(advance(30).changed, 0);
+});
