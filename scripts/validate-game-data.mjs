@@ -35,6 +35,14 @@ const authoredLongTermMemoryTags = new Set();
 const longTermMemoryConditions = [];
 const npcGoalConditions = [];
 const authoredNpcGoals = new Set();
+const npcClaimConditions = [];
+const authoredNpcClaims = new Set();
+const authoredNpcClaimTopics = new Set();
+const expandCondition = condition => {
+    if (typeof condition !== "string" || !condition) return [];
+    const compound = condition.match(/^(all|any):(.*)$/);
+    return compound ? compound[2].split("&").flatMap(part => expandCondition(part.trim())) : [condition];
+};
 const checkRef = (registry, id, label) => {
     if (typeof id === "string" && id && !registry[id]) errors.push(label + " references missing ID: " + id);
 };
@@ -72,6 +80,19 @@ for (const [id, npc] of Object.entries(data.npcs)) {
         acquirableItems.add(itemId);
     }
     for (const insightId of npc.canGiveInsights || []) insightSources.add(insightId);
+    const psychology = npc.psychology || {};
+    if (psychology.cooperationResistance !== undefined &&
+        (!Number.isFinite(psychology.cooperationResistance) || psychology.cooperationResistance < 0 || psychology.cooperationResistance > 1)) {
+        errors.push("NPC has invalid cooperation resistance: " + id);
+    }
+    if (psychology.cooperationThresholds !== undefined) {
+        const thresholds = psychology.cooperationThresholds;
+        const values = ["withdrawn", "reluctant", "guarded", "willing"].map(key => thresholds?.[key]);
+        if (values.some(value => !Number.isFinite(value) || value < 0 || value > 100) ||
+            values.some((value, index) => index > 0 && value <= values[index - 1])) {
+            errors.push("NPC has invalid cooperation thresholds: " + id);
+        }
+    }
     for (const condition of npc.specialConditions || []) {
         if (condition.dialogueId) {
             checkRef(data.dialogues, condition.dialogueId, "NPC condition " + id);
@@ -141,6 +162,11 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
             acquirableItems.add(node.spawnsItem);
         }
         if (node.givesInsight) insightSources.add(node.givesInsight);
+        if (node.claim?.id) authoredNpcClaims.add(dialogue.npcId + ":" + node.claim.id);
+        if (node.claim?.topic) authoredNpcClaimTopics.add(dialogue.npcId + ":" + node.claim.topic);
+        if (node.claim?.revisesActiveClaimTopic !== undefined && node.claim.revisesActiveClaimTopic !== true) {
+            errors.push("Dialogue " + id + "/" + nodeId + " has an invalid active-topic claim revision flag.");
+        }
         for (const answer of node.answers || []) {
             if (answer.condition?.startsWith("hasItem:")) checkRef(data.objects, answer.condition.slice(8), "Dialogue condition " + id + "/" + nodeId);
             if (answer.condition?.startsWith("hasInsight:")) insightSources.add(answer.condition.slice(11));
@@ -160,6 +186,41 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
             if (answer.memorySummary !== undefined &&
                 (typeof answer.memorySummary !== "string" || answer.memorySummary.length > 220)) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid memorySummary.");
+            }
+            if (answer.cooperationDelta !== undefined &&
+                (!Number.isFinite(answer.cooperationDelta) || answer.cooperationDelta < -25 || answer.cooperationDelta > 25)) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperationDelta.");
+            }
+            for (const field of ["fulfilledCooperationDelta", "brokenCooperationDelta"]) {
+                if (answer.promise?.[field] !== undefined &&
+                    (!Number.isFinite(answer.promise[field]) || answer.promise[field] < -25 || answer.promise[field] > 25)) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid promise " + field + ".");
+                }
+            }
+            for (const condition of expandCondition(answer.condition)) {
+                if (condition.startsWith("has_claim:")) {
+                    const claimId = condition.slice("has_claim:".length);
+                    if (!/^[a-z0-9_:-]{1,80}$/i.test(claimId)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid active-claim condition.");
+                    else npcClaimConditions.push({ npcId: dialogue.npcId, claimId, dialogueId: id, nodeId });
+                }
+                if (condition.startsWith("has_claim_topic:")) {
+                    const topic = condition.slice("has_claim_topic:".length);
+                    if (!/^[a-z0-9_:-]{1,80}$/i.test(topic)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid active-claim topic condition.");
+                    else if (!authoredNpcClaimTopics.has(dialogue.npcId + ":" + topic)) {
+                        npcClaimConditions.push({ npcId: dialogue.npcId, topic, dialogueId: id, nodeId });
+                    }
+                }
+                const cooperationCondition = condition.match(/^cooperation_(at_least|below):([0-9]+(?:[.][0-9]+)?)$/);
+                if (condition.startsWith("cooperation_") && !cooperationCondition) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperation threshold condition.");
+                }
+                if (cooperationCondition && Number(cooperationCondition[2]) > 100) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an out-of-range cooperation threshold.");
+                }
+                if (condition.startsWith("cooperation_state:") &&
+                    !["withdrawn", "reluctant", "guarded", "willing", "ready"].includes(condition.slice("cooperation_state:".length))) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperation state condition.");
+                }
             }
             if (answer.condition?.startsWith("long_term_memory:")) {
                 const tag = answer.condition.slice("long_term_memory:".length);
@@ -199,6 +260,17 @@ for (const condition of longTermMemoryConditions) {
     if (!authoredLongTermMemoryTags.has(condition.tag)) {
         errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
             " checks long-term memory tag with no authored source: " + condition.tag);
+    }
+}
+
+for (const condition of npcClaimConditions) {
+    const key = condition.topic
+        ? condition.npcId + ":" + condition.topic
+        : condition.npcId + ":" + condition.claimId;
+    const registry = condition.topic ? authoredNpcClaimTopics : authoredNpcClaims;
+    if (!registry.has(key)) {
+        errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
+            " checks an NPC claim with no authored source: " + key);
     }
 }
 
@@ -255,6 +327,12 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
         }
         if (rule?.channel !== undefined && !["in_person", "phone", "message"].includes(rule.channel)) {
             errors.push("Case " + id + " NPC interaction has invalid channel: " + (rule?.id || "unknown"));
+        }
+        for (const field of ["fromCooperationDelta", "toCooperationDelta"]) {
+            if (rule?.[field] !== undefined &&
+                (!Number.isFinite(rule[field]) || rule[field] < -25 || rule[field] > 25)) {
+                errors.push("Case " + id + " NPC interaction has invalid " + field + ": " + (rule?.id || "unknown"));
+            }
         }
         if (rule?.goalId) {
             const owner = rule.goalNpcId || rule.fromNpcId;
