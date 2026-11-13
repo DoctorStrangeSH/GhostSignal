@@ -158,7 +158,8 @@ const CASE_002 = {
             { id: "joe-thomas-colleagues", fromNpcId: "bartender", toNpcId: "waiter", relationship: "coworkers", label: "Коллеги по бару", trust: 80, reciprocal: true },
             { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true },
             { id: "sisters-anna-eva", fromNpcId: "ex_wife", toNpcId: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, reciprocal: true },
-            { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true }
+            { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true },
+            { id: "lora-eva-inquiry", fromNpcId: "journalist", toNpcId: "woman_in_red", relationship: "investigative_contact", label: "Контакт по расследованию", trust: 40, reciprocal: false }
         ],
         autonomousInteractions: [
             {
@@ -181,6 +182,19 @@ const CASE_002 = {
                 fromRumorId: "detective-threatened-thomas", fromRumorConfidenceAtLeast: 55,
                 trustDelta: -2, reciprocalTrustDelta: 0,
                 summary: "Услышав историю об угрозах Томасу, Лора потребовала от Джо подтверждений, прежде чем писать статью."
+            },
+            {
+                id: "lora-interviews-eva-about-threat", relationshipId: "lora-eva-inquiry",
+                fromNpcId: "journalist", toNpcId: "woman_in_red", interaction: "support",
+                channel: "phone", initialDelayMinutes: 180, everyMinutes: 90,
+                retryMinutes: 20, maxOccurrences: 1,
+                fromRumorId: "detective-threatened-thomas",
+                investigatesRumorId: "detective-threatened-thomas",
+                requiresActionId: "lora-questions-joe-about-threat",
+                requiresInvestigationOutcome: "no_independent_evidence",
+                requiresActionAgeMinutes: 60,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Не найдя независимого подтверждения у Джо, Лора позвонила Еве и уточнила, была ли та свидетелем угроз Томасу."
             },
             {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
