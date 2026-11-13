@@ -412,6 +412,14 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
         } else if (conditions?.requiresInvestigationOutcome !== undefined || conditions?.requiresActionAgeMinutes !== undefined) {
             errors.push("Case " + id + " NPC action has an orphaned prerequisite condition: " + rule.id);
         }
+        if (conditions?.fromDialogueId !== undefined || conditions?.fromDialogueNodeId !== undefined) {
+            const dialogue = data.dialogues?.[conditions.fromDialogueId];
+            if (!dialogue || dialogue.npcId !== rule.fromNpcId ||
+                typeof conditions.fromDialogueNodeId !== "string" ||
+                !dialogue.tree?.nodes?.[conditions.fromDialogueNodeId]) {
+                errors.push("Case " + id + " NPC interaction references an invalid personally witnessed dialogue node: " + rule.id);
+            }
+        }
         if (rule?.investigatesRumorId !== undefined &&
             (typeof rule.investigatesRumorId !== "string" || rule.investigatesRumorId !== conditions?.fromRumorId)) {
             errors.push("Case " + id + " NPC investigation must reference its own rumor condition: " + rule.id);
