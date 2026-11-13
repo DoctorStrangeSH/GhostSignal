@@ -36,6 +36,24 @@ const CASE_000 = {
         // TODO: укажите NPC, участвующих в деле
     ],
     
+    // === ОТНОШЕНИЯ И АВТОНОМНЫЕ ДЕЙСТВИЯ NPC ===
+    // Все связи скрыты до подтверждения через диалог, наблюдение, документ или улику.
+    npcRelationships: {
+        bonds: [
+            // { id: "unique-bond-id", fromNpcId: "npc_a", toNpcId: "npc_b", relationship: "colleagues", label: "Коллеги", trust: 65, reciprocal: true }
+        ],
+        autonomousInteractions: [
+            // {
+            //     id: "unique-interaction-id", relationshipId: "unique-bond-id",
+            //     fromNpcId: "npc_a", toNpcId: "npc_b", interaction: "support",
+            //     channel: "in_person", initialDelayMinutes: 120, everyMinutes: 240,
+            //     minTrust: 55, fromPressureBelow: 70,
+            //     trustDelta: 2, reciprocalTrustDelta: 1,
+            //     summary: "Короткое описание автономного действия."
+            // }
+        ]
+    },
+
     // === СОБЫТИЯ ===
     // Типы триггеров:
     //   "case_start"         — при старте дела
