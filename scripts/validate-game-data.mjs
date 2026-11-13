@@ -164,6 +164,12 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         if (node.givesInsight) insightSources.add(node.givesInsight);
         if (node.claim?.id) authoredNpcClaims.add(dialogue.npcId + ":" + node.claim.id);
         if (node.claim?.topic) authoredNpcClaimTopics.add(dialogue.npcId + ":" + node.claim.topic);
+        if (node.claim?.revisesClaimId) {
+            const source = Object.values(nodes).find(other => other?.claim?.id === node.claim.revisesClaimId);
+            if (!source || source.claim.topic !== node.claim.topic || source.claim.id === node.claim.id) {
+                errors.push("Dialogue " + id + "/" + nodeId + " revises a missing or unrelated NPC claim.");
+            }
+        }
         if (node.claim?.revisesActiveClaimTopic !== undefined && node.claim.revisesActiveClaimTopic !== true) {
             errors.push("Dialogue " + id + "/" + nodeId + " has an invalid active-topic claim revision flag.");
         }
