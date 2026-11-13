@@ -108,7 +108,7 @@ const CASE_001 = {
                 fromNpcId: "bartender", toNpcId: "elias", interaction: "support",
                 goalId: "maintain_bar_community", goalProgress: 1,
                 channel: "phone",
-                initialDelayMinutes: 180, everyMinutes: 360,
+                initialDelayMinutes: 180, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 50, trustDelta: 1, reciprocalTrustDelta: 1,
                 summary: "Джо и Элиас обменялись новостями за стойкой."
             }
