@@ -197,7 +197,7 @@ const CASE_002 = {
                 fromNpcId: "woman_in_red", toNpcId: "ex_wife", interaction: "support",
                 goalId: "protect_sister", goalProgress: 1,
                 channel: "phone",
-                initialDelayMinutes: 90, everyMinutes: 240,
+                initialDelayMinutes: 90, everyMinutes: 240, maxOccurrences: 1,
                 minTrust: 70, fromPressureBelow: 85, toPressureBelow: 85,
                 trustDelta: 1, reciprocalTrustDelta: 2,
                 toCooperationDelta: 12,
