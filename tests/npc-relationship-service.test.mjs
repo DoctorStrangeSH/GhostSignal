@@ -322,6 +322,92 @@ test("NPCRelationshipService carries NPC-to-NPC trust across case boundaries and
     assert.equal(memory.getRelationshipTrust("b", "a"), 61);
 });
 
+test("NPCRelationshipService advances and persists personal goals across investigations", () => {
+    const { memory, relationships, advance, caseData } = createHarness();
+    const goalConfig = {
+        goals: [{
+            id: "keep_community_together", npcId: "a",
+            title: "Сохранить сообщество", description: "Не потерять близких людей.",
+            priority: 80, target: 2
+        }],
+        bonds: caseData.npcRelationships.bonds,
+        autonomousInteractions: [{
+            id: "support-a-b", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+            interaction: "support", channel: "phone", initialDelayMinutes: 30,
+            everyMinutes: 60, maxOccurrences: 1, trustDelta: 1, reciprocalTrustDelta: 1,
+            goalId: "keep_community_together", goalProgress: 1,
+            summary: "Алекс позвонил Борису."
+        }]
+    };
+    const firstCase = { ...caseData, npcRelationships: goalConfig };
+    relationships.setCase(firstCase);
+    advance(30);
+    assert.equal(relationships.getGoalProgress("a", "keep_community_together"), 1);
+    assert.equal(relationships.isGoalCompleted("a", "keep_community_together"), false);
+
+    const nextCase = {
+        id: "case-goal-followup", npcs: ["a", "b"],
+        npcRelationships: {
+            goals: [{ id: "keep_community_together", npcId: "a", title: "Сохранить сообщество", description: "Продолжить поддерживать близких.", priority: 80, target: 2 }],
+            bonds: [{ id: "a-b-followup", fromNpcId: "a", toNpcId: "b", relationship: "colleagues", label: "Коллеги", trust: 10, reciprocal: true }],
+            autonomousInteractions: [{
+                id: "support-followup", relationshipId: "a-b-followup", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "phone", initialDelayMinutes: 30,
+                everyMinutes: 60, maxOccurrences: 1, trustDelta: 1, reciprocalTrustDelta: 1,
+                goalId: "keep_community_together", goalProgress: 1,
+                summary: "Алекс снова поддержал Бориса."
+            }]
+        }
+    };
+    memory.setCase(nextCase.id);
+    relationships.setCase(nextCase);
+    assert.equal(relationships.getGoalProgress("a", "keep_community_together"), 1);
+    assert.equal(relationships.getPersonalGoals("a")[0].status, "active");
+    advance(30);
+    assert.equal(relationships.getGoalProgress("a", "keep_community_together"), 2);
+    assert.equal(relationships.isGoalCompleted("a", "keep_community_together"), true);
+
+    const snapshot = relationships.toJSON();
+    assert.equal(snapshot.version, 3);
+    assert.equal(snapshot.worldGoals.a.keep_community_together.history.length, 2);
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, memory, npcManager, clock, network)",
+        contextForRestore()
+    );
+    assert.equal(restored.isGoalCompleted("a", "keep_community_together"), true);
+    assert.equal(restored.getPersonalGoals("a")[0].progress, 2);
+
+    function contextForRestore() {
+        const context = vm.createContext({ console, Date });
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        Object.assign(context, { snapshot, memory, npcManager: { isNPCAvailable() { return { available: true, location: "shared_room" }; } }, clock: { day: 1, hour: 9, minute: 0 }, network });
+        return context;
+    }
+});
+
+test("NPCRelationshipService gates autonomous actions on persistent goal progress", () => {
+    const { relationships, advance, caseData } = createHarness();
+    const nextCase = {
+        ...caseData,
+        npcRelationships: {
+            goals: [{ id: "protect_partner", npcId: "a", title: "Защитить партнёра", target: 2 }],
+            bonds: caseData.npcRelationships.bonds,
+            autonomousInteractions: [{
+                id: "goal-gated-support", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "phone", initialDelayMinutes: 30,
+                everyMinutes: 60, maxOccurrences: 1, minTrust: 0,
+                goalId: "protect_partner", goalNpcId: "a", goalProgress: 1,
+                conditions: { goalId: "protect_partner", goalNpcId: "a", goalProgressAtLeast: 1 },
+                summary: "Алекс поддержал Бориса только после того, как решил защитить его."
+            }]
+        }
+    };
+    relationships.setCase(nextCase);
+    const before = advance(30);
+    assert.equal(before.changed, 0);
+    assert.equal(relationships.getGoalProgress("a", "protect_partner"), 0);
+});
+
 test("case 001 and case 002 both use the shared relationship authoring schema", () => {
     const context = vm.createContext({});
     for (const [path, expression] of [
