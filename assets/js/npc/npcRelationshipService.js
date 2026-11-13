@@ -166,7 +166,10 @@ class NPCRelationshipService {
                         // Rumors belong to the acting NPC; never consult another character's private knowledge.
                         fromRumorId: typeof conditions.fromRumorId === 'string' && /^[a-z0-9_:-]{1,100}$/i.test(conditions.fromRumorId) ? conditions.fromRumorId : null,
                         fromRumorStatus: ['unverified', 'corroborated', 'disputed'].includes(conditions.fromRumorStatus) ? conditions.fromRumorStatus : null,
-                        fromRumorConfidenceAtLeast: this._optionalClamp(conditions.fromRumorConfidenceAtLeast, 0, 100)
+                        fromRumorConfidenceAtLeast: this._optionalClamp(conditions.fromRumorConfidenceAtLeast, 0, 100),
+                        requiresActionId: typeof conditions.requiresActionId === 'string' ? conditions.requiresActionId : null,
+                        requiresInvestigationOutcome: ['corroborated', 'disputed', 'no_independent_evidence'].includes(conditions.requiresInvestigationOutcome) ? conditions.requiresInvestigationOutcome : null,
+                        requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080)
                     },
                     summary: String(item.summary || '').slice(0, 240)
                 };
@@ -371,6 +374,18 @@ class NPCRelationshipService {
             if (!rumor) return false;
             if (conditions.fromRumorStatus && rumor.status !== conditions.fromRumorStatus) return false;
             if (conditions.fromRumorConfidenceAtLeast !== null && rumor.confidence < conditions.fromRumorConfidenceAtLeast) return false;
+        }
+        if (conditions.requiresActionId) {
+            const prerequisite = this.caseConfig.autonomousInteractions.find(item =>
+                item.id === conditions.requiresActionId && item.fromNpcId === rule.fromNpcId && item.id !== rule.id
+            );
+            const prior = prerequisite ? this.cases[this.currentCaseId]?.rules?.[prerequisite.id] : null;
+            if (!prior || !Number.isInteger(prior.occurrences) || prior.occurrences < 1) return false;
+            if (conditions.requiresInvestigationOutcome &&
+                prior.investigationOutcome !== conditions.requiresInvestigationOutcome) return false;
+            if (conditions.requiresActionAgeMinutes !== null &&
+                (!Number.isFinite(prior.lastTriggeredAt) ||
+                    this._now() - prior.lastTriggeredAt < conditions.requiresActionAgeMinutes)) return false;
         }
         if (conditions.goalId) {
             const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
