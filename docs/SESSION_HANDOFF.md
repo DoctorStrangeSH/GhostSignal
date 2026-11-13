@@ -16,8 +16,8 @@ Latest confirmed CI on the current cooperation/testimony pass:
 - JavaScript syntax check: 100 files passed.
 - Game-data validation: 2 cases, 14 locations, 13 NPCs, 61 objects, 14 dialogues.
 - Unit and controller tests: 124 passed, 0 failed.
-- Push CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43454367574
-- PR CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43454376434 (last observed in progress when this note was written).
+- Push CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43454601640
+- PR CI: https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43454611294 (last observed in progress when this note was written).
 
 Run locally:
 ```bash
@@ -373,7 +373,7 @@ npm run build
 
 ## Cooperation readiness и динамические показания — 2026-11-13
 
-- Последний кодовый HEAD: c79d330071ed5c0e3d012c279a9db5d7cd8bbbe0.
+- Последний кодовый HEAD: a46911bbe03ad9295ffbb9248b3e6a76277e12fa.
 - NPCMemoryService v10: cooperation 0–100 и cooperationHistory per case. getCooperationState(npcId, profile) возвращает score/state/label; getPsychologicalState добавляет только state/label.
 - Итоговый score учитывает текущую готовность, текущее доверие/давление и долговременное доверие. cooperationResistance и cooperationThresholds — индивидуальные настройки NPC.
 - Ответы могут задавать cooperationDelta; promises поддерживают fulfilledCooperationDelta и brokenCooperationDelta; legacy promises мигрируют к +10/-18. Исходы обвинений также меняют готовность.
@@ -382,7 +382,7 @@ npm run build
 - NPCManager удаляет raw cooperation score/history из публичного memory payload; NPCListUI показывает только текстовый статус сотрудничества.
 - Томас: после официальных показаний детектив может снова запугать его. При следующем разговоре, если готовность упала до reluctant, появляется скрытая до выполнения условий опция пересмотреть показания. Узел создаёт claim с revisesActiveClaimTopic:true; recordClaim разрешает такую ревизию только при ровно одном активном claim на тему. Предыдущая версия сохраняется как superseded; новая становится active. Никаких evidence/insight не выдаётся.
 - Валидатор проверяет cooperation profile/ranges, relationship deltas, answer deltas, promise deltas и ссылки на claims из составных условий.
-- CI на HEAD c79d330: 100 JS, 124/124 tests, 0 fail; validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453446694) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453456859).
+- CI на HEAD a46911b: 100 JS, 124/124 tests, 0 fail; validator: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453446694) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43453456859).
 
 ### Следующий шаг
 1. Провести ручной прогон: Томас даёт официальное показание → детектив угрожает → повторный разговор → новая версия показания; проверить claim history и отсутствие автоматического evidence/insight.
