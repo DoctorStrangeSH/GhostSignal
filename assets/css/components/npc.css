@@ -298,3 +298,30 @@
 .npc-accusation > span { color: var(--text-dim); font-size: 8px; letter-spacing: 0.7px; }
 .npc-accusation p { margin: 3px 0 0; color: var(--text-secondary); font-size: 9px; line-height: 1.45; }
 .npc-accusation-false > span { color: var(--accent-red-bright); }
+
+/* Social graph: visible ties and their current trust, not just a list of names. */
+.npc-social-links {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(150, 170, 150, 0.16);
+}
+.npc-social-links-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-social-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+.npc-social-link small {
+    color: var(--text-dim);
+    font-size: 8px;
+    text-align: right;
+}

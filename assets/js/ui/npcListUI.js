@@ -115,6 +115,17 @@ class NPCListUI {
                                 <span>СОСТОЯНИЕ</span><strong>${npc.psychology.label}</strong>
                             </div>
                         ` : ''}
+                        ${npc.socialLinks?.length ? `
+                            <div class="npc-social-links">
+                                <div class="npc-social-links-heading">СОЦИАЛЬНЫЕ СВЯЗИ</div>
+                                ${npc.socialLinks.slice(0, 4).map(link => `
+                                    <div class="npc-social-link">
+                                        <span>${link.name}</span>
+                                        <small>${link.label} · ${link.trust}%</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                         ${npc.memory.liesExposed?.length ? `
                             <div class="npc-lies-exposed">⚠ Раскрыто ложных показаний: ${npc.memory.liesExposed.length}</div>
                         ` : ''}

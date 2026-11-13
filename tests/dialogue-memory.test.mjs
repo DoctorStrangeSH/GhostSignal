@@ -20,11 +20,13 @@ function createDialogueHarness() {
             else registry[type] = { ...(registry[type] || {}), ...data };
         },
         getDialogueById(id) { return registry.dialogue?.[id] || null; },
+        getNPCById(id) { return ({ waiter: { name: "Томас", availableForCall: false }, bartender: { name: "Джо", availableForCall: true }, journalist: { name: "Лора", availableForCall: true } })[id] || null; },
         getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
         "assets/js/npc/npcMemoryService.js",
+        "assets/js/npc/npcSocialNetwork.js",
         "assets/js/npc/dialogueEngine.js",
         "assets/data/cases/case-002/dialogues/waiter.js",
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
@@ -45,12 +47,43 @@ function createDialogueHarness() {
             addInsight(id) { if (!this.insights.includes(id)) this.insights.push(id); }
         };
         const memory = new NPCMemoryService(null, "case-002");
-        const engine = new DialogueEngine(inventory, { advance() {} });
+        const gameTime = {
+            day: 1, hour: 18, minute: 0,
+            advance(minutes) {
+                this.minute += minutes;
+                while (this.minute >= 60) { this.minute -= 60; this.hour++; }
+                while (this.hour >= 24) { this.hour -= 24; this.day++; }
+            }
+        };
+        const npcManager = {
+            isNPCAvailable(id) {
+                return { available: true, location: id === "journalist" ? "newspaper_office" : "bar_joe" };
+            }
+        };
+        const socialNetwork = new NPCSocialNetwork(null, memory, npcManager, gameTime);
+        socialNetwork.setCase({
+            id: "case-002", npcs: ["waiter", "bartender", "journalist"],
+            socialNetwork: {
+                maxHops: 2,
+                edges: [
+                    { from: "waiter", to: "bartender", relationship: "coworkers", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
+                    { from: "bartender", to: "journalist", relationship: "source", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true }
+                ]
+            }
+        });
+        const engine = new DialogueEngine(inventory, gameTime);
         engine.setMemoryService(memory);
-        return { inventory, memory, engine };
+        engine.setSocialNetwork(socialNetwork);
+        return { inventory, memory, engine, gameTime, socialNetwork };
     })()`, context);
 
-    return { ...setup, emitted, context };
+    return {
+        ...setup, emitted, context,
+        advance(minutes) {
+            setup.gameTime.advance(minutes);
+            return setup.socialNetwork.processDueDeliveries();
+        }
+    };
 }
 
 test("DialogueEngine persists NPC conversation history and answer tone", () => {
@@ -87,14 +120,16 @@ test("DialogueEngine records a promise made to Thomas as a pending NPC memory", 
     assert.equal(memory.getMemory("waiter").dialogueHistory.some(entry => entry.type === "promise_made"), true);
 });
 
-test("DialogueEngine lets Thomas's intimidation report unlock Joe's reaction", () => {
-    const { engine, memory } = createDialogueHarness();
+test("DialogueEngine lets Thomas's intimidation report reach Joe through a timed social link", () => {
+    const { engine, memory, advance } = createDialogueHarness();
 
     engine.startDialogue("dialogue-waiter");
     engine.selectAnswer(1);
 
-    assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), true);
+    assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), false);
     assert.equal(memory.hasRumor("waiter", "detective-threatened-thomas"), false);
+    advance(15);
+    assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), true);
     assert.equal(memory.getRumors("bartender")[0].status, "unverified");
     assert.equal(memory.getRumors("bartender")[0].sourceTrust, 80);
     assert.equal(memory.getRumors("bartender")[0].confidence, 78);
@@ -122,12 +157,14 @@ test("DialogueEngine does not show Joe's rumor reaction before Thomas reports th
 });
 
 test("Thomas can be falsely accused, apologize later and leave a traceable social report", () => {
-    const { engine, memory } = createDialogueHarness();
+    const { engine, memory, advance } = createDialogueHarness();
     engine.startDialogue("dialogue-waiter");
     const accusation = engine.getAvailableAnswers().find(answer => answer.accusation?.id === "thomas-complicity");
     assert.equal(accusation?.isAvailable, true);
     engine.selectAnswer(accusation.index);
     assert.equal(memory.getAccusations("waiter")[0].status, "pending");
+    assert.equal(memory.hasRumor("bartender", "detective-accused-thomas-of-complicity"), false);
+    advance(15);
     assert.equal(memory.hasRumor("bartender", "detective-accused-thomas-of-complicity"), true);
 
     engine.selectAnswer(0);
@@ -138,6 +175,8 @@ test("Thomas can be falsely accused, apologize later and leave a traceable socia
     engine.selectAnswer(apology.index);
 
     assert.equal(memory.getAccusations("waiter")[0].status, "false");
+    assert.equal(memory.hasRumor("bartender", "detective-apologized-to-thomas"), false);
+    advance(15);
     assert.equal(memory.hasRumor("bartender", "detective-apologized-to-thomas"), true);
     assert.equal(memory.getCaseSocialSummary("case-002").npcs.waiter.accusations.false, 1);
 });
