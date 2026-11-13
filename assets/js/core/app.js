@@ -15,6 +15,7 @@ class App {
         this.caseListUI = null;
         this.npcManager = null;
         this.npcMemoryService = null;
+        this.npcSocialNetwork = null;
         this.npcListUI = null;
         this.dialogueEngine = null;
         this.callInterface = null;
@@ -111,10 +112,15 @@ class App {
         this.npcManager = NPCManager.fromJSON(this.progress.npcData, this.gameTime, this.inventory, this.progress.activeCase);
         this.npcMemoryService = NPCMemoryService.fromJSON(this.progress.npcMemoryData, this.progress.activeCase);
         this.npcManager.setMemoryService(this.npcMemoryService);
+        this.npcSocialNetwork = NPCSocialNetwork.fromJSON(this.progress.npcSocialData, this.npcMemoryService, this.npcManager, this.gameTime);
+        const activeSocialCase = this.progress.activeCase ? getCaseById(this.progress.activeCase) : null;
+        if (activeSocialCase) this.npcSocialNetwork.setCase(activeSocialCase);
+        this.npcManager.setSocialNetwork(this.npcSocialNetwork);
         this.npcListUI = new NPCListUI('npcs-list'); this.npcListUI.setNPCManager(this.npcManager);
 
         this.dialogueEngine = new DialogueEngine(this.inventory, this.gameTime);
         this.dialogueEngine.setMemoryService(this.npcMemoryService);
+        this.dialogueEngine.setSocialNetwork(this.npcSocialNetwork);
         this.callInterface = new CallInterface(); this.callInterface.setDialogueEngine(this.dialogueEngine);
 
         this.ttsEngine = new TTSEngine();
@@ -185,7 +191,7 @@ class App {
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
             boardData: null, notesData: null, trackerData: null, reputationData: null,
-            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null
+            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null
         };
     }
 
@@ -258,6 +264,8 @@ class App {
                 this.notesManager = new NotesManager(); this.notesUI.setNotesManager(this.notesManager);
                 this.npcManager = new NPCManager(this.gameTime, this.inventory); this.npcListUI.setNPCManager(this.npcManager);
                 this.caseManager = new CaseManager(this.gameTime, this.locationManager, this.inventory);
+                this.npcSocialNetwork?.resetCase(this.progress.activeCase);
+                this.progress.npcSocialData = this.npcSocialNetwork?.toJSON();
                 this.progress.activeCase = null; this.progress.caseData = null; this.progress.inventoryData = null; this.progress.boardData = null; this.progress.npcData = null; this.progress.notesData = null;
                 this._saveProgress(); modal.hide(); this.navigateTo('screen-main-menu');
             }

@@ -33,6 +33,7 @@ class SaveController {
         app.progress.weatherData = app.weatherSystem?.toJSON();
         app.progress.interrogationData = app.interrogationSystem?.toJSON();
         app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
+        app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
 
         return this.saveProgress();
     }

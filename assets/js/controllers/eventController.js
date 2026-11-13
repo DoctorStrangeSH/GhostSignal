@@ -48,6 +48,8 @@ class EventController {
         on('case:started', (data) => {
             app.progress.activeCase = app.caseManager.currentCase?.id;
             app.npcMemoryService?.setCase(data.caseData.id);
+            app.npcSocialNetwork?.setCase(data.caseData);
+            app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
             app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
             app.progress.caseData = app.caseManager.toJSON();
             app._saveProgress();
@@ -57,6 +59,14 @@ class EventController {
             app.evidenceChainSystem?.loadChainsForCase(data.caseData);
             app.evidenceChainSystem?.checkChains();
             setTimeout(() => { app.notesManager?.collectNote('initial_report'); app.notesManager?.collectNote('newspaper_article'); }, 1000);
+        });
+
+        on('time:changed', () => {
+            const result = app.npcSocialNetwork?.processDueDeliveries();
+            if (result && (result.delivered || result.deferred || result.expired)) {
+                events.emit('npc:memory_changed', { reason: 'social_delivery', delivered: result.delivered });
+                events.emit('npc:social_network_changed', { reason: 'social_delivery' });
+            }
         });
 
         on('location:changed', (data) => {
@@ -143,6 +153,11 @@ class EventController {
             if (!npc || !avail?.available) { events.emit('npc:call', id); return; }
             app.gameTime.advance(CONFIG.time.costs.dialogue);
             app.callInterface.startCall(id);
+        });
+
+        on('npc:social_network_changed', () => {
+            app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
+            app._saveProgress();
         });
 
         on('npc:memory_changed', () => {
