@@ -8,6 +8,7 @@ class DialogueEngine {
         this.onNodeChange = null;
         this.memoryService = null;
         this.motivationService = null;
+        this.relationshipService = null;
     }
 
     setMemoryService(service) {
@@ -18,6 +19,10 @@ class DialogueEngine {
         this.motivationService = service || null;
     }
 
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
+    }
+
     setSocialNetwork(service) {
         this.socialNetwork = service || null;
     }
@@ -26,6 +31,11 @@ class DialogueEngine {
         const npcId = this.currentDialogue?.npcId;
         if (!npcId || !this.memoryService || !node) return;
         this.memoryService.recordNodeVisited(npcId, this.currentDialogue.id, node);
+        if (Array.isArray(node.revealRelationships) && node.revealRelationships.length) {
+            this.relationshipService?.revealRelationships(node.revealRelationships, {
+                method: 'dialogue', sourceId: `${this.currentDialogue.id}:${node.id}`
+            });
+        }
         this._notifyMemoryChanged();
     }
 
@@ -33,6 +43,7 @@ class DialogueEngine {
         if (!this.memoryService) return;
         events.emit('npc:memory_changed', this.memoryService.toJSON());
         if (this.socialNetwork) events.emit('npc:social_network_changed', this.socialNetwork.toJSON());
+        if (this.relationshipService) events.emit('npc:relationship_changed', this.relationshipService.toJSON());
     }
     
     // Начать диалог
@@ -140,6 +151,12 @@ class DialogueEngine {
                 const discovery = answer.revealSocialEvents;
                 this.socialNetwork.revealEventsForReport(discovery.reportId, {
                     ...discovery,
+                    method: 'dialogue',
+                    sourceId: `${this.currentDialogue.id}:${this.currentNode.id}:${answerIndex}`
+                });
+            }
+            if (answer.revealRelationships && this.relationshipService) {
+                this.relationshipService.revealRelationships(answer.revealRelationships, {
                     method: 'dialogue',
                     sourceId: `${this.currentDialogue.id}:${this.currentNode.id}:${answerIndex}`
                 });
@@ -387,6 +404,10 @@ class DialogueEngine {
         const psychology = npcId
             ? this.memoryService?.getPsychologicalState(npcId, npc?.psychology)
             : null;
+
+        if (conditionStr.startsWith('relationship_known:')) {
+            return Boolean(this.relationshipService?.isKnownRelationship(conditionStr.slice('relationship_known:'.length)));
+        }
 
         if (conditionStr.startsWith('motive:')) {
             return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
