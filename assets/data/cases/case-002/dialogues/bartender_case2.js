@@ -34,6 +34,12 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         condition: "long_term_memory:player_threatened"
                     },
                     {
+                        text: "Похоже, мы так и не научились доверять друг другу.",
+                        nextNode: "guarded_history",
+                        tone: "direct",
+                        condition: "long_term_disposition:guarded"
+                    },
+                    {
                         text: "В прошлый раз вы выслушали меня. Я это ценю.",
                         nextNode: "remembers_kindness",
                         tone: "reassuring",
@@ -74,6 +80,31 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         nextNode: "retell",
                         tone: "threatening",
                         memorySummary: "Детектив снова пригрозил Джо, не признав прежнюю ошибку.",
+                        memoryTags: ["player_threatened"],
+                        memoryImportance: 4
+                    }
+                ]
+            },
+
+            guarded_history: {
+                speaker: "npc",
+                text: "Вы снова здесь, детектив. Я помню, как вы со мной разговаривали. И помню, что потом вы не всегда держали слово. Мне нужно понять, изменилось ли хоть что-нибудь.",
+                mood: "guarded",
+                innerThought: "Доверие Джо не исчезло за один разговор. Оно копилось — и так же постепенно разрушалось.",
+                answers: [
+                    {
+                        text: "Я понимаю. Мне придётся заслужить ваше доверие.",
+                        nextNode: "retell",
+                        tone: "reassuring",
+                        memorySummary: "Детектив признал, что должен заново заслужить доверие Джо.",
+                        memoryTags: ["player_apologized"],
+                        memoryImportance: 3
+                    },
+                    {
+                        text: "Я не пришёл за вашим доверием.",
+                        nextNode: "retell",
+                        tone: "threatening",
+                        memorySummary: "Детектив отказался восстанавливать доверие Джо.",
                         memoryTags: ["player_threatened"],
                         memoryImportance: 4
                     }
