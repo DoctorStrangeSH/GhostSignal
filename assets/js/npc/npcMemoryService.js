@@ -6,9 +6,10 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 8;
+        this.version = 9;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
+        this.people = this._clone(snapshot?.people || {});
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
     }
 
@@ -25,12 +26,118 @@ class NPCMemoryService {
         return this.cases[caseId];
     }
 
+    _ensurePerson(npcId) {
+        if (!npcId || typeof npcId !== 'string') return null;
+        if (!this.people || typeof this.people !== 'object' || Array.isArray(this.people)) this.people = {};
+        if (!this.people[npcId] || typeof this.people[npcId] !== 'object') {
+            this.people[npcId] = {
+                trust: 50,
+                familiarity: 0,
+                interactions: 0,
+                lastSeenCaseId: null,
+                lastSeenAt: null,
+                memories: [],
+                nextMemoryId: 1
+            };
+        }
+        const person = this.people[npcId];
+        person.trust = Number.isFinite(person.trust) ? Math.max(0, Math.min(100, person.trust)) : 50;
+        person.familiarity = Number.isFinite(person.familiarity) ? Math.max(0, Math.min(100, person.familiarity)) : 0;
+        person.interactions = Number.isInteger(person.interactions) ? Math.max(0, person.interactions) : 0;
+        person.memories = Array.isArray(person.memories) ? person.memories : [];
+        person.nextMemoryId = Number.isInteger(person.nextMemoryId) && person.nextMemoryId > 0
+            ? person.nextMemoryId : person.memories.length + 1;
+        return person;
+    }
+
+    _recordLongTermMemory(npcId, details = {}) {
+        const person = this._ensurePerson(npcId);
+        if (!person || typeof details.type !== 'string' || !details.type) return null;
+        const trustDelta = Number.isFinite(details.trustDelta)
+            ? Math.max(-10, Math.min(10, details.trustDelta)) : 0;
+        person.trust = Math.max(0, Math.min(100, Math.round((person.trust + trustDelta) * 10) / 10));
+        const familiarityDelta = Number.isFinite(details.familiarityDelta) ? details.familiarityDelta : 0;
+        person.familiarity = Math.max(0, Math.min(100, person.familiarity + familiarityDelta));
+        person.interactions++;
+        person.lastSeenCaseId = this.currentCaseId || person.lastSeenCaseId;
+        person.lastSeenAt = Date.now();
+
+        const summary = String(details.summary || '').trim().slice(0, 220);
+        const importance = Number.isFinite(details.importance)
+            ? Math.max(1, Math.min(5, Math.round(details.importance))) : 1;
+        const tags = Array.isArray(details.tags)
+            ? [...new Set(details.tags.filter(tag => typeof tag === 'string' && /^[a-z0-9_:-]{1,48}$/i.test(tag)))]
+            : [];
+        if (summary || importance >= 2 || tags.length) {
+            const entry = {
+                id: npcId + ':memory:' + person.nextMemoryId++,
+                type: details.type,
+                caseId: this.currentCaseId || null,
+                summary: summary || 'Персонаж запомнил важный момент общения.',
+                sentiment: ['positive', 'negative', 'neutral', 'mixed'].includes(details.sentiment)
+                    ? details.sentiment : 'neutral',
+                importance,
+                tags,
+                trustDelta,
+                at: Date.now()
+            };
+            person.memories.push(entry);
+            if (person.memories.length > 60) {
+                const removable = person.memories
+                    .map((item, index) => ({ item, index }))
+                    .filter(item => item.item.importance < 5)
+                    .sort((a, b) => a.item.importance - b.item.importance || a.item.at - b.item.at)[0];
+                person.memories.splice(removable ? removable.index : 0, 1);
+            }
+            return this._clone(entry);
+        }
+        return null;
+    }
+
+    getLongTermProfile(npcId) {
+        const person = this.people?.[npcId];
+        if (!person) return {
+            npcId, trust: 50, familiarity: 0, interactions: 0,
+            lastSeenCaseId: null, memoryCount: 0, disposition: 'unfamiliar'
+        };
+        const trust = Number.isFinite(person.trust) ? Math.max(0, Math.min(100, person.trust)) : 50;
+        const familiarity = Number.isFinite(person.familiarity) ? Math.max(0, Math.min(100, person.familiarity)) : 0;
+        const disposition = trust >= 70 ? 'warm'
+            : trust >= 55 ? 'open'
+            : trust >= 40 ? 'cautious'
+            : trust >= 20 ? 'guarded' : 'hostile';
+        return {
+            npcId, trust, familiarity,
+            interactions: Number.isInteger(person.interactions) ? person.interactions : 0,
+            lastSeenCaseId: person.lastSeenCaseId || null,
+            memoryCount: Array.isArray(person.memories) ? person.memories.length : 0,
+            disposition
+        };
+    }
+
+    getLongTermMemories(npcId, options = {}) {
+        const memories = this.people?.[npcId]?.memories;
+        if (!Array.isArray(memories)) return [];
+        const tag = typeof options.tag === 'string' ? options.tag : null;
+        const limit = Number.isInteger(options.limit) ? Math.max(1, Math.min(60, options.limit)) : 20;
+        return this._clone(memories
+            .filter(item => !tag || item.tags?.includes(tag))
+            .slice()
+            .sort((a, b) => b.at - a.at)
+            .slice(0, limit));
+    }
+
+    hasLongTermMemoryTag(npcId, tag) {
+        if (!npcId || !tag) return false;
+        return this.people?.[npcId]?.memories?.some(item => item.tags?.includes(tag)) || false;
+    }
+
     _ensureNPC(npcId) {
         if (!npcId || !this.currentCaseId) return null;
         const caseMemory = this._ensureCase();
         if (!caseMemory[npcId]) {
             caseMemory[npcId] = {
-                trust: 50,
+                trust: this._ensurePerson(npcId)?.trust ?? 50,
                 pressure: 0,
                 conversations: 0,
                 dialogueHistory: [],
@@ -95,6 +202,10 @@ class NPCMemoryService {
         if (!memory) return false;
         memory.conversations++;
         this._append(memory, { type: 'dialogue_started', dialogueId });
+        this._recordLongTermMemory(npcId, {
+            type: 'conversation', summary: 'Персонаж снова встретился с детективом.',
+            sentiment: 'neutral', importance: 1, tags: ['conversation'], familiarityDelta: 1
+        });
         return true;
     }
 
@@ -136,6 +247,32 @@ class NPCMemoryService {
             trustDelta,
             pressureDelta
         });
+        const tone = answer.tone || 'neutral';
+        const memorableTones = {
+            reassuring: { importance: 3, tag: 'player_reassured', sentiment: 'positive' },
+            threatening: { importance: 4, tag: 'player_threatened', sentiment: 'negative' },
+            aggressive: { importance: 3, tag: 'player_aggressive', sentiment: 'negative' },
+            calm: { importance: 1, tag: 'player_calm', sentiment: 'positive' }
+        };
+        const memoryTone = memorableTones[tone];
+        const explicitImportance = Number.isFinite(answer.memoryImportance) ? answer.memoryImportance : null;
+        const importance = explicitImportance ?? memoryTone?.importance ?? 0;
+        if (importance >= 2 || answer.remember === true) {
+            this._recordLongTermMemory(npcId, {
+                type: 'player_interaction',
+                summary: answer.memorySummary || answer.text || 'Детектив оставил сильное впечатление.',
+                sentiment: memoryTone?.sentiment || (trustDelta > 0 ? 'positive' : trustDelta < 0 ? 'negative' : 'neutral'),
+                importance: importance || 2,
+                tags: [...(memoryTone ? [memoryTone.tag] : []), ...(Array.isArray(answer.memoryTags) ? answer.memoryTags : [])],
+                trustDelta: trustDelta * 0.25
+            });
+        } else if (trustDelta !== 0) {
+            this._recordLongTermMemory(npcId, {
+                type: 'lasting_impression',
+                trustDelta: trustDelta * 0.15,
+                importance: 1
+            });
+        }
         return true;
     }
 
@@ -592,7 +729,7 @@ class NPCMemoryService {
     }
 
     getTrust(npcId) {
-        return this.cases[this.currentCaseId]?.[npcId]?.trust ?? 50;
+        return this.cases[this.currentCaseId]?.[npcId]?.trust ?? this.people?.[npcId]?.trust ?? 50;
     }
 
     getPressure(npcId) {
@@ -691,9 +828,19 @@ class NPCMemoryService {
             retracted: { trust: -3, pressure: 2 },
             substantiated: { trust: 1, pressure: -2 }
         }[outcome];
+        const lastingEffects = { false: -5, retracted: -2, substantiated: 0.5 };
         memory.trust = Math.max(0, Math.min(100, memory.trust + effects.trust));
         memory.pressure = Math.max(0, Math.min(100, memory.pressure + effects.pressure));
         this._append(memory, { type: 'accusation_resolved', accusationId, outcome, reason: accusation.resolutionReason, trustDelta: effects.trust, pressureDelta: effects.pressure });
+        this._recordLongTermMemory(npcId, {
+            type: 'accusation_resolved',
+            summary: outcome === 'false' ? 'Детектив обвинил персонажа без достаточных оснований.'
+                : outcome === 'retracted' ? 'Детектив отозвал обвинение.' : 'Обвинение подтвердилось.',
+            sentiment: outcome === 'substantiated' ? 'mixed' : 'negative',
+            importance: outcome === 'false' ? 5 : outcome === 'retracted' ? 3 : 2,
+            tags: [outcome === 'false' ? 'false_accusation' : outcome === 'retracted' ? 'accusation_retracted' : 'accurate_accusation'],
+            trustDelta: lastingEffects[outcome]
+        });
         return { resolved: true, accusation: this._clone(accusation), trust: memory.trust, pressure: memory.pressure };
     }
 
@@ -728,6 +875,10 @@ class NPCMemoryService {
         };
         memory.promises.push(stored);
         this._append(memory, { type: 'promise_made', promiseId: stored.id, text: stored.text });
+        this._recordLongTermMemory(npcId, {
+            type: 'promise_made', summary: stored.text, sentiment: 'mixed', importance: 3,
+            tags: ['promise_made'], trustDelta: 0
+        });
         return { recorded: true, promise: this._clone(stored) };
     }
 
@@ -758,6 +909,10 @@ class NPCMemoryService {
                 memory.trust = Math.max(0, Math.min(100, (Number.isFinite(memory.trust) ? memory.trust : 50) + delta));
                 memory.pressure = Math.max(0, Math.min(100, (Number.isFinite(memory.pressure) ? memory.pressure : 0) - 2));
                 this._append(memory, { type: 'promise_fulfilled', promiseId: promise.id, trustDelta: delta });
+                this._recordLongTermMemory(npcId, {
+                    type: 'promise_kept', summary: promise.text, sentiment: 'positive', importance: 4,
+                    tags: ['promise_kept'], trustDelta: Math.max(0, delta) * 0.5
+                });
                 changes.push({ npcId, promiseId: promise.id, status: promise.status, trust: memory.trust });
             }
         }
@@ -790,6 +945,14 @@ class NPCMemoryService {
                     promiseId: promise.id,
                     trustDelta: delta,
                     outcome
+                });
+                this._recordLongTermMemory(npcId, {
+                    type: fulfilledByOutcome ? 'promise_kept' : 'promise_broken',
+                    summary: promise.text,
+                    sentiment: fulfilledByOutcome ? 'positive' : 'negative',
+                    importance: 5,
+                    tags: [fulfilledByOutcome ? 'promise_kept' : 'promise_broken'],
+                    trustDelta: fulfilledByOutcome ? Math.max(0, delta) * 0.5 : Math.min(0, delta) * 0.65
                 });
                 changes.push({ npcId, promiseId: promise.id, status, trust: memory.trust });
             }
@@ -838,7 +1001,8 @@ class NPCMemoryService {
         return {
             version: this.version,
             currentCaseId: this.currentCaseId,
-            cases: this._clone(this.cases)
+            cases: this._clone(this.cases),
+            people: this._clone(this.people)
         };
     }
 
