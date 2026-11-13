@@ -227,11 +227,13 @@ class DialogueEngine {
     getAvailableAnswers() {
         if (!this.currentNode?.answers) return [];
         
-        return this.currentNode.answers.map((answer, index) => ({
-            ...answer,
-            index,
-            isAvailable: !answer.condition || this._checkCondition(answer.condition)
-        }));
+        return this.currentNode.answers
+            .map((answer, index) => ({
+                ...answer,
+                index,
+                isAvailable: !answer.condition || this._checkCondition(answer.condition)
+            }))
+            .filter(answer => !answer.hiddenWhenUnavailable || answer.isAvailable);
     }
     
     // Сбросить диалог
