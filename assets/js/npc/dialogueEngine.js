@@ -412,7 +412,7 @@ class DialogueEngine {
         if (conditionStr.startsWith('long_term_memory:')) {
             return Boolean(npcId && this.memoryService?.hasLongTermMemoryTag(npcId, conditionStr.slice('long_term_memory:'.length)));
         }
-        const longTermTrust = conditionStr.match(/^long_term_trust_(at_least|below):(\\d+(?:\\.\\d+)?)$/);
+        const longTermTrust = conditionStr.match(/^long_term_trust_(at_least|below):([0-9]+([.][0-9]+)?)$/);
         if (longTermTrust) {
             const [, operator, rawThreshold] = longTermTrust;
             const threshold = Number(rawThreshold);
