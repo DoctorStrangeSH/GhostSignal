@@ -183,6 +183,9 @@ test("NPCRelationshipService persists autonomous schedules and confirmed dossier
 test("NPCManager dossier data excludes NPC-only rumors and private trust maps", () => {
     const { memory, relationships, network, clock, context } = createHarness();
     memory.setRelationshipTrust("a", "b", 77);
+    context.memory = memory;
+    context.relationships = relationships;
+    context.network = network;
     const manager = vm.runInContext("(() => { const value = new NPCManager(clock, null); value.activeNPCs = [getNPCById('a')]; value.setMemoryService(memory); value.setSocialNetwork(network); value.setRelationshipService(relationships); return value; })()", context);
     const status = manager.getNPCStatus("a");
     assert.equal(status.memory.relationshipTrusts, undefined);
