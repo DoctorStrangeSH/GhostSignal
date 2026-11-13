@@ -171,7 +171,7 @@ test("NPCSocialNetwork persists pending deliveries and prevents duplicate public
     }, { dialogueId: "dialogue-waiter", nodeId: "greeting", answerText: "Я видел это." });
     assert.equal(duplicate.reason, "already_published");
     const snapshot = network.toJSON();
-    assert.equal(snapshot.version, 2);
+    assert.equal(snapshot.version, 3);
     assert.equal(snapshot.cases["case-002"].pending.length, 1);
     assert.equal(snapshot.cases["case-002"].publishedIds.includes("social-test-report"), true);
     context.snapshot = snapshot;
@@ -238,13 +238,15 @@ test("NPCSocialNetwork migrates old saves and persists the social event timeline
     const { memory, network, context } = createHarness();
     publish(memory, network, { targetNpcId: "detective" });
     const snapshot = network.toJSON();
-    assert.equal(snapshot.version, 2);
+    assert.equal(snapshot.version, 3);
     assert.equal(snapshot.cases["case-002"].eventLog.length >= 2, true);
+    assert.equal(snapshot.cases["case-002"].knownEventIds.length, 0);
 
     context.snapshot = snapshot;
     context.memory = memory;
     const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", context);
     assert.equal(restored.getEventLog(10).length, network.getEventLog(10).length);
+    assert.equal(restored.getKnownEventLog(10).length, 0);
 
     context.legacySnapshot = { currentCaseId: "case-002", cases: { "case-002": { pending: [], delivered: [], withheld: [], publishedIds: [] } } };
     const legacy = vm.runInContext("NPCSocialNetwork.fromJSON(legacySnapshot, memory, npcManager, clock)", context);
@@ -298,6 +300,24 @@ test("NPCSocialNetwork records a betrayal when pressure breaks a character loyal
     assert.equal(betrayal.pressureScore, 96);
     advance(30);
     assert.equal(memory.hasRumor("journalist", "joe-breaks-silence"), true);
+});
+
+test("NPCSocialNetwork keeps world events hidden until the detective learns about them", () => {
+    const { memory, network } = createHarness();
+    publish(memory, network, { targetNpcId: "detective" });
+    assert.equal(network.getEventLog(20).length > 0, true);
+    assert.equal(network.getKnownEventLog(20).length, 0);
+    const revealed = network.revealEventsForReport("social-test-report", {
+        method: "dialogue", sourceId: "dialogue-bartender:greeting:2",
+        eventTypes: ["delivered"], fromNpcId: "waiter", toNpcId: "bartender"
+    });
+    assert.equal(revealed.revealed, 1);
+    const known = network.getKnownEventLog(20);
+    assert.equal(known.length, 1);
+    assert.equal(known[0].type, "delivered");
+    assert.equal(known[0].fromNpcId, "waiter");
+    assert.equal(known[0].toNpcId, "bartender");
+    assert.equal(network.revealEventsForReport("social-test-report", { method: "telepathy", sourceId: "invalid" }).reason, "invalid_discovery");
 });
 
 test("NPCSocialNetwork refuses to publish an event that the source NPC never witnessed", () => {
