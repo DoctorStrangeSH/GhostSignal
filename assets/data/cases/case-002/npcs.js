@@ -122,6 +122,15 @@ registerData('npc', {
         mood: "scared",
         psychology: {
             opennessThreshold: 56, pressureThreshold: 28, calmPressureLimit: 7,
+            cooperationResistance: 0.12,
+            cooperationThresholds: { withdrawn: 18, reluctant: 38, guarded: 58, willing: 78 },
+            cooperationLabels: {
+                withdrawn: "Закрылся от следствия",
+                reluctant: "Боится говорить",
+                guarded: "Готов говорить осторожно",
+                willing: "Готов сотрудничать",
+                ready: "Доверяет следствию"
+            },
             labels: { cooperative: "Начинает доверять", pressured: "Сильно напуган", overwhelmed: "Паника", distrustful: "Боится вас" }
         },
         schedule: {
