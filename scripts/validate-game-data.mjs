@@ -224,6 +224,15 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                     !["withdrawn", "reluctant", "guarded", "willing", "ready"].includes(condition.slice("cooperation_state:".length))) {
                     errors.push("Dialogue " + id + "/" + nodeId + " has an invalid cooperation state condition.");
                 }
+                const rumorStatusCondition = condition.match(/^rumor_status:([a-z0-9_:-]{1,80}):(unverified|corroborated|disputed)$/i);
+                if (condition.startsWith("rumor_status:") && !rumorStatusCondition) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid rumor status condition.");
+                }
+                const rumorConfidenceCondition = condition.match(/^rumor_confidence_at_least:([a-z0-9_:-]{1,80}):([0-9]+)$/i);
+                if (condition.startsWith("rumor_confidence_at_least:") &&
+                    (!rumorConfidenceCondition || Number(rumorConfidenceCondition[2]) > 100)) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid rumor confidence condition.");
+                }
             }
             if (answer.condition?.startsWith("long_term_memory:")) {
                 const tag = answer.condition.slice("long_term_memory:".length);
