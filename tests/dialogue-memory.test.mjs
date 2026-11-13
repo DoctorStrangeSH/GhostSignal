@@ -20,7 +20,17 @@ function createDialogueHarness() {
             else registry[type] = { ...(registry[type] || {}), ...data };
         },
         getDialogueById(id) { return registry.dialogue?.[id] || null; },
-        getNPCById(id) { return ({ waiter: { name: "Томас", availableForCall: false }, bartender: { name: "Джо", availableForCall: true }, journalist: { name: "Лора", availableForCall: true } })[id] || null; },
+        getNPCById(id) { return ({
+            waiter: {
+                name: "Томас", availableForCall: false,
+                psychology: {
+                    cooperationResistance: 0.12,
+                    cooperationThresholds: { withdrawn: 18, reluctant: 48, guarded: 58, willing: 78 }
+                }
+            },
+            bartender: { name: "Джо", availableForCall: true },
+            journalist: { name: "Лора", availableForCall: true }
+        })[id] || null; },
         getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true } })[id] || null; }
     });
 
@@ -475,6 +485,64 @@ test("DialogueEngine supports trust and pressure gates for psychological dialogu
     assert.equal(engine._checkCondition("disposition:pressured"), false);
     assert.equal(engine._checkCondition("disposition:overwhelmed"), false);
     assert.equal(engine._checkCondition("lie_exposed:unknown-claim"), false);
+});
+
+test("DialogueEngine exposes cooperation and active-testimony conditions without exposing private history", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine._checkCondition("cooperation_at_least:50"), true);
+    assert.equal(engine._checkCondition("cooperation_state:guarded"), true);
+    assert.equal(engine._checkCondition("has_claim:waiter-kane-at-poisoning"), false);
+    assert.equal(engine._checkCondition("has_claim_topic:kane-presence-during-poisoning"), false);
+
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning",
+        topic: "kane-presence-during-poisoning",
+        value: "present-at-bar-during-poisoning"
+    });
+    assert.equal(engine._checkCondition("has_claim:waiter-kane-at-poisoning"), true);
+    assert.equal(engine._checkCondition("has_claim_topic:kane-presence-during-poisoning"), true);
+    memory.adjustCooperation("waiter", -20, "test:withdrawal");
+    assert.equal(engine._checkCondition("cooperation_below:40"), true);
+    assert.equal(engine._checkCondition("cooperation_state:reluctant"), true);
+});
+
+test("Thomas can narrow an active statement after intimidation, without changing the underlying evidence", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    const promise = engine.getAvailableAnswers().find(answer => answer.promise?.id === "thomas-family-protection");
+    assert.equal(promise?.isAvailable, true);
+    engine.selectAnswer(promise.index);
+
+    assert.equal(memory.hasClaim("waiter", "waiter-kane-at-poisoning"), true);
+    const threat = engine.getAvailableAnswers().find(answer =>
+        answer.cooperationDelta === -20 && answer.nextNode === "end_waiter"
+    );
+    assert.equal(threat?.isAvailable, true);
+    engine.selectAnswer(threat.index);
+    assert.equal(memory.getCooperationState("waiter", {
+        cooperationResistance: 0.12,
+        cooperationThresholds: { withdrawn: 18, reluctant: 48, guarded: 58, willing: 78 }
+    }).state, "reluctant");
+
+    const insightCount = inventory.insights.length;
+    engine.reset();
+    engine.startDialogue("dialogue-waiter");
+    const reconsider = engine.getAvailableAnswers().find(answer => answer.nextNode === "testimony_reconsiders");
+    assert.equal(reconsider?.isAvailable, true);
+    engine.selectAnswer(reconsider.index);
+
+    const original = memory.getStatementById("waiter-kane-at-poisoning");
+    const revised = memory.getStatementById("waiter-kane-at-poisoning-reconsidered");
+    assert.equal(original.status, "superseded");
+    assert.equal(revised.status, "active");
+    assert.equal(revised.revisionOf, original.id);
+    assert.match(revised.summary, /отказывается утверждать/i);
+    assert.equal(memory.getClaimHistory("waiter", revised.id).length, 2);
+    assert.equal(inventory.insights.length, insightCount);
 });
 
 test("DialogueEngine presents evidence, applies NPC reactions and prevents duplicate presentations", () => {
