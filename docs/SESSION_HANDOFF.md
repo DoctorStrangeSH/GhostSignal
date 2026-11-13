@@ -445,3 +445,8 @@ PR #1 остаётся открытым; main не менялась и не сл
 ## Реакция Кейна на обвинение
 
 В `NPCRelationshipService` добавлены парные условия `fromDialogueId` и `fromDialogueNodeId`; факт проверяется по собственным `dialogueHistory` NPC, а не чужим данным. `case-002`: bond `kane-sergeant-procedure`, rule `kane-files-objection` после `dialogue-rival-full/accusation` (одноразовое служебное возражение). Кейн может обсудить событие в `kane_formal_objection` только после его исполнения. Улики не скрываются; изменяются доверие и сотрудничество. Валидатор и тесты с сохранением обновлены. Проверить свежий CI, PR #1 не сливать без разрешения.
+
+
+## Динамические показания Кейна (2026-11-13)
+
+В `assets/data/cases/case-002/dialogues/rival.js` создана промежуточная ветка `partial_return`, открывающаяся после `waiter_saw_poisoning`. Кейн признаёт возвращение в зал, но НЕ отравление; `claim` с `revisesClaimId: kane-left-before-poisoning` заменяет его старое алиби, не удаляя историю и не создавая полного признания. В `tests/dialogue-memory.test.mjs` проверены состояние `superseded`, `revisionOf`, версия 2, восстановление сохранения, отсутствие `full_confession_kane`. В валидаторе есть проверка связности `revisesClaimId`. На предыдущем HEAD `fc1d5318` CI был успешен; проверить свежий HEAD после документации. PR #1 без разрешения не сливать.
