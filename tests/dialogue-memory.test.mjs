@@ -901,6 +901,33 @@ test("a revised Thomas statement invalidates Kane's old confession shortcut unti
     assert.equal(engine.selectAnswer(independentRoute.index).id, "confession");
 });
 
+test("Thomas's intimidation revision also prevents Kane's stale eyewitness confession route", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning",
+        value: "saw-poisoning", summary: "Первоначальное показание"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-reconsidered", topic: "kane-presence-during-poisoning",
+        value: "saw-near-table", revisesClaimId: "waiter-kane-at-poisoning",
+        summary: "После давления не утверждает, что видел отравление"
+    });
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    const oldRoute = engine.getAvailableAnswers().find(item =>
+        item.text.startsWith("У меня есть показания о порошке")
+    );
+    assert.equal(oldRoute?.isAvailable, false);
+    assert.equal(engine.getAvailableAnswers().some(item =>
+        item.nextNode === "confession" && item.isAvailable
+    ), false);
+    inventory.insights.push("hard_evidence_kane");
+    assert.equal(engine.getAvailableAnswers().find(item =>
+        item.text.startsWith("У меня есть фотография")
+    )?.isAvailable, true);
+});
+
 test("Thomas's repeat opening reflects corrected statements and later support", () => {
     const { engine, memory } = createDialogueHarness();
     engine.startDialogue("dialogue-waiter");
