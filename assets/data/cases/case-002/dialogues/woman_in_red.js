@@ -26,6 +26,7 @@ const DIALOGUE_WOMAN_IN_RED = {
             identity: {
                 speaker: "npc",
                 text: "Меня зовут Ева. Ева Ковалёва. Анна — моя старшая сестра.",
+                revealRelationships: ["sisters-anna-eva"],
                 mood: "serious",
                 innerThought: "Сестра! Вот это поворот.",
                 givesInsight: "sisters_revealed",
