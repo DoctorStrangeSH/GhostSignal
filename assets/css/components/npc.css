@@ -221,6 +221,11 @@
 .npc-psychology-state.state-pressured strong,
 .npc-psychology-state.state-overwhelmed strong { color: var(--accent-red-bright); }
 .npc-psychology-state.state-distrustful strong { color: var(--accent-amber); }
+.npc-cooperation-state.cooperation-withdrawn strong,
+.npc-cooperation-state.cooperation-reluctant strong { color: var(--accent-red-bright); }
+.npc-cooperation-state.cooperation-guarded strong { color: var(--accent-amber); }
+.npc-cooperation-state.cooperation-willing strong,
+.npc-cooperation-state.cooperation-ready strong { color: var(--accent-green); }
 .npc-lies-exposed {
     margin-top: 6px;
     color: var(--accent-red-bright);
