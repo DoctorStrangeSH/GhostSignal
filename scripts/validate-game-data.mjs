@@ -266,10 +266,20 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
             }
         }
         const conditions = rule?.conditions && typeof rule.conditions === "object" ? rule.conditions : rule;
-        if (conditions?.goalId) {
-            const owner = conditions.goalNpcId || rule.fromNpcId;
-            if (!goalIds.has(owner + ":" + conditions.goalId)) {
-                errors.push("Case " + id + " NPC interaction condition references a missing personal goal: " + rule.id + "/" + conditions.goalId);
+        if (conditions?.requiresGoalId) {
+            const owner = conditions.requiresGoalNpcId || rule.fromNpcId;
+            if (!goalIds.has(owner + ":" + conditions.requiresGoalId)) {
+                errors.push("Case " + id + " NPC interaction condition references a missing personal goal: " + rule.id + "/" + conditions.requiresGoalId);
+            }
+            if (conditions.requiresGoalStatus !== undefined &&
+                !["active", "completed", "abandoned"].includes(conditions.requiresGoalStatus)) {
+                errors.push("Case " + id + " NPC interaction has an invalid required goal status: " + rule.id);
+            }
+            for (const field of ["requiresGoalProgressAtLeast", "requiresGoalProgressBelow"]) {
+                if (conditions[field] !== undefined &&
+                    (!Number.isInteger(conditions[field]) || conditions[field] < 0 || conditions[field] > 20)) {
+                    errors.push("Case " + id + " NPC interaction has an invalid goal progress prerequisite: " + rule.id);
+                }
             }
         }
     }
