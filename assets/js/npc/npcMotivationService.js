@@ -96,7 +96,7 @@ class NPCMotivationService {
 
     evaluateDisclosure(npcId, report, edge = {}) {
         const protectedNpcId = report?.targetNpcId;
-        if (!protectedNpcId) return { matched: false, allowed: true, reason: null };
+        if (!protectedNpcId || edge?.to === protectedNpcId) return { matched: false, allowed: true, reason: null };
 
         const profile = this._getProfile(npcId);
         if (!profile) return { matched: false, allowed: true, reason: null };
