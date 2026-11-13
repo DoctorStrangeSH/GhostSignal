@@ -29,7 +29,9 @@ function createDialogueHarness() {
                 }
             },
             bartender: { name: "Джо", availableForCall: true },
-            journalist: { name: "Лора", availableForCall: true }
+            journalist: { name: "Лора", availableForCall: true },
+            ex_wife: { name: "Анна", availableForCall: true },
+            woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
         getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true } })[id] || null; }
     });
@@ -42,6 +44,8 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/waiter.js",
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
         "assets/data/cases/case-002/dialogues/journalist.js",
+        "assets/data/cases/case-002/dialogues/anna.js",
+        "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
@@ -702,4 +706,40 @@ test("Lora's second interview remains hidden until her follow-up is completed", 
     assert.equal(answer?.isAvailable, true);
     assert.equal(engine.selectAnswer(answer.index).id, "lora_eva_followup_unverified");
     assert.match(engine.currentNode.text, /связалась с Евой/i);
+});
+
+test("Anna only discusses Eva's protective follow-up after she actually received the call", () => {
+    const { engine } = createDialogueHarness();
+    let received = false;
+    engine.setRelationshipService({
+        hasReceivedInteraction(npcId, ruleId) {
+            return received && npcId === "ex_wife" && ruleId === "eva-protects-anna-after-pressure";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-ex-wife");
+    const condition = "npc_action_received:eva-protects-anna-after-pressure";
+    assert.equal(engine.getAvailableAnswers().find(item => item.condition === condition)?.isAvailable, false);
+    received = true;
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "eva_supported_anna");
+    assert.match(engine.currentNode.text, /Ева позвонила мне снова/);
+    assert.equal(engine._checkCondition("npc_action_received:unknown"), false);
+});
+
+test("Eva can describe her own protective action only after it happened", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return npcId === "woman_in_red" && ruleId === "eva-protects-anna-after-pressure";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-woman-in-red");
+    const condition = "npc_action_completed:eva-protects-anna-after-pressure";
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "eva_protected_anna");
+    assert.match(engine.currentNode.text, /позвонила ей снова/i);
 });
