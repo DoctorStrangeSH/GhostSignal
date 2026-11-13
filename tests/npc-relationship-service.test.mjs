@@ -639,3 +639,78 @@ test("NPC checking the original reporter records insufficient evidence, never au
     assert.equal(relationships.getInvestigationOutcome("a", "verify-origin"), "no_independent_evidence");
     assert.equal(memory.getRumors("a")[0].status, "unverified");
 });
+
+test("a failed first interview unlocks a later independent witness check after game time passes", () => {
+    const config = {
+        bonds: [
+            { id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true },
+            { id: "a-c", fromNpcId: "a", toNpcId: "c", trust: 50, reciprocal: false }
+        ],
+        autonomousInteractions: [
+            {
+                id: "first-check", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, everyMinutes: 30,
+                maxOccurrences: 1, fromRumorId: "lead", investigatesRumorId: "lead"
+            },
+            {
+                id: "second-check", relationshipId: "a-c", fromNpcId: "a", toNpcId: "c",
+                interaction: "support", channel: "phone", initialDelayMinutes: 60, everyMinutes: 30,
+                maxOccurrences: 1, fromRumorId: "lead", investigatesRumorId: "lead",
+                requiresActionId: "first-check", requiresInvestigationOutcome: "no_independent_evidence",
+                requiresActionAgeMinutes: 60
+            }
+        ]
+    };
+    const { memory, relationships, advance, availability } = createHarness({
+        caseData: { npcs: ["a", "b", "c"], npcRelationships: config }
+    });
+    availability.c = { available: true, location: "shared_room" };
+    memory.receiveSocialRumor("a", { id: "lead", kind: "detective_behavior", text: "Непроверенный рассказ." }, {
+        fromNpcId: "b", originalSourceNpcId: "b",
+        sourceEvent: { dialogueId: "b", nodeId: "1", answerText: "Я видел." },
+        recipientTrust: 80
+    });
+    memory.recordClaim("c", {
+        id: "independent-c", topic: "lead", value: "observed",
+        directObservation: true, corroboratesRumorIds: ["lead"]
+    });
+    assert.equal(advance(30).changed, 1);
+    assert.equal(relationships.getInvestigationOutcome("a", "first-check"), "no_independent_evidence");
+    assert.equal(relationships.hasCompletedInteraction("a", "second-check"), false);
+    advance(59);
+    assert.equal(relationships.hasCompletedInteraction("a", "second-check"), false);
+    assert.equal(memory.getRumors("a")[0].status, "unverified");
+    assert.equal(advance(1).changed, 1);
+    assert.equal(relationships.getInvestigationOutcome("a", "second-check"), "corroborated");
+    assert.equal(memory.getRumors("a")[0].status, "corroborated");
+    assert.equal(advance(120).changed, 0);
+});
+
+test("a corroborated first check does not trigger an inconclusive-only follow-up", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "first", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+              interaction: "support", channel: "message", initialDelayMinutes: 30, everyMinutes: 60,
+              maxOccurrences: 1, fromRumorId: "lead", investigatesRumorId: "lead" },
+            { id: "followup", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+              interaction: "support", channel: "message", initialDelayMinutes: 60, everyMinutes: 60,
+              maxOccurrences: 1, fromRumorId: "lead", investigatesRumorId: "lead",
+              requiresActionId: "first", requiresInvestigationOutcome: "no_independent_evidence" }
+        ]
+    };
+    const { memory, relationships, advance } = createHarness({ caseData: { npcRelationships: config } });
+    memory.receiveSocialRumor("a", { id: "lead", kind: "detective_behavior", text: "Рассказ." }, {
+        fromNpcId: "third", originalSourceNpcId: "third",
+        sourceEvent: { dialogueId: "third", nodeId: "1", answerText: "Я видел." },
+        recipientTrust: 80
+    });
+    memory.recordClaim("b", {
+        id: "observed", topic: "lead", value: "yes", directObservation: true,
+        corroboratesRumorIds: ["lead"]
+    });
+    advance(30);
+    assert.equal(relationships.getInvestigationOutcome("a", "first"), "corroborated");
+    advance(240);
+    assert.equal(relationships.hasCompletedInteraction("a", "followup"), false);
+});
