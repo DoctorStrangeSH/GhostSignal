@@ -755,3 +755,34 @@ test("a protective follow-up requires prior contact and recipient distress, and 
     restored.setCase(caseData);
     assert.equal(restored.hasReceivedInteraction("b", "protective-followup"), true);
 });
+
+test("NPC can file an autonomous objection only after personally witnessing the accusation", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "formal-objection", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "conflict",
+            channel: "message", initialDelayMinutes: 30, everyMinutes: 60,
+            maxOccurrences: 1, fromDialogueId: "hearing-a", fromDialogueNodeId: "accusation",
+            trustDelta: -4, fromCooperationDelta: -6
+        }]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    // The other character's memory cannot trigger a personal action.
+    memory.recordNodeVisited("b", "hearing-a", { id: "accusation", speaker: "npc" });
+    assert.equal(advance(30).changed, 0);
+    assert.equal(relationships.hasCompletedInteraction("a", "formal-objection"), false);
+    memory.recordNodeVisited("a", "hearing-a", { id: "accusation", speaker: "npc" });
+    assert.equal(advance(60).changed, 1);
+    assert.equal(relationships.hasCompletedInteraction("a", "formal-objection"), true);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 56);
+
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const loaded = vm.runInContext("NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)", context);
+    loaded.setCase(caseData);
+    assert.equal(loaded.hasCompletedInteraction("a", "formal-objection"), true);
+    assert.equal(advance(120).changed, 0);
+});
