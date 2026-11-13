@@ -19,7 +19,23 @@ const DIALOGUE_ANNA = {
                 innerThought: "Она на взводе. Нужно быть осторожным.",
                 answers: [
                     { text: "Я детектив. Расследую отравление в баре. Вы были там.", nextNode: "was_there", tone: "calm" },
+                    {
+                        text: "Ева сказала, что беспокоится о вас. Как вы себя чувствуете?",
+                        nextNode: "eva_supported_anna",
+                        tone: "reassuring",
+                        condition: "npc_action_received:eva-protects-anna-after-pressure"
+                    },
                     { text: "Анна, я знаю, что вы принесли яд в бар.", nextNode: "direct_accusation", tone: "aggressive", condition: "hasItem:poison_vial" }
+                ]
+            },
+
+            eva_supported_anna: {
+                speaker: "npc",
+                text: "Ева позвонила мне снова. Она слышала, как я испугалась после расспросов, и попросила не оставаться одной. Но я не хочу, чтобы её доброта стала поводом обвинять нас обеих. Говорите о фактах — тогда я постараюсь помочь.",
+                mood: "guarded",
+                answers: [
+                    { text: "Я не стану использовать вашу сестру против вас.", nextNode: "was_there", tone: "reassuring", trustDelta: 3, cooperationDelta: 4 },
+                    { text: "Мне нужны ваши показания, а не семейные тайны.", nextNode: "was_there", tone: "direct", trustDelta: -1 }
                 ]
             },
 
@@ -121,7 +137,7 @@ const DIALOGUE_ANNA = {
                 speaker: "npc",
                 text: "Что? Нет! Я не... Откуда у вас эта информация?",
                 mood: "panicked",
-                innerThought: "Она в панике. Самое время надавить.",
+                innerThought: "Она испугалась обвинения. Давление может исказить её ответы и ухудшить сотрудничество.",
                 answers: [
                     { text: "Расскажите правду, или будет хуже.", nextNode: "fingerprints" }
                 ]
