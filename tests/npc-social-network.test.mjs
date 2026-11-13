@@ -122,6 +122,26 @@ test("NPCSocialNetwork records when a character withholds information to protect
     assert.equal(memory.hasRumor("journalist", "protective-secret"), false);
 });
 
+test("NPCSocialNetwork allows NPC-to-NPC calls even when player calling is disabled", () => {
+    const { memory, network, advance } = createHarness();
+    const sourceEvent = { dialogueId: "dialogue-eva", nodeId: "sister", answerText: "Я позвоню Анне." };
+    memory.recordAnswerSelected("woman_in_red", sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText });
+    const result = network.publish("woman_in_red", {
+        id: "sisters-phone-call", kind: "detective_behavior", sourceName: "Ева",
+        text: "Детектив приходил к Анне."
+    }, sourceEvent);
+    assert.equal(result.queued, 2);
+    advance(15);
+    assert.equal(memory.hasRumor("ex_wife", "sisters-phone-call"), true);
+});
+
+test("NPCSocialNetwork shows reciprocal social bonds only once in a dossier", () => {
+    const { network } = createHarness();
+    const links = network.getRelationshipsForNPC("waiter");
+    assert.equal(links.filter(link => link.npcId === "bartender").length, 1);
+    assert.equal(links.find(link => link.npcId === "bartender").direction, "mutual");
+});
+
 test("NPCSocialNetwork persists pending deliveries and prevents duplicate publication", () => {
     const { memory, network, context } = createHarness();
     publish(memory, network);
