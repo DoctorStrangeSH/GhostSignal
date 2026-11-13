@@ -323,7 +323,7 @@ test("NPCRelationshipService carries NPC-to-NPC trust across case boundaries and
 });
 
 test("NPCRelationshipService advances and persists personal goals across investigations", () => {
-    const { memory, relationships, advance, caseData } = createHarness();
+    const { memory, relationships, advance, caseData, network } = createHarness();
     const goalConfig = {
         goals: [{
             id: "keep_community_together", npcId: "a",
