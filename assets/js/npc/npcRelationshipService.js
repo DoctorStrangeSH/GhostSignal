@@ -5,15 +5,16 @@
  */
 class NPCRelationshipService {
     constructor(snapshot = null, memoryService = null, npcManager = null, gameTime = null, socialNetwork = null) {
-        this.version = 2;
+        this.version = 3;
         this.currentCaseId = snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.worldTrusts = this._clone(snapshot?.worldTrusts || {});
+        this.worldGoals = this._clone(snapshot?.worldGoals || {});
         this.memoryService = memoryService;
         this.npcManager = npcManager;
         this.gameTime = gameTime;
         this.socialNetwork = socialNetwork;
-        this.caseConfig = { bonds: [], autonomousInteractions: [] };
+        this.caseConfig = { bonds: [], autonomousInteractions: [], goals: [] };
     }
 
     setDependencies(memoryService, npcManager, gameTime, socialNetwork = this.socialNetwork) {
@@ -68,6 +69,8 @@ class NPCRelationshipService {
         const state = this._ensureState();
         const now = this._now();
 
+        for (const goal of this.caseConfig.goals) this._ensureGoalState(goal);
+
         for (const bond of this.caseConfig.bonds) {
             if (!state.relationships[bond.id]) {
                 state.relationships[bond.id] = {
@@ -94,6 +97,17 @@ class NPCRelationshipService {
     }
 
     _normalizeConfig(config, activeIds) {
+        const goals = (Array.isArray(config?.goals) ? config.goals : [])
+            .filter(item => item && typeof item.id === 'string' && /^[a-z0-9_:-]{1,64}$/i.test(item.id) &&
+                activeIds.has(item.npcId))
+            .map(item => ({
+                id: item.id,
+                npcId: item.npcId,
+                title: String(item.title || item.id).slice(0, 100),
+                description: String(item.description || '').slice(0, 240),
+                priority: Math.round(this._clamp(item.priority, 0, 100, 50)),
+                target: Math.round(this._clamp(item.target, 1, 20, 1))
+            }));
         const bonds = (Array.isArray(config?.bonds) ? config.bonds : [])
             .filter(item => item && typeof item.id === 'string' &&
                 activeIds.has(item.fromNpcId) && activeIds.has(item.toNpcId) &&
@@ -120,6 +134,9 @@ class NPCRelationshipService {
                     id: item.id,
                     relationshipId: item.relationshipId,
                     fromNpcId: item.fromNpcId,
+                    goalId: typeof item.goalId === 'string' ? item.goalId : null,
+                    goalNpcId: typeof item.goalNpcId === 'string' ? item.goalNpcId : item.fromNpcId,
+                    goalProgress: this._clamp(item.goalProgress, -10, 10, 1),
                     toNpcId: item.toNpcId,
                     interaction: item.interaction,
                     channel,
@@ -137,12 +154,17 @@ class NPCRelationshipService {
                         fromPressureAtLeast: this._optionalClamp(conditions.fromPressureAtLeast, 0, 100),
                         fromPressureBelow: this._optionalClamp(conditions.fromPressureBelow, 0, 100),
                         toPressureAtLeast: this._optionalClamp(conditions.toPressureAtLeast, 0, 100),
-                        toPressureBelow: this._optionalClamp(conditions.toPressureBelow, 0, 100)
+                        toPressureBelow: this._optionalClamp(conditions.toPressureBelow, 0, 100),
+                        goalId: typeof conditions.goalId === 'string' ? conditions.goalId : null,
+                        goalNpcId: typeof conditions.goalNpcId === 'string' ? conditions.goalNpcId : item.fromNpcId,
+                        goalStatus: ['active', 'completed', 'abandoned'].includes(conditions.goalStatus) ? conditions.goalStatus : null,
+                        goalProgressAtLeast: this._optionalClamp(conditions.goalProgressAtLeast, 0, 20),
+                        goalProgressBelow: this._optionalClamp(conditions.goalProgressBelow, 0, 20)
                     },
                     summary: String(item.summary || '').slice(0, 240)
                 };
             });
-        return { bonds, autonomousInteractions };
+        return { bonds, autonomousInteractions, goals };
     }
 
     _clamp(value, min, max, fallback) {
@@ -151,6 +173,81 @@ class NPCRelationshipService {
 
     _optionalClamp(value, min, max) {
         return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : null;
+    }
+
+    _ensureGoalState(definition) {
+        if (!definition?.npcId || !definition?.id) return null;
+        if (!this.worldGoals || typeof this.worldGoals !== 'object' || Array.isArray(this.worldGoals)) this.worldGoals = {};
+        if (!this.worldGoals[definition.npcId] || typeof this.worldGoals[definition.npcId] !== 'object') {
+            this.worldGoals[definition.npcId] = {};
+        }
+        let goal = this.worldGoals[definition.npcId][definition.id];
+        if (!goal || typeof goal !== 'object') {
+            goal = this.worldGoals[definition.npcId][definition.id] = {
+                id: definition.id,
+                npcId: definition.npcId,
+                title: definition.title,
+                description: definition.description,
+                priority: definition.priority,
+                target: definition.target,
+                progress: 0,
+                status: 'active',
+                createdInCaseId: this.currentCaseId,
+                updatedAt: null,
+                history: []
+            };
+        } else {
+            goal.title = definition.title;
+            goal.description = definition.description;
+            goal.priority = definition.priority;
+            goal.target = Math.max(Number.isFinite(goal.progress) ? goal.progress : 0, definition.target);
+            goal.progress = this._clamp(goal.progress, 0, goal.target, 0);
+            goal.history = Array.isArray(goal.history) ? goal.history : [];
+            if (!['active', 'completed', 'abandoned'].includes(goal.status)) goal.status = 'active';
+            if (goal.progress >= goal.target) goal.status = 'completed';
+            else if (goal.status === 'completed') goal.status = 'active';
+        }
+        return goal;
+    }
+
+    getGoalProgress(npcId, goalId) {
+        const progress = this.worldGoals?.[npcId]?.[goalId]?.progress;
+        return Number.isFinite(progress) ? progress : 0;
+    }
+
+    isGoalCompleted(npcId, goalId) {
+        return this.worldGoals?.[npcId]?.[goalId]?.status === 'completed';
+    }
+
+    getPersonalGoals(npcId) {
+        const goals = this.worldGoals?.[npcId];
+        if (!goals || typeof goals !== 'object') return [];
+        return this._clone(Object.values(goals).sort((a, b) => b.priority - a.priority));
+    }
+
+    _advanceGoal(rule, now) {
+        if (!rule.goalId) return null;
+        const definition = this.caseConfig.goals.find(item =>
+            item.id === rule.goalId && item.npcId === rule.goalNpcId
+        );
+        if (!definition) return null;
+        const goal = this._ensureGoalState(definition);
+        if (!goal || goal.status !== 'active') return null;
+        const delta = Number.isFinite(rule.goalProgress) ? rule.goalProgress : 1;
+        const before = goal.progress;
+        goal.progress = this._clamp(before + delta, 0, goal.target, before);
+        goal.updatedAt = now;
+        goal.status = goal.progress >= goal.target ? 'completed' : 'active';
+        goal.history.push({
+            caseId: this.currentCaseId,
+            ruleId: rule.id,
+            delta: goal.progress - before,
+            progress: goal.progress,
+            atGameMinute: now,
+            summary: rule.summary
+        });
+        if (goal.history.length > 40) goal.history.splice(0, goal.history.length - 40);
+        return { npcId: goal.npcId, goalId: goal.id, before, progress: goal.progress, status: goal.status };
     }
 
     _ensureState(caseId = this.currentCaseId) {
@@ -262,6 +359,13 @@ class NPCRelationshipService {
         if (conditions.fromPressureBelow !== null && fromPressure >= conditions.fromPressureBelow) return false;
         if (conditions.toPressureAtLeast !== null && toPressure < conditions.toPressureAtLeast) return false;
         if (conditions.toPressureBelow !== null && toPressure >= conditions.toPressureBelow) return false;
+        if (conditions.goalId) {
+            const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
+            if (!goal) return false;
+            if (conditions.goalStatus && goal.status !== conditions.goalStatus) return false;
+            if (conditions.goalProgressAtLeast !== null && goal.progress < conditions.goalProgressAtLeast) return false;
+            if (conditions.goalProgressBelow !== null && goal.progress >= conditions.goalProgressBelow) return false;
+        }
         return true;
     }
 
@@ -308,6 +412,7 @@ class NPCRelationshipService {
         bondState.lastInteractionAt = now;
         const beforeStatus = this._status(before);
         const afterStatus = this._status(after);
+        const goalProgress = this._advanceGoal(rule, now);
         this.socialNetwork?.recordRelationshipEvent(this._eventType(rule.interaction), {
             relationshipId: rule.relationshipId,
             fromNpcId: rule.fromNpcId,
@@ -319,9 +424,10 @@ class NPCRelationshipService {
             trustBefore: before,
             trustAfter: after,
             statusBefore: beforeStatus.id,
-            statusAfter: afterStatus.id
+            statusAfter: afterStatus.id,
+            goalProgress
         });
-        return { changed: true, before, after, statusBefore: beforeStatus, statusAfter: afterStatus };
+        return { changed: true, before, after, statusBefore: beforeStatus, statusAfter: afterStatus, goalProgress };
     }
 
     recordInteraction(fromNpcId, toNpcId, interaction, options = {}) {
@@ -418,7 +524,8 @@ class NPCRelationshipService {
             version: this.version,
             currentCaseId: this.currentCaseId,
             cases: this._clone(this.cases),
-            worldTrusts: this._clone(this.worldTrusts)
+            worldTrusts: this._clone(this.worldTrusts),
+            worldGoals: this._clone(this.worldGoals)
         };
     }
 
