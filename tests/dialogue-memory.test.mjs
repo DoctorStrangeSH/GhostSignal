@@ -779,3 +779,22 @@ test("Kane's vial confrontation leads to evidence assessment, not an instant det
     assert.equal(vial?.isAvailable, true);
     assert.equal(engine.selectAnswer(vial.index).id, "why");
 });
+
+test("Kane's procedural objection is discussed only after his autonomous response", () => {
+    const { engine } = createDialogueHarness();
+    let filed = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return filed && npcId === "business_rival" && ruleId === "kane-files-objection";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-rival-full");
+    const condition = "npc_action_completed:kane-files-objection";
+    assert.equal(engine.getAvailableAnswers().find(item => item.condition === condition)?.isAvailable, false);
+    filed = true;
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "kane_formal_objection");
+    assert.match(engine.currentNode.text, /возражения в протокол/i);
+});
