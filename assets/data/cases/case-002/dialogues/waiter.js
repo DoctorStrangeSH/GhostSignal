@@ -24,7 +24,38 @@ const DIALOGUE_WAITER = {
 
     tree: {
         start: "greeting",
+        entryRules: [
+            { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
+            { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
+            { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
+        ],
         nodes: {
+            revised_testimony_opening: {
+                speaker: "npc",
+                text: "Детектив, я уже уточнил показания после фотографии. Я видел Кейна рядом со столиком, но не видел, как порошок попал в стакан. Я не стану снова говорить, будто видел больше.",
+                mood: "guarded",
+                answers: [
+                    { text: "Спасибо за точность. Других вопросов пока нет.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            testimony_given_opening: {
+                speaker: "npc",
+                text: "Я уже дал показания о Кейне, детектив. Мне страшно, но я готов уточнить то, что помню, если это поможет установить правду.",
+                mood: "nervous",
+                answers: [
+                    { text: "Посмотри на фотографию: давай уточним, что именно ты видел.", nextNode: "protection_revision", tone: "calm", condition: "hasItem:bar_photo" },
+                    { text: "Спасибо. Я проверю твои показания.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            supported_opening: {
+                speaker: "npc",
+                text: "Джо поговорил со мной после смены. Я по-прежнему боюсь Кейна, но теперь хотя бы знаю, что не останусь один. Что вы хотели уточнить, детектив?",
+                mood: "cautious",
+                answers: [
+                    { text: "Расскажи только то, что сам видел.", nextNode: "he_saw", tone: "calm", cooperationDelta: 3 },
+                    { text: "Пока вопросов нет.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
             greeting: {
                 speaker: "npc",
                 text: "Детектив? Я... я не знаю ничего. Я просто официант. Я разношу напитки.",
