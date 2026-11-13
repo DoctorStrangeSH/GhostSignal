@@ -155,11 +155,11 @@ class NPCRelationshipService {
                         fromPressureBelow: this._optionalClamp(conditions.fromPressureBelow, 0, 100),
                         toPressureAtLeast: this._optionalClamp(conditions.toPressureAtLeast, 0, 100),
                         toPressureBelow: this._optionalClamp(conditions.toPressureBelow, 0, 100),
-                        goalId: typeof conditions.goalId === 'string' ? conditions.goalId : null,
-                        goalNpcId: typeof conditions.goalNpcId === 'string' ? conditions.goalNpcId : item.fromNpcId,
-                        goalStatus: ['active', 'completed', 'abandoned'].includes(conditions.goalStatus) ? conditions.goalStatus : null,
-                        goalProgressAtLeast: this._optionalClamp(conditions.goalProgressAtLeast, 0, 20),
-                        goalProgressBelow: this._optionalClamp(conditions.goalProgressBelow, 0, 20)
+                        goalId: typeof conditions.requiresGoalId === 'string' ? conditions.requiresGoalId : null,
+                        goalNpcId: typeof conditions.requiresGoalNpcId === 'string' ? conditions.requiresGoalNpcId : item.fromNpcId,
+                        goalStatus: ['active', 'completed', 'abandoned'].includes(conditions.requiresGoalStatus) ? conditions.requiresGoalStatus : null,
+                        goalProgressAtLeast: this._optionalClamp(conditions.requiresGoalProgressAtLeast, 0, 20),
+                        goalProgressBelow: this._optionalClamp(conditions.requiresGoalProgressBelow, 0, 20)
                     },
                     summary: String(item.summary || '').slice(0, 240)
                 };
