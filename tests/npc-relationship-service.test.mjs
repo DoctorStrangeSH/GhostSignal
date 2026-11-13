@@ -322,6 +322,25 @@ test("NPCRelationshipService carries NPC-to-NPC trust across case boundaries and
     assert.equal(memory.getRelationshipTrust("b", "a"), 61);
 });
 
+test("NPCRelationshipService upgrades v2 saves without discarding relationship history", () => {
+    const { memory, network, clock } = createHarness();
+    const legacy = vm.runInContext(
+        "NPCRelationshipService.fromJSON({ version: 2, currentCaseId: 'case-relationship-test', cases: {}, worldTrusts: { a: { b: 64 } } }, memory, npcManager, clock, network)",
+        (() => {
+            const context = vm.createContext({ console, Date });
+            vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+            Object.assign(context, {
+                memory, network, clock,
+                npcManager: { isNPCAvailable() { return { available: true, location: "shared_room" }; } }
+            });
+            return context;
+        })()
+    );
+    assert.equal(legacy.toJSON().version, 3);
+    assert.equal(legacy.toJSON().worldTrusts.a.b, 64);
+    assert.equal(Object.keys(legacy.toJSON().worldGoals).length, 0);
+});
+
 test("NPCRelationshipService advances and persists personal goals across investigations", () => {
     const { memory, relationships, advance, caseData, network } = createHarness();
     const goalConfig = {
@@ -420,9 +439,19 @@ test("case 001 and case 002 both use the shared relationship authoring schema", 
         assert.equal(Array.isArray(data.npcRelationships?.bonds), true, path);
         assert.equal(data.npcRelationships.bonds.length > 0, true, path);
         assert.equal(Array.isArray(data.npcRelationships?.autonomousInteractions), true, path);
+        assert.equal(Array.isArray(data.npcRelationships?.goals), true, path);
+        assert.equal(data.npcRelationships.goals.length > 0, true, path);
         assert.equal(data.npcRelationships.bonds.some(bond => bond.id === "bartender-sergeant"), true, path);
+        for (const goal of data.npcRelationships.goals) {
+            assert.equal(data.npcs.includes(goal.npcId), true, goal.id);
+            assert.equal(Number.isInteger(goal.target) && goal.target > 0, true, goal.id);
+        }
         for (const rule of data.npcRelationships.autonomousInteractions) {
             assert.equal(data.npcRelationships.bonds.some(bond => bond.id === rule.relationshipId), true, rule.id);
+            if (rule.goalId) {
+                const owner = rule.goalNpcId || rule.fromNpcId;
+                assert.equal(data.npcRelationships.goals.some(goal => goal.id === rule.goalId && goal.npcId === owner), true, rule.id);
+            }
         }
     }
 });
