@@ -208,6 +208,11 @@ class NPCListUI {
                             <div class="npc-psychology-state state-${npc.psychology.disposition}">
                                 <span>СОСТОЯНИЕ</span><strong>${npc.psychology.label}</strong>
                             </div>
+                            ${npc.psychology.cooperation ? `
+                                <div class="npc-psychology-state npc-cooperation-state cooperation-${npc.psychology.cooperation.state}">
+                                    <span>СОТРУДНИЧЕСТВО</span><strong>${npc.psychology.cooperation.label}</strong>
+                                </div>
+                            ` : ''}
                         ` : ''}
                         ${npc.memory.liesExposed?.length ? `
                             <div class="npc-lies-exposed">⚠ Раскрыто ложных показаний: ${npc.memory.liesExposed.length}</div>
