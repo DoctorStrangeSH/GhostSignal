@@ -32,7 +32,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "Томас рассказал, что вы пригрозили обвинить его в соучастии. Это правда?",
                         nextNode: "heard_about_thomas",
                         tone: "direct",
-                        condition: "heard_rumor:detective-threatened-thomas"
+                        condition: "heard_rumor:detective-threatened-thomas",
+                        revealSocialEvents: {
+                            reportId: "detective-threatened-thomas",
+                            eventTypes: ["delivered"],
+                            fromNpcId: "waiter",
+                            toNpcId: "bartender"
+                        }
                     }
                 ]
             },
