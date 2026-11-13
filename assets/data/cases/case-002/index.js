@@ -144,8 +144,8 @@ const CASE_002 = {
                 priority: 100, target: 1
             },
             {
-                id: "publish_exclusive", npcId: "journalist", title: "Получить эксклюзив",
-                description: "Лора стремится первой опубликовать историю об отравлении, не потеряв источник.",
+                id: "publish_exclusive", npcId: "journalist", title: "Добиться эксклюзива",
+                description: "Лора хочет получить комментарий Джо и подготовить материал до утреннего дедлайна.",
                 priority: 85, target: 1
             },
             {
