@@ -111,6 +111,60 @@ test("DialogueEngine supports hidden motive and dynamic loyalty conditions", () 
     assert.equal(engine._checkCondition("motive:unknown_motive"), false);
 });
 
+test("DialogueEngine remembers how Joe was treated in the previous investigation", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.getAvailableAnswers().some(answer =>
+        answer.condition === "long_term_memory:player_threatened" && answer.isAvailable
+    ), false);
+    assert.equal(engine.getAvailableAnswers().some(answer =>
+        answer.condition === "long_term_memory:player_reassured" && answer.isAvailable
+    ), false);
+
+    engine.reset();
+    memory.setCase("case-001");
+    memory.recordDialogueStarted("bartender", "dialogue-bartender");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "greeting", {
+        text: "Не заставляй меня повторять, Джо.",
+        tone: "threatening",
+        memoryImportance: 4,
+        memoryTags: ["player_threatened"]
+    });
+    memory.setCase("case-002");
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const remembered = engine.getAvailableAnswers().find(answer =>
+        answer.condition === "long_term_memory:player_threatened"
+    );
+    assert.equal(remembered?.isAvailable, true);
+    assert.equal(engine.selectAnswer(remembered.index).id, "remembers_threat");
+    assert.match(engine.currentNode.text, /не собираюсь снова проходить через это/i);
+    assert.equal(engine._checkCondition("long_term_trust_below:49"), true);
+    assert.equal(engine._checkCondition("long_term_trust_at_least:48.8"), true);
+    assert.equal(engine._checkCondition("familiarity_at_least:2"), true);
+});
+
+test("DialogueEngine gives Joe a warmer greeting when the detective earned his trust", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase("case-001");
+    memory.recordDialogueStarted("bartender", "dialogue-bartender");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "know_man", {
+        text: "Спасибо, Джо. Ты очень помог.",
+        tone: "reassuring",
+        memoryImportance: 3,
+        memoryTags: ["player_reassured"]
+    });
+    memory.setCase("case-002");
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const remembered = engine.getAvailableAnswers().find(answer =>
+        answer.condition === "long_term_memory:player_reassured"
+    );
+    assert.equal(remembered?.isAvailable, true);
+    assert.equal(engine.selectAnswer(remembered.index).id, "remembers_kindness");
+    assert.match(engine.currentNode.text, /приятно видеть/i);
+});
+
 test("DialogueEngine persists NPC conversation history and answer tone", () => {
     const { engine, memory } = createDialogueHarness();
 
