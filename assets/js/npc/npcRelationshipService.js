@@ -148,6 +148,8 @@ class NPCRelationshipService {
                     maxOccurrences: Number.isInteger(item.maxOccurrences) ? Math.max(1, item.maxOccurrences) : null,
                     trustDelta: this._clamp(item.trustDelta, -25, 25, 0),
                     reciprocalTrustDelta: this._clamp(item.reciprocalTrustDelta, -25, 25, 0),
+                    fromCooperationDelta: this._optionalClamp(item.fromCooperationDelta, -25, 25),
+                    toCooperationDelta: this._optionalClamp(item.toCooperationDelta, -25, 25),
                     conditions: {
                         minTrust: this._optionalClamp(conditions.minTrust, 0, 100),
                         maxTrust: this._optionalClamp(conditions.maxTrust, 0, 100),
@@ -397,6 +399,12 @@ class NPCRelationshipService {
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
         this.memoryService?.setRelationshipTrust(rule.fromNpcId, rule.toNpcId, after);
         this._setWorldTrust(rule.fromNpcId, rule.toNpcId, after);
+        if (rule.fromCooperationDelta !== null) {
+            this.memoryService?.adjustCooperation(rule.fromNpcId, rule.fromCooperationDelta, 'npc_relationship:' + rule.id);
+        }
+        if (rule.toCooperationDelta !== null) {
+            this.memoryService?.adjustCooperation(rule.toNpcId, rule.toCooperationDelta, 'npc_relationship:' + rule.id);
+        }
         if (this.caseConfig.bonds.find(item => item.id === rule.relationshipId)?.reciprocal) {
             const reverseBefore = this.memoryService?.getRelationshipTrust(rule.toNpcId, rule.fromNpcId) ?? 50;
             const reverseAfter = this._clamp(reverseBefore + rule.reciprocalTrustDelta, 0, 100, reverseBefore);
