@@ -356,3 +356,7 @@ npm run build
 
 - Дополнительно journalist.js: когда личная цель journalist/publish_exclusive завершена автономным сообщением Джо, Лора в следующем разговоре открывает deadline_followup. Она прямо говорит, что уже написала Джо и дала понять, что дедлайн не будет ждать. Условие — npc_goal_completed:publish_exclusive; до события ветка скрыта.
 - CI на code HEAD 3e813be: 100 JS, 118/118 tests, 0 fail; validator 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449843052) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43449855592).
+
+
+- Важная нарративная защита: Joe/Elias catch-up (case-001) и Lora checks Joe (case-002) имеют maxOccurrences: 1. Иначе повторные взаимодействия могли бы завершить maintain_bar_community без обоих сюжетных этапов, после чего Джо упоминал бы поддержку Лоры, которой ещё не было.
+- Последний подтверждённый CI на HEAD 88f366a: 100 JS, 118/118 tests, validator 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450190072) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43450197252).
