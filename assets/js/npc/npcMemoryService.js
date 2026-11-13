@@ -365,8 +365,9 @@ class NPCMemoryService {
     getStatements() {
         const caseMemory = this._ensureCase();
         if (!caseMemory) return [];
-        return Object.values(caseMemory)
-            .flatMap(memory => memory.claims || [])
+        return Object.keys(caseMemory)
+            .filter(npcId => npcId !== '__journal')
+            .flatMap(npcId => this._ensureNPC(npcId).claims || [])
             .map(claim => this._clone(claim))
             .sort((a, b) => (a.at || 0) - (b.at || 0));
     }
@@ -517,7 +518,9 @@ class NPCMemoryService {
     getContradictions(npcId = null) {
         const caseMemory = this._ensureCase();
         if (!caseMemory) return [];
-        const claims = Object.values(caseMemory).flatMap(memory => memory.claims || []);
+        const claims = Object.keys(caseMemory)
+            .filter(npcId => npcId !== '__journal')
+            .flatMap(npcId => this._ensureNPC(npcId).claims || []);
         const contradictions = [];
         for (let i = 0; i < claims.length; i++) {
             for (let j = i + 1; j < claims.length; j++) {
