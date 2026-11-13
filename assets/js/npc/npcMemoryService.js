@@ -30,8 +30,9 @@ class NPCMemoryService {
         if (!npcId || typeof npcId !== 'string') return null;
         if (!this.people || typeof this.people !== 'object' || Array.isArray(this.people)) this.people = {};
         if (!this.people[npcId] || typeof this.people[npcId] !== 'object') {
+            const legacyTrust = this.cases?.[this.currentCaseId]?.[npcId]?.trust;
             this.people[npcId] = {
-                trust: 50,
+                trust: Number.isFinite(legacyTrust) ? Math.max(0, Math.min(100, legacyTrust)) : 50,
                 familiarity: 0,
                 interactions: 0,
                 lastSeenCaseId: null,
