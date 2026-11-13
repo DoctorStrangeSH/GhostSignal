@@ -274,7 +274,8 @@ test("DialogueEngine presents evidence, applies NPC reactions and prevents dupli
     assert.equal(result.success, true);
     assert.equal(result.reaction, true);
     assert.match(result.node.text, /это Кейн/i);
-    assert.equal(engine.getAvailableAnswers().length, 2);
+    assert.equal(engine.getAvailableAnswers().length, 3);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.accusation?.id === "thomas-complicity"), true);
     assert.equal(memory.hasPresentedEvidence("waiter", "bar_photo"), true);
     assert.equal(engine.inventory.hasInsight("kane_identified_in_photo"), true);
     assert.equal(displayed.at(-1).id, "evidence_bar_photo");
