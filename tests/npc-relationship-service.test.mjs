@@ -385,6 +385,8 @@ test("NPCRelationshipService advances and persists personal goals across investi
     advance(30);
     assert.equal(relationships.getGoalProgress("a", "keep_community_together"), 2);
     assert.equal(relationships.isGoalCompleted("a", "keep_community_together"), true);
+    advance(120);
+    assert.equal(relationships.getGoalProgress("a", "keep_community_together"), 2);
 
     const snapshot = relationships.toJSON();
     assert.equal(snapshot.version, 3);
