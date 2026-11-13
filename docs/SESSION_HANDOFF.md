@@ -303,3 +303,18 @@ npm run build
 
 **Следующий ИИ:** сначала проверь CI последнего коммита (после этого handoff могут быть ещё изменения), затем добавляй data-driven отношения и способы раскрытия для следующих дел. Не показывай скрытые bonds/rumors напрямую в UI. Не запускай параллельно два update_file на один путь.
 
+
+## Долгосрочная память NPC — текущая реализация (2026-11-13)
+
+- NPCMemoryService v9 теперь хранит два слоя: cases[caseId][npcId] (локальная память расследования) и people[npcId] (долговременное впечатление о детективе между делами).
+- Глобальный профиль: trust, familiarity, interactions, lastSeenCaseId, lastSeenAt, memories (лимит 60, приоритет по importance), nextMemoryId.
+- Важные ответы в данных диалога могут задавать memorySummary (до 220 символов), memoryTags (строки до 48 символов), memoryImportance (1–5). Пример и правила: docs/NPC_LONG_TERM_MEMORY.md.
+- Начало разговора повышает familiarity; угрозы/агрессия/поддержка создают долговременное впечатление и мягко меняют persistent trust. Ложные обвинения дают долговременный штраф; выполненные/нарушенные обещания фиксируются как сильные события.
+- При первом появлении NPC в другом деле локальный trust создаётся из persistent trust. Старые v8 saves без people инициализируются доверием активного дела.
+- DialogueEngine поддерживает условия long_term_memory:<tag>, long_term_trust_at_least:N, long_term_trust_below:N, long_term_disposition:<state>, familiarity_at_least:N.
+- Joe example: в case-001 player choices tag player_threatened / player_reassured; в case-002 Джо открывает соответствующую реплику и может стать guarded после накопленного недоверия. Условия работают только по NPC текущего диалога.
+- Валидатор проверяет, что используемые long_term_memory tags имеют хотя бы один авторский источник в данных диалогов. Скрытые воспоминания напрямую в UI не выводить.
+- Последний полностью подтверждённый кодовый CI на 67accb8: 100 JS, 112/112 тестов, валидатор: 2 cases / 14 locations / 13 NPCs / 61 objects / 14 dialogues. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43445978221) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43445986918).
+- Последние изменения документации после этого коммита должны получить свой CI. PR #1 открыт, main не менялась; ручной браузерный прогон ещё не выполнен.
+
+**Следующий ИИ:** сначала проверь CI последнего HEAD SHA. Затем расширяй cross-case memory на других повторяющихся NPC. Не показывай сырые воспоминания игроку без сюжетного раскрытия. Держи локальные факты дела отдельно от глобального отношения NPC к детективу и от отношений NPC друг к другу.
