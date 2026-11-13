@@ -442,6 +442,10 @@ class DialogueEngine {
         if (investigationCondition) {
             return Boolean(npcId && this.relationshipService?.getInvestigationOutcome?.(npcId, investigationCondition[1]) === investigationCondition[2].toLowerCase());
         }
+        if (conditionStr.startsWith('npc_action_received:')) {
+            const ruleId = conditionStr.slice('npc_action_received:'.length);
+            return Boolean(npcId && this.relationshipService?.hasReceivedInteraction?.(npcId, ruleId));
+        }
         if (conditionStr.startsWith('npc_action_completed:')) {
             const ruleId = conditionStr.slice('npc_action_completed:'.length);
             return Boolean(npcId && this.relationshipService?.hasCompletedInteraction?.(npcId, ruleId));
