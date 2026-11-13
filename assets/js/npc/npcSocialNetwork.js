@@ -31,6 +31,7 @@ class NPCSocialNetwork {
         if (!caseData?.id || typeof caseData.id !== 'string') return false;
         this.currentCaseId = caseData.id;
         this.caseConfig = this._normalizeConfig(caseData.socialNetwork);
+        this.motivationService?.setCase(caseData);
         const state = this._ensureState();
         const activeIds = new Set(Array.isArray(caseData.npcs) ? caseData.npcs : []);
         for (const edge of this.caseConfig.edges) {
