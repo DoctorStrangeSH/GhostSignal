@@ -228,17 +228,17 @@ test("breaking a loyalty bond lowers trust with the protected NPC", () => {
         }
     };
     const { memory, motivations, network, relationships } = createHarness({ caseData });
-    const loyalty = motivations.getEffectiveLoyalty("a", "c");
-    assert.equal(loyalty?.score, 0);
-    assert.equal(loyalty?.protects, false);
-    const decision = motivations.evaluateDisclosure("a", { kind: "detective_behavior", targetNpcId: "c" }, { to: "b" });
-    assert.equal(decision.reason, "loyalty_broken");
     const sourceEvent = { dialogueId: "dialogue-a", nodeId: "betrayal", answerText: "Я больше не буду молчать.", tone: "threatening" };
     for (let i = 0; i < 8; i++) {
         memory.recordAnswerSelected("a", sourceEvent.dialogueId, i === 7 ? sourceEvent.nodeId : "pressure-" + i, {
             text: sourceEvent.answerText, tone: "threatening"
         });
     }
+    const loyalty = motivations.getEffectiveLoyalty("a", "c");
+    assert.equal(loyalty?.score, 0);
+    assert.equal(loyalty?.protects, false);
+    const decision = motivations.evaluateDisclosure("a", { kind: "detective_behavior", targetNpcId: "c" }, { to: "b" });
+    assert.equal(decision.reason, "loyalty_broken");
     const result = network.publish("a", {
         id: "betrayal-report", kind: "detective_behavior", sourceName: "Алекс",
         targetNpcId: "c", text: "Алекс раскрыл секрет Бориса."
