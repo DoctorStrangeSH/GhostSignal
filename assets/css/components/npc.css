@@ -401,6 +401,14 @@
 .npc-social-event.event-delivered { border-left-color: var(--accent-green); }
 .npc-social-event.event-withheld { border-left-color: var(--accent-red-bright); }
 .npc-social-event.event-betrayal { border-left-color: var(--accent-red-bright); background: rgba(180, 70, 70, 0.07); }
+.npc-relationships { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color, rgba(255,255,255,.12)); }
+.npc-relationships-heading { margin-bottom: 7px; color: var(--accent-cyan, #78b8c5); font-size: .68rem; letter-spacing: .12em; }
+.npc-relationship { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; margin-top: 5px; border-left: 2px solid var(--accent-cyan, #78b8c5); background: rgba(120,184,197,.05); }
+.npc-relationship span { color: var(--text-primary, #e6e6e6); font-size: .82rem; }
+.npc-relationship small { color: var(--text-muted, #9aa0a6); font-size: .68rem; }
+.npc-relationship.relationship-strained, .npc-relationship.relationship-hostile { border-left-color: var(--accent-red-bright, #d45c55); background: rgba(180,70,70,.06); }
+.npc-relationship.relationship-close, .npc-relationship.relationship-friendly { border-left-color: var(--accent-green, #299d71); }
+
 .npc-social-event.event-expired,
 .npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
 .npc-social-log-empty {
