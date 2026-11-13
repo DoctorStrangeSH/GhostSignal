@@ -286,3 +286,20 @@ npm run build
 - **Подтверждённый CI:** 99 JS-файлов, 97/97 тестов, 0 ошибок. [Push CI](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43439896990).
 - Ручной браузерный прогон не выполнялся; PR #1 открыт, `main` не менялся.
 
+## Живые отношения NPC — текущая реализация (2026-11-13)
+
+- Новый `assets/js/npc/npcRelationshipService.js` (`NPCRelationshipService`) загружает `caseData.npcRelationships`, нормализует связи и правила, инициализирует направленное доверие в `NPCMemoryService` и сохраняет расписания в `npcRelationshipData`.
+- Схема `bonds`: `id`, `fromNpcId`, `toNpcId`, `relationship`, `label`, `trust`, `reciprocal`.
+- Схема `autonomousInteractions`: `id`, `relationshipId`, участники, `interaction` (`support|conflict|reconcile|avoidance`), `channel` (`in_person|phone|message`), задержка/интервал, условия по доверию и давлению, trust deltas, краткое описание.
+- Встречи проверяют расписания NPC; `in_person` требует совпадения локаций, `phone` требует доступности обоих, `message` асинхронен. Недоступные контакты откладываются с ограниченными повторами; правила не создают бесконечный поток.
+- `EventController` запускает симуляцию на `time:changed`, сохраняет изменения отношений/событий; `SaveController` и `App._defaultProgress` включают `npcRelationshipData`.
+- `NPCSocialNetwork` сообщает сервису о передаче слухов, защите и предательстве. Доставка даёт небольшой плюс доверию; защита усиливает связь с защищаемым NPC; нарушение лояльности снижает доверие к предателю.
+- `DialogueEngine` раскрывает отношения из `node.revealRelationships` и `answer.revealRelationships` при реальном посещении узла/выборе ответа. Условие `relationship_known:<id>` доступно для последующих веток.
+- `NPCManager` передаёт интерфейсу только подтверждённые отношения; удаляет из dossier memory приватные `relationshipTrusts` и NPC-only rumors. `NPCListUI` отображает найденные связи и изменения отношений.
+- Реальные данные обновлены для case-001 и case-002; добавлен authoring-шаблон `npcRelationships` в `case-000-template.js`.
+- Проверки включают поддержку, конфликт, примирение, отложенную встречу, сохранение открытых связей, интеграцию передачи слухов/предательства и приватность досье.
+- **Подтверждённый CI:** 100 JavaScript-файлов, 105/105 тестов, 0 ошибок. [Push](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43443065373) · [PR](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43443075122).
+- Визуальный/ручной браузерный прогон пока не выполнялся; PR #1 открыт, `main` не менялась.
+
+**Следующий ИИ:** сначала проверь CI последнего коммита (после этого handoff могут быть ещё изменения), затем добавляй data-driven отношения и способы раскрытия для следующих дел. Не показывай скрытые bonds/rumors напрямую в UI. Не запускай параллельно два update_file на один путь.
+
