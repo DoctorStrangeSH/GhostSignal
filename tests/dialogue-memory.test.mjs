@@ -111,6 +111,25 @@ test("DialogueEngine supports hidden motive and dynamic loyalty conditions", () 
     assert.equal(engine._checkCondition("motive:unknown_motive"), false);
 });
 
+test("Joe's second-case dialogue acknowledges personal goals achieved off-screen", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "maintain_bar_community" ? 2 : 0;
+        },
+        isGoalCompleted(npcId, goalId) {
+            return npcId === "bartender" && goalId === "maintain_bar_community";
+        }
+    });
+    engine.startDialogue("dialogue-bartender-case2");
+    const answer = engine.getAvailableAnswers().find(item =>
+        item.condition === "npc_goal_completed:maintain_bar_community"
+    );
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "community_support");
+    assert.match(engine.currentNode.text, /Лора напишет|Лора напишет|Элиас ещё в первом деле/i);
+});
+
 test("DialogueEngine remembers how Joe was treated in the previous investigation", () => {
     const { engine, memory } = createDialogueHarness();
     engine.startDialogue("dialogue-bartender-case2");
@@ -143,6 +162,13 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
     assert.equal(engine._checkCondition("long_term_trust_at_least:48.8"), true);
     assert.equal(engine._checkCondition("long_term_disposition:cautious"), true);
     assert.equal(engine._checkCondition("long_term_disposition:guarded"), false);
+    engine.setRelationshipService({
+        getGoalProgress(npcId, goalId) { return npcId === "bartender" && goalId === "maintain_bar_community" ? 1 : 0; },
+        isGoalCompleted(npcId, goalId) { return npcId === "bartender" && goalId === "maintain_bar_community"; }
+    });
+    assert.equal(engine._checkCondition("npc_goal_progress_at_least:maintain_bar_community:1"), true);
+    assert.equal(engine._checkCondition("npc_goal_completed:maintain_bar_community"), true);
+    assert.equal(engine._checkCondition("npc_goal_completed:missing_goal"), false);
     assert.equal(engine._checkCondition("familiarity_at_least:2"), true);
 });
 
