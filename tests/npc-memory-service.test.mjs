@@ -97,6 +97,70 @@ test("NPCMemoryService ignores corroborating claims and contradictions from anot
     assert.equal(memory.getContradictions().length, 0);
 });
 
+test("NPCMemoryService persists witness cooperation and applies promise outcomes", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    memory.recordAnswerSelected("waiter", "dialogue-waiter", "greeting", {
+        text: "Я не стану давить.",
+        tone: "reassuring",
+        cooperationDelta: 12
+    });
+    assert.equal(memory.getMemory("waiter").cooperation, 62);
+
+    memory.recordPromise("waiter", {
+        id: "protect-family",
+        text: "Обеспечить защиту семьи Томаса.",
+        fulfillment: { type: "insight_gained", insightId: "family_protected" },
+        fulfilledCooperationDelta: 15,
+        brokenCooperationDelta: -22
+    });
+    memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "family_protected" });
+    assert.equal(memory.getMemory("waiter").cooperation, 77);
+
+    memory.recordPromise("bartender", {
+        id: "keep-source-safe",
+        text: "Защитить источник.",
+        fulfillment: { type: "case_solved", caseId: "case-002" },
+        fulfilledCooperationDelta: 10,
+        brokenCooperationDelta: -20
+    });
+    memory.settlePromisesForCase("case-002", "failed");
+    assert.equal(memory.getMemory("bartender").cooperation, 30);
+
+    const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
+    assert.equal(restored.getMemory("waiter").cooperation, 77);
+    assert.equal(restored.getMemory("waiter").cooperationHistory.length, 2);
+    assert.equal(restored.getCooperationState("waiter", { cooperationResistance: 0 }).state, "willing");
+    assert.equal(restored.toJSON().version, 10);
+});
+
+test("NPCMemoryService safely revises the single active claim on a topic", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    memory.recordClaim("waiter", {
+        id: "initial-testimony", topic: "kane-presence", value: "at-table"
+    });
+    const revised = memory.recordClaim("waiter", {
+        id: "narrowed-testimony",
+        revisesActiveClaimTopic: true,
+        revisionReason: "Свидетель уточнил границы наблюдения.",
+        topic: "kane-presence",
+        value: "near-table"
+    });
+    assert.equal(revised.added, true);
+    assert.equal(memory.hasClaim("waiter", "initial-testimony"), false);
+    assert.equal(memory.hasClaim("waiter", "narrowed-testimony"), true);
+    assert.equal(memory.hasClaimTopic("waiter", "kane-presence"), true);
+    assert.equal(memory.getStatementById("initial-testimony").status, "superseded");
+
+    memory.recordClaim("waiter", { id: "second-active", topic: "kane-presence", value: "other-place" });
+    const ambiguous = memory.recordClaim("waiter", {
+        id: "unsafe-revision", revisesActiveClaimTopic: true, topic: "kane-presence", value: "unknown"
+    });
+    assert.equal(ambiguous.added, false);
+    assert.equal(ambiguous.reason, "revision_source_ambiguous");
+});
+
 test("NPCMemoryService clamps trust and round-trips versioned per-case saves", () => {
     const NPCMemoryService = loadService();
     const memory = new NPCMemoryService(null, "case-002");
