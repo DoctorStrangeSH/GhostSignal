@@ -121,6 +121,29 @@ test("DialogueEngine does not show Joe's rumor reaction before Thomas reports th
     assert.equal(answers.some(answer => answer.text.includes("Томас рассказал") && answer.isAvailable), false);
 });
 
+test("Thomas can revise a statement after reviewing new evidence without erasing the original", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    assert.equal(engine.getAvailableAnswers()[0].isAvailable, true);
+    engine.selectAnswer(0);
+
+    assert.equal(engine.currentNode.id, "protection");
+    assert.equal(memory.getStatementById("waiter-kane-at-poisoning").status, "active");
+    const revision = engine.getAvailableAnswers().find(answer => answer.nextNode === "protection_revision");
+    assert.equal(revision?.isAvailable, true);
+    engine.selectAnswer(revision.index);
+
+    assert.equal(engine.currentNode.id, "protection_revision");
+    assert.equal(memory.getStatementById("waiter-kane-at-poisoning").status, "superseded");
+    assert.equal(memory.getStatementById("waiter-kane-at-poisoning-v2").version, 2);
+    assert.equal(memory.getClaimHistory("waiter", "waiter-kane-at-poisoning-v2").length, 2);
+    assert.match(memory.getStatementById("waiter-kane-at-poisoning-v2").summary, /не видел сам момент/i);
+    assert.equal(inventory.hasItem("bar_photo"), true);
+});
+
 test("DialogueEngine detects Kane's alibi contradiction against witness testimony", () => {
     const { engine, memory, inventory, emitted } = createDialogueHarness();
 

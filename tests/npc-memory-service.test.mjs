@@ -111,7 +111,7 @@ test("NPCMemoryService clamps trust and round-trips versioned per-case saves", (
     assert.equal(restored.getMemory("housekeeper"), null);
     restored.setCase("case-001");
     assert.equal(restored.getMemory("housekeeper").conversations, 1);
-    assert.equal(restored.toJSON().version, 6);
+    assert.equal(restored.toJSON().version, 7);
 });
 
 test("NPCMemoryService tracks psychological pressure and migrates older NPC snapshots", () => {
@@ -143,7 +143,7 @@ test("NPCMemoryService tracks psychological pressure and migrates older NPC snap
     });
     assert.equal(memory.getPressure("waiter"), 20);
     assert.equal(memory.getPsychologicalState("waiter", { pressureThreshold: 20 }).disposition, "overwhelmed");
-    assert.equal(memory.toJSON().version, 6);
+    assert.equal(memory.toJSON().version, 7);
 });
 
 test("NPCMemoryService records a deliberate lie as exposed only when its source is confronted", () => {
@@ -340,7 +340,7 @@ test("NPCMemoryService migrates version 4 memories with no rumor history", () =>
         }
     }, "case-002");
 
-    assert.equal(restored.toJSON().version, 6);
+    assert.equal(restored.toJSON().version, 7);
     assert.equal(restored.getRumors("waiter").length, 0);
     assert.equal(restored.getMemory("waiter").rumors.length, 0);
     assert.equal(restored.getTrust("waiter"), 61);
@@ -384,11 +384,49 @@ test("NPCMemoryService migrates v5 rumors without losing their source", () => {
     const NPCMemoryService = loadService();
     const restored = NPCMemoryService.fromJSON({ version: 5, currentCaseId: "case-002", cases: { "case-002": { bartender: { rumors: [{ id: "legacy-rumor", kind: "detective_behavior", text: "Старый слух", reportedBy: "waiter", reportedByName: "Томас", status: "unverified" }] } } } }, "case-002");
     const [rumor] = restored.getRumors("bartender");
-    assert.equal(restored.toJSON().version, 6);
+    assert.equal(restored.toJSON().version, 7);
     assert.equal(rumor.reportedBy, "waiter");
     assert.equal(rumor.confidence, 60);
     assert.equal(rumor.corroborations.length, 0);
     assert.equal(rumor.challenges.length, 0);
+});
+
+test("NPCMemoryService preserves testimony revisions and excludes superseded claims from contradictions", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    memory.recordClaim("waiter", { id: "waiter-original", topic: "kane-presence", value: "at-table", summary: "Томас видел Кейна у столика" });
+    memory.recordClaim("business_rival", { id: "kane-alibi", topic: "kane-presence", value: "left-early", summary: "Кейн утверждает, что ушёл раньше" });
+    assert.equal(memory.getContradictions().length, 1);
+
+    const revised = memory.recordClaim("waiter", {
+        id: "waiter-revised", revisesClaimId: "waiter-original", revisionReason: "После изучения фотографии",
+        topic: "kane-presence", value: "near-table-before-collapse", summary: "Томас уточнил время и границы наблюдения"
+    });
+    assert.equal(revised.added, true);
+    assert.equal(memory.getStatementById("waiter-original").status, "superseded");
+    assert.equal(memory.getStatementById("waiter-original").supersededBy, "waiter-revised");
+    assert.equal(memory.getStatementById("waiter-revised").version, 2);
+    assert.equal(memory.getStatementById("waiter-revised").revisionOf, "waiter-original");
+    assert.equal(memory.compareStatements("waiter-original", "kane-alibi").status, "superseded_statement");
+    assert.equal(memory.getContradictions().length, 1);
+    assert.equal(memory.getContradictions()[0].first.id === "waiter-revised" || memory.getContradictions()[0].second.id === "waiter-revised", true);
+    assert.equal(memory.getClaimHistory("waiter", "waiter-revised").length, 2);
+    assert.equal(memory.getClaimHistory("waiter", "waiter-revised")[0].id, "waiter-original");
+
+    const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
+    assert.equal(restored.getClaimHistory("waiter", "waiter-revised").length, 2);
+    assert.equal(restored.toJSON().version, 7);
+    assert.equal(restored.recordClaim("waiter", { id: "bad-revision", revisesClaimId: "missing", topic: "kane-presence", value: "unknown" }).reason, "revision_source_not_found");
+});
+
+test("NPCMemoryService migrates v6 claims as active version one", () => {
+    const NPCMemoryService = loadService();
+    const restored = NPCMemoryService.fromJSON({ version: 6, currentCaseId: "case-002", cases: { "case-002": { waiter: { claims: [{ id: "old-claim", topic: "topic", value: "value" }] } } } }, "case-002");
+    const claim = restored.getStatementById("old-claim");
+    assert.equal(restored.toJSON().version, 7);
+    assert.equal(claim.version, 1);
+    assert.equal(claim.status, "active");
+    assert.equal(claim.revisionOf, null);
 });
 
 test("NPCMemoryService safely accepts saves created before NPC memory existed", () => {

@@ -127,7 +127,31 @@ const DIALOGUE_WAITER = {
                     circumstances: "Официальное показание после согласования защиты семьи свидетеля"
                 },
                 answers: [
+                    { text: "Посмотри на эту фотографию. Хочу уточнить твои показания.", nextNode: "protection_revision", tone: "direct", condition: "hasItem:bar_photo" },
                     { text: "Ты поступил правильно, Томас.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+
+            protection_revision: {
+                speaker: "npc",
+                text: "Теперь, когда я посмотрел на фотографию, я должен уточнить. Я видел Кейна возле столика незадолго до того, как Блэквуду стало плохо. Но сам момент, когда порошок попал в стакан, я не видел. Я испугался и тогда сказал больше, чем мог подтвердить.",
+                mood: "ashamed",
+                innerThought: "Томас не отказывается от того, что видел. Он уточняет границы собственного наблюдения.",
+                claim: {
+                    id: "waiter-kane-at-poisoning-v2",
+                    revisesClaimId: "waiter-kane-at-poisoning",
+                    revisionReason: "После изучения фотографии Томас уточнил временную последовательность и границы личного наблюдения.",
+                    topic: "kane-presence-during-poisoning",
+                    value: "near-victim-table-before-collapse",
+                    summary: "Томас видел Кейна возле столика незадолго до ухудшения состояния Блэквуда, но не видел сам момент попадания порошка в стакан",
+                    sourceName: "Томас",
+                    location: "Бар «У Джо»",
+                    timeLabel: "За несколько минут до ухудшения состояния",
+                    circumstances: "Уточнение после изучения фотографии из бара",
+                    directObservation: true
+                },
+                answers: [
+                    { text: "Спасибо, что уточнил. Так показания будут точнее.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
 

@@ -183,7 +183,9 @@ class BoardUI {
         const prepared = this.memoryService?.getPreparedConfrontation?.() || null;
         const options = statements.map(statement => {
             const label = `${statement.sourceName || statement.npcId}: ${statement.summary || statement.value}`;
-            return `<option value="${this._escapeHTML(statement.id)}">${this._escapeHTML(label)}</option>`;
+            const disabled = statement.status === 'superseded' ? 'disabled' : '';
+            const suffix = statement.status === 'superseded' ? ' · ПРЕДЫДУЩАЯ ВЕРСИЯ' : '';
+            return `<option value="${this._escapeHTML(statement.id)}" ${disabled}>${this._escapeHTML(label + suffix)}</option>`;
         }).join('');
         const preparedTarget = prepared
             ? (prepared.contradiction.first.npcId === prepared.targetNpcId
@@ -206,12 +208,13 @@ class BoardUI {
                             <article class="testimony-entry">
                                 <div class="testimony-entry-heading">
                                     <strong>${this._escapeHTML(statement.sourceName || statement.npcId)}</strong>
-                                    <span>${this._escapeHTML(statement.timeLabel || 'Время не указано')}</span>
+                                    <span>${this._escapeHTML(statement.timeLabel || 'Время не указано')} · ${statement.status === 'superseded' ? 'ПРЕДЫДУЩАЯ ВЕРСИЯ' : 'АКТУАЛЬНАЯ · ВЕРСИЯ ' + (statement.version || 1)}</span>
                                 </div>
                                 <p>${this._escapeHTML(statement.summary || statement.value)}</p>
                                 <div class="testimony-entry-meta">
                                     <span>📍 ${this._escapeHTML(statement.location || 'Место не указано')}</span>
                                     ${statement.circumstances ? `<span>${this._escapeHTML(statement.circumstances)}</span>` : ''}
+                                    ${statement.revisionReason ? `<span>Основание уточнения: ${this._escapeHTML(statement.revisionReason)}</span>` : ''}
                                 </div>
                             </article>
                         `).join('')}
@@ -256,6 +259,7 @@ class BoardUI {
                 missing_selection: 'Выберите оба показания.',
                 same_statement: 'Нельзя сопоставить одну запись с самой собой.',
                 statement_not_found: 'Одна из записей больше недоступна.',
+                superseded_statement: 'Это предыдущая версия показания. Сопоставляйте актуальную запись.'
                 different_topics: 'Эти показания относятся к разным обстоятельствам.',
                 corroboration: 'Показания совпадают и подтверждают друг друга.'
             };

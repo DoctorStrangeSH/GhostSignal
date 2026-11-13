@@ -6,7 +6,7 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 6;
+        this.version = 7;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
@@ -48,6 +48,12 @@ class NPCMemoryService {
         memory.dialogueHistory = Array.isArray(memory.dialogueHistory) ? memory.dialogueHistory : [];
         memory.presentedEvidence = Array.isArray(memory.presentedEvidence) ? memory.presentedEvidence : [];
         memory.claims = Array.isArray(memory.claims) ? memory.claims : [];
+        for (const claim of memory.claims) {
+            claim.version = Number.isInteger(claim.version) && claim.version > 0 ? claim.version : 1;
+            claim.status = claim.status === 'superseded' ? 'superseded' : 'active';
+            claim.revisionOf = typeof claim.revisionOf === 'string' ? claim.revisionOf : null;
+            claim.revisionReason = typeof claim.revisionReason === 'string' ? claim.revisionReason : null;
+        }
         memory.liesExposed = Array.isArray(memory.liesExposed) ? memory.liesExposed : [];
         memory.promises = Array.isArray(memory.promises) ? memory.promises : [];
         memory.relationshipTrusts = memory.relationshipTrusts &&
@@ -149,7 +155,19 @@ class NPCMemoryService {
             return { added: false, contradictions: [] };
         }
         if (memory.claims.some(existing => existing.id === claim.id)) {
-            return { added: false, contradictions: this.getContradictions() };
+            return { added: false, reason: 'duplicate_claim', contradictions: this.getContradictions() };
+        }
+        const previous = claim.revisesClaimId
+            ? memory.claims.find(existing => existing.id === claim.revisesClaimId)
+            : null;
+        if (claim.revisesClaimId && !previous) {
+            return { added: false, reason: 'revision_source_not_found', contradictions: this.getContradictions() };
+        }
+        if (previous?.status === 'superseded') {
+            return { added: false, reason: 'revision_source_superseded', contradictions: this.getContradictions() };
+        }
+        if (previous && previous.topic !== claim.topic) {
+            return { added: false, reason: 'revision_topic_mismatch', contradictions: this.getContradictions() };
         }
 
         const normalizedValue = String(claim.value).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -171,10 +189,24 @@ class NPCMemoryService {
             refutesRumorIds: Array.isArray(claim.refutesRumorIds)
                 ? [...new Set(claim.refutesRumorIds.filter(id => typeof id === 'string' && id.trim()))]
                 : [],
+            version: previous ? (previous.version || 1) + 1 : 1,
+            status: 'active',
+            revisionOf: previous?.id || null,
+            revisionReason: previous ? (claim.revisionReason || 'new_information') : null,
             dialogueId: claim.dialogueId || null,
             nodeId: claim.nodeId || null,
             at: Date.now()
         };
+        if (previous) {
+            previous.status = 'superseded';
+            previous.supersededBy = storedClaim.id;
+            previous.supersededAt = storedClaim.at;
+            const journal = this._ensureJournal();
+            if (journal?.preparedConfrontation &&
+                [journal.preparedConfrontation.firstId, journal.preparedConfrontation.secondId].includes(previous.id)) {
+                journal.preparedConfrontation = null;
+            }
+        }
         memory.claims.push(storedClaim);
         this._append(memory, {
             type: 'claim',
@@ -183,7 +215,10 @@ class NPCMemoryService {
             claimId: storedClaim.id,
             topic: storedClaim.topic,
             value: storedClaim.value,
-            summary: storedClaim.summary
+            summary: storedClaim.summary,
+            revisionOf: storedClaim.revisionOf,
+            revisionReason: storedClaim.revisionReason,
+            version: storedClaim.version
         });
         return { added: true, contradictions: this.getContradictions() };
     }
@@ -340,12 +375,33 @@ class NPCMemoryService {
         return this.getStatements().find(statement => statement.id === statementId) || null;
     }
 
+    getClaimHistory(npcId, claimId) {
+        const claims = this.cases[this.currentCaseId]?.[npcId]?.claims || [];
+        let current = claims.find(claim => claim.id === claimId);
+        if (!current) return [];
+        while (current.revisionOf) {
+            const previous = claims.find(claim => claim.id === current.revisionOf);
+            if (!previous) break;
+            current = previous;
+        }
+        const history = [];
+        let next = claims.find(claim => claim.id === current.id);
+        while (next) {
+            history.push(this._clone(next));
+            next = claims.find(claim => claim.revisionOf === next.id);
+        }
+        return history;
+    }
+
     compareStatements(firstId, secondId) {
         if (!firstId || !secondId) return { status: 'missing_selection' };
         if (firstId === secondId) return { status: 'same_statement' };
         const first = this.getStatementById(firstId);
         const second = this.getStatementById(secondId);
         if (!first || !second) return { status: 'statement_not_found' };
+        if (first.status === 'superseded' || second.status === 'superseded') {
+            return { status: 'superseded_statement', first, second };
+        }
         if (first.topic !== second.topic) return { status: 'different_topics', first, second };
         if (first.value === second.value) return { status: 'corroboration', first, second };
         return {
@@ -467,6 +523,7 @@ class NPCMemoryService {
             for (let j = i + 1; j < claims.length; j++) {
                 const first = claims[i];
                 const second = claims[j];
+                if (first.status === 'superseded' || second.status === 'superseded') continue;
                 if (first.topic !== second.topic || first.value === second.value) continue;
                 if (npcId && first.npcId !== npcId && second.npcId !== npcId) continue;
                 contradictions.push({
