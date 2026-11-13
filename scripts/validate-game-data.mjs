@@ -256,6 +256,20 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC goal progress condition.");
             }
             if (goalProgressCondition) npcGoalConditions.push({ npcId: dialogue.npcId, goalId: goalProgressCondition[1], dialogueId: id, nodeId });
+            if (answer.condition?.startsWith("npc_action_completed:")) {
+                const ruleId = answer.condition.slice("npc_action_completed:".length);
+                if (!/^[a-z0-9_:-]{1,64}$/i.test(ruleId)) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC action condition.");
+                } else {
+                    const exists = Object.values(data.cases).some(gameCase =>
+                        (gameCase.npcs || []).includes(dialogue.npcId) &&
+                        (gameCase.npcRelationships?.autonomousInteractions || []).some(rule =>
+                            rule.id === ruleId && rule.fromNpcId === dialogue.npcId
+                        )
+                    );
+                    if (!exists) errors.push("Dialogue " + id + "/" + nodeId + " references an NPC action not authored for " + dialogue.npcId + ": " + ruleId);
+                }
+            }
             if (answer.condition?.startsWith("npc_goal_completed:")) {
                 const goalId = answer.condition.slice("npc_goal_completed:".length);
                 if (!/^[a-z0-9_:-]{1,64}$/i.test(goalId)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC goal completion condition.");
