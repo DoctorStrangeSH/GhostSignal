@@ -72,7 +72,11 @@ class NPCListUI {
             betrayal: 'НАРУШЕНА ЛОЯЛЬНОСТЬ',
             delayed: 'ОТЛОЖЕНО',
             expired: 'НЕ ДОШЛО',
-            duplicate: 'ПОВТОР'
+            duplicate: 'ПОВТОР',
+            relationship_support: 'ОТНОШЕНИЯ УКРЕПИЛИСЬ',
+            relationship_conflict: 'КОНФЛИКТ',
+            relationship_reconciled: 'ПРИМИРЕНИЕ',
+            relationship_avoidance: 'ДИСТАНЦИЯ'
         };
         const channelLabels = { in_person: 'личная встреча', phone: 'звонок', message: 'сообщение' };
         const entries = (socialEvents || []).map(item => {
@@ -102,6 +106,15 @@ class NPCListUI {
             } else if (item.type === 'delayed') {
                 headline = `${from} → ${to} · передача отложена`;
                 detail = item.summary || 'Участники пока не могут связаться.';
+            } else if (item.type.startsWith('relationship_')) {
+                const actions = {
+                    relationship_support: 'поддержали друг друга',
+                    relationship_conflict: 'поссорились',
+                    relationship_reconciled: 'помирились',
+                    relationship_avoidance: 'отдалились'
+                };
+                headline = `${from} и ${to} · ${actions[item.type] || 'изменили отношения'}`;
+                detail = item.summary || 'Между персонажами произошли изменения.';
             } else if (item.type === 'expired') {
                 headline = `${from} → ${to} · сообщение не дошло`;
                 detail = 'Окно доставки истекло до того, как контакт состоялся.';
