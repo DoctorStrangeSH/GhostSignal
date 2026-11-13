@@ -87,6 +87,13 @@ class NPCManager {
 
         const availability = this.isNPCAvailable(npcId);
         const state = this.npcStates[npcId] || {};
+        const memory = this.memoryService?.getMemory(npcId) || null;
+        if (memory) {
+            delete memory.relationshipTrusts;
+            delete memory.rumors;
+        }
+        const knownRelationships = this.relationshipService?.getKnownRelationshipsForNPC(npcId) ||
+            this.socialNetwork?.getRelationshipsForNPC(npcId) || [];
 
         return {
             ...npc,
@@ -96,12 +103,11 @@ class NPCManager {
             lastInteraction: state.lastInteraction,
             insightsGiven: state.insightsGiven || [],
             evidenceGiven: state.evidenceGiven || [],
-            memory: this.memoryService?.getMemory(npcId) || null,
+            memory,
             psychology: this.memoryService?.getPsychologicalState(npcId, npc.psychology) || null,
             promises: this.memoryService?.getPromises(npcId) || [],
-            rumors: this.memoryService?.getRumors(npcId) || [],
-            relationships: this.relationshipService?.getKnownRelationshipsForNPC(npcId) || this.socialNetwork?.getRelationshipsForNPC(npcId) || [],
-            socialLinks: this.relationshipService?.getKnownRelationshipsForNPC(npcId) || this.socialNetwork?.getRelationshipsForNPC(npcId) || []
+            relationships: knownRelationships,
+            socialLinks: knownRelationships
         };
     }
 
