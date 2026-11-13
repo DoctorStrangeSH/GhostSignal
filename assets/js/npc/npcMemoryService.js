@@ -1007,7 +1007,9 @@ class NPCMemoryService {
                 const delta = Number.isFinite(promise.fulfilledTrustDelta) ? promise.fulfilledTrustDelta : 3;
                 memory.trust = Math.max(0, Math.min(100, (Number.isFinite(memory.trust) ? memory.trust : 50) + delta));
                 memory.pressure = Math.max(0, Math.min(100, (Number.isFinite(memory.pressure) ? memory.pressure : 0) - 2));
-                this._adjustCooperationMemory(memory, npcId, promise.fulfilledCooperationDelta, 'promise_fulfilled:' + promise.id);
+                const cooperationDelta = Number.isFinite(promise.fulfilledCooperationDelta)
+                    ? promise.fulfilledCooperationDelta : 10;
+                this._adjustCooperationMemory(memory, npcId, cooperationDelta, 'promise_fulfilled:' + promise.id);
                 this._append(memory, { type: 'promise_fulfilled', promiseId: promise.id, trustDelta: delta });
                 this._recordLongTermMemory(npcId, {
                     type: 'promise_kept', summary: promise.text, sentiment: 'positive', importance: 4,
@@ -1040,9 +1042,11 @@ class NPCMemoryService {
                 promise.resolutionEvent = { type: 'case_' + outcome, caseId };
                 memory.trust = Math.max(0, Math.min(100, (Number.isFinite(memory.trust) ? memory.trust : 50) + delta));
                 memory.pressure = Math.max(0, Math.min(100, (Number.isFinite(memory.pressure) ? memory.pressure : 0) + (fulfilledByOutcome ? -2 : 5)));
+                const cooperationDelta = fulfilledByOutcome
+                    ? (Number.isFinite(promise.fulfilledCooperationDelta) ? promise.fulfilledCooperationDelta : 10)
+                    : (Number.isFinite(promise.brokenCooperationDelta) ? promise.brokenCooperationDelta : -18);
                 this._adjustCooperationMemory(
-                    memory, npcId,
-                    fulfilledByOutcome ? promise.fulfilledCooperationDelta : promise.brokenCooperationDelta,
+                    memory, npcId, cooperationDelta,
                     (fulfilledByOutcome ? 'promise_fulfilled:' : 'promise_broken:') + promise.id
                 );
                 this._append(memory, {
