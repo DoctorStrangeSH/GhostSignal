@@ -75,7 +75,7 @@ function createHarness(overrides = {}) {
     context.npcManager = npcManager;
     context.caseData = caseData;
     const setup = vm.runInContext(
-        "(() => { const memory = new NPCMemoryService(null, caseData.id); const network = new NPCSocialNetwork(null, memory, npcManager, clock); network.setCase(caseData); const relationships = new NPCRelationshipService(null, memory, npcManager, clock, network); relationships.setCase(caseData); network.setRelationshipService(relationships); return { memory, network, relationships }; })()",
+        "(() => { const memory = new NPCMemoryService(null, caseData.id); const motivations = new NPCMotivationService(memory); const network = new NPCSocialNetwork(null, memory, npcManager, clock); network.setMotivationService(motivations); network.setCase(caseData); const relationships = new NPCRelationshipService(null, memory, npcManager, clock, network); relationships.setCase(caseData); network.setRelationshipService(relationships); return { memory, motivations, network, relationships }; })()",
         context
     );
     return {
