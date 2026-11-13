@@ -129,7 +129,13 @@ const DIALOGUE_RIVAL_FULL = {
                         text: "У меня есть показания о порошке и похищенном пузырьке. Расскажите всё по порядку.",
                         nextNode: "confession",
                         tone: "direct",
-                        condition: "all:hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial"
+                        condition: "all:hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial&not:case_has_claim:waiter:waiter-kane-at-poisoning-v2"
+                    },
+                    {
+                        text: "У меня есть фотография из бара и свидетельство о пузырьке. Ваше прежнее алиби не выдерживает проверки.",
+                        nextNode: "confession",
+                        tone: "direct",
+                        condition: "all:hasInsight:hard_evidence_kane&hasInsight:kane_stole_vial"
                     },
                     {
                         text: "Томас видел, как вы вернулись в зал. Ваше прежнее алиби неверно.",
