@@ -303,9 +303,10 @@ test("NPCSocialNetwork records a betrayal when pressure breaks a character loyal
 });
 
 test("NPCSocialNetwork keeps world events hidden until the detective learns about them", () => {
-    const { memory, network } = createHarness();
+    const { memory, network, advance } = createHarness();
     publish(memory, network, { targetNpcId: "detective" });
     assert.equal(network.getEventLog(20).length > 0, true);
+    advance(15);
     assert.equal(network.getKnownEventLog(20).length, 0);
     const revealed = network.revealEventsForReport("social-test-report", {
         method: "dialogue", sourceId: "dialogue-bartender:greeting:2",
