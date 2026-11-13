@@ -440,10 +440,10 @@ class DialogueEngine {
         }
         if (conditionStr.startsWith('npc_action_completed:')) {
             const ruleId = conditionStr.slice('npc_action_completed:'.length);
-            return Boolean(npcId && this.relationshipService?.hasCompletedInteraction(npcId, ruleId));
+            return Boolean(npcId && this.relationshipService?.hasCompletedInteraction?.(npcId, ruleId));
         }
         if (conditionStr.startsWith('npc_goal_completed:')) {
-            return Boolean(this.relationshipService?.isGoalCompleted(
+            return Boolean(this.relationshipService?.isGoalCompleted?.(
                 npcId, conditionStr.slice('npc_goal_completed:'.length)
             ));
         }
