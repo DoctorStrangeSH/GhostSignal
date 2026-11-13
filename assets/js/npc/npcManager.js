@@ -8,6 +8,7 @@ class NPCManager {
         this.currentCaseId = null;
         this.memoryService = null;
         this.socialNetwork = null;
+        this.relationshipService = null;
     }
 
     setMemoryService(service) {
@@ -16,6 +17,10 @@ class NPCManager {
 
     setSocialNetwork(service) {
         this.socialNetwork = service || null;
+    }
+
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
     }
 
     loadNPCsForCase(caseData) {
@@ -95,7 +100,8 @@ class NPCManager {
             psychology: this.memoryService?.getPsychologicalState(npcId, npc.psychology) || null,
             promises: this.memoryService?.getPromises(npcId) || [],
             rumors: this.memoryService?.getRumors(npcId) || [],
-            socialLinks: this.socialNetwork?.getRelationshipsForNPC(npcId) || []
+            relationships: this.relationshipService?.getKnownRelationshipsForNPC(npcId) || this.socialNetwork?.getRelationshipsForNPC(npcId) || [],
+            socialLinks: this.relationshipService?.getKnownRelationshipsForNPC(npcId) || this.socialNetwork?.getRelationshipsForNPC(npcId) || []
         };
     }
 
