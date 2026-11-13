@@ -162,6 +162,26 @@ const CASE_002 = {
         ],
         autonomousInteractions: [
             {
+                id: "joe-reassures-thomas-after-threat", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                goalId: "protect_staff", goalProgress: 1,
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
+                fromRumorId: "detective-threatened-thomas", fromRumorConfidenceAtLeast: 55,
+                fromPressureBelow: 80,
+                trustDelta: 3, reciprocalTrustDelta: 2, toCooperationDelta: 8,
+                summary: "Узнав об угрозах детектива, Джо поддержал Томаса и предложил ему помощь."
+            },
+            {
+                id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
+                fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
+                channel: "message",
+                initialDelayMinutes: 90, everyMinutes: 90, maxOccurrences: 1,
+                fromRumorId: "detective-threatened-thomas", fromRumorConfidenceAtLeast: 55,
+                trustDelta: -2, reciprocalTrustDelta: 0,
+                summary: "Услышав историю об угрозах Томасу, Лора потребовала от Джо подтверждений, прежде чем писать статью."
+            },
+            {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
