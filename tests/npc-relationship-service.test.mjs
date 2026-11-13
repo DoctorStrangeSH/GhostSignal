@@ -265,6 +265,63 @@ test("NPCManager dossier data excludes NPC-only rumors and private trust maps", 
     assert.equal(manager.getNPCStatus("a").relationships.length, 1);
 });
 
+test("NPCRelationshipService carries NPC-to-NPC trust across case boundaries and saves", () => {
+    const { memory, relationships, npcManager, clock, network, advance } = createHarness();
+    advance(30);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 62);
+    assert.equal(memory.getRelationshipTrust("b", "a"), 61);
+
+    const nextCase = {
+        id: "case-relationship-followup",
+        npcs: ["a", "b"],
+        npcRelationships: {
+            bonds: [{
+                id: "a-b-followup", fromNpcId: "a", toNpcId: "b",
+                relationship: "old_colleagues", label: "Старые коллеги",
+                trust: 10, reciprocal: true
+            }],
+            autonomousInteractions: []
+        }
+    };
+    memory.setCase(nextCase.id);
+    relationships.setCase(nextCase);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 62);
+    assert.equal(memory.getRelationshipTrust("b", "a"), 61);
+
+    const snapshot = relationships.toJSON();
+    assert.equal(snapshot.worldTrusts.a.b, 62);
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, memory, npcManager, clock, network)",
+        contextForRestore()
+    );
+    function contextForRestore() {
+        const context = vm.createContext({ console, Date });
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        context.snapshot = snapshot;
+        context.memory = memory;
+        context.npcManager = npcManager;
+        context.clock = clock;
+        context.network = network;
+        return context;
+    }
+    memory.setCase("case-relationship-third");
+    restored.setDependencies(memory, npcManager, clock, network);
+    restored.setCase({
+        id: "case-relationship-third",
+        npcs: ["a", "b"],
+        npcRelationships: {
+            bonds: [{
+                id: "a-b-third", fromNpcId: "a", toNpcId: "b",
+                relationship: "old_colleagues", label: "Старые коллеги",
+                trust: 5, reciprocal: true
+            }],
+            autonomousInteractions: []
+        }
+    });
+    assert.equal(memory.getRelationshipTrust("a", "b"), 62);
+    assert.equal(memory.getRelationshipTrust("b", "a"), 61);
+});
+
 test("case 001 and case 002 both use the shared relationship authoring schema", () => {
     const context = vm.createContext({});
     for (const [path, expression] of [
