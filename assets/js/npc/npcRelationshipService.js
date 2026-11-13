@@ -45,14 +45,18 @@ class NPCRelationshipService {
         const worldForward = this._getWorldTrust(bond.fromNpcId, bond.toNpcId);
         const forward = worldForward ?? (Number.isFinite(caseForward) ? caseForward : bond.trust);
         this._setWorldTrust(bond.fromNpcId, bond.toNpcId, forward);
-        this.memoryService?.setRelationshipTrust(bond.fromNpcId, bond.toNpcId, forward);
+        if (!Number.isFinite(caseForward) || caseForward !== forward) {
+            this.memoryService?.setRelationshipTrust(bond.fromNpcId, bond.toNpcId, forward);
+        }
 
         if (bond.reciprocal) {
             const caseReverse = this.memoryService?.getMemory(bond.toNpcId)?.relationshipTrusts?.[bond.fromNpcId];
             const worldReverse = this._getWorldTrust(bond.toNpcId, bond.fromNpcId);
             const reverse = worldReverse ?? (Number.isFinite(caseReverse) ? caseReverse : bond.trust);
             this._setWorldTrust(bond.toNpcId, bond.fromNpcId, reverse);
-            this.memoryService?.setRelationshipTrust(bond.toNpcId, bond.fromNpcId, reverse);
+            if (!Number.isFinite(caseReverse) || caseReverse !== reverse) {
+                this.memoryService?.setRelationshipTrust(bond.toNpcId, bond.fromNpcId, reverse);
+            }
         }
     }
 
