@@ -11,7 +11,20 @@ const DIALOGUE_JOURNALIST = {
 
     tree: {
         start: "greeting",
+        entryRules: [
+            { condition: "npc_investigation_outcome:lora-interviews-eva-about-threat:no_independent_evidence", nodeId: "lora_second_check_opening" }
+        ],
         nodes: {
+            lora_second_check_opening: {
+                speaker: "npc",
+                text: "Детектив, я уже связалась с Джо и Евой. Ни один разговор пока не дал независимого подтверждения истории об угрозах Томасу. Я продолжу проверять факты, но публиковать неподтверждённое не стану.",
+                mood: "focused",
+                answers: [
+                    { text: "Расскажите подробнее о разговоре с Евой.", nextNode: "lora_eva_followup_unverified", tone: "direct" },
+                    { text: "Давайте вернёмся к документам о Кейне.", nextNode: "investigation", tone: "calm" }
+                ]
+            },
+
             greeting: {
                 speaker: "npc",
                 text: "Детектив! Какая честь. Сами зашли в нашу скромную редакцию. Дайте угадаю — вам нужна информация о Кейне?",
