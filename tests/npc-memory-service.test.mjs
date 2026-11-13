@@ -387,8 +387,8 @@ test("NPCMemoryService migrates v5 rumors without losing their source", () => {
     assert.equal(restored.toJSON().version, 6);
     assert.equal(rumor.reportedBy, "waiter");
     assert.equal(rumor.confidence, 60);
-    assert.deepEqual(rumor.corroborations, []);
-    assert.deepEqual(rumor.challenges, []);
+    assert.equal(rumor.corroborations.length, 0);
+    assert.equal(rumor.challenges.length, 0);
 });
 
 test("NPCMemoryService safely accepts saves created before NPC memory existed", () => {
