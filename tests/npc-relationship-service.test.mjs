@@ -559,3 +559,19 @@ test("rumor-driven actions can demand corroboration rather than treating gossip 
     assert.equal(memory.corroborateRumor("a", "witness-report", "b", "absent").corroborated, false);
     assert.equal(advance(30).changed, 0);
 });
+
+test("completed autonomous actions are visible only to their actual initiator and survive loading", () => {
+    const { relationships, advance, context, memory, npcManager, clock, caseData } = createHarness();
+    assert.equal(relationships.hasCompletedInteraction("a", "support-a-b"), false);
+    assert.equal(relationships.hasCompletedInteraction("b", "support-a-b"), false);
+    advance(30);
+    assert.equal(relationships.hasCompletedInteraction("a", "support-a-b"), true);
+    assert.equal(relationships.hasCompletedInteraction("b", "support-a-b"), false);
+    assert.equal(relationships.hasCompletedInteraction("a", "nonexistent"), false);
+
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const loaded = vm.runInContext("NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)", context);
+    loaded.setCase(caseData);
+    assert.equal(loaded.hasCompletedInteraction("a", "support-a-b"), true);
+});
