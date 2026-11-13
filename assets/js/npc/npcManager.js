@@ -104,6 +104,10 @@ class NPCManager {
         return this.activeNPCs.map(npc => this.getNPCStatus(npc.id)).filter(Boolean);
     }
 
+    getSocialEventLog(limit = 12, npcId = null) {
+        return this.socialNetwork?.getEventLog(limit, npcId) || [];
+    }
+
     getNPCsAtLocation(locationId) {
         const location = getLocationById(locationId);
         if (!location) return [];
