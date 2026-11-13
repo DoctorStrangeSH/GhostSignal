@@ -131,7 +131,12 @@ class NPCSocialNetwork {
             dueAt: Number.isFinite(details.dueAt) ? details.dueAt : null
         };
         state.eventLog.push(event);
-        if (state.eventLog.length > 300) state.eventLog.splice(0, state.eventLog.length - 300);
+        if (state.eventLog.length > 300) {
+            state.eventLog.splice(0, state.eventLog.length - 300);
+            const retainedIds = new Set(state.eventLog.map(item => item.id));
+            state.knownEventIds = state.knownEventIds.filter(id => retainedIds.has(id));
+            state.discoveryLog = state.discoveryLog.filter(item => retainedIds.has(item.eventId));
+        }
         return event;
     }
 
