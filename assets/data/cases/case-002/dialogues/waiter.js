@@ -33,18 +33,6 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm", cooperationDelta: 2 },
                     {
-                        text: "Я хочу вернуться к твоим прежним показаниям.",
-                        nextNode: "testimony_reconsiders",
-                        tone: "calm",
-                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning"
-                    },
-                    {
-                        text: "Я хочу вернуться к твоим прежним показаниям.",
-                        nextNode: "testimony_reconsiders",
-                        tone: "calm",
-                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2"
-                    },
-                    {
                         text: "Если ты скрываешь информацию — это соучастие.",
                         nextNode: "threat",
                         tone: "aggressive",
@@ -73,7 +61,21 @@ const DIALOGUE_WAITER = {
                             text: "Детектив обвинил меня в соучастии с Кейном, хотя я был напуган и не помогал ему.",
                         }
                     }
-                ]
+,
+                    {
+                        text: "Я хочу вернуться к твоим прежним показаниям.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Я хочу вернуться к твоим прежним показаниям.",
+                        nextNode: "testimony_reconsiders",
+                        tone: "calm",
+                        condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2",
+                        hiddenWhenUnavailable: true
+                    }                ]
             },
 
             he_saw: {
