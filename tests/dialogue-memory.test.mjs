@@ -219,7 +219,7 @@ test("DialogueEngine lets Thomas's intimidation report reach Joe through a timed
     const reportAnswer = answers.find(answer => answer.text.includes("Томас рассказал"));
     assert.equal(reportAnswer?.isAvailable, true);
 
-    engine.selectAnswer(2);
+    engine.selectAnswer(reportAnswer.index);
     assert.equal(socialNetwork.getKnownEventLog(20).length, 1);
     assert.equal(socialNetwork.getKnownEventLog(20)[0].type, "delivered");
     assert.equal(socialNetwork.getKnownEventLog(20)[0].fromNpcId, "waiter");
