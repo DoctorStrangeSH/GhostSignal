@@ -663,3 +663,22 @@ test("Lora does not describe an off-screen investigation before she actually act
     assert.equal(engine.selectAnswer(answer.index).id, "lora_checked_threat");
     assert.match(engine.currentNode.text, /независимое подтверждение/i);
 });
+
+test("Lora reports an inconclusive witness check without treating repeated gossip as proof", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        getInvestigationOutcome(npcId, ruleId) {
+            return npcId === "journalist" && ruleId === "lora-questions-joe-about-threat"
+                ? "no_independent_evidence" : null;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    const condition = "npc_investigation_outcome:lora-questions-joe-about-threat:no_independent_evidence";
+    assert.equal(engine._checkCondition(condition), true);
+    assert.equal(engine._checkCondition("npc_investigation_outcome:lora-questions-joe-about-threat:corroborated"), false);
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "lora_no_confirmation");
+    assert.match(engine.currentNode.text, /не второе независимое свидетельство/i);
+});
