@@ -397,7 +397,7 @@ test("NPCRelationshipService gates autonomous actions on persistent goal progres
                 interaction: "support", channel: "phone", initialDelayMinutes: 30,
                 everyMinutes: 60, maxOccurrences: 1, minTrust: 0,
                 goalId: "protect_partner", goalNpcId: "a", goalProgress: 1,
-                conditions: { goalId: "protect_partner", goalNpcId: "a", goalProgressAtLeast: 1 },
+                conditions: { requiresGoalId: "protect_partner", requiresGoalNpcId: "a", requiresGoalProgressAtLeast: 1 },
                 summary: "Алекс поддержал Бориса только после того, как решил защитить его."
             }]
         }
