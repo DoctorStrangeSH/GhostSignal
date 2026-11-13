@@ -479,7 +479,7 @@ test("NPCMemoryService migrates v8 memories with an empty long-term people ledge
     assert.equal(profile.interactions, 1);
     assert.equal(profile.lastSeenCaseId, "case-002");
     assert.equal(profile.memoryCount, 1);
-    assert.equal(profile.disposition, "cautious");
+    assert.equal(profile.disposition, "guarded");
     assert.equal(restored.getMemory("waiter").trust, 37);
     assert.equal(restored.getAccusations("waiter").length, 0);
 });
