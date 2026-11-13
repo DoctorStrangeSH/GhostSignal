@@ -7,10 +7,15 @@ class NPCManager {
         this.autoTriggered = [];
         this.currentCaseId = null;
         this.memoryService = null;
+        this.socialNetwork = null;
     }
 
     setMemoryService(service) {
         this.memoryService = service || null;
+    }
+
+    setSocialNetwork(service) {
+        this.socialNetwork = service || null;
     }
 
     loadNPCsForCase(caseData) {
@@ -89,7 +94,8 @@ class NPCManager {
             memory: this.memoryService?.getMemory(npcId) || null,
             psychology: this.memoryService?.getPsychologicalState(npcId, npc.psychology) || null,
             promises: this.memoryService?.getPromises(npcId) || [],
-            rumors: this.memoryService?.getRumors(npcId) || []
+            rumors: this.memoryService?.getRumors(npcId) || [],
+            socialLinks: this.socialNetwork?.getRelationshipsForNPC(npcId) || []
         };
     }
 

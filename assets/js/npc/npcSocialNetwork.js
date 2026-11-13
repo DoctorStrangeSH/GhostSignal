@@ -1,0 +1,258 @@
+/**
+ * NPCSocialNetwork
+ * Case-authored social graph with time-gated, attributed rumor delivery.
+ */
+class NPCSocialNetwork {
+    constructor(snapshot = null, memoryService = null, npcManager = null, gameTime = null) {
+        this.version = 1;
+        this.currentCaseId = snapshot?.currentCaseId || null;
+        this.cases = this._clone(snapshot?.cases || {});
+        this.memoryService = memoryService;
+        this.npcManager = npcManager;
+        this.gameTime = gameTime;
+        this.caseConfig = null;
+    }
+
+    setDependencies(memoryService, npcManager, gameTime) {
+        this.memoryService = memoryService || null;
+        this.npcManager = npcManager || null;
+        this.gameTime = gameTime || null;
+    }
+
+    setCase(caseData) {
+        if (!caseData?.id || typeof caseData.id !== 'string') return false;
+        this.currentCaseId = caseData.id;
+        this.caseConfig = this._normalizeConfig(caseData.socialNetwork);
+        const state = this._ensureState();
+        const activeIds = new Set(Array.isArray(caseData.npcs) ? caseData.npcs : []);
+        for (const edge of this.caseConfig.edges) {
+            if (!activeIds.has(edge.from) || !activeIds.has(edge.to)) continue;
+            const existing = this.memoryService?.getMemory(edge.from)?.relationshipTrusts?.[edge.to];
+            if (!Number.isFinite(existing)) this.memoryService?.setRelationshipTrust(edge.from, edge.to, edge.trust);
+        }
+        return Boolean(state);
+    }
+
+    _normalizeConfig(config) {
+        const edges = Array.isArray(config?.edges) ? config.edges : [];
+        return {
+            maxHops: Number.isInteger(config?.maxHops) ? Math.max(1, Math.min(5, config.maxHops)) : 2,
+            retryMinutes: Number.isInteger(config?.retryMinutes) ? Math.max(5, config.retryMinutes) : 15,
+            expiryMinutes: Number.isInteger(config?.expiryMinutes) ? Math.max(30, config.expiryMinutes) : 360,
+            edges: edges.filter(edge =>
+                edge && typeof edge.from === 'string' && typeof edge.to === 'string' &&
+                edge.from !== edge.to && typeof edge.relationship === 'string' &&
+                ['in_person', 'phone', 'message'].includes(edge.channel)
+            ).map(edge => ({
+                ...edge,
+                trust: Number.isFinite(edge.trust) ? Math.max(0, Math.min(100, edge.trust)) : 50,
+                delayMinutes: Number.isFinite(edge.delayMinutes) ? Math.max(1, edge.delayMinutes) : 15,
+                minTrustToShare: Number.isFinite(edge.minTrustToShare) ? Math.max(0, Math.min(100, edge.minTrustToShare)) : 0,
+                shareTypes: Array.isArray(edge.shareTypes) ? edge.shareTypes : ['detective_behavior'],
+                protectsNpcIds: Array.isArray(edge.protectsNpcIds) ? edge.protectsNpcIds : [],
+                canForward: edge.canForward === true,
+                withholdIfTargetProtected: edge.withholdIfTargetProtected === true
+            }))
+        };
+    }
+
+    _ensureState(caseId = this.currentCaseId) {
+        if (!caseId) return null;
+        if (!this.cases[caseId] || typeof this.cases[caseId] !== 'object') {
+            this.cases[caseId] = { pending: [], delivered: [], withheld: [], publishedIds: [] };
+        }
+        const state = this.cases[caseId];
+        state.pending = Array.isArray(state.pending) ? state.pending : [];
+        state.delivered = Array.isArray(state.delivered) ? state.delivered : [];
+        state.withheld = Array.isArray(state.withheld) ? state.withheld : [];
+        state.publishedIds = Array.isArray(state.publishedIds) ? state.publishedIds : [];
+        return state;
+    }
+
+    _now() {
+        const day = Math.max(1, Number(this.gameTime?.day) || 1);
+        const hour = Math.max(0, Math.min(23, Number(this.gameTime?.hour) || 0));
+        const minute = Math.max(0, Math.min(59, Number(this.gameTime?.minute) || 0));
+        return (day - 1) * 1440 + hour * 60 + minute;
+    }
+
+    _name(npcId) {
+        if (typeof getNPCById === 'function') {
+            const npc = getNPCById(npcId);
+            if (npc?.name) return npc.name;
+        }
+        return npcId;
+    }
+
+    _queueOutgoing(fromNpcId, report, sourceEvent, context) {
+        const state = this._ensureState();
+        if (!state || !this.caseConfig || context.hops >= this.caseConfig.maxHops) return 0;
+        let queued = 0;
+        const now = this._now();
+        const path = Array.isArray(context.path) ? context.path : [context.originalSourceNpcId];
+
+        for (const edge of this.caseConfig.edges.filter(item => item.from === fromNpcId)) {
+            if (path.includes(edge.to)) continue;
+            if (!edge.shareTypes.includes('*') && !edge.shareTypes.includes(report.kind)) continue;
+            const senderTrust = this.memoryService?.getRelationshipTrust(fromNpcId, edge.to) ?? edge.trust;
+            if (senderTrust < edge.minTrustToShare) continue;
+
+            const protectedTarget = report.targetNpcId && edge.protectsNpcIds.includes(report.targetNpcId);
+            if (protectedTarget && edge.withholdIfTargetProtected) {
+                const withheldId = report.id + '::' + path.join('>') + '::' + edge.to;
+                if (!state.withheld.some(item => item.id === withheldId)) {
+                    state.withheld.push({
+                        id: withheldId, rumorId: report.id, fromNpcId, toNpcId: edge.to,
+                        protectedNpcId: report.targetNpcId, relationship: edge.relationship,
+                        atGameMinute: now, reason: 'protecting_relationship'
+                    });
+                }
+                continue;
+            }
+
+            const deliveryId = report.id + '::' + path.join('>') + '::' + edge.to;
+            if (state.pending.some(item => item.id === deliveryId) ||
+                state.delivered.some(item => item.id === deliveryId)) continue;
+
+            state.pending.push({
+                id: deliveryId, rumorId: report.id, fromNpcId, toNpcId: edge.to,
+                relationship: edge.relationship, channel: edge.channel, edgeId: edge.id || null,
+                dueAt: now + edge.delayMinutes, expiresAt: now + this.caseConfig.expiryMinutes,
+                report: this._clone(report), sourceEvent: this._clone(sourceEvent),
+                originalSourceNpcId: context.originalSourceNpcId,
+                originalSourceName: context.originalSourceName,
+                path: [...path, edge.to], hops: context.hops + 1,
+                canForward: edge.canForward,
+                recipientTrust: this.memoryService?.getRelationshipTrust(edge.to, fromNpcId) ?? 50
+            });
+            queued++;
+        }
+        return queued;
+    }
+
+    publish(fromNpcId, report, sourceEvent) {
+        if (!this.currentCaseId || !fromNpcId || !report?.id || !report?.text || !report?.kind ||
+            !sourceEvent?.dialogueId || !sourceEvent?.nodeId || !sourceEvent?.answerText) {
+            return { published: false, reason: 'invalid_report' };
+        }
+        const sourceMemory = this.memoryService?.getMemory(fromNpcId);
+        const witnessed = sourceMemory?.dialogueHistory?.some(entry =>
+            entry.type === 'answer' && entry.dialogueId === sourceEvent.dialogueId &&
+            entry.nodeId === sourceEvent.nodeId && entry.answerText === sourceEvent.answerText
+        );
+        if (!witnessed) return { published: false, reason: 'source_event_not_found' };
+
+        const state = this._ensureState();
+        if (state.publishedIds.includes(report.id)) return { published: false, reason: 'already_published' };
+        state.publishedIds.push(report.id);
+        const queued = this._queueOutgoing(fromNpcId, report, sourceEvent, {
+            originalSourceNpcId: fromNpcId,
+            originalSourceName: report.sourceName || this._name(fromNpcId),
+            path: [fromNpcId],
+            hops: 0
+        });
+        return { published: true, queued };
+    }
+
+    _canDeliver(delivery) {
+        if (!this.npcManager?.isNPCAvailable) return false;
+        const sender = this.npcManager.isNPCAvailable(delivery.fromNpcId);
+        const recipient = this.npcManager.isNPCAvailable(delivery.toNpcId);
+        if (!recipient?.available) return false;
+        if (delivery.channel === 'message') return true;
+        if (!sender?.available) return false;
+        if (delivery.channel === 'in_person') {
+            return Boolean(sender.location && recipient.location && sender.location === recipient.location);
+        }
+        if (delivery.channel === 'phone') {
+            const sourceNpc = typeof getNPCById === 'function' ? getNPCById(delivery.fromNpcId) : null;
+            const targetNpc = typeof getNPCById === 'function' ? getNPCById(delivery.toNpcId) : null;
+            return sourceNpc?.availableForCall === true && targetNpc?.availableForCall === true;
+        }
+        return false;
+    }
+
+    processDueDeliveries() {
+        const state = this._ensureState();
+        if (!state || !this.memoryService) return { delivered: 0, deferred: 0, expired: 0 };
+        const now = this._now();
+        const due = state.pending.filter(item => Number.isFinite(item.dueAt) && item.dueAt <= now)
+            .sort((a, b) => a.dueAt - b.dueAt);
+        let delivered = 0, deferred = 0, expired = 0;
+
+        for (const item of due) {
+            if (item.expiresAt < now) {
+                state.pending = state.pending.filter(entry => entry.id !== item.id);
+                state.delivered.push({ id: item.id, status: 'expired', atGameMinute: now });
+                expired++;
+                continue;
+            }
+            if (!this._canDeliver(item)) {
+                item.dueAt = Math.min(now + this.caseConfig.retryMinutes, item.expiresAt);
+                deferred++;
+                continue;
+            }
+
+            const received = this.memoryService.receiveSocialRumor(item.toNpcId, item.report, {
+                fromNpcId: item.fromNpcId, fromNpcName: this._name(item.fromNpcId),
+                originalSourceNpcId: item.originalSourceNpcId,
+                originalSourceName: item.originalSourceName,
+                sourceEvent: item.sourceEvent, path: item.path, hops: item.hops,
+                channel: item.channel, recipientTrust: item.recipientTrust,
+                receivedAtGameMinute: now
+            });
+            state.pending = state.pending.filter(entry => entry.id !== item.id);
+            state.delivered.push({
+                id: item.id, rumorId: item.rumorId, fromNpcId: item.fromNpcId,
+                toNpcId: item.toNpcId, status: received.received ? 'delivered' : 'duplicate',
+                atGameMinute: now
+            });
+            if (!received.received) continue;
+            delivered++;
+            if (item.canForward && item.hops < this.caseConfig.maxHops) {
+                this._queueOutgoing(item.toNpcId, item.report, item.sourceEvent, {
+                    originalSourceNpcId: item.originalSourceNpcId,
+                    originalSourceName: item.originalSourceName,
+                    path: item.path, hops: item.hops
+                });
+            }
+        }
+        if (state.delivered.length > 200) state.delivered.splice(0, state.delivered.length - 200);
+        if (state.withheld.length > 100) state.withheld.splice(0, state.withheld.length - 100);
+        return { delivered, deferred, expired };
+    }
+
+    getRelationshipsForNPC(npcId) {
+        if (!npcId || !this.caseConfig) return [];
+        return this.caseConfig.edges.filter(edge => edge.from === npcId || edge.to === npcId).map(edge => {
+            const otherNpcId = edge.from === npcId ? edge.to : edge.from;
+            return {
+                npcId: otherNpcId, name: this._name(otherNpcId),
+                relationship: edge.relationship, label: edge.label || edge.relationship,
+                direction: edge.from === npcId ? 'outgoing' : 'incoming',
+                channel: edge.channel,
+                trust: this.memoryService?.getRelationshipTrust(npcId, otherNpcId) ?? edge.trust
+            };
+        });
+    }
+
+    getPendingDeliveries() { return this._clone(this._ensureState()?.pending || []); }
+    getWithheldReports() { return this._clone(this._ensureState()?.withheld || []); }
+
+    resetCase(caseId = this.currentCaseId) {
+        if (!caseId) return false;
+        delete this.cases[caseId];
+        if (caseId === this.currentCaseId) this._ensureState();
+        return true;
+    }
+
+    toJSON() {
+        return { version: this.version, currentCaseId: this.currentCaseId, cases: this._clone(this.cases) };
+    }
+
+    static fromJSON(json, memoryService = null, npcManager = null, gameTime = null) {
+        return new NPCSocialNetwork(json, memoryService, npcManager, gameTime);
+    }
+
+    _clone(value) { return JSON.parse(JSON.stringify(value)); }
+}

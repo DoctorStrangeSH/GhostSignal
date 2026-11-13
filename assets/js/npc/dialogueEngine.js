@@ -13,6 +13,10 @@ class DialogueEngine {
         this.memoryService = service || null;
     }
 
+    setSocialNetwork(service) {
+        this.socialNetwork = service || null;
+    }
+
     _recordNodeMemory(node) {
         const npcId = this.currentDialogue?.npcId;
         if (!npcId || !this.memoryService || !node) return;
@@ -23,6 +27,7 @@ class DialogueEngine {
     _notifyMemoryChanged() {
         if (!this.memoryService) return;
         events.emit('npc:memory_changed', this.memoryService.toJSON());
+        if (this.socialNetwork) events.emit('npc:social_network_changed', this.socialNetwork.toJSON());
     }
     
     // Начать диалог
@@ -102,7 +107,13 @@ class DialogueEngine {
             if (answer.resolveAccusation) {
                 this.memoryService.resolveAccusation(this.currentDialogue.npcId, answer.resolveAccusation.id, answer.resolveAccusation.outcome, answer.resolveAccusation.reason);
             }
-            if (answer.report?.id && Array.isArray(answer.report.recipients)) {
+            if (answer.report?.id && answer.report.networkPropagation && this.socialNetwork) {
+                this.socialNetwork.publish(this.currentDialogue.npcId, answer.report, {
+                    dialogueId: this.currentDialogue.id, nodeId: this.currentNode.id,
+                    answerText: answer.text, tone: answer.tone || 'neutral',
+                    gameMinute: this.gameTime ? (Math.max(1, this.gameTime.day || 1) - 1) * 1440 + this.gameTime.hour * 60 + this.gameTime.minute : null
+                });
+            } else if (answer.report?.id && Array.isArray(answer.report.recipients)) {
                 for (const recipient of answer.report.recipients) {
                     const recipientConfig = typeof recipient === 'string' ? { npcId: recipient } : recipient;
                     if (!recipientConfig?.npcId) continue;

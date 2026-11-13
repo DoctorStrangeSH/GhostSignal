@@ -302,6 +302,45 @@ class NPCMemoryService {
         return { shared: true, rumor: this._clone(rumor) };
     }
 
+    receiveSocialRumor(recipientNpcId, report, transmission = {}) {
+        if (!recipientNpcId || !report?.id || !report?.text || !report?.kind ||
+            !transmission.fromNpcId || !transmission.originalSourceNpcId ||
+            !transmission.sourceEvent?.dialogueId || !transmission.sourceEvent?.nodeId ||
+            !transmission.sourceEvent?.answerText) return { received: false, reason: 'invalid_transmission' };
+        const recipient = this._ensureNPC(recipientNpcId);
+        if (!recipient) return { received: false, reason: 'invalid_context' };
+        if (recipient.rumors.some(item => item.id === report.id)) return { received: false, reason: 'already_received' };
+        const sourceTrust = Number.isFinite(transmission.recipientTrust)
+            ? Math.max(0, Math.min(100, transmission.recipientTrust))
+            : this.getRelationshipTrust(recipientNpcId, transmission.fromNpcId);
+        const hops = Number.isInteger(transmission.hops) ? Math.max(1, transmission.hops) : 1;
+        const rumor = {
+            id: report.id, kind: report.kind, text: String(report.text).slice(0, 500),
+            targetNpcId: report.targetNpcId || null,
+            reportedBy: transmission.fromNpcId,
+            reportedByName: transmission.fromNpcName || transmission.fromNpcId,
+            originalSourceNpcId: transmission.originalSourceNpcId,
+            originalSourceName: transmission.originalSourceName || transmission.originalSourceNpcId,
+            sourceDialogueId: transmission.sourceEvent.dialogueId,
+            sourceNodeId: transmission.sourceEvent.nodeId,
+            sourceAnswerText: transmission.sourceEvent.answerText,
+            tone: transmission.sourceEvent.tone || 'neutral',
+            sourceTrust,
+            confidence: Math.max(0, Math.min(100, Math.round(30 + sourceTrust * 0.6 - Math.max(0, hops - 1) * 5))),
+            corroborations: [], challenges: [], status: 'unverified',
+            transmissionPath: Array.isArray(transmission.path) ? [...transmission.path] : [transmission.originalSourceNpcId, recipientNpcId],
+            hops, channel: transmission.channel || 'message',
+            receivedAtGameMinute: Number.isFinite(transmission.receivedAtGameMinute) ? transmission.receivedAtGameMinute : null,
+            at: Date.now()
+        };
+        recipient.rumors.push(rumor);
+        this._append(recipient, {
+            type: 'rumor_received', rumorId: rumor.id, fromNpcId: transmission.fromNpcId,
+            originalSourceNpcId: transmission.originalSourceNpcId, channel: rumor.channel, hops
+        });
+        return { received: true, rumor: this._clone(rumor) };
+    }
+
     getRumors(npcId) {
         const existing = this.cases[this.currentCaseId]?.[npcId];
         if (!Array.isArray(existing?.rumors)) return [];

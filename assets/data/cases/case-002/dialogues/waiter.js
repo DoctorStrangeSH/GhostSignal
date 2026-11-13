@@ -39,9 +39,10 @@ const DIALOGUE_WAITER = {
                         report: {
                             id: "detective-threatened-thomas",
                             kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
                             sourceName: "Томас",
                             text: "Детектив пригрозил обвинить меня в соучастии, когда я испугался рассказать правду.",
-                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
                         }
                     },
                     {
@@ -52,9 +53,10 @@ const DIALOGUE_WAITER = {
                         report: {
                             id: "detective-accused-thomas-of-complicity",
                             kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
                             sourceName: "Томас",
                             text: "Детектив обвинил меня в соучастии с Кейном, хотя я был напуган и не помогал ему.",
-                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
                         }
                     }
                 ]
@@ -123,9 +125,10 @@ const DIALOGUE_WAITER = {
                         report: {
                             id: "detective-apologized-to-thomas",
                             kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
                             sourceName: "Томас",
                             text: "Детектив признал, что ошибочно обвинил меня в соучастии, и извинился.",
-                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
                         }
                     }
                 ]
