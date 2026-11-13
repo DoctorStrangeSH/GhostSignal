@@ -20,6 +20,12 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
                     {
+                        text: "После Джо вы попытались поговорить с Евой?",
+                        nextNode: "lora_eva_followup_unverified",
+                        tone: "cautious",
+                        condition: "npc_investigation_outcome:lora-interviews-eva-about-threat:no_independent_evidence"
+                    },
+                    {
                         text: "Что показала ваша проверка истории Томаса?",
                         nextNode: "lora_no_confirmation",
                         tone: "direct",
@@ -51,6 +57,16 @@ const DIALOGUE_JOURNALIST = {
                             toNpcId: "journalist"
                         }
                     }
+                ]
+            },
+
+            lora_eva_followup_unverified: {
+                speaker: "npc",
+                text: "Да, связалась с Евой. Но её показаний недостаточно, чтобы независимо подтвердить или опровергнуть рассказ Томаса. Я не стану выдавать догадки за доказательства — даже если редактор требует материал к утру.",
+                mood: "thoughtful",
+                answers: [
+                    { text: "Это честный подход. Спасибо за осторожность.", nextNode: "investigation", tone: "reassuring" },
+                    { text: "Если появятся прямые свидетельства, сообщите мне.", nextNode: "investigation", tone: "direct" }
                 ]
             },
 
