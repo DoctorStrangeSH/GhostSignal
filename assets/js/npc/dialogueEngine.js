@@ -383,7 +383,7 @@ class DialogueEngine {
         if (conditionStr.startsWith('motive:')) {
             return Boolean(npcId && this.motivationService?.hasMotive(npcId, conditionStr.slice('motive:'.length)));
         }
-        const loyaltyCondition = conditionStr.match(/^loyalty_(at_least|below):([^:]+):(\\d+(?:\\.\\d+)?)$/);
+        const loyaltyCondition = conditionStr.match(/^loyalty_(at_least|below):([^:]+):(\d+(?:\.\d+)?)$/);
         if (loyaltyCondition) {
             const [, operator, protectedNpcId, rawThreshold] = loyaltyCondition;
             const threshold = Number(rawThreshold);
