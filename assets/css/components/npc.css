@@ -400,6 +400,7 @@
 }
 .npc-social-event.event-delivered { border-left-color: var(--accent-green); }
 .npc-social-event.event-withheld { border-left-color: var(--accent-red-bright); }
+.npc-social-event.event-betrayal { border-left-color: var(--accent-red-bright); background: rgba(180, 70, 70, 0.07); }
 .npc-social-event.event-expired,
 .npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
 .npc-social-log-empty {
