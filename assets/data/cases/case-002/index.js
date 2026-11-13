@@ -174,6 +174,7 @@ const CASE_002 = {
             },
             {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
+                investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
                 channel: "message",
                 initialDelayMinutes: 90, everyMinutes: 90, maxOccurrences: 1,
