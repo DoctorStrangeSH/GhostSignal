@@ -31,6 +31,8 @@ const errors = [];
 const insightSources = new Set();
 const acquirableItems = new Set();
 const dialogueReferences = new Set();
+const authoredLongTermMemoryTags = new Set();
+const longTermMemoryConditions = [];
 const checkRef = (registry, id, label) => {
     if (typeof id === "string" && id && !registry[id]) errors.push(label + " references missing ID: " + id);
 };
@@ -140,10 +142,47 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         for (const answer of node.answers || []) {
             if (answer.condition?.startsWith("hasItem:")) checkRef(data.objects, answer.condition.slice(8), "Dialogue condition " + id + "/" + nodeId);
             if (answer.condition?.startsWith("hasInsight:")) insightSources.add(answer.condition.slice(11));
+            if (Array.isArray(answer.memoryTags)) {
+                for (const tag of answer.memoryTags) {
+                    if (typeof tag !== "string" || !/^[a-z0-9_:-]{1,48}$/i.test(tag)) {
+                        errors.push("Dialogue " + id + "/" + nodeId + " has an invalid long-term memory tag.");
+                    } else {
+                        authoredLongTermMemoryTags.add(tag);
+                    }
+                }
+            }
+            if (answer.memoryImportance !== undefined &&
+                (!Number.isInteger(answer.memoryImportance) || answer.memoryImportance < 1 || answer.memoryImportance > 5)) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has invalid memoryImportance.");
+            }
+            if (answer.memorySummary !== undefined &&
+                (typeof answer.memorySummary !== "string" || answer.memorySummary.length > 220)) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid memorySummary.");
+            }
+            if (answer.condition?.startsWith("long_term_memory:")) {
+                const tag = answer.condition.slice("long_term_memory:".length);
+                if (!/^[a-z0-9_:-]{1,48}$/i.test(tag)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid long-term memory condition.");
+                else longTermMemoryConditions.push({ dialogueId: id, nodeId, tag });
+            }
+            if (answer.condition?.startsWith("long_term_trust_") &&
+                !/^long_term_trust_(at_least|below):[0-9]+([.][0-9]+)?$/.test(answer.condition)) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid long-term trust condition.");
+            }
+            if (answer.condition?.startsWith("familiarity_at_least:") &&
+                !/^familiarity_at_least:[0-9]+([.][0-9]+)?$/.test(answer.condition)) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid familiarity condition.");
+            }
             if (answer.nextNode && !nodes[answer.nextNode]) {
                 errors.push("Dialogue " + id + "/" + nodeId + " points to missing node: " + answer.nextNode);
             }
         }
+    }
+}
+
+for (const condition of longTermMemoryConditions) {
+    if (!authoredLongTermMemoryTags.has(condition.tag)) {
+        errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
+            " checks long-term memory tag with no authored source: " + condition.tag);
     }
 }
 
@@ -153,6 +192,34 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
     checkRef(data.locations, gameCase.startLocation, "Case " + id + " start location");
     for (const locationId of gameCase.locations || []) checkRef(data.locations, locationId, "Case " + id);
     for (const npcId of gameCase.npcs || []) checkRef(data.npcs, npcId, "Case " + id);
+    const activeNpcIds = new Set(gameCase.npcs || []);
+    const relationshipConfig = gameCase.npcRelationships || {};
+    const relationshipIds = new Set();
+    for (const bond of relationshipConfig.bonds || []) {
+        if (!bond?.id || relationshipIds.has(bond.id)) errors.push("Case " + id + " has a missing or duplicate NPC relationship ID.");
+        else relationshipIds.add(bond.id);
+        if (!activeNpcIds.has(bond?.fromNpcId) || !activeNpcIds.has(bond?.toNpcId) || bond.fromNpcId === bond.toNpcId) {
+            errors.push("Case " + id + " has an NPC relationship with invalid participants: " + (bond?.id || "unknown"));
+        }
+        if (bond?.trust !== undefined && (!Number.isFinite(bond.trust) || bond.trust < 0 || bond.trust > 100)) {
+            errors.push("Case " + id + " has invalid starting relationship trust: " + bond.id);
+        }
+    }
+    const interactionIds = new Set();
+    for (const rule of relationshipConfig.autonomousInteractions || []) {
+        if (!rule?.id || interactionIds.has(rule.id)) errors.push("Case " + id + " has a missing or duplicate autonomous NPC interaction ID.");
+        else interactionIds.add(rule.id);
+        if (!relationshipIds.has(rule?.relationshipId)) errors.push("Case " + id + " NPC interaction references missing relationship: " + (rule?.id || "unknown"));
+        if (!activeNpcIds.has(rule?.fromNpcId) || !activeNpcIds.has(rule?.toNpcId) || rule.fromNpcId === rule.toNpcId) {
+            errors.push("Case " + id + " NPC interaction has invalid participants: " + (rule?.id || "unknown"));
+        }
+        if (!["support", "conflict", "reconcile", "avoidance"].includes(rule?.interaction)) {
+            errors.push("Case " + id + " NPC interaction has invalid behavior: " + (rule?.id || "unknown"));
+        }
+        if (rule?.channel !== undefined && !["in_person", "phone", "message"].includes(rule.channel)) {
+            errors.push("Case " + id + " NPC interaction has invalid channel: " + (rule?.id || "unknown"));
+        }
+    }
     for (const scene of gameCase.scenes || []) {
         checkRef(data.locations, scene.locationId, "Case scene " + (scene.id || id));
         for (const objectId of [...(scene.highlightObjects || []), ...(scene.nightOnlyObjects || [])]) {
