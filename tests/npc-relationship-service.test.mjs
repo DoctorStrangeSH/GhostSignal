@@ -10,14 +10,21 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function createHarness(overrides = {}) {
     const names = { a: "Алекс", b: "Борис" };
     const context = vm.createContext({
-        console, Date,
-        getNPCById(id) { return names[id] ? { id, name: names[id] } : { id, name: id }; }
+        console, Date, events: { emit() {} },
+        getNPCById(id) {
+            return {
+                id, name: names[id] || id,
+                schedule: { sleeps: null, awake: null, atWork: null, locations: { home: "shared_room", work: "shared_room" } },
+                availableForCall: true, availableForChat: true, mood: "neutral", description: ""
+            };
+        }
     });
     for (const path of [
         "assets/js/npc/npcMemoryService.js",
         "assets/js/npc/npcMotivationService.js",
         "assets/js/npc/npcSocialNetwork.js",
-        "assets/js/npc/npcRelationshipService.js"
+        "assets/js/npc/npcRelationshipService.js",
+        "assets/js/npc/npcManager.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
@@ -171,6 +178,18 @@ test("NPCRelationshipService persists autonomous schedules and confirmed dossier
     } });
     assert.equal(restored.isKnownRelationship("a-b"), true);
     assert.equal(restored.getKnownRelationshipsForNPC("a").length, 1);
+});
+
+test("NPCManager dossier data excludes NPC-only rumors and private trust maps", () => {
+    const { memory, relationships, network, clock, context } = createHarness();
+    memory.setRelationshipTrust("a", "b", 77);
+    const manager = vm.runInContext("(() => { const value = new NPCManager(clock, null); value.activeNPCs = [getNPCById('a')]; value.setMemoryService(memory); value.setSocialNetwork(network); value.setRelationshipService(relationships); return value; })()", context);
+    const status = manager.getNPCStatus("a");
+    assert.equal(status.memory.relationshipTrusts, undefined);
+    assert.equal(status.memory.rumors, undefined);
+    assert.equal(status.relationships.length, 0);
+    relationships.revealRelationships("a-b", { method: "dialogue", sourceId: "dialogue-a:identity" });
+    assert.equal(manager.getNPCStatus("a").relationships.length, 1);
 });
 
 test("case 001 and case 002 both use the shared relationship authoring schema", () => {
