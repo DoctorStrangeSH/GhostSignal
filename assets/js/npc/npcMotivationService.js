@@ -109,10 +109,11 @@ class NPCMotivationService {
         const result = this.getEffectiveLoyalty(npcId, protectedNpcId);
         if (!result) return { matched: false, allowed: true, reason: null };
         return {
+            ...result,
             matched: true,
             allowed: !result.protects,
             reason: result.protects ? 'loyalty_protection' : 'loyalty_broken',
-            ...result,
+            motiveReason: result.reason,
             recipientNpcId: edge.to || null
         };
     }
