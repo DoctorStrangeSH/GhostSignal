@@ -169,7 +169,9 @@ class NPCRelationshipService {
                         fromRumorConfidenceAtLeast: this._optionalClamp(conditions.fromRumorConfidenceAtLeast, 0, 100),
                         requiresActionId: typeof conditions.requiresActionId === 'string' ? conditions.requiresActionId : null,
                         requiresInvestigationOutcome: ['corroborated', 'disputed', 'no_independent_evidence'].includes(conditions.requiresInvestigationOutcome) ? conditions.requiresInvestigationOutcome : null,
-                        requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080)
+                        requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080),
+                        fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
+                        fromDialogueNodeId: typeof conditions.fromDialogueNodeId === 'string' ? conditions.fromDialogueNodeId : null
                     },
                     summary: String(item.summary || '').slice(0, 240)
                 };
@@ -369,6 +371,13 @@ class NPCRelationshipService {
         if (conditions.fromPressureBelow !== null && fromPressure >= conditions.fromPressureBelow) return false;
         if (conditions.toPressureAtLeast !== null && toPressure < conditions.toPressureAtLeast) return false;
         if (conditions.toPressureBelow !== null && toPressure >= conditions.toPressureBelow) return false;
+        if (conditions.fromDialogueId && conditions.fromDialogueNodeId) {
+            const witnessed = this.memoryService?.getMemory(rule.fromNpcId)?.dialogueHistory?.some(item =>
+                item.type === 'node' && item.dialogueId === conditions.fromDialogueId &&
+                item.nodeId === conditions.fromDialogueNodeId
+            );
+            if (!witnessed) return false;
+        }
         if (conditions.fromRumorId) {
             const rumor = this.memoryService?.getRumors(rule.fromNpcId)?.find(item => item.id === conditions.fromRumorId);
             if (!rumor) return false;
