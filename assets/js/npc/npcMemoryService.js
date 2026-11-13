@@ -775,6 +775,7 @@ class NPCMemoryService {
 
     _adjustCooperationMemory(memory, npcId, delta, reason = 'unspecified') {
         if (!memory || !Number.isFinite(delta)) return null;
+        memory.dialogueHistory = Array.isArray(memory.dialogueHistory) ? memory.dialogueHistory : [];
         const before = Number.isFinite(memory.cooperation) ? Math.max(0, Math.min(100, memory.cooperation)) : 50;
         const after = Math.max(0, Math.min(100, before + Math.max(-25, Math.min(25, delta))));
         memory.cooperation = after;
