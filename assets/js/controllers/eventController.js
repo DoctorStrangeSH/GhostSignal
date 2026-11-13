@@ -48,6 +48,9 @@ class EventController {
         on('case:started', (data) => {
             app.progress.activeCase = app.caseManager.currentCase?.id;
             app.npcMemoryService?.setCase(data.caseData.id);
+            app.npcMotivationService?.setMemoryService(app.npcMemoryService);
+            app.npcMotivationService?.setCase(data.caseData);
+            app.npcSocialNetwork?.setMotivationService(app.npcMotivationService);
             app.npcSocialNetwork?.setCase(data.caseData);
             app.npcManager?.setMemoryService(app.npcMemoryService);
             app.npcManager?.setSocialNetwork(app.npcSocialNetwork);
