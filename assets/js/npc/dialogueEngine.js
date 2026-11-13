@@ -495,6 +495,11 @@ class DialogueEngine {
         if (conditionStr.startsWith('cooperation_state:')) {
             return cooperation?.state === conditionStr.slice('cooperation_state:'.length);
         }
+        const caseClaim = conditionStr.match(/^case_has_claim:([a-z0-9_:-]{1,64}):([a-z0-9_:-]{1,100})$/i);
+        if (caseClaim) {
+            // A statement previously recorded during the investigation is case knowledge.
+            return Boolean(this.memoryService?.hasClaim(caseClaim[1], caseClaim[2]));
+        }
         if (conditionStr.startsWith('has_claim:')) {
             return Boolean(npcId && this.memoryService?.hasClaim(npcId, conditionStr.slice('has_claim:'.length)));
         }
