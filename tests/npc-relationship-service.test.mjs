@@ -714,3 +714,44 @@ test("a corroborated first check does not trigger an inconclusive-only follow-up
     advance(240);
     assert.equal(relationships.hasCompletedInteraction("a", "followup"), false);
 });
+
+test("a protective follow-up requires prior contact and recipient distress, and both participants remember it", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            {
+                id: "first-call", relationshipId: "a-b",
+                fromNpcId: "a", toNpcId: "b", interaction: "support",
+                channel: "phone", initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1
+            },
+            {
+                id: "protective-followup", relationshipId: "a-b",
+                fromNpcId: "a", toNpcId: "b", interaction: "support",
+                channel: "phone", initialDelayMinutes: 60, everyMinutes: 30, maxOccurrences: 1,
+                requiresActionId: "first-call", requiresActionAgeMinutes: 60,
+                toPressureAtLeast: 30, toCooperationDelta: 8
+            }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    advance(30);
+    assert.equal(relationships.hasReceivedInteraction("b", "first-call"), true);
+    assert.equal(relationships.hasReceivedInteraction("a", "first-call"), false);
+    assert.equal(relationships.hasReceivedInteraction("b", "protective-followup"), false);
+    // The recipient's actual distressed state makes the second contact relevant.
+    for (let i = 0; i < 3; i++) memory.recordAnswerSelected("b", "test", "threat-" + i, {
+        text: "Мне страшно.", tone: "threatening"
+    });
+    advance(60);
+    assert.equal(relationships.hasCompletedInteraction("a", "protective-followup"), true);
+    assert.equal(relationships.hasReceivedInteraction("b", "protective-followup"), true);
+    assert.equal(relationships.hasReceivedInteraction("outsider", "protective-followup"), false);
+
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const restored = vm.runInContext("NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)", context);
+    restored.setCase(caseData);
+    assert.equal(restored.hasReceivedInteraction("b", "protective-followup"), true);
+});
