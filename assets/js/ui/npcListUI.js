@@ -126,12 +126,12 @@ class NPCListUI {
                 <header class="npc-social-log-header">
                     <div>
                         <span class="npc-social-log-kicker">ДЕЛО · СОЦИАЛЬНАЯ СЕТЬ</span>
-                        <h3>ХРОНИКА КОНТАКТОВ</h3>
+                        <h3>ИЗВЕСТНЫЕ КОНТАКТЫ</h3>
                     </div>
                     <span class="npc-social-log-count">${socialEvents.length}</span>
                 </header>
-                <p class="npc-social-log-caption">Передачи сведений, задержки и решения скрыть информацию.</p>
-                ${entries || '<div class="npc-social-log-empty">Пока не зафиксировано ни одной передачи между контактами.</div>'}
+                <p class="npc-social-log-caption">Только события, подтверждённые разговором, наблюдением или документом.</p>
+                ${entries || '<div class="npc-social-log-empty">Пока нет подтверждённых сведений о контактах между персонажами.</div>'}
             </section>
         `;
     }
