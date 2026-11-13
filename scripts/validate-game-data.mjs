@@ -267,6 +267,20 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 );
                 if (!exists) errors.push("Dialogue " + id + "/" + nodeId + " references an invalid NPC rumor investigation.");
             }
+            if (answer.condition?.startsWith("npc_action_received:")) {
+                const ruleId = answer.condition.slice("npc_action_received:".length);
+                if (!/^[a-z0-9_:-]{1,64}$/i.test(ruleId)) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC received-action condition.");
+                } else {
+                    const exists = Object.values(data.cases).some(gameCase =>
+                        (gameCase.npcs || []).includes(dialogue.npcId) &&
+                        (gameCase.npcRelationships?.autonomousInteractions || []).some(rule =>
+                            rule.id === ruleId && rule.toNpcId === dialogue.npcId
+                        )
+                    );
+                    if (!exists) errors.push("Dialogue " + id + "/" + nodeId + " references an action not received by " + dialogue.npcId + ": " + ruleId);
+                }
+            }
             if (answer.condition?.startsWith("npc_action_completed:")) {
                 const ruleId = answer.condition.slice("npc_action_completed:".length);
                 if (!/^[a-z0-9_:-]{1,64}$/i.test(ruleId)) {
