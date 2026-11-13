@@ -19,7 +19,30 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
-                    { text: "С чего вы взяли, что мне нужен Кейн?", nextNode: "how_she_knows", tone: "cautious" }
+                    { text: "С чего вы взяли, что мне нужен Кейн?", nextNode: "how_she_knows", tone: "cautious" },
+                    {
+                        text: "Вы что-то слышали о моём разговоре с Томасом?",
+                        nextNode: "joe_told_journalist",
+                        tone: "cautious",
+                        condition: "heard_rumor:detective-threatened-thomas",
+                        revealSocialEvents: {
+                            reportId: "detective-threatened-thomas",
+                            eventTypes: ["betrayal", "scheduled", "delivered"],
+                            fromNpcId: "bartender",
+                            toNpcId: "journalist"
+                        }
+                    }
+                ]
+            },
+
+            joe_told_journalist: {
+                speaker: "npc",
+                text: "Джо рассказал мне, что вы пригрозили Томасу обвинением в соучастии. Он не просил скрывать источник. Я не собираюсь превращать чужой страх в сенсацию, но хочу понять, почему вы решили давить на испуганного парня.",
+                mood: "serious",
+                innerThought: "Джо передал Лоре сведения. Теперь я знаю, что история вышла за пределы бара.",
+                answers: [
+                    { text: "Я поступил неправильно. Томас был напуган, а я не услышал его.", nextNode: "investigation", tone: "reassuring" },
+                    { text: "Это не ваше дело. Я отвечаю за расследование.", nextNode: "investigation", tone: "defensive" }
                 ]
             },
 
