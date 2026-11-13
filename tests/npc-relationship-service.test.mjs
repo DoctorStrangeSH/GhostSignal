@@ -233,10 +233,6 @@ test("breaking a loyalty bond lowers trust with the protected NPC", () => {
     assert.equal(loyalty?.protects, false);
     const decision = motivations.evaluateDisclosure("a", { kind: "detective_behavior", targetNpcId: "c" }, { to: "b" });
     assert.equal(decision.reason, "loyalty_broken");
-    assert.equal(relationships.recordInteraction("a", "c", "betrayal", { trustDelta: -20, reciprocalTrustDelta: -20 }).changed, true);
-    assert.equal(memory.getRelationshipTrust("a", "c"), 60);
-    memory.setRelationshipTrust("a", "c", 80);
-    memory.setRelationshipTrust("c", "a", 80);
     const sourceEvent = { dialogueId: "dialogue-a", nodeId: "betrayal", answerText: "Я больше не буду молчать.", tone: "threatening" };
     for (let i = 0; i < 8; i++) {
         memory.recordAnswerSelected("a", sourceEvent.dialogueId, i === 7 ? sourceEvent.nodeId : "pressure-" + i, {
@@ -248,7 +244,9 @@ test("breaking a loyalty bond lowers trust with the protected NPC", () => {
         targetNpcId: "c", text: "Алекс раскрыл секрет Бориса."
     }, sourceEvent);
     assert.equal(result.published, true);
+    assert.equal(network.getEventLog(10).some(item => item.type === "betrayal"), true);
     assert.equal(memory.getRelationshipTrust("a", "c"), 60);
+    assert.equal(memory.getRelationshipTrust("c", "a"), 60);
     assert.equal(network.getEventLog(10).some(item => item.type === "relationship_conflict"), true);
 });
 
