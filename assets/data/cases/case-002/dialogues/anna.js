@@ -11,7 +11,20 @@ const DIALOGUE_ANNA = {
 
     tree: {
         start: "greeting",
+        entryRules: [
+            { condition: "npc_action_received:eva-protects-anna-after-pressure", nodeId: "supported_anna_opening" }
+        ],
         nodes: {
+            supported_anna_opening: {
+                speaker: "npc",
+                text: "Детектив... Ева уже звонила мне после ваших вопросов. Я готова говорить о том вечере, но прошу не использовать мою сестру как средство давления.",
+                mood: "guarded",
+                answers: [
+                    { text: "Я буду спрашивать только о том, что вы сами помните.", nextNode: "was_there", tone: "calm" },
+                    { text: "Понимаю. Как вы себя чувствуете?", nextNode: "eva_supported_anna", tone: "reassuring" }
+                ]
+            },
+
             greeting: {
                 speaker: "npc",
                 text: "Кто это? Если вы журналист — я вешаю трубку. Если полиция — я уже всё сказала.",
