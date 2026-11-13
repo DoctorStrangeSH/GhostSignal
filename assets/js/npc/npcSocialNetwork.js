@@ -165,9 +165,8 @@ class NPCSocialNetwork {
             return Boolean(sender.location && recipient.location && sender.location === recipient.location);
         }
         if (delivery.channel === 'phone') {
-            const sourceNpc = typeof getNPCById === 'function' ? getNPCById(delivery.fromNpcId) : null;
-            const targetNpc = typeof getNPCById === 'function' ? getNPCById(delivery.toNpcId) : null;
-            return sourceNpc?.availableForCall === true && targetNpc?.availableForCall === true;
+            // NPC-to-NPC calls are independent of whether the player may call them.
+            return Boolean(sender?.available && recipient?.available);
         }
         return false;
     }
@@ -178,9 +177,10 @@ class NPCSocialNetwork {
         const now = this._now();
         const due = state.pending.filter(item => Number.isFinite(item.dueAt) && item.dueAt <= now)
             .sort((a, b) => a.dueAt - b.dueAt);
-        let delivered = 0, deferred = 0, expired = 0;
+        let delivered = 0, deferred = 0, expired = 0, processed = 0;
 
         for (const item of due) {
+            processed++;
             if (item.expiresAt < now) {
                 state.pending = state.pending.filter(entry => entry.id !== item.id);
                 state.delivered.push({ id: item.id, status: 'expired', atGameMinute: now });
@@ -219,21 +219,34 @@ class NPCSocialNetwork {
         }
         if (state.delivered.length > 200) state.delivered.splice(0, state.delivered.length - 200);
         if (state.withheld.length > 100) state.withheld.splice(0, state.withheld.length - 100);
-        return { delivered, deferred, expired };
+        return { delivered, deferred, expired, processed };
     }
 
     getRelationshipsForNPC(npcId) {
         if (!npcId || !this.caseConfig) return [];
-        return this.caseConfig.edges.filter(edge => edge.from === npcId || edge.to === npcId).map(edge => {
+        const links = new Map();
+        for (const edge of this.caseConfig.edges.filter(item => item.from === npcId || item.to === npcId)) {
             const otherNpcId = edge.from === npcId ? edge.to : edge.from;
-            return {
-                npcId: otherNpcId, name: this._name(otherNpcId),
-                relationship: edge.relationship, label: edge.label || edge.relationship,
-                direction: edge.from === npcId ? 'outgoing' : 'incoming',
-                channel: edge.channel,
+            const direction = edge.from === npcId ? 'outgoing' : 'incoming';
+            const existing = links.get(otherNpcId);
+            if (existing) {
+                existing.direction = existing.direction === direction ? direction : 'mutual';
+                if (!existing.labels.includes(edge.label || edge.relationship)) existing.labels.push(edge.label || edge.relationship);
+                if (!existing.channels.includes(edge.channel)) existing.channels.push(edge.channel);
+                continue;
+            }
+            links.set(otherNpcId, {
+                npcId: otherNpcId,
+                name: this._name(otherNpcId),
+                relationship: edge.relationship,
+                label: edge.label || edge.relationship,
+                labels: [edge.label || edge.relationship],
+                direction,
+                channels: [edge.channel],
                 trust: this.memoryService?.getRelationshipTrust(npcId, otherNpcId) ?? edge.trust
-            };
-        });
+            });
+        }
+        return [...links.values()].map(link => ({ ...link, label: link.labels.join(' · ') }));
     }
 
     getPendingDeliveries() { return this._clone(this._ensureState()?.pending || []); }
