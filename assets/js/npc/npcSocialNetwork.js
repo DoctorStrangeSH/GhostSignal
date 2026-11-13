@@ -10,6 +10,7 @@ class NPCSocialNetwork {
         this.memoryService = memoryService;
         this.npcManager = npcManager;
         this.gameTime = gameTime;
+        this.motivationService = null;
         this.caseConfig = null;
     }
 
@@ -17,6 +18,13 @@ class NPCSocialNetwork {
         this.memoryService = memoryService || null;
         this.npcManager = npcManager || null;
         this.gameTime = gameTime || null;
+        this.motivationService?.setMemoryService(this.memoryService);
+    }
+
+    setMotivationService(service) {
+        this.motivationService = service || null;
+        this.motivationService?.setMemoryService(this.memoryService);
+        return Boolean(this.motivationService);
     }
 
     setCase(caseData) {
@@ -112,6 +120,9 @@ class NPCSocialNetwork {
             relationship: details.relationship || null,
             protectedNpcId: details.protectedNpcId || null,
             protectedNpcName: details.protectedNpcId ? this._name(details.protectedNpcId) : null,
+            motiveId: details.motiveId || null,
+            loyaltyScore: Number.isFinite(details.loyaltyScore) ? details.loyaltyScore : null,
+            pressureScore: Number.isFinite(details.pressureScore) ? details.pressureScore : null,
             reason: details.reason || null,
             path: Array.isArray(details.path) ? [...details.path] : [],
             dueAt: Number.isFinite(details.dueAt) ? details.dueAt : null
@@ -134,24 +145,56 @@ class NPCSocialNetwork {
             const senderTrust = this.memoryService?.getRelationshipTrust(fromNpcId, edge.to) ?? edge.trust;
             if (senderTrust < edge.minTrustToShare) continue;
 
-            const protectedTarget = report.targetNpcId && edge.protectsNpcIds.includes(report.targetNpcId);
-            if (protectedTarget && edge.withholdIfTargetProtected) {
+            const motiveDecision = this.motivationService?.evaluateDisclosure(fromNpcId, report, edge);
+            const legacyProtectedTarget = report.targetNpcId && edge.protectsNpcIds.includes(report.targetNpcId);
+            const shouldWithhold = motiveDecision?.matched
+                ? !motiveDecision.allowed
+                : Boolean(legacyProtectedTarget && edge.withholdIfTargetProtected);
+
+            if (shouldWithhold) {
                 const withheldId = report.id + '::' + path.join('>') + '::' + edge.to;
                 if (!state.withheld.some(item => item.id === withheldId)) {
+                    const reason = motiveDecision?.reason || 'protecting_relationship';
                     state.withheld.push({
                         id: withheldId, rumorId: report.id, fromNpcId, toNpcId: edge.to,
                         protectedNpcId: report.targetNpcId, relationship: edge.relationship,
-                        atGameMinute: now, reason: 'protecting_relationship'
+                        atGameMinute: now, reason,
+                        motiveId: motiveDecision?.motiveId || null,
+                        loyaltyScore: motiveDecision?.score ?? null,
+                        pressureScore: motiveDecision?.pressure ?? null
                     });
                     this._recordEvent('withheld', {
                         fromNpcId, toNpcId: edge.to, reportId: report.id,
                         reportKind: report.kind, protectedNpcId: report.targetNpcId,
                         relationship: edge.relationship, channel: edge.channel,
-                        path: [...path, edge.to], reason: 'protecting_relationship',
+                        path: [...path, edge.to], reason,
+                        motiveId: motiveDecision?.motiveId || null,
+                        loyaltyScore: motiveDecision?.score ?? null,
+                        pressureScore: motiveDecision?.pressure ?? null,
                         summary: `Сведения затрагивали ${this._name(report.targetNpcId)}; передача остановлена из-за защитной связи.`
                     });
                 }
                 continue;
+            }
+
+            if (motiveDecision?.matched && motiveDecision.allowed && motiveDecision.reason === 'loyalty_broken') {
+                const alreadyLogged = state.eventLog.some(item =>
+                    item.type === 'betrayal' && item.reportId === report.id &&
+                    item.fromNpcId === fromNpcId && item.toNpcId === edge.to &&
+                    item.path.join('>') === [...path, edge.to].join('>')
+                );
+                if (!alreadyLogged) {
+                    this._recordEvent('betrayal', {
+                        fromNpcId, toNpcId: edge.to, reportId: report.id,
+                        reportKind: report.kind, protectedNpcId: report.targetNpcId,
+                        relationship: edge.relationship, channel: edge.channel,
+                        path: [...path, edge.to], reason: 'loyalty_broken',
+                        motiveId: motiveDecision.motiveId,
+                        loyaltyScore: motiveDecision.score,
+                        pressureScore: motiveDecision.pressure,
+                        summary: `Защитная связь с ${this._name(report.targetNpcId)} не выдержала давления.`
+                    });
+                }
             }
 
             const deliveryId = report.id + '::' + path.join('>') + '::' + edge.to;
