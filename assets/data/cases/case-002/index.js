@@ -159,9 +159,20 @@ const CASE_002 = {
             { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true },
             { id: "sisters-anna-eva", fromNpcId: "ex_wife", toNpcId: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, reciprocal: true },
             { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true },
+            { id: "kane-sergeant-procedure", fromNpcId: "business_rival", toNpcId: "sergeant", relationship: "official_record", label: "Протокол допроса", trust: 40, reciprocal: false },
             { id: "lora-eva-inquiry", fromNpcId: "journalist", toNpcId: "woman_in_red", relationship: "investigative_contact", label: "Контакт по расследованию", trust: 40, reciprocal: false }
         ],
         autonomousInteractions: [
+            {
+                id: "kane-files-objection", relationshipId: "kane-sergeant-procedure",
+                fromNpcId: "business_rival", toNpcId: "sergeant", interaction: "conflict",
+                channel: "message", initialDelayMinutes: 90, everyMinutes: 90,
+                maxOccurrences: 1, retryMinutes: 20,
+                fromDialogueId: "dialogue-rival-full", fromDialogueNodeId: "accusation",
+                trustDelta: -4, reciprocalTrustDelta: 0,
+                fromCooperationDelta: -6,
+                summary: "После прямого обвинения Кейн потребовал внести возражение в официальный протокол и указал на отсутствие доказательств."
+            },
             {
                 id: "joe-reassures-thomas-after-threat", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
