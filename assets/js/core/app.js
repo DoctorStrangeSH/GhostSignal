@@ -17,6 +17,7 @@ class App {
         this.npcMemoryService = null;
         this.npcMotivationService = null;
         this.npcSocialNetwork = null;
+        this.npcRelationshipService = null;
         this.npcListUI = null;
         this.dialogueEngine = null;
         this.callInterface = null;
@@ -119,7 +120,13 @@ class App {
         if (activeSocialCase) this.npcMotivationService.setCase(activeSocialCase);
         this.npcSocialNetwork.setMotivationService(this.npcMotivationService);
         if (activeSocialCase) this.npcSocialNetwork.setCase(activeSocialCase);
+        this.npcRelationshipService = NPCRelationshipService.fromJSON(
+            this.progress.npcRelationshipData, this.npcMemoryService, this.npcManager, this.gameTime, this.npcSocialNetwork
+        );
+        if (activeSocialCase) this.npcRelationshipService.setCase(activeSocialCase);
+        this.npcSocialNetwork.setRelationshipService(this.npcRelationshipService);
         this.npcManager.setSocialNetwork(this.npcSocialNetwork);
+        this.npcManager.setRelationshipService(this.npcRelationshipService);
         this.npcListUI = new NPCListUI('npcs-list'); this.npcListUI.setNPCManager(this.npcManager);
 
         this.dialogueEngine = new DialogueEngine(this.inventory, this.gameTime);
@@ -196,7 +203,7 @@ class App {
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
             boardData: null, notesData: null, trackerData: null, reputationData: null,
-            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null
+            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null
         };
     }
 
@@ -270,10 +277,13 @@ class App {
                 this.npcManager = new NPCManager(this.gameTime, this.inventory);
                 this.npcManager.setMemoryService(this.npcMemoryService);
                 this.npcManager.setSocialNetwork(this.npcSocialNetwork);
+                this.npcManager.setRelationshipService(this.npcRelationshipService);
                 this.npcListUI.setNPCManager(this.npcManager);
                 this.caseManager = new CaseManager(this.gameTime, this.locationManager, this.inventory);
                 this.npcSocialNetwork?.resetCase(this.progress.activeCase);
+                this.npcRelationshipService?.resetCase(this.progress.activeCase);
                 this.progress.npcSocialData = this.npcSocialNetwork?.toJSON();
+                this.progress.npcRelationshipData = this.npcRelationshipService?.toJSON();
                 this.progress.activeCase = null; this.progress.caseData = null; this.progress.inventoryData = null; this.progress.boardData = null; this.progress.npcData = null; this.progress.notesData = null;
                 this._saveProgress(); modal.hide(); this.navigateTo('screen-main-menu');
             }
