@@ -111,6 +111,26 @@ test("DialogueEngine supports hidden motive and dynamic loyalty conditions", () 
     assert.equal(engine._checkCondition("motive:unknown_motive"), false);
 });
 
+test("Journalist acknowledges an off-screen deadline action only after her goal is completed", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        getGoalProgress(npcId, goalId) {
+            return npcId === "journalist" && goalId === "publish_exclusive" ? 1 : 0;
+        },
+        isGoalCompleted(npcId, goalId) {
+            return npcId === "journalist" && goalId === "publish_exclusive";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    const answer = engine.getAvailableAnswers().find(item =>
+        item.condition === "npc_goal_completed:publish_exclusive"
+    );
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "deadline_followup");
+    assert.match(engine.currentNode.text, /написала Джо сама/i);
+});
+
 test("Joe's second-case dialogue acknowledges personal goals achieved off-screen", () => {
     const { engine } = createDialogueHarness();
     engine.setRelationshipService({
