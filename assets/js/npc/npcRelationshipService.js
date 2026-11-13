@@ -5,9 +5,10 @@
  */
 class NPCRelationshipService {
     constructor(snapshot = null, memoryService = null, npcManager = null, gameTime = null, socialNetwork = null) {
-        this.version = 1;
+        this.version = 2;
         this.currentCaseId = snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
+        this.worldTrusts = this._clone(snapshot?.worldTrusts || {});
         this.memoryService = memoryService;
         this.npcManager = npcManager;
         this.gameTime = gameTime;
@@ -26,6 +27,35 @@ class NPCRelationshipService {
         this.socialNetwork = service || null;
     }
 
+    _getWorldTrust(fromNpcId, toNpcId) {
+        const value = this.worldTrusts?.[fromNpcId]?.[toNpcId];
+        return Number.isFinite(value) ? this._clamp(value, 0, 100, 50) : null;
+    }
+
+    _setWorldTrust(fromNpcId, toNpcId, trust) {
+        if (!fromNpcId || !toNpcId || fromNpcId === toNpcId || !Number.isFinite(trust)) return null;
+        if (!this.worldTrusts || typeof this.worldTrusts !== 'object' || Array.isArray(this.worldTrusts)) this.worldTrusts = {};
+        if (!this.worldTrusts[fromNpcId] || typeof this.worldTrusts[fromNpcId] !== 'object') this.worldTrusts[fromNpcId] = {};
+        this.worldTrusts[fromNpcId][toNpcId] = this._clamp(trust, 0, 100, 50);
+        return this.worldTrusts[fromNpcId][toNpcId];
+    }
+
+    _hydrateBondTrust(bond) {
+        const caseForward = this.memoryService?.getMemory(bond.fromNpcId)?.relationshipTrusts?.[bond.toNpcId];
+        const worldForward = this._getWorldTrust(bond.fromNpcId, bond.toNpcId);
+        const forward = worldForward ?? (Number.isFinite(caseForward) ? caseForward : bond.trust);
+        this._setWorldTrust(bond.fromNpcId, bond.toNpcId, forward);
+        this.memoryService?.setRelationshipTrust(bond.fromNpcId, bond.toNpcId, forward);
+
+        if (bond.reciprocal) {
+            const caseReverse = this.memoryService?.getMemory(bond.toNpcId)?.relationshipTrusts?.[bond.fromNpcId];
+            const worldReverse = this._getWorldTrust(bond.toNpcId, bond.fromNpcId);
+            const reverse = worldReverse ?? (Number.isFinite(caseReverse) ? caseReverse : bond.trust);
+            this._setWorldTrust(bond.toNpcId, bond.fromNpcId, reverse);
+            this.memoryService?.setRelationshipTrust(bond.toNpcId, bond.fromNpcId, reverse);
+        }
+    }
+
     setCase(caseData) {
         if (!caseData?.id || typeof caseData.id !== 'string') return false;
         this.currentCaseId = caseData.id;
@@ -42,16 +72,7 @@ class NPCRelationshipService {
                     discoveredAt: null
                 };
             }
-            const forward = this.memoryService?.getMemory(bond.fromNpcId)?.relationshipTrusts?.[bond.toNpcId];
-            if (!Number.isFinite(forward)) {
-                this.memoryService?.setRelationshipTrust(bond.fromNpcId, bond.toNpcId, bond.trust);
-            }
-            if (bond.reciprocal) {
-                const reverse = this.memoryService?.getMemory(bond.toNpcId)?.relationshipTrusts?.[bond.fromNpcId];
-                if (!Number.isFinite(reverse)) {
-                    this.memoryService?.setRelationshipTrust(bond.toNpcId, bond.fromNpcId, bond.trust);
-                }
-            }
+            this._hydrateBondTrust(bond);
         }
 
         for (const rule of this.caseConfig.autonomousInteractions) {
@@ -267,10 +288,12 @@ class NPCRelationshipService {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
         this.memoryService?.setRelationshipTrust(rule.fromNpcId, rule.toNpcId, after);
+        this._setWorldTrust(rule.fromNpcId, rule.toNpcId, after);
         if (this.caseConfig.bonds.find(item => item.id === rule.relationshipId)?.reciprocal) {
             const reverseBefore = this.memoryService?.getRelationshipTrust(rule.toNpcId, rule.fromNpcId) ?? 50;
-            this.memoryService?.setRelationshipTrust(rule.toNpcId, rule.fromNpcId,
-                this._clamp(reverseBefore + rule.reciprocalTrustDelta, 0, 100, reverseBefore));
+            const reverseAfter = this._clamp(reverseBefore + rule.reciprocalTrustDelta, 0, 100, reverseBefore);
+            this.memoryService?.setRelationshipTrust(rule.toNpcId, rule.fromNpcId, reverseAfter);
+            this._setWorldTrust(rule.toNpcId, rule.fromNpcId, reverseAfter);
         }
 
         const state = this._ensureState();
@@ -304,11 +327,13 @@ class NPCRelationshipService {
         const trustDelta = this._clamp(options.trustDelta, -25, 25, 0);
         const after = this._clamp(before + trustDelta, 0, 100, before);
         this.memoryService.setRelationshipTrust(fromNpcId, toNpcId, after);
+        this._setWorldTrust(fromNpcId, toNpcId, after);
         if (bond.reciprocal) {
             const reverseBefore = this.memoryService.getRelationshipTrust(toNpcId, fromNpcId);
             const reverseDelta = this._clamp(options.reciprocalTrustDelta, -25, 25, trustDelta);
-            this.memoryService.setRelationshipTrust(toNpcId, fromNpcId,
-                this._clamp(reverseBefore + reverseDelta, 0, 100, reverseBefore));
+            const reverseAfter = this._clamp(reverseBefore + reverseDelta, 0, 100, reverseBefore);
+            this.memoryService.setRelationshipTrust(toNpcId, fromNpcId, reverseAfter);
+            this._setWorldTrust(toNpcId, fromNpcId, reverseAfter);
         }
         const state = this._ensureState();
         const bondState = state.relationships[bond.id] || (state.relationships[bond.id] = {
@@ -385,7 +410,12 @@ class NPCRelationshipService {
     }
 
     toJSON() {
-        return { version: this.version, currentCaseId: this.currentCaseId, cases: this._clone(this.cases) };
+        return {
+            version: this.version,
+            currentCaseId: this.currentCaseId,
+            cases: this._clone(this.cases),
+            worldTrusts: this._clone(this.worldTrusts)
+        };
     }
 
     static fromJSON(json, memoryService = null, npcManager = null, gameTime = null, socialNetwork = null) {
