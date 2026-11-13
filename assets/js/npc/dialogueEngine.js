@@ -93,17 +93,20 @@ class DialogueEngine {
                 this.memoryService.recordPromise(this.currentDialogue.npcId, answer.promise);
             }
             if (answer.report?.id && Array.isArray(answer.report.recipients)) {
-                for (const recipientNpcId of answer.report.recipients) {
+                for (const recipient of answer.report.recipients) {
+                    const recipientConfig = typeof recipient === 'string' ? { npcId: recipient } : recipient;
+                    if (!recipientConfig?.npcId) continue;
                     this.memoryService.shareExperience(
                         this.currentDialogue.npcId,
-                        recipientNpcId,
+                        recipientConfig.npcId,
                         answer.report,
                         {
                             dialogueId: this.currentDialogue.id,
                             nodeId: this.currentNode.id,
                             answerText: answer.text,
                             tone: answer.tone || 'neutral'
-                        }
+                        },
+                        { recipientTrust: recipientConfig.recipientTrust }
                     );
                 }
             }

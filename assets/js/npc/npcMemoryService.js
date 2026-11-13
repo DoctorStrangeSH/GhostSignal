@@ -6,7 +6,7 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 5;
+        this.version = 6;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
@@ -37,6 +37,7 @@ class NPCMemoryService {
                 presentedEvidence: [],
                 claims: [],
                 liesExposed: [],
+                relationshipTrusts: {},
                 lastInteraction: null
             };
         }
@@ -49,7 +50,25 @@ class NPCMemoryService {
         memory.claims = Array.isArray(memory.claims) ? memory.claims : [];
         memory.liesExposed = Array.isArray(memory.liesExposed) ? memory.liesExposed : [];
         memory.promises = Array.isArray(memory.promises) ? memory.promises : [];
+        memory.relationshipTrusts = memory.relationshipTrusts &&
+            typeof memory.relationshipTrusts === 'object' && !Array.isArray(memory.relationshipTrusts)
+            ? memory.relationshipTrusts
+            : {};
         memory.rumors = Array.isArray(memory.rumors) ? memory.rumors : [];
+        for (const rumor of memory.rumors) {
+            rumor.sourceTrust = Number.isFinite(rumor.sourceTrust)
+                ? Math.max(0, Math.min(100, rumor.sourceTrust))
+                : 50;
+            rumor.confidence = Number.isFinite(rumor.confidence)
+                ? Math.max(0, Math.min(100, rumor.confidence))
+                : 60;
+            rumor.corroborations = Array.isArray(rumor.corroborations) ? rumor.corroborations : [];
+            rumor.challenges = Array.isArray(rumor.challenges) ? rumor.challenges : [];
+            if (!['unverified', 'corroborated', 'disputed'].includes(rumor.status)) {
+                rumor.status = rumor.challenges.length ? 'disputed'
+                    : rumor.corroborations.length ? 'corroborated' : 'unverified';
+            }
+        }
         return memory;
     }
 
@@ -145,6 +164,13 @@ class NPCMemoryService {
             timeLabel: claim.timeLabel || null,
             circumstances: claim.circumstances || null,
             deception: claim.deception ? this._clone(claim.deception) : null,
+            directObservation: claim.directObservation === true,
+            corroboratesRumorIds: Array.isArray(claim.corroboratesRumorIds)
+                ? [...new Set(claim.corroboratesRumorIds.filter(id => typeof id === 'string' && id.trim()))]
+                : [],
+            refutesRumorIds: Array.isArray(claim.refutesRumorIds)
+                ? [...new Set(claim.refutesRumorIds.filter(id => typeof id === 'string' && id.trim()))]
+                : [],
             dialogueId: claim.dialogueId || null,
             nodeId: claim.nodeId || null,
             at: Date.now()
@@ -162,7 +188,25 @@ class NPCMemoryService {
         return { added: true, contradictions: this.getContradictions() };
     }
 
-    shareExperience(fromNpcId, toNpcId, report, sourceEvent) {
+    setRelationshipTrust(npcId, otherNpcId, trust) {
+        if (!npcId || !otherNpcId || npcId === otherNpcId || !Number.isFinite(trust)) return null;
+        const memory = this._ensureNPC(npcId);
+        if (!memory) return null;
+        memory.relationshipTrusts[otherNpcId] = Math.max(0, Math.min(100, trust));
+        this._append(memory, {
+            type: 'relationship_trust_changed',
+            otherNpcId,
+            trust: memory.relationshipTrusts[otherNpcId]
+        });
+        return memory.relationshipTrusts[otherNpcId];
+    }
+
+    getRelationshipTrust(npcId, otherNpcId) {
+        const trust = this.cases[this.currentCaseId]?.[npcId]?.relationshipTrusts?.[otherNpcId];
+        return Number.isFinite(trust) ? Math.max(0, Math.min(100, trust)) : 50;
+    }
+
+    shareExperience(fromNpcId, toNpcId, report, sourceEvent, options = {}) {
         if (!fromNpcId || !toNpcId || fromNpcId === toNpcId ||
             !report?.id || !report?.text || report.kind !== 'detective_behavior' ||
             !sourceEvent?.dialogueId || !sourceEvent?.nodeId || !sourceEvent?.answerText) {
@@ -184,6 +228,12 @@ class NPCMemoryService {
             return { shared: false, reason: 'already_shared' };
         }
 
+        const sourceTrust = Number.isFinite(options.recipientTrust)
+            ? Math.max(0, Math.min(100, options.recipientTrust))
+            : this.getRelationshipTrust(toNpcId, fromNpcId);
+        const confidence = Number.isFinite(options.confidence)
+            ? Math.max(0, Math.min(100, options.confidence))
+            : Math.round(30 + sourceTrust * 0.6);
         const rumor = {
             id: report.id,
             kind: report.kind,
@@ -194,6 +244,10 @@ class NPCMemoryService {
             sourceNodeId: sourceEvent.nodeId,
             sourceAnswerText: sourceEvent.answerText,
             tone: sourceEvent.tone || 'neutral',
+            sourceTrust,
+            confidence,
+            corroborations: [],
+            challenges: [],
             status: 'unverified',
             at: Date.now()
         };
@@ -208,12 +262,69 @@ class NPCMemoryService {
     }
 
     getRumors(npcId) {
-        const memory = this.cases[this.currentCaseId]?.[npcId];
-        return Array.isArray(memory?.rumors) ? this._clone(memory.rumors) : [];
+        const existing = this.cases[this.currentCaseId]?.[npcId];
+        if (!Array.isArray(existing?.rumors)) return [];
+        return this._clone(this._ensureNPC(npcId).rumors);
     }
 
     hasRumor(npcId, rumorId) {
         return this.cases[this.currentCaseId]?.[npcId]?.rumors?.some(rumor => rumor.id === rumorId) || false;
+    }
+
+    _findRumor(npcId, rumorId) {
+        return this.cases[this.currentCaseId]?.[npcId]?.rumors?.find(rumor => rumor.id === rumorId) || null;
+    }
+
+    corroborateRumor(recipientNpcId, rumorId, witnessNpcId, claimId) {
+        const rumor = this._findRumor(recipientNpcId, rumorId);
+        if (!rumor) return { corroborated: false, reason: 'rumor_not_found' };
+        if (!witnessNpcId || witnessNpcId === rumor.reportedBy) {
+            return { corroborated: false, reason: 'not_independent' };
+        }
+        const witnessMemory = this.cases[this.currentCaseId]?.[witnessNpcId];
+        const claim = witnessMemory?.claims?.find(item => item.id === claimId);
+        if (!claim?.directObservation || !claim.corroboratesRumorIds?.includes(rumorId)) {
+            return { corroborated: false, reason: 'independent_witness_not_found' };
+        }
+        if (rumor.corroborations.some(item => item.witnessNpcId === witnessNpcId) ||
+            rumor.challenges.some(item => item.witnessNpcId === witnessNpcId)) {
+            return { corroborated: false, reason: 'witness_already_recorded' };
+        }
+
+        rumor.corroborations.push({ witnessNpcId, claimId, at: Date.now() });
+        rumor.confidence = Math.min(100, rumor.confidence + 20);
+        rumor.status = rumor.challenges.length ? 'disputed' : 'corroborated';
+        const recipientMemory = this._ensureNPC(recipientNpcId);
+        this._append(recipientMemory, {
+            type: 'rumor_corroborated', rumorId, witnessNpcId, claimId, confidence: rumor.confidence
+        });
+        return { corroborated: true, rumor: this._clone(rumor) };
+    }
+
+    challengeRumor(recipientNpcId, rumorId, witnessNpcId, claimId) {
+        const rumor = this._findRumor(recipientNpcId, rumorId);
+        if (!rumor) return { challenged: false, reason: 'rumor_not_found' };
+        if (!witnessNpcId || witnessNpcId === rumor.reportedBy) {
+            return { challenged: false, reason: 'not_independent' };
+        }
+        const witnessMemory = this.cases[this.currentCaseId]?.[witnessNpcId];
+        const claim = witnessMemory?.claims?.find(item => item.id === claimId);
+        if (!claim?.directObservation || !claim.refutesRumorIds?.includes(rumorId)) {
+            return { challenged: false, reason: 'independent_witness_not_found' };
+        }
+        if (rumor.corroborations.some(item => item.witnessNpcId === witnessNpcId) ||
+            rumor.challenges.some(item => item.witnessNpcId === witnessNpcId)) {
+            return { challenged: false, reason: 'witness_already_recorded' };
+        }
+
+        rumor.challenges.push({ witnessNpcId, claimId, at: Date.now() });
+        rumor.confidence = Math.max(0, rumor.confidence - 20);
+        rumor.status = 'disputed';
+        const recipientMemory = this._ensureNPC(recipientNpcId);
+        this._append(recipientMemory, {
+            type: 'rumor_challenged', rumorId, witnessNpcId, claimId, confidence: rumor.confidence
+        });
+        return { challenged: true, rumor: this._clone(rumor) };
     }
 
     getStatements() {

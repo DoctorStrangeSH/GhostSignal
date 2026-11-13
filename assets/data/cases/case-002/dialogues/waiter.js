@@ -41,7 +41,7 @@ const DIALOGUE_WAITER = {
                             kind: "detective_behavior",
                             sourceName: "Томас",
                             text: "Детектив пригрозил обвинить меня в соучастии, когда я испугался рассказать правду.",
-                            recipients: ["bartender"]
+                            recipients: [{ npcId: "bartender", recipientTrust: 80 }]
                         }
                     }
                 ]

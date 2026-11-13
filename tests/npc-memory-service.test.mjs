@@ -111,7 +111,7 @@ test("NPCMemoryService clamps trust and round-trips versioned per-case saves", (
     assert.equal(restored.getMemory("housekeeper"), null);
     restored.setCase("case-001");
     assert.equal(restored.getMemory("housekeeper").conversations, 1);
-    assert.equal(restored.toJSON().version, 5);
+    assert.equal(restored.toJSON().version, 6);
 });
 
 test("NPCMemoryService tracks psychological pressure and migrates older NPC snapshots", () => {
@@ -143,7 +143,7 @@ test("NPCMemoryService tracks psychological pressure and migrates older NPC snap
     });
     assert.equal(memory.getPressure("waiter"), 20);
     assert.equal(memory.getPsychologicalState("waiter", { pressureThreshold: 20 }).disposition, "overwhelmed");
-    assert.equal(memory.toJSON().version, 5);
+    assert.equal(memory.toJSON().version, 6);
 });
 
 test("NPCMemoryService records a deliberate lie as exposed only when its source is confronted", () => {
@@ -299,6 +299,8 @@ test("NPCMemoryService shares an observed detective action as an attributed unve
     });
     assert.equal(shared.shared, true);
     assert.equal(shared.rumor.status, "unverified");
+    assert.equal(shared.rumor.sourceTrust, 50);
+    assert.equal(shared.rumor.confidence, 60);
     assert.equal(shared.rumor.reportedBy, "waiter");
     assert.equal(memory.hasRumor("bartender", report.id), true);
     assert.equal(memory.hasRumor("waiter", report.id), false);
@@ -338,10 +340,55 @@ test("NPCMemoryService migrates version 4 memories with no rumor history", () =>
         }
     }, "case-002");
 
-    assert.equal(restored.toJSON().version, 5);
+    assert.equal(restored.toJSON().version, 6);
     assert.equal(restored.getRumors("waiter").length, 0);
     assert.equal(restored.getMemory("waiter").rumors.length, 0);
     assert.equal(restored.getTrust("waiter"), 61);
+});
+
+test("NPCMemoryService weights rumors by source trust and requires independent witnesses", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    const report = { id: "detective-threatened-thomas", kind: "detective_behavior", sourceName: "Томас", text: "Детектив пригрозил обвинить меня в соучастии." };
+    const sourceEvent = { dialogueId: "dialogue-waiter", nodeId: "greeting", answerText: "Если ты скрываешь информацию — это соучастие." };
+    memory.recordAnswerSelected("waiter", sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: "aggressive" });
+    assert.equal(memory.setRelationshipTrust("bartender", "waiter", 80), 80);
+    const shared = memory.shareExperience("waiter", "bartender", report, sourceEvent);
+    assert.equal(shared.shared, true);
+    assert.equal(shared.rumor.sourceTrust, 80);
+    assert.equal(shared.rumor.confidence, 78);
+
+    memory.recordClaim("journalist", { id: "journalist-hearsay", topic: "detective-threatened-thomas", value: "threatened", directObservation: false, corroboratesRumorIds: [report.id] });
+    assert.equal(memory.corroborateRumor("bartender", report.id, "journalist", "journalist-hearsay").reason, "independent_witness_not_found");
+
+    memory.recordClaim("bartender", { id: "joe-witnessed-threat", topic: "detective-threatened-thomas", value: "threatened", directObservation: true, corroboratesRumorIds: [report.id] });
+    const corroborated = memory.corroborateRumor("bartender", report.id, "bartender", "joe-witnessed-threat");
+    assert.equal(corroborated.corroborated, true);
+    assert.equal(corroborated.rumor.status, "corroborated");
+    assert.equal(corroborated.rumor.confidence, 98);
+    assert.equal(memory.corroborateRumor("bartender", report.id, "bartender", "joe-witnessed-threat").reason, "witness_already_recorded");
+
+    memory.recordClaim("journalist", { id: "journalist-refutes-threat", topic: "detective-threatened-thomas", value: "not-present", directObservation: true, refutesRumorIds: [report.id] });
+    const challenged = memory.challengeRumor("bartender", report.id, "journalist", "journalist-refutes-threat");
+    assert.equal(challenged.challenged, true);
+    assert.equal(challenged.rumor.status, "disputed");
+    assert.equal(challenged.rumor.confidence, 78);
+
+    const restored = NPCMemoryService.fromJSON(memory.toJSON(), "case-002");
+    assert.equal(restored.getRumors("bartender")[0].status, "disputed");
+    assert.equal(restored.getRumors("bartender")[0].corroborations.length, 1);
+    assert.equal(restored.getRumors("bartender")[0].challenges.length, 1);
+});
+
+test("NPCMemoryService migrates v5 rumors without losing their source", () => {
+    const NPCMemoryService = loadService();
+    const restored = NPCMemoryService.fromJSON({ version: 5, currentCaseId: "case-002", cases: { "case-002": { bartender: { rumors: [{ id: "legacy-rumor", kind: "detective_behavior", text: "Старый слух", reportedBy: "waiter", reportedByName: "Томас", status: "unverified" }] } } } }, "case-002");
+    const [rumor] = restored.getRumors("bartender");
+    assert.equal(restored.toJSON().version, 6);
+    assert.equal(rumor.reportedBy, "waiter");
+    assert.equal(rumor.confidence, 60);
+    assert.deepEqual(rumor.corroborations, []);
+    assert.deepEqual(rumor.challenges, []);
 });
 
 test("NPCMemoryService safely accepts saves created before NPC memory existed", () => {

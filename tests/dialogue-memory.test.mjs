@@ -96,6 +96,8 @@ test("DialogueEngine lets Thomas's intimidation report unlock Joe's reaction", (
     assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), true);
     assert.equal(memory.hasRumor("waiter", "detective-threatened-thomas"), false);
     assert.equal(memory.getRumors("bartender")[0].status, "unverified");
+    assert.equal(memory.getRumors("bartender")[0].sourceTrust, 80);
+    assert.equal(memory.getRumors("bartender")[0].confidence, 78);
 
     engine.startDialogue("dialogue-bartender-case2");
     const answers = engine.getAvailableAnswers();
