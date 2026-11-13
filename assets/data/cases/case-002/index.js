@@ -239,6 +239,18 @@ const CASE_002 = {
                 summary: "Ева позвонила Анне, чтобы убедиться, что та не осталась одна."
             },
             {
+                id: "eva-protects-anna-after-pressure", relationshipId: "sisters-anna-eva",
+                fromNpcId: "woman_in_red", toNpcId: "ex_wife", interaction: "support",
+                goalId: "protect_sister", goalProgress: 1,
+                channel: "phone", initialDelayMinutes: 180, everyMinutes: 120,
+                maxOccurrences: 1, retryMinutes: 20,
+                requiresActionId: "eva-calls-anna", requiresActionAgeMinutes: 60,
+                toPressureAtLeast: 30, fromPressureBelow: 85,
+                trustDelta: 2, reciprocalTrustDelta: 2,
+                toCooperationDelta: 8,
+                summary: "Услышав тревогу Анны после допроса, Ева повторно позвонила сестре и попросила её не оставаться одной."
+            },
+            {
                 id: "lora-presses-joe", relationshipId: "joe-lora-source",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
                 channel: "message",
