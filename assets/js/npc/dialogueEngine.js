@@ -57,19 +57,27 @@ class DialogueEngine {
         this.currentDialogue = dialogue;
         this.dialogueHistory = [];
         
-        const startNode = dialogue.tree.nodes[dialogue.tree.start];
+        let startId = dialogue.tree.start;
+        for (const rule of Array.isArray(dialogue.tree.entryRules) ? dialogue.tree.entryRules : []) {
+            if (typeof rule?.condition === 'string' && dialogue.tree.nodes[rule.nodeId] &&
+                this._checkCondition(rule.condition)) {
+                startId = rule.nodeId;
+                break;
+            }
+        }
+        const startNode = dialogue.tree.nodes[startId];
         if (!startNode) {
-            console.error('Стартовый узел не найден:', dialogue.tree.start);
+            console.error('Стартовый узел не найден:', startId);
             return false;
         }
-        
+
         this.currentNode = {
-            id: dialogue.tree.start,
+            id: startId,
             ...startNode
         };
-        
+
         this.dialogueHistory.push({
-            nodeId: dialogue.tree.start,
+            nodeId: startId,
             speaker: startNode.speaker,
             text: startNode.text
         });
