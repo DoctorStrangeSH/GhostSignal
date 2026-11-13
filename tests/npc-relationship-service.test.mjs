@@ -180,6 +180,69 @@ test("NPCRelationshipService persists autonomous schedules and confirmed dossier
     assert.equal(restored.getKnownRelationshipsForNPC("a").length, 1);
 });
 
+test("social rumor delivery strengthens the relationship between NPCs who share information", () => {
+    const caseData = {
+        id: "case-relationship-test",
+        npcs: ["a", "b"],
+        socialNetwork: {
+            maxHops: 1, retryMinutes: 15, expiryMinutes: 120,
+            edges: [{ id: "a-to-b", from: "a", to: "b", relationship: "colleagues", label: "Коллеги", trust: 60, channel: "message", delayMinutes: 1, minTrustToShare: 0, shareTypes: ["detective_behavior"] }]
+        },
+        npcRelationships: {
+            bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", relationship: "colleagues", label: "Коллеги", trust: 60, reciprocal: true }],
+            autonomousInteractions: []
+        }
+    };
+    const { memory, network, clock } = createHarness({ caseData });
+    const sourceEvent = { dialogueId: "dialogue-a", nodeId: "report", answerText: "Я поделюсь этим.", tone: "neutral" };
+    memory.recordAnswerSelected("a", sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: "neutral" });
+    const published = network.publish("a", {
+        id: "shared-fact", kind: "detective_behavior", sourceName: "Алекс", text: "Детектив приходил к Борису."
+    }, sourceEvent);
+    assert.equal(published.queued, 1);
+    clock.minute += 1;
+    const result = network.processDueDeliveries();
+    assert.equal(result.delivered, 1);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 61);
+    assert.equal(network.getEventLog(10).some(item => item.type === "relationship_support"), true);
+    assert.equal(network.getKnownEventLog(10).length, 0);
+});
+
+test("breaking a loyalty bond lowers trust with the protected NPC", () => {
+    const caseData = {
+        id: "case-relationship-test",
+        npcs: ["a", "b", "c"],
+        npcMotivations: {
+            a: {
+                motives: [{ id: "protect_c", weight: 100, pressureResistance: 0 }],
+                loyalties: [{ npcId: "c", strength: 90, protectThreshold: 60, appliesTo: ["detective_behavior"], motiveId: "protect_c" }]
+            }
+        },
+        socialNetwork: {
+            maxHops: 1, retryMinutes: 15, expiryMinutes: 120,
+            edges: [{ id: "a-to-b", from: "a", to: "b", relationship: "source", label: "Источник", trust: 70, channel: "message", delayMinutes: 1, minTrustToShare: 0, shareTypes: ["detective_behavior"] }]
+        },
+        npcRelationships: {
+            bonds: [{ id: "a-c", fromNpcId: "a", toNpcId: "c", relationship: "protective", label: "Защитная связь", trust: 80, reciprocal: true }],
+            autonomousInteractions: []
+        }
+    };
+    const { memory, network } = createHarness({ caseData });
+    const sourceEvent = { dialogueId: "dialogue-a", nodeId: "betrayal", answerText: "Я больше не буду молчать.", tone: "threatening" };
+    for (let i = 0; i < 8; i++) {
+        memory.recordAnswerSelected("a", sourceEvent.dialogueId, i === 7 ? sourceEvent.nodeId : "pressure-" + i, {
+            text: sourceEvent.answerText, tone: "threatening"
+        });
+    }
+    const result = network.publish("a", {
+        id: "betrayal-report", kind: "detective_behavior", sourceName: "Алекс",
+        targetNpcId: "c", text: "Алекс раскрыл секрет Бориса."
+    }, sourceEvent);
+    assert.equal(result.published, true);
+    assert.equal(memory.getRelationshipTrust("a", "c"), 60);
+    assert.equal(network.getEventLog(10).some(item => item.type === "relationship_conflict"), true);
+});
+
 test("NPCManager dossier data excludes NPC-only rumors and private trust maps", () => {
     const { memory, relationships, network, clock, context } = createHarness();
     memory.setRelationshipTrust("a", "b", 77);
