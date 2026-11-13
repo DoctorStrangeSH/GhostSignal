@@ -34,6 +34,7 @@ class SaveController {
         app.progress.interrogationData = app.interrogationSystem?.toJSON();
         app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
         app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
+        app.progress.npcRelationshipData = app.npcRelationshipService?.toJSON();
 
         return this.saveProgress();
     }
