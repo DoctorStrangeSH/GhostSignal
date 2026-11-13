@@ -388,6 +388,10 @@ class DialogueEngine {
     _checkCondition(conditionStr) {
         if (!conditionStr) return true;
 
+        if (conditionStr.startsWith('not:')) {
+            const nested = conditionStr.slice(4).trim();
+            return Boolean(nested) && !this._checkCondition(nested);
+        }
         if (conditionStr.startsWith('all:')) {
             return conditionStr.slice(4).split('&').map(part => part.trim())
                 .filter(Boolean).every(part => this._checkCondition(part));
