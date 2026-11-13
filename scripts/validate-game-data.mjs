@@ -33,6 +33,8 @@ const acquirableItems = new Set();
 const dialogueReferences = new Set();
 const authoredLongTermMemoryTags = new Set();
 const longTermMemoryConditions = [];
+const npcGoalConditions = [];
+const authoredNpcGoals = new Set();
 const checkRef = (registry, id, label) => {
     if (typeof id === "string" && id && !registry[id]) errors.push(label + " references missing ID: " + id);
 };
@@ -176,6 +178,16 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 !["unfamiliar", "warm", "open", "cautious", "guarded", "hostile"].includes(answer.condition.slice("long_term_disposition:".length))) {
                 errors.push("Dialogue " + id + "/" + nodeId + " has an invalid long-term disposition condition.");
             }
+            const goalProgressCondition = answer.condition?.match(/^npc_goal_progress_at_least:([a-z0-9_:-]{1,64}):([0-9]+)$/i);
+            if (answer.condition?.startsWith("npc_goal_progress_at_least:") && !goalProgressCondition) {
+                errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC goal progress condition.");
+            }
+            if (goalProgressCondition) npcGoalConditions.push({ npcId: dialogue.npcId, goalId: goalProgressCondition[1], dialogueId: id, nodeId });
+            if (answer.condition?.startsWith("npc_goal_completed:")) {
+                const goalId = answer.condition.slice("npc_goal_completed:".length);
+                if (!/^[a-z0-9_:-]{1,64}$/i.test(goalId)) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid NPC goal completion condition.");
+                else npcGoalConditions.push({ npcId: dialogue.npcId, goalId, dialogueId: id, nodeId });
+            }
             if (answer.nextNode && !nodes[answer.nextNode]) {
                 errors.push("Dialogue " + id + "/" + nodeId + " points to missing node: " + answer.nextNode);
             }
@@ -190,6 +202,13 @@ for (const condition of longTermMemoryConditions) {
     }
 }
 
+for (const condition of npcGoalConditions) {
+    if (!authoredNpcGoals.has(condition.npcId + ":" + condition.goalId)) {
+        errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
+            " checks a personal goal that is not authored for NPC " + condition.npcId + ": " + condition.goalId);
+    }
+}
+
 for (const [id, gameCase] of Object.entries(data.cases)) {
     if (gameCase.id !== id) errors.push("Case key/id mismatch: " + id);
     if (!gameCase.startTime || !Number.isInteger(gameCase.startTime.hour) || gameCase.startTime.hour < 0 || gameCase.startTime.hour > 23 || !Number.isInteger(gameCase.startTime.minute) || gameCase.startTime.minute < 0 || gameCase.startTime.minute > 59) errors.push("Case has invalid start time: " + id);
@@ -198,6 +217,27 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
     for (const npcId of gameCase.npcs || []) checkRef(data.npcs, npcId, "Case " + id);
     const activeNpcIds = new Set(gameCase.npcs || []);
     const relationshipConfig = gameCase.npcRelationships || {};
+    const goalIds = new Set();
+    for (const goal of relationshipConfig.goals || []) {
+        const key = goal?.npcId + ":" + goal?.id;
+        if (!goal?.id || !/^[a-z0-9_:-]{1,64}$/i.test(goal.id) || goalIds.has(key)) {
+            errors.push("Case " + id + " has a missing, invalid or duplicate NPC goal ID.");
+        } else {
+            goalIds.add(key);
+            authoredNpcGoals.add(key);
+        }
+        if (!activeNpcIds.has(goal?.npcId)) errors.push("Case " + id + " NPC goal has an inactive owner: " + (goal?.id || "unknown"));
+        if (!Number.isInteger(goal?.target) || goal.target < 1 || goal.target > 20) errors.push("Case " + id + " NPC goal has an invalid target: " + (goal?.id || "unknown"));
+        if (goal?.priority !== undefined && (!Number.isFinite(goal.priority) || goal.priority < 0 || goal.priority > 100)) {
+            errors.push("Case " + id + " NPC goal has an invalid priority: " + goal.id);
+        }
+        if (goal?.title !== undefined && (typeof goal.title !== "string" || goal.title.length > 100)) {
+            errors.push("Case " + id + " NPC goal has an invalid title: " + goal.id);
+        }
+        if (goal?.description !== undefined && (typeof goal.description !== "string" || goal.description.length > 240)) {
+            errors.push("Case " + id + " NPC goal has an invalid description: " + goal.id);
+        }
+    }
     const relationshipIds = new Set();
     for (const bond of relationshipConfig.bonds || []) {
         if (!bond?.id || relationshipIds.has(bond.id)) errors.push("Case " + id + " has a missing or duplicate NPC relationship ID.");
@@ -222,6 +262,22 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
         }
         if (rule?.channel !== undefined && !["in_person", "phone", "message"].includes(rule.channel)) {
             errors.push("Case " + id + " NPC interaction has invalid channel: " + (rule?.id || "unknown"));
+        }
+        if (rule?.goalId) {
+            const owner = rule.goalNpcId || rule.fromNpcId;
+            if (!activeNpcIds.has(owner) || !goalIds.has(owner + ":" + rule.goalId)) {
+                errors.push("Case " + id + " NPC interaction references a missing personal goal: " + rule.id + "/" + rule.goalId);
+            }
+            if (rule.goalProgress !== undefined && (!Number.isFinite(rule.goalProgress) || rule.goalProgress < -10 || rule.goalProgress > 10)) {
+                errors.push("Case " + id + " NPC interaction has invalid goal progress: " + rule.id);
+            }
+        }
+        const conditions = rule?.conditions && typeof rule.conditions === "object" ? rule.conditions : rule;
+        if (conditions?.goalId) {
+            const owner = conditions.goalNpcId || rule.fromNpcId;
+            if (!goalIds.has(owner + ":" + conditions.goalId)) {
+                errors.push("Case " + id + " NPC interaction condition references a missing personal goal: " + rule.id + "/" + conditions.goalId);
+            }
         }
     }
     for (const scene of gameCase.scenes || []) {
