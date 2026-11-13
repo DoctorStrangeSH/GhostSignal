@@ -328,3 +328,31 @@ test("NPCSocialNetwork refuses to publish an event that the source NPC never wit
     }, { dialogueId: "dialogue-waiter", nodeId: "missing", answerText: "Этого ответа не было." });
     assert.equal(result.reason, "source_event_not_found");
 });
+test("forwarded rumors cannot be independently confirmed or refuted by their original source", () => {
+    const { memory, network, advance } = createHarness();
+    publish(memory, network, { targetNpcId: "detective" });
+    advance(15);
+    advance(30);
+    const rumor = memory.getRumors("journalist").find(item => item.id === "social-test-report");
+    assert.equal(rumor.reportedBy, "bartender");
+    assert.equal(rumor.originalSourceNpcId, "waiter");
+    memory.recordClaim("waiter", {
+        id: "source-claims-true", topic: "threat", value: "yes",
+        directObservation: true, corroboratesRumorIds: ["social-test-report"]
+    });
+    memory.recordClaim("waiter", {
+        id: "source-claims-false", topic: "threat-dispute", value: "no",
+        directObservation: true, refutesRumorIds: ["social-test-report"]
+    });
+    assert.equal(memory.corroborateRumor("journalist", "social-test-report", "waiter", "source-claims-true").reason, "not_independent");
+    assert.equal(memory.challengeRumor("journalist", "social-test-report", "waiter", "source-claims-false").reason, "not_independent");
+    assert.equal(memory.getRumors("journalist")[0].status, "unverified");
+
+    // An independent observer may corroborate only through an explicit, recorded observation.
+    memory.recordClaim("woman_in_red", {
+        id: "eva-saw-threat", topic: "threat", value: "yes",
+        directObservation: true, corroboratesRumorIds: ["social-test-report"]
+    });
+    assert.equal(memory.corroborateRumor("journalist", "social-test-report", "woman_in_red", "eva-saw-threat").corroborated, true);
+    assert.equal(memory.getRumors("journalist")[0].status, "corroborated");
+});
