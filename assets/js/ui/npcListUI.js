@@ -196,30 +196,8 @@ class NPCListUI {
                                 <span>СОСТОЯНИЕ</span><strong>${npc.psychology.label}</strong>
                             </div>
                         ` : ''}
-                        ${npc.socialLinks?.length ? `
-                            <div class="npc-social-links">
-                                <div class="npc-social-links-heading">СОЦИАЛЬНЫЕ СВЯЗИ</div>
-                                ${npc.socialLinks.slice(0, 4).map(link => `
-                                    <div class="npc-social-link">
-                                        <span>${link.name}</span>
-                                        <small>${link.label} · ${link.trust}%</small>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
                         ${npc.memory.liesExposed?.length ? `
                             <div class="npc-lies-exposed">⚠ Раскрыто ложных показаний: ${npc.memory.liesExposed.length}</div>
-                        ` : ''}
-                        ${npc.rumors?.length ? `
-                            <div class="npc-rumors">
-                                <div class="npc-rumors-heading">СВЕДЕНИЯ О ДЕТЕКТИВЕ</div>
-                                ${[...npc.rumors].slice(-2).reverse().map(rumor => `
-                                    <div class="npc-rumor">
-                                        <span>ПЕРЕДАЛ ${rumor.reportedByName || 'СВИДЕТЕЛЬ'}${rumor.originalSourceName && rumor.originalSourceName !== rumor.reportedByName ? ' · ИСТОЧНИК: ' + rumor.originalSourceName : ''} · ${{ unverified: 'НЕПРОВЕРЕНО', corroborated: 'ПОДТВЕРЖДЕНО', disputed: 'ОСПАРИВАЕТСЯ' }[rumor.status] || 'НЕПРОВЕРЕНО'}</span>
-                                        <p>${rumor.text}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
                         ` : ''}
                         ${npc.memory.accusations?.length ? `
                             <div class="npc-accusations">
