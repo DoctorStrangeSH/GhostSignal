@@ -119,7 +119,8 @@ test("Joe's second-case dialogue acknowledges personal goals achieved off-screen
         },
         isGoalCompleted(npcId, goalId) {
             return npcId === "bartender" && goalId === "maintain_bar_community";
-        }
+        },
+        toJSON() { return {}; }
     });
     engine.startDialogue("dialogue-bartender-case2");
     const answer = engine.getAvailableAnswers().find(item =>
