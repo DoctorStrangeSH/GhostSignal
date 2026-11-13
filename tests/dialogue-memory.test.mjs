@@ -576,3 +576,49 @@ test("DialogueEngine refuses evidence not currently collected", () => {
     assert.equal(result.success, false);
     assert.equal(result.reason, "evidence_not_available");
 });
+
+
+test("DialogueEngine gates dialogue branches on each NPC's received rumor and independent verification", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.currentDialogue = { id: "rumor-condition-test", npcId: "waiter" };
+    engine.currentNode = {
+        id: "rumor_gate",
+        answers: [
+            { text: "Пока слух не подтверждён", nextNode: "unverified", condition: "rumor_status:joe-threatened-thomas:unverified", hiddenWhenUnavailable: true },
+            { text: "Слух оспорен", nextNode: "disputed", condition: "rumor_status:joe-threatened-thomas:disputed", hiddenWhenUnavailable: true },
+            { text: "Высокая уверенность", nextNode: "high_confidence", condition: "rumor_confidence_at_least:joe-threatened-thomas:70", hiddenWhenUnavailable: true }
+        ]
+    };
+
+    const received = memory.receiveSocialRumor("waiter", {
+        id: "joe-threatened-thomas",
+        kind: "detective_behavior",
+        text: "Детектив угрожал Томасу."
+    }, {
+        fromNpcId: "bartender",
+        originalSourceNpcId: "bartender",
+        sourceEvent: { dialogueId: "dialogue-joe", nodeId: "report", answerText: "Я расскажу, что произошло." },
+        recipientTrust: 80,
+        hops: 1,
+        channel: "message"
+    });
+    assert.equal(received.received, true);
+    assert.equal(engine._checkCondition("rumor_status:joe-threatened-thomas:unverified"), true);
+    assert.equal(engine._checkCondition("rumor_confidence_at_least:joe-threatened-thomas:70"), true);
+    assert.equal(engine.getAvailableAnswers().length, 2);
+
+    memory.recordClaim("journalist", {
+        id: "lora-refutes-joe-rumor",
+        topic: "joe-threatened-thomas",
+        value: "no-threat-observed",
+        directObservation: true,
+        refutesRumorIds: ["joe-threatened-thomas"]
+    });
+    const challenged = memory.challengeRumor("waiter", "joe-threatened-thomas", "journalist", "lora-refutes-joe-rumor");
+    assert.equal(challenged.challenged, true);
+    assert.equal(engine._checkCondition("rumor_status:joe-threatened-thomas:disputed"), true);
+    assert.equal(engine._checkCondition("rumor_confidence_at_least:joe-threatened-thomas:70"), false);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "disputed"), true);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "unverified"), false);
+    assert.equal(engine._checkCondition("rumor_status:unknown-rumor:disputed"), false);
+});
