@@ -69,7 +69,9 @@ function publish(memory, network, report = {}) {
 
 test("NPCSocialNetwork schedules attributed rumors instead of revealing them immediately", () => {
     const { memory, network, advance } = createHarness();
-    assert.deepEqual(publish(memory, network, { targetNpcId: "detective" }), { published: true, queued: 1 });
+    const published = publish(memory, network, { targetNpcId: "detective" });
+    assert.equal(published.published, true);
+    assert.equal(published.queued, 1);
     assert.equal(memory.hasRumor("bartender", "social-test-report"), false);
     advance(14);
     assert.equal(memory.hasRumor("bartender", "social-test-report"), false);
@@ -77,7 +79,7 @@ test("NPCSocialNetwork schedules attributed rumors instead of revealing them imm
     const rumor = memory.getRumors("bartender")[0];
     assert.equal(rumor.reportedBy, "waiter");
     assert.equal(rumor.originalSourceNpcId, "waiter");
-    assert.deepEqual(rumor.transmissionPath, ["waiter", "bartender"]);
+    assert.equal(rumor.transmissionPath.join(">"), "waiter>bartender");
     assert.equal(rumor.channel, "in_person");
 });
 
@@ -102,7 +104,7 @@ test("NPCSocialNetwork forwards a rumor over a second explicit edge without losi
     const rumor = memory.getRumors("journalist")[0];
     assert.equal(rumor.reportedBy, "bartender");
     assert.equal(rumor.originalSourceNpcId, "waiter");
-    assert.deepEqual(rumor.transmissionPath, ["waiter", "bartender", "journalist"]);
+    assert.equal(rumor.transmissionPath.join(">"), "waiter>bartender>journalist");
     assert.equal(rumor.hops, 2);
 });
 
