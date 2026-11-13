@@ -135,8 +135,28 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         errors.push("Dialogue has missing start node: " + id);
     }
 
+    if (dialogue.tree?.entryRules !== undefined && !Array.isArray(dialogue.tree.entryRules)) {
+        errors.push("Dialogue " + id + " has invalid entry rules.");
+    }
+    const entryRules = Array.isArray(dialogue.tree?.entryRules) ? dialogue.tree.entryRules : [];
+    for (const rule of entryRules) {
+        const validCondition = typeof rule?.condition === "string" &&
+            (/^hasInsight:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
+             /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition));
+        if (!rule?.nodeId || !nodes[rule.nodeId] || !validCondition) {
+            errors.push("Dialogue " + id + " has an invalid conditional entry.");
+        }
+        if (typeof rule?.condition === "string" && rule.condition.startsWith("has_claim:") &&
+            !Object.values(nodes).some(node => node?.claim?.id === rule.condition.slice("has_claim:".length))) {
+            errors.push("Dialogue " + id + " checks a missing claim in an entry rule.");
+        }
+    }
+
     const reachableNodes = new Set();
     const pendingNodes = dialogue.tree?.start && nodes[dialogue.tree.start] ? [dialogue.tree.start] : [];
+    for (const rule of entryRules) {
+        if (nodes[rule?.nodeId]) pendingNodes.push(rule.nodeId);
+    }
     while (pendingNodes.length) {
         const currentNodeId = pendingNodes.pop();
         if (reachableNodes.has(currentNodeId)) continue;
