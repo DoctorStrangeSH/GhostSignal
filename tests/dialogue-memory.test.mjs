@@ -31,6 +31,7 @@ function createDialogueHarness() {
         "assets/js/npc/dialogueEngine.js",
         "assets/data/cases/case-002/dialogues/waiter.js",
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
+        "assets/data/cases/case-002/dialogues/journalist.js",
         "assets/data/cases/case-002/dialogues/rival.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
@@ -145,10 +146,11 @@ test("DialogueEngine records a promise made to Thomas as a pending NPC memory", 
 });
 
 test("DialogueEngine lets Thomas's intimidation report reach Joe through a timed social link", () => {
-    const { engine, memory, advance } = createDialogueHarness();
+    const { engine, memory, advance, socialNetwork } = createDialogueHarness();
 
     engine.startDialogue("dialogue-waiter");
     engine.selectAnswer(1);
+    assert.equal(socialNetwork.getKnownEventLog(20).length, 0);
 
     assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), false);
     assert.equal(memory.hasRumor("waiter", "detective-threatened-thomas"), false);
@@ -164,6 +166,10 @@ test("DialogueEngine lets Thomas's intimidation report reach Joe through a timed
     assert.equal(reportAnswer?.isAvailable, true);
 
     engine.selectAnswer(2);
+    assert.equal(socialNetwork.getKnownEventLog(20).length, 1);
+    assert.equal(socialNetwork.getKnownEventLog(20)[0].type, "delivered");
+    assert.equal(socialNetwork.getKnownEventLog(20)[0].fromNpcId, "waiter");
+    assert.equal(socialNetwork.getKnownEventLog(20)[0].toNpcId, "bartender");
     assert.match(engine.currentNode.text, /Томас говорил со мной/i);
     assert.match(engine.currentNode.text, /не превращайте наш страх в инструмент/i);
     assert.equal(memory.getMemory("bartender").dialogueHistory.some(entry =>
@@ -178,6 +184,27 @@ test("DialogueEngine does not show Joe's rumor reaction before Thomas reports th
     assert.equal(memory.hasRumor("bartender", "detective-threatened-thomas"), false);
     const answers = engine.getAvailableAnswers();
     assert.equal(answers.some(answer => answer.text.includes("Томас рассказал") && answer.isAvailable), false);
+});
+
+test("Journalist reveals a betrayal only after the rumor reaches her", () => {
+    const { engine, memory, advance, socialNetwork } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    engine.selectAnswer(1);
+    for (let i = 0; i < 8; i++) memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", "pressure-" + i, { text: "Я больше не хочу молчать.", tone: "threatening" });
+    advance(15);
+    assert.equal(memory.hasRumor("journalist", "detective-threatened-thomas"), false);
+    assert.equal(socialNetwork.getKnownEventLog(20).length, 0);
+    advance(30);
+    assert.equal(memory.hasRumor("journalist", "detective-threatened-thomas"), true);
+    engine.startDialogue("dialogue-journalist");
+    const disclosure = engine.getAvailableAnswers().find(answer => answer.text.includes("разговоре с Томасом"));
+    assert.equal(disclosure?.isAvailable, true);
+    engine.selectAnswer(disclosure.index);
+    assert.equal(engine.currentNode.id, "joe_told_journalist");
+    const known = socialNetwork.getKnownEventLog(20);
+    assert.equal(known.some(item => item.type === "betrayal" && item.fromNpcId === "bartender" && item.toNpcId === "journalist"), true);
+    assert.equal(known.some(item => item.type === "delivered" && item.fromNpcId === "bartender" && item.toNpcId === "journalist"), true);
+    assert.equal(known.every(item => item.fromNpcId === "bartender" && item.toNpcId === "journalist"), true);
 });
 
 test("Thomas can be falsely accused, apologize later and leave a traceable social report", () => {
