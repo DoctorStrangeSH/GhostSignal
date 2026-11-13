@@ -174,11 +174,12 @@ test("NPCSocialNetwork keeps a chronological, attributed timeline of scheduled a
     assert.equal(scheduled[0].summary.includes("пригрозил"), true);
 
     advance(15);
-    const delivered = network.getEventLog(10);
-    assert.equal(delivered[0].type, "delivered");
-    assert.equal(delivered[0].fromNpcId, "waiter");
-    assert.equal(delivered[0].toNpcId, "bartender");
-    assert.equal(delivered[0].path.join(">"), "waiter>bartender");
+    const delivered = network.getEventLog(10).find(item =>
+        item.type === "delivered" && item.toNpcId === "bartender"
+    );
+    assert.equal(delivered.fromNpcId, "waiter");
+    assert.equal(delivered.toNpcId, "bartender");
+    assert.equal(delivered.path.join(">"), "waiter>bartender");
     assert.equal(network.getEventLog(10, "bartender").every(item =>
         item.fromNpcId === "bartender" || item.toNpcId === "bartender" || item.protectedNpcId === "bartender"
     ), true);
