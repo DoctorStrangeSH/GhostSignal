@@ -141,7 +141,30 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
     assert.match(engine.currentNode.text, /не собираюсь снова проходить через это/i);
     assert.equal(engine._checkCondition("long_term_trust_below:49"), true);
     assert.equal(engine._checkCondition("long_term_trust_at_least:48.8"), true);
+    assert.equal(engine._checkCondition("long_term_disposition:cautious"), true);
+    assert.equal(engine._checkCondition("long_term_disposition:guarded"), false);
     assert.equal(engine._checkCondition("familiarity_at_least:2"), true);
+});
+
+test("DialogueEngine lets accumulated distrust change Joe's returning behavior", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase("case-001");
+    for (let i = 0; i < 9; i++) {
+        memory.recordAnswerSelected("bartender", "dialogue-bartender", "threat-" + i, {
+            text: "Я добьюсь своего.",
+            tone: "threatening",
+            memoryImportance: 3
+        });
+    }
+    assert.equal(memory.getLongTermProfile("bartender").disposition, "guarded");
+    memory.setCase("case-002");
+    engine.startDialogue("dialogue-bartender-case2");
+    const guarded = engine.getAvailableAnswers().find(answer =>
+        answer.condition === "long_term_disposition:guarded"
+    );
+    assert.equal(guarded?.isAvailable, true);
+    assert.equal(engine.selectAnswer(guarded.index).id, "guarded_history");
+    assert.match(engine.currentNode.text, /должен заслужить ваше доверие|держали слово/i);
 });
 
 test("DialogueEngine gives Joe a warmer greeting when the detective earned his trust", () => {
