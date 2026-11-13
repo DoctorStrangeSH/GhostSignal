@@ -519,12 +519,12 @@ class NPCMemoryService {
     corroborateRumor(recipientNpcId, rumorId, witnessNpcId, claimId) {
         const rumor = this._findRumor(recipientNpcId, rumorId);
         if (!rumor) return { corroborated: false, reason: 'rumor_not_found' };
-        if (!witnessNpcId || witnessNpcId === rumor.reportedBy) {
+        if (!witnessNpcId || witnessNpcId === rumor.reportedBy || witnessNpcId === rumor.originalSourceNpcId) {
             return { corroborated: false, reason: 'not_independent' };
         }
         const witnessMemory = this.cases[this.currentCaseId]?.[witnessNpcId];
         const claim = witnessMemory?.claims?.find(item => item.id === claimId);
-        if (!claim?.directObservation || !claim.corroboratesRumorIds?.includes(rumorId)) {
+        if (!claim?.directObservation || claim.status === 'superseded' || !claim.corroboratesRumorIds?.includes(rumorId)) {
             return { corroborated: false, reason: 'independent_witness_not_found' };
         }
         if (rumor.corroborations.some(item => item.witnessNpcId === witnessNpcId) ||
@@ -545,12 +545,12 @@ class NPCMemoryService {
     challengeRumor(recipientNpcId, rumorId, witnessNpcId, claimId) {
         const rumor = this._findRumor(recipientNpcId, rumorId);
         if (!rumor) return { challenged: false, reason: 'rumor_not_found' };
-        if (!witnessNpcId || witnessNpcId === rumor.reportedBy) {
+        if (!witnessNpcId || witnessNpcId === rumor.reportedBy || witnessNpcId === rumor.originalSourceNpcId) {
             return { challenged: false, reason: 'not_independent' };
         }
         const witnessMemory = this.cases[this.currentCaseId]?.[witnessNpcId];
         const claim = witnessMemory?.claims?.find(item => item.id === claimId);
-        if (!claim?.directObservation || !claim.refutesRumorIds?.includes(rumorId)) {
+        if (!claim?.directObservation || claim.status === 'superseded' || !claim.refutesRumorIds?.includes(rumorId)) {
             return { challenged: false, reason: 'independent_witness_not_found' };
         }
         if (rumor.corroborations.some(item => item.witnessNpcId === witnessNpcId) ||
