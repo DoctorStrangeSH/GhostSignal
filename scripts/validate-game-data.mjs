@@ -202,13 +202,6 @@ for (const condition of longTermMemoryConditions) {
     }
 }
 
-for (const condition of npcGoalConditions) {
-    if (!authoredNpcGoals.has(condition.npcId + ":" + condition.goalId)) {
-        errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
-            " checks a personal goal that is not authored for NPC " + condition.npcId + ": " + condition.goalId);
-    }
-}
-
 for (const [id, gameCase] of Object.entries(data.cases)) {
     if (gameCase.id !== id) errors.push("Case key/id mismatch: " + id);
     if (!gameCase.startTime || !Number.isInteger(gameCase.startTime.hour) || gameCase.startTime.hour < 0 || gameCase.startTime.hour > 23 || !Number.isInteger(gameCase.startTime.minute) || gameCase.startTime.minute < 0 || gameCase.startTime.minute > 59) errors.push("Case has invalid start time: " + id);
@@ -311,6 +304,13 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
     }
     if (gameCase.correctDeduction?.suspect && !(gameCase.npcs || []).includes(gameCase.correctDeduction.suspect)) {
         errors.push("Correct deduction suspect is not part of case " + id + ": " + gameCase.correctDeduction.suspect);
+    }
+}
+
+for (const condition of npcGoalConditions) {
+    if (!authoredNpcGoals.has(condition.npcId + ":" + condition.goalId)) {
+        errors.push("Dialogue " + condition.dialogueId + "/" + condition.nodeId +
+            " checks a personal goal that is not authored for NPC " + condition.npcId + ": " + condition.goalId);
     }
 }
 
