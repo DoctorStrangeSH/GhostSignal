@@ -215,7 +215,7 @@ const CASE_002 = {
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "support",
                 goalId: "maintain_bar_community", goalNpcId: "bartender", goalProgress: 1,
                 channel: "message",
-                initialDelayMinutes: 300, everyMinutes: 360,
+                initialDelayMinutes: 300, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 50, fromPressureBelow: 65,
                 trustDelta: 1, reciprocalTrustDelta: 1,
                 summary: "Лора написала Джо и уточнила, не нужна ли ему помощь."
