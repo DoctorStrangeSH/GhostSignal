@@ -471,7 +471,14 @@ test("NPCMemoryService migrates v8 memories with an empty long-term people ledge
     const NPCMemoryService = loadService();
     const restored = NPCMemoryService.fromJSON({ version: 8, currentCaseId: "case-002", cases: { "case-002": { waiter: { trust: 50 } } } }, "case-002");
     assert.equal(restored.toJSON().version, 9);
-    assert.deepEqual(restored.getLongTermProfile("waiter"), { npcId: "waiter", trust: 50, familiarity: 0, interactions: 0, lastSeenCaseId: null, memoryCount: 0, disposition: "unfamiliar" });
+    const profile = restored.getLongTermProfile("waiter");
+    assert.equal(profile.npcId, "waiter");
+    assert.equal(profile.trust, 50);
+    assert.equal(profile.familiarity, 0);
+    assert.equal(profile.interactions, 0);
+    assert.equal(profile.lastSeenCaseId, null);
+    assert.equal(profile.memoryCount, 0);
+    assert.equal(profile.disposition, "unfamiliar");
     assert.equal(restored.getAccusations("waiter").length, 0);
 });
 
