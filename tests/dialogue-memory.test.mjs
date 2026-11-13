@@ -868,3 +868,74 @@ test("dialogues without entry rules retain their original opening", () => {
     assert.equal(engine.startDialogue("dialogue-journalist"), true);
     assert.equal(engine.currentNode.id, "greeting");
 });
+
+test("a revised Thomas statement invalidates Kane's old confession shortcut until independent documents are obtained", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning",
+        value: "saw-poisoning", summary: "Первоначальное показание"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "saw-near-table", revisesClaimId: "waiter-kane-at-poisoning",
+        summary: "Уточнил, что не видел момент попадания порошка"
+    });
+    engine.startDialogue("dialogue-rival-full");
+    engine.selectAnswer(engine.getAvailableAnswers().find(item => item.nextNode === "why").index);
+    assert.equal(engine._checkCondition("case_has_claim:waiter:waiter-kane-at-poisoning-v2"), true);
+    assert.equal(engine._checkCondition("not:case_has_claim:waiter:waiter-kane-at-poisoning-v2"), false);
+    const oldConfession = engine.getAvailableAnswers().find(item =>
+        item.text.startsWith("У меня есть показания о порошке")
+    );
+    assert.equal(oldConfession?.isAvailable, false);
+    assert.equal(engine.getAvailableAnswers().some(item =>
+        item.nextNode === "confession" && item.isAvailable
+    ), false);
+
+    inventory.insights.push("hard_evidence_kane");
+    const independentRoute = engine.getAvailableAnswers().find(item =>
+        item.text.startsWith("У меня есть фотография")
+    );
+    assert.equal(independentRoute?.isAvailable, true);
+    assert.equal(engine.selectAnswer(independentRoute.index).id, "confession");
+});
+
+test("Thomas's repeat opening reflects corrected statements and later support", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "greeting");
+
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning",
+        value: "saw-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "testimony_given_opening");
+
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "saw-near-table", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "revised_testimony_opening");
+    assert.match(engine.currentNode.text, /не видел, как порошок попал/i);
+});
+
+test("Anna and Lora use their own completed experiences as repeat openings", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        hasReceivedInteraction(npcId, ruleId) {
+            return npcId === "ex_wife" && ruleId === "eva-protects-anna-after-pressure";
+        },
+        getInvestigationOutcome(npcId, ruleId) {
+            return npcId === "journalist" && ruleId === "lora-interviews-eva-about-threat"
+                ? "no_independent_evidence" : null;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-ex-wife");
+    assert.equal(engine.currentNode.id, "supported_anna_opening");
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.currentNode.id, "lora_second_check_opening");
+});
