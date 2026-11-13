@@ -408,6 +408,10 @@
 .npc-relationship small { color: var(--text-muted, #9aa0a6); font-size: .68rem; }
 .npc-relationship.relationship-strained, .npc-relationship.relationship-hostile { border-left-color: var(--accent-red-bright, #d45c55); background: rgba(180,70,70,.06); }
 .npc-relationship.relationship-close, .npc-relationship.relationship-friendly { border-left-color: var(--accent-green, #299d71); }
+.npc-social-event.event-relationship_conflict { border-left-color: var(--accent-red-bright); }
+.npc-social-event.event-relationship_reconciled, .npc-social-event.event-relationship_support { border-left-color: var(--accent-green, #299d71); }
+.npc-social-event.event-relationship_avoidance { border-left-color: var(--text-muted, #9aa0a6); }
+
 
 .npc-social-event.event-expired,
 .npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
