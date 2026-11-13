@@ -622,3 +622,44 @@ test("DialogueEngine gates dialogue branches on each NPC's received rumor and in
     assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "unverified"), false);
     assert.equal(engine._checkCondition("rumor_status:unknown-rumor:disputed"), false);
 });
+
+test("Joe's follow-up is visible only after Joe personally completed his support action", () => {
+    const { engine } = createDialogueHarness();
+    const completed = new Set();
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return npcId === "bartender" && completed.has(ruleId);
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-bartender-case2");
+    const id = "joe-reassures-thomas-after-threat";
+    const condition = "npc_action_completed:" + id;
+    assert.equal(engine.getAvailableAnswers().find(answer => answer.condition === condition)?.isAvailable, false);
+    completed.add(id);
+    assert.equal(engine._checkCondition(condition), true);
+    const response = engine.getAvailableAnswers().find(answer => answer.condition === condition);
+    assert.equal(response?.isAvailable, true);
+    assert.equal(engine.selectAnswer(response.index).id, "joe_helped_thomas");
+    assert.match(engine.currentNode.text, /поговорил с Томасом/i);
+    assert.equal(engine._checkCondition("npc_action_completed:unknown-action"), false);
+});
+
+test("Lora does not describe an off-screen investigation before she actually acts", () => {
+    const { engine } = createDialogueHarness();
+    let checked = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return checked && npcId === "journalist" && ruleId === "lora-questions-joe-about-threat";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    const condition = "npc_action_completed:lora-questions-joe-about-threat";
+    assert.equal(engine.getAvailableAnswers().find(answer => answer.condition === condition)?.isAvailable, false);
+    checked = true;
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "lora_checked_threat");
+    assert.match(engine.currentNode.text, /независимое подтверждение/i);
+});
