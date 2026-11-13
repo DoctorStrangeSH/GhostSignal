@@ -52,9 +52,14 @@ class EventController {
             app.npcMotivationService?.setCase(data.caseData);
             app.npcSocialNetwork?.setMotivationService(app.npcMotivationService);
             app.npcSocialNetwork?.setCase(data.caseData);
+            app.npcRelationshipService?.setDependencies(app.npcMemoryService, app.npcManager, app.gameTime, app.npcSocialNetwork);
+            app.npcRelationshipService?.setCase(data.caseData);
+            app.npcSocialNetwork?.setRelationshipService(app.npcRelationshipService);
             app.npcManager?.setMemoryService(app.npcMemoryService);
             app.npcManager?.setSocialNetwork(app.npcSocialNetwork);
+            app.npcManager?.setRelationshipService(app.npcRelationshipService);
             app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
+            app.progress.npcRelationshipData = app.npcRelationshipService?.toJSON();
             app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
             app.progress.caseData = app.caseManager.toJSON();
             app._saveProgress();
@@ -71,6 +76,11 @@ class EventController {
             if (result && (result.processed || result.delivered || result.deferred || result.expired)) {
                 events.emit('npc:memory_changed', { reason: 'social_delivery', delivered: result.delivered });
                 events.emit('npc:social_network_changed', { reason: 'social_delivery' });
+            }
+            const relationships = app.npcRelationshipService?.processDueInteractions();
+            if (relationships?.processed) {
+                events.emit('npc:relationship_changed', { reason: 'autonomous_interaction', ...relationships });
+                if (relationships.changed) events.emit('npc:social_network_changed', { reason: 'relationship_event' });
             }
         });
 
@@ -163,6 +173,12 @@ class EventController {
         on('npc:social_network_changed', () => {
             app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
             app._saveProgress();
+        });
+
+        on('npc:relationship_changed', () => {
+            app.progress.npcRelationshipData = app.npcRelationshipService?.toJSON();
+            app._saveProgress();
+            app.npcListUI?.render();
         });
 
         on('npc:memory_changed', () => {
