@@ -540,6 +540,16 @@ class NPCRelationshipService {
         return { changed: before !== after, before, after, relationshipId: bond.id };
     }
 
+    hasReceivedInteraction(npcId, ruleId) {
+        if (!npcId || !ruleId || !this.currentCaseId) return false;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.toNpcId === npcId
+        );
+        if (!rule) return false;
+        const state = this.cases[this.currentCaseId]?.rules?.[ruleId];
+        return Boolean(state && Number.isInteger(state.occurrences) && state.occurrences > 0);
+    }
+
     hasCompletedInteraction(npcId, ruleId) {
         if (!npcId || !ruleId || !this.currentCaseId) return false;
         const rule = this.caseConfig.autonomousInteractions.find(item =>
