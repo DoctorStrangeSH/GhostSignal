@@ -121,6 +121,40 @@ test("NPCRelationshipService runs autonomous support only when both NPCs can mee
     assert.equal(network.getKnownEventLog(10).length, 0);
 });
 
+test("NPCRelationshipService support events rebuild cooperation and persist without replay", () => {
+    const relationshipConfig = {
+        bonds: [{
+            id: "a-b", fromNpcId: "a", toNpcId: "b",
+            relationship: "colleagues", label: "Коллеги", trust: 60, reciprocal: true
+        }],
+        autonomousInteractions: [{
+            id: "support-cooperation", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "support",
+            channel: "in_person", requiresSameLocation: true,
+            initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
+            trustDelta: 1, reciprocalTrustDelta: 1, toCooperationDelta: 14,
+            summary: "Алекс поддержал Бориса перед важным разговором."
+        }]
+    };
+    const { memory, relationships, advance, context } = createHarness({
+        caseData: { npcRelationships: relationshipConfig }
+    });
+    advance(30);
+    assert.equal(memory.getMemory("b").cooperation, 64);
+    assert.equal(memory.getCooperationState("b").score, 64);
+    advance(120);
+    assert.equal(memory.getMemory("b").cooperation, 64);
+    assert.equal(relationships.toJSON().cases["case-relationship-test"].rules["support-cooperation"].occurrences, 1);
+
+    context.snapshot = memory.toJSON();
+    const restored = vm.runInContext(
+        "NPCMemoryService.fromJSON(snapshot, 'case-relationship-test')",
+        context
+    );
+    assert.equal(restored.getMemory("b").cooperation, 64);
+    assert.equal(restored.getMemory("b").cooperationHistory.length, 1);
+});
+
 test("NPCRelationshipService can model conflict followed by reconciliation", () => {
     const relationshipConfig = {
         bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", relationship: "colleagues", label: "Коллеги", trust: 60, reciprocal: true }],
@@ -260,6 +294,9 @@ test("NPCManager dossier data excludes NPC-only rumors and private trust maps", 
     const status = manager.getNPCStatus("a");
     assert.equal(status.memory.relationshipTrusts, undefined);
     assert.equal(status.memory.rumors, undefined);
+    assert.equal(status.memory.cooperation, undefined);
+    assert.equal(status.memory.cooperationHistory, undefined);
+    assert.equal(status.psychology.cooperation.state, "guarded");
     assert.equal(status.relationships.length, 0);
     relationships.revealRelationships("a-b", { method: "dialogue", sourceId: "dialogue-a:identity" });
     assert.equal(manager.getNPCStatus("a").relationships.length, 1);
