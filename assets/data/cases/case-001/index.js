@@ -43,7 +43,8 @@ const CASE_001 = {
         bonds: [
             { id: "porter-housekeeper", fromNpcId: "porter", toNpcId: "housekeeper", relationship: "protective_colleagues", label: "Коллеги, почти семья", trust: 82, reciprocal: true },
             { id: "porter-bartender", fromNpcId: "porter", toNpcId: "bartender", relationship: "neighborhood_friends", label: "Давние знакомые", trust: 64, reciprocal: true },
-            { id: "elias-bartender", fromNpcId: "elias", toNpcId: "bartender", relationship: "regulars", label: "Знакомые из бара", trust: 61, reciprocal: true }
+            { id: "elias-bartender", fromNpcId: "elias", toNpcId: "bartender", relationship: "regulars", label: "Знакомые из бара", trust: 61, reciprocal: true },
+            { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true }
         ],
         autonomousInteractions: [
             {
@@ -72,6 +73,15 @@ const CASE_001 = {
                 maxTrust: 58, fromPressureBelow: 35, toPressureBelow: 35,
                 trustDelta: 8, reciprocalTrustDelta: 6,
                 summary: "Фрэнк спокойно поговорил с Мэри и попытался вернуть доверие."
+            },
+            {
+                id: "joe-checks-mills", relationshipId: "bartender-sergeant",
+                fromNpcId: "bartender", toNpcId: "sergeant", interaction: "support",
+                channel: "phone",
+                initialDelayMinutes: 180, everyMinutes: 360, maxOccurrences: 1,
+                minTrust: 45, fromPressureBelow: 75,
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Джо позвонил сержанту Миллсу и осторожно уточнил, как продвигается расследование."
             },
             {
                 id: "joe-and-elias-catch-up", relationshipId: "elias-bartender",
