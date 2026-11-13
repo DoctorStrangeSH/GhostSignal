@@ -225,6 +225,17 @@ class NPCListUI {
                         ` : ''}
                     </div>
                 ` : ''}
+                ${npc.relationships?.length ? `
+                    <div class="npc-relationships">
+                        <div class="npc-relationships-heading">ПОДТВЕРЖДЁННЫЕ СВЯЗИ</div>
+                        ${npc.relationships.slice(0, 4).map(relationship => `
+                            <div class="npc-relationship relationship-${this._escapeHTML(relationship.status)}">
+                                <span>${this._escapeHTML(relationship.name)}</span>
+                                <small>${this._escapeHTML(relationship.label)} · ${this._escapeHTML(relationship.statusLabel)}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
                 ${npc.insightsGiven && npc.insightsGiven.length > 0 ? `
                     <div class="npc-insights">💡 Поделился информацией: ${npc.insightsGiven.length}</div>
                 ` : ''}
