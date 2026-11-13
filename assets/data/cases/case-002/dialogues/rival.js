@@ -39,7 +39,34 @@ const DIALOGUE_RIVAL_FULL = {
 
     tree: {
         start: "confrontation",
+        entryRules: [
+            { condition: "hasInsight:full_confession_kane", nodeId: "post_confession_opening" },
+            { condition: "has_claim:kane-admits-return-to-bar", nodeId: "revised_opening" }
+        ],
         nodes: {
+            post_confession_opening: {
+                speaker: "npc",
+                text: "Я уже подписал признание, детектив. Моя версия событий больше не меняется. Если вы пришли за новыми обвинениями, у меня нечего добавить.",
+                mood: "resigned",
+                answers: [
+                    { text: "Я проверяю, что в протоколе отражено именно ваше признание.", nextNode: "post_confession_end", tone: "calm" }
+                ]
+            },
+            post_confession_end: {
+                speaker: "npc",
+                text: "Проверяйте. Теперь мне остаётся отвечать за то, что я сделал.",
+                mood: "tired",
+                endDialogue: true
+            },
+            revised_opening: {
+                speaker: "npc",
+                text: "Мы уже выяснили, что я выходил в коридор и возвращался. Я исправил своё алиби. Но возвращение в зал не означает признание в отравлении. Какие у вас новые факты?",
+                mood: "guarded",
+                answers: [
+                    { text: "Давайте сопоставим ваши слова с остальными свидетельствами.", nextNode: "why", tone: "direct" },
+                    { text: "Пока вопросов больше нет.", nextNode: "interview_paused", tone: "calm" }
+                ]
+            },
             confrontation: {
                 speaker: "npc",
                 text: "Я ушёл из бара до того, как Блэквуду стало плохо. К его столику я не подходил. Вы можете проверить время — я уже был в коридоре.",
