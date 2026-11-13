@@ -124,6 +124,63 @@ const CASE_002 = {
         }
     },
 
+    // === ЖИВЫЕ ОТНОШЕНИЯ NPC ===
+    // Базовые связи и автономные действия; скрытые сведения открываются только после подтверждения.
+    npcRelationships: {
+        bonds: [
+            { id: "joe-thomas-colleagues", fromNpcId: "bartender", toNpcId: "waiter", relationship: "coworkers", label: "Коллеги по бару", trust: 80, reciprocal: true },
+            { id: "sisters-anna-eva", fromNpcId: "ex_wife", toNpcId: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, reciprocal: true },
+            { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true }
+        ],
+        autonomousInteractions: [
+            {
+                id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 120, everyMinutes: 180,
+                minTrust: 55, fromPressureBelow: 70, toPressureBelow: 70,
+                trustDelta: 2, reciprocalTrustDelta: 1,
+                summary: "Джо поинтересовался, всё ли в порядке у Томаса."
+            },
+            {
+                id: "thomas-snaps-at-joe", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "waiter", toNpcId: "bartender", interaction: "conflict",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 180, everyMinutes: 240,
+                fromPressureAtLeast: 55,
+                trustDelta: -5, reciprocalTrustDelta: -3,
+                summary: "Томас сорвался на Джо после очередной тяжёлой смены."
+            },
+            {
+                id: "joe-thomas-reconcile", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "reconcile",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 240, everyMinutes: 240,
+                maxTrust: 55, fromPressureBelow: 35, toPressureBelow: 35,
+                trustDelta: 8, reciprocalTrustDelta: 6,
+                summary: "Джо признал, что был слишком резок, и попытался помириться с Томасом."
+            },
+            {
+                id: "eva-calls-anna", relationshipId: "sisters-anna-eva",
+                fromNpcId: "woman_in_red", toNpcId: "ex_wife", interaction: "support",
+                channel: "phone",
+                initialDelayMinutes: 90, everyMinutes: 240,
+                minTrust: 70, fromPressureBelow: 85, toPressureBelow: 85,
+                trustDelta: 1, reciprocalTrustDelta: 2,
+                summary: "Ева позвонила Анне, чтобы убедиться, что та не осталась одна."
+            },
+            {
+                id: "lora-checks-joe", relationshipId: "joe-lora-source",
+                fromNpcId: "journalist", toNpcId: "bartender", interaction: "support",
+                channel: "message",
+                initialDelayMinutes: 300, everyMinutes: 360,
+                minTrust: 50, fromPressureBelow: 65,
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Лора написала Джо и уточнила, не нужна ли ему помощь."
+            }
+        ]
+    },
+
     // === СОБЫТИЯ ===
     events: [
         {
