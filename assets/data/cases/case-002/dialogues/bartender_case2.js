@@ -27,6 +27,18 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 innerThought: "Он устал. Но хочет помочь.",
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
+                    {
+                        text: "Помните, как вы давили на меня в прошлый раз? Я не забыл.",
+                        nextNode: "remembers_threat",
+                        tone: "direct",
+                        condition: "long_term_memory:player_threatened"
+                    },
+                    {
+                        text: "В прошлый раз вы выслушали меня. Я это ценю.",
+                        nextNode: "remembers_kindness",
+                        tone: "reassuring",
+                        condition: "long_term_memory:player_reassured"
+                    },
                     { text: "Вы знали, что Кейн купил цианид в аптеке?", nextNode: "about_kane", tone: "direct", condition: "hasInsight:kane_bought_cyanide" },
                     {
                         text: "Томас рассказал, что вы пригрозили обвинить его в соучастии. Это правда?",
@@ -40,6 +52,49 @@ const DIALOGUE_BARTENDER_CASE2 = {
                             toNpcId: "bartender"
                         }
                     }
+                ]
+            },
+
+            remembers_threat: {
+                speaker: "npc",
+                text: "Я помню тот разговор. Вы пытались запугать меня, и я не собираюсь снова проходить через это. Говорите прямо, детектив.",
+                mood: "suspicious",
+                innerThought: "Он помнит, как я обращался с ним раньше. Доверие не исчезло бесследно.",
+                answers: [
+                    {
+                        text: "Вы правы. Я перегнул палку. Давайте начнём заново.",
+                        nextNode: "retell",
+                        tone: "reassuring",
+                        memorySummary: "Детектив извинился перед Джо за прежние угрозы.",
+                        memoryTags: ["player_apologized"],
+                        memoryImportance: 3
+                    },
+                    {
+                        text: "Я добивался результата. Вам лучше привыкнуть.",
+                        nextNode: "retell",
+                        tone: "threatening",
+                        memorySummary: "Детектив снова пригрозил Джо, не признав прежнюю ошибку.",
+                        memoryTags: ["player_threatened"],
+                        memoryImportance: 4
+                    }
+                ]
+            },
+
+            remembers_kindness: {
+                speaker: "npc",
+                text: "Помню. Вы не стали обращаться со мной как с подозреваемым. После всего, что случилось, приятно видеть, что вы не забыли о нашем разговоре.",
+                mood: "grateful",
+                innerThought: "Он помнит, что я помог ему. С таким человеком легче говорить.",
+                answers: [
+                    {
+                        text: "Я помню, что вы помогли мне. Спасибо, Джо.",
+                        nextNode: "retell",
+                        tone: "reassuring",
+                        memorySummary: "Детектив подтвердил Джо, что ценит его прежнюю помощь.",
+                        memoryTags: ["player_reassured"],
+                        memoryImportance: 3
+                    },
+                    { text: "Не путайте вежливость с доверием.", nextNode: "retell", tone: "direct" }
                 ]
             },
 
