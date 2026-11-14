@@ -398,3 +398,65 @@ test("starting the same case again clears run-scoped knowledge but retains persi
     assert.equal(board.caseId, "case-002");
     assert.equal(app.progress.activeCase, "case-002");
 });
+
+test("a false public accusation harms Anna once and survives a memory reload", () => {
+    const eventBus = createEventBus();
+    const context = vm.createContext({
+        console,
+        setInterval: () => 1,
+        clearInterval() {},
+        assessAccusationEvidence: (_case, inventory) => ({ sufficient: inventory.proofReady })
+    });
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/js/npc/npcMemoryService.js"), "utf8") +
+        "\n;globalThis.TestMemoryService = NPCMemoryService;",
+        context
+    );
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/js/controllers/eventController.js"), "utf8") +
+        "\n;globalThis.TestEventController = EventController;",
+        context
+    );
+    const memory = new context.TestMemoryService(null, "case-002");
+    const caseData = {
+        id: "case-002",
+        deductionSuspects: [{ id: "ex_wife" }, { id: "business_rival" }],
+        correctDeduction: { suspect: "business_rival" },
+        finalQuestion: { acceptableAnswers: [] }
+    };
+    const app = {
+        progress: {},
+        inventory: { proofReady: false },
+        caseManager: { currentCase: caseData },
+        npcMemoryService: memory,
+        _saveProgress() {}
+    };
+    new context.TestEventController(app, eventBus).bind();
+    const baseline = memory.getLongTermProfile("ex_wife").trust;
+    eventBus.emit("deduction:attempted", { caseId: "case-002" });
+    eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
+    assert.equal(memory.getAccusations("ex_wife").length, 0, "blocked when proof is missing");
+
+    app.inventory.proofReady = true;
+    eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "business_rival" });
+    assert.equal(memory.getAccusations("business_rival").length, 0, "correct suspect is not punished");
+
+    eventBus.emit("deduction:public_accusation", { caseId: "case-001", suspectId: "ex_wife" });
+    eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "unknown" });
+    assert.equal(memory.getAccusations("ex_wife").length, 0, "invalid case and suspect ignored");
+
+    eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
+    const after = memory.getTrust("ex_wife");
+    assert.equal(memory.getAccusationStatus("ex_wife", "public-final-accusation:case-002:ex_wife"), "false");
+    assert.ok(after < 50, "Anna's current trust decreases");
+    assert.ok(memory.getLongTermProfile("ex_wife").trust < baseline, "long-term trust decreases");
+    const stored = memory.toJSON();
+    eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
+    assert.equal(memory.getTrust("ex_wife"), after, "repeating the declaration cannot stack penalties");
+    assert.equal(memory.getAccusations("ex_wife").length, 1);
+    const restored = new context.TestMemoryService(stored, "case-002");
+    assert.equal(restored.getAccusationStatus("ex_wife", "public-final-accusation:case-002:ex_wife"), "false");
+    assert.equal(restored.getTrust("ex_wife"), after);
+    assert.ok(eventBus.emitted.some(event =>
+        event.name === "npc:memory_changed" && event.payload?.reason === "public_false_accusation"));
+});
