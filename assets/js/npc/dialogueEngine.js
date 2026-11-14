@@ -462,6 +462,10 @@ class DialogueEngine {
         if (conditionStr === 'long_term_pattern:repeated_pressure') {
             return Boolean(npcId && this.memoryService?.getLongTermBehaviorPattern(npcId)?.repeatedPressure);
         }
+        const valueAlignment = conditionStr.match(/^npc_value_alignment:(witness_safety|source_integrity):(upheld|breached|contested)$/);
+        if (valueAlignment) {
+            return Boolean(npcId && this.memoryService?.getNPCValueAlignment(npcId, valueAlignment[1]) === valueAlignment[2]);
+        }
         const longTermTrust = conditionStr.match(/^long_term_trust_(at_least|below):([0-9]+([.][0-9]+)?)$/);
         if (longTermTrust) {
             const [, operator, rawThreshold] = longTermTrust;
