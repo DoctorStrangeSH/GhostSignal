@@ -23,6 +23,7 @@ const CASE_002 = {
         "labour_inspection_office",
         "tram_depot",
         "old_textile_mill",
+        "night_diner",
         "bank"
     ],
     
