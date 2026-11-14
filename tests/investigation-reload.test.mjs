@@ -87,3 +87,50 @@ test('investigation NPC claims, rumors, relationships and hypotheses survive a s
     assert.equal(restoredBoard.hypotheses[0].links[0].sourceId, 'thomas-window');
     assert.equal(restoredRelationships.worldTrusts.joe.waiter, 73);
 });
+
+test('a promise stays pending after reload, then resolves only once when evidence arrives', () => {
+    const { NPCMemoryService, SaveController } = loadSystems();
+    const memory = new NPCMemoryService(null, 'case-002');
+    const promise = {
+        id: 'protect-family', text: 'I will make your family safe',
+        fulfillment: { type: 'insight_gained', insightId: 'family_protected' },
+        fulfilledTrustDelta: 7, brokenTrustDelta: -9
+    };
+    assert.equal(memory.recordPromise('waiter', promise).recorded, true);
+    let saved;
+    const app = { progress: { activeCase: 'case-002' }, npcMemoryService: memory };
+    const controller = new SaveController(app, { saveProgress(value) { saved = clone(value); return true; } });
+    assert.equal(controller.quickSave(), true);
+
+    const restored = NPCMemoryService.fromJSON(saved.npcMemoryData, saved.activeCase);
+    assert.equal(restored.getPromises('waiter')[0].status, 'pending');
+    assert.equal(restored.recordPromise('waiter', promise).reason, 'already_recorded');
+    const trustBefore = restored.getMemory('waiter').trust;
+    assert.equal(restored.resolvePromisesForEvent({ type: 'insight_gained', insightId: 'wrong_insight' }).length, 0);
+    assert.equal(restored.resolvePromisesForEvent({ type: 'insight_gained', insightId: 'family_protected' }).length, 1);
+    assert.equal(restored.getMemory('waiter').trust, trustBefore + 7);
+
+    const completed = NPCMemoryService.fromJSON(clone(restored.toJSON()), 'case-002');
+    assert.equal(completed.getPromises('waiter')[0].status, 'fulfilled');
+    assert.equal(completed.resolvePromisesForEvent({ type: 'insight_gained', insightId: 'family_protected' }).length, 0);
+    assert.equal(completed.settlePromisesForCase('case-002', 'solved').length, 0);
+    assert.equal(completed.getMemory('waiter').trust, trustBefore + 7);
+});
+
+test('breaking a promise persists its consequence across reloads without double penalty', () => {
+    const { NPCMemoryService } = loadSystems();
+    const memory = new NPCMemoryService(null, 'case-002');
+    assert.equal(memory.recordPromise('waiter', {
+        id: 'bring-evidence', text: 'I will bring you evidence',
+        fulfillment: { type: 'item_acquired', itemId: 'sealed_letter' },
+        brokenTrustDelta: -8
+    }).recorded, true);
+    const before = memory.getMemory('waiter').trust;
+    assert.equal(memory.settlePromisesForCase('case-002', 'failed').length, 1);
+    const restored = NPCMemoryService.fromJSON(clone(memory.toJSON()), 'case-002');
+    assert.equal(restored.getPromises('waiter')[0].status, 'broken');
+    assert.equal(restored.getMemory('waiter').trust, before - 8);
+    assert.equal(restored.settlePromisesForCase('case-002', 'failed').length, 0);
+    assert.equal(restored.getMemory('waiter').trust, before - 8);
+    assert.ok(restored.people.waiter.memories.some(entry => entry.type === 'promise_broken'));
+});
