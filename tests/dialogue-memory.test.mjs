@@ -812,6 +812,23 @@ test("Kane's procedural objection is discussed only after his autonomous respons
     assert.match(engine.currentNode.text, /возражения в протокол/i);
 });
 
+test('Kane answers an explicitly prepared route question without confessing or adding an insight', () => {
+    const { engine, inventory } = createDialogueHarness();
+    let prepared = false;
+    engine.setInvestigationBoard({ hasPreparedRouteQuestion(npcId) {
+        return prepared && npcId === 'business_rival';
+    } });
+    engine.startDialogue('dialogue-rival-full');
+    const condition = 'route_question_prepared';
+    assert.equal(engine.getAvailableAnswers().find(a => a.condition === condition)?.isAvailable, false);
+    prepared = true;
+    const answer = engine.getAvailableAnswers().find(a => a.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, 'route_question_response');
+    assert.match(engine.currentNode.text, /не мой маршрут/);
+    assert.equal(inventory.insights.length, 0);
+});
+
 test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
     const { engine, inventory, memory, context } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning");
