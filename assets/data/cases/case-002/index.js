@@ -252,6 +252,16 @@ const CASE_002 = {
                 summary: "После отдельного разговора с Томасом Лора сообщила Джо, что не нашла независимых доказательств обвинения и не станет представлять слух как установленный факт."
             },
             {
+                id: "joe-reassures-thomas-after-lora-update", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 240, everyMinutes: 90, maxOccurrences: 1,
+                requiresReceivedActionId: "lora-updates-joe-after-thomas-check",
+                requiresReceivedActionAgeMinutes: 30,
+                toCooperationDelta: 4, trustDelta: 2, reciprocalTrustDelta: 1,
+                summary: "Получив осторожное сообщение Лоры, Джо поддержал Томаса и предложил помочь проверить обвинение, не объявляя его заранее ложным."
+            },
+            {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
