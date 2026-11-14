@@ -786,3 +786,45 @@ test("NPC can file an autonomous objection only after personally witnessing the 
     assert.equal(loaded.hasCompletedInteraction("a", "formal-objection"), true);
     assert.equal(advance(120).changed, 0);
 });
+
+test('a recipient reacts to a delivered NPC message only after it arrives and time passes', () => {
+    const config = {
+        bonds: [
+            { id: 'a-b', fromNpcId: 'a', toNpcId: 'b', trust: 60, reciprocal: true },
+            { id: 'b-c', fromNpcId: 'b', toNpcId: 'c', trust: 70, reciprocal: true }
+        ],
+        autonomousInteractions: [
+            { id: 'private-check', relationshipId: 'a-b', fromNpcId: 'a', toNpcId: 'b',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 30,
+                everyMinutes: 60, maxOccurrences: 1 },
+            { id: 'response', relationshipId: 'b-c', fromNpcId: 'b', toNpcId: 'c',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: 'private-check', requiresReceivedActionAgeMinutes: 60,
+                toCooperationDelta: 4 },
+            { id: 'outsider-response', relationshipId: 'b-c', fromNpcId: 'c', toNpcId: 'b',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: 'private-check' }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcs: ['a', 'b', 'c'], npcRelationships: config }
+    });
+    assert.equal(relationships.hasCompletedInteraction('b', 'response'), false);
+    advance(30);
+    assert.equal(relationships.hasReceivedInteraction('b', 'private-check'), true);
+    assert.equal(relationships.hasCompletedInteraction('b', 'response'), false);
+    advance(59);
+    assert.equal(relationships.hasCompletedInteraction('b', 'response'), false);
+    advance(30);
+    assert.equal(relationships.hasCompletedInteraction('b', 'response'), true);
+    assert.equal(relationships.hasReceivedInteraction('c', 'response'), true);
+    assert.equal(relationships.hasCompletedInteraction('c', 'outsider-response'), false);
+    assert.equal(memory.getMemory('c').cooperation > 50, true);
+    context.savedRelationships = relationships.toJSON();
+    context.memory = memory;
+    const restored = vm.runInContext('NPCRelationshipService.fromJSON(savedRelationships, memory, npcManager, clock)', context);
+    restored.setCase(caseData);
+    assert.equal(restored.hasCompletedInteraction('b', 'response'), true);
+});
