@@ -147,12 +147,14 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
              /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^accusation_status:[a-z0-9_:-]{1,100}:(pending|false|retracted|substantiated)$/i.test(rule.condition) ||
              /^npc_action_received:[a-z0-9_:-]{1,64}$/i.test(rule.condition) ||
+             /^all:npc_action_received:[a-z0-9_:-]{1,64}&not:has_visited_node:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^npc_investigation_outcome:[a-z0-9_:-]{1,64}:(corroborated|disputed|no_independent_evidence)$/i.test(rule.condition));
         if (!rule?.nodeId || !nodes[rule.nodeId] || !validCondition) {
             errors.push("Dialogue " + id + " has an invalid conditional entry.");
         }
-        if (typeof rule?.condition === "string" && rule.condition.startsWith("npc_action_received:")) {
-            const actionId = rule.condition.slice("npc_action_received:".length);
+        if (typeof rule?.condition === "string" &&
+            /^(?:all:)?npc_action_received:/i.test(rule.condition)) {
+            const actionId = rule.condition.replace(/^all:npc_action_received:|^npc_action_received:/i, "").split("&")[0];
             if (!Object.values(data.cases).some(gameCase =>
                 (gameCase.npcRelationships?.autonomousInteractions || []).some(action =>
                     action.id === actionId && action.toNpcId === dialogue.npcId
