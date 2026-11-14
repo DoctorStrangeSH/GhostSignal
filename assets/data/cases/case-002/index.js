@@ -26,6 +26,7 @@ const CASE_002 = {
         "night_diner",
         "textile_phone_booth",
         "telephone_exchange",
+        "telephone_maintenance_depot",
         "bank"
     ],
     
