@@ -6,7 +6,7 @@
  */
 class NPCMemoryService {
     constructor(snapshot = null, currentCaseId = null) {
-        this.version = 10;
+        this.version = 11;
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.people = this._clone(snapshot?.people || {});
@@ -155,6 +155,7 @@ class NPCMemoryService {
                 cooperationHistory: [],
                 conversations: 0,
                 dialogueHistory: [],
+                visitedNodeIds: [],
                 presentedEvidence: [],
                 claims: [],
                 liesExposed: [],
@@ -170,6 +171,11 @@ class NPCMemoryService {
         memory.cooperationHistory = Array.isArray(memory.cooperationHistory) ? memory.cooperationHistory : [];
         memory.conversations = Number.isInteger(memory.conversations) ? Math.max(0, memory.conversations) : 0;
         memory.dialogueHistory = Array.isArray(memory.dialogueHistory) ? memory.dialogueHistory : [];
+        memory.visitedNodeIds = Array.isArray(memory.visitedNodeIds)
+            ? [...new Set(memory.visitedNodeIds.filter(id => typeof id === 'string' && id.length <= 240))]
+            : [...new Set(memory.dialogueHistory.filter(entry => entry?.type === 'node' &&
+                typeof entry.nodeId === 'string' && typeof entry.dialogueId === 'string')
+                .map(entry => `${entry.dialogueId}:${entry.nodeId}`))];
         memory.presentedEvidence = Array.isArray(memory.presentedEvidence) ? memory.presentedEvidence : [];
         memory.claims = Array.isArray(memory.claims) ? memory.claims : [];
         for (const claim of memory.claims) {
@@ -232,6 +238,8 @@ class NPCMemoryService {
     recordNodeVisited(npcId, dialogueId, node) {
         const memory = this._ensureNPC(npcId);
         if (!memory || !node?.id) return false;
+        const key = `${dialogueId}:${node.id}`;
+        if (!memory.visitedNodeIds.includes(key)) memory.visitedNodeIds.push(key);
         this._append(memory, {
             type: 'node',
             dialogueId,
@@ -240,6 +248,12 @@ class NPCMemoryService {
             text: node.text || ''
         });
         return true;
+    }
+
+    hasVisitedNode(npcId, dialogueId, nodeId) {
+        const memory = this.cases?.[this.currentCaseId]?.[npcId];
+        return Boolean(memory && typeof dialogueId === 'string' && typeof nodeId === 'string' &&
+            this._ensureNPC(npcId).visitedNodeIds.includes(`${dialogueId}:${nodeId}`));
     }
 
     recordAnswerSelected(npcId, dialogueId, nodeId, answer) {
