@@ -11,6 +11,7 @@ function createHarness(items = [], insights = []) {
     const emitted = [];
     const feedback = { classList: { remove() {} }, innerHTML: '' };
     const submit = { disabled: false };
+    const publicButton = { disabled: false, onClick: null, addEventListener(name, handler) { if (name === 'click') this.onClick = handler; }, click() { this.onClick?.({ currentTarget: this }); } };
     const context = vm.createContext({
         console,
         events: {
@@ -20,7 +21,8 @@ function createHarness(items = [], insights = []) {
         document: {
             getElementById(id) {
                 return id === 'deduction-feedback' ? feedback :
-                    id === 'btn-deduction-submit' ? submit : null;
+                    id === 'btn-deduction-submit' ? submit :
+                    id === 'btn-deduction-public' ? publicButton : null;
             }
         },
         setTimeout(callback) { callback(); }
@@ -41,7 +43,7 @@ function createHarness(items = [], insights = []) {
         '({ first: CASE_001, second: CASE_002, screen: DeductionScreen, manager: CaseManager })',
         context
     );
-    return { first, second, inventory, emitted, feedback, submit, screen: new screen(inventory), manager };
+    return { first, second, inventory, emitted, feedback, submit, publicButton, screen: new screen(inventory), manager };
 }
 
 test('correct suspect, motive and weapon without corroboration do not close case two', () => {
@@ -143,4 +145,26 @@ test('case one remains compatible without evidence requirements', () => {
     manager.caseState = 'active';
     assert.equal(manager.checkFinalAnswer('мэри').isCorrect, true);
     assert.equal(manager.caseState, 'solved');
+});
+
+test('private checks never accuse Anna, but an explicit public declaration does', () => {
+    const h = createHarness(['prescription_copy', 'bar_photo'], ['hard_evidence_kane']);
+    const verdict = h.screen._checkDeduction(h.second, 'ex_wife', 'jealousy', 'poison');
+    h.screen._showDeductionResult(verdict, { hide() {} }, h.second);
+
+    assert.match(h.feedback.innerHTML, /ОБЪЯВИТЬ ОБВИНЕНИЕ ПУБЛИЧНО/);
+    assert.equal(h.emitted.some(event => event.name === 'deduction:public_accusation'), false);
+    h.publicButton.click();
+    assert.deepEqual(h.emitted.filter(event => event.name === 'deduction:public_accusation').map(event =>
+        [event.payload.caseId, event.payload.suspectId]), [['case-002', 'ex_wife']]);
+    assert.equal(h.publicButton.disabled, true);
+});
+
+test('without independent evidence, even a wrong guess offers no public accusation', () => {
+    const h = createHarness(['bar_photo']);
+    const verdict = h.screen._checkDeduction(h.second, 'ex_wife', 'jealousy', 'poison');
+    h.screen._showDeductionResult(verdict, { hide() {} }, h.second);
+    assert.doesNotMatch(h.feedback.innerHTML, /ОБЪЯВИТЬ ОБВИНЕНИЕ ПУБЛИЧНО/);
+    assert.equal(h.publicButton.onClick, null);
+    assert.equal(h.emitted.some(event => event.name === 'deduction:public_accusation'), false);
 });
