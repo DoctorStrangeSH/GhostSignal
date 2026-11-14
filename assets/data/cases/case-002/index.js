@@ -229,6 +229,17 @@ const CASE_002 = {
                 summary: "После предупреждения Джо Томас сам попросил помочь проверить запасной план безопасности для матери. Это ещё не подтверждение переезда."
             },
             {
+                id: "joe-asks-mills-about-witness-protection", relationshipId: "bartender-sergeant",
+                fromNpcId: "bartender", toNpcId: "sergeant", interaction: "support",
+                goalId: "keep_in_touch_with_mills", goalProgress: 1,
+                channel: "message", initialDelayMinutes: 120, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-asks-joe-for-shelter-contingency",
+                requiresReceivedActionAgeMinutes: 45,
+                trustDelta: 1, reciprocalTrustDelta: 0,
+                summary: "После просьбы Томаса Джо конфиденциально уточнил у Миллса общую процедуру защиты свидетеля, не передавая адрес семьи. Это не является распоряжением о переезде."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
