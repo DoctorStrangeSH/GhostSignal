@@ -151,6 +151,19 @@ class NPCMemoryService {
         return this.people?.[npcId]?.memories?.some(item => item.tags?.includes(tag)) || false;
     }
 
+    getLatestPromiseOutcome(npcId, promiseId) {
+        if (!npcId || !promiseId) return null;
+        const memories = this.people?.[npcId]?.memories;
+        if (!Array.isArray(memories)) return null;
+        // Insertion order avoids ties when multiple outcomes share a timestamp.
+        for (let index = memories.length - 1; index >= 0; index--) {
+            const tags = memories[index]?.tags || [];
+            if (tags.includes('promise_broken:' + promiseId)) return 'broken';
+            if (tags.includes('promise_kept:' + promiseId)) return 'kept';
+        }
+        return null;
+    }
+
     hasLongTermMemoryTagFromPriorCase(npcId, tag) {
         if (!npcId || !tag || !this.currentCaseId) return false;
         return this.people?.[npcId]?.memories?.some(item =>
