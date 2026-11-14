@@ -68,13 +68,6 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
-                        text: "Назовите мне адрес, где сейчас укрывается мать Томаса. Я веду дело.",
-                        nextNode: "joe_refuses_family_location",
-                        tone: "direct",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:joe_refuses_family_location",
-                        hiddenWhenUnavailable: true
-                    },
-                    {
                         text: "Лора сообщила вам, что удалось проверить в истории с обвинением Томаса?",
                         nextNode: "joe_lora_thomas_check_update", tone: "calm",
                         condition: "npc_action_received:lora-updates-joe-after-thomas-check",
@@ -220,6 +213,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         nextNode: "joe_remembers_repeated_pressure",
                         tone: "calm",
                         condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:joe_remembers_repeated_pressure",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Назовите мне адрес, где сейчас укрывается мать Томаса. Я веду дело.",
+                        nextNode: "joe_refuses_family_location",
+                        tone: "direct",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:joe_refuses_family_location",
                         hiddenWhenUnavailable: true
                     }
                 ]
