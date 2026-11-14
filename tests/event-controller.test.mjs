@@ -337,3 +337,64 @@ test("failed cases close once, preserve settled NPC promises and cannot be resum
         "settle:case-002:failed", "stats", "reputation", "hide:hidden", "save"
     ]);
 });
+
+test("starting the same case again clears run-scoped knowledge but retains persistent NPC profiles", () => {
+    const bus = createEventBus();
+    const profile = { trust: 43, memories: [{ type: "broken_promise" }] };
+    const memory = {
+        currentCaseId: "case-002",
+        cases: { "case-002": { waiter: { claims: ["old clue"] } } },
+        people: { waiter: profile },
+        resetCase(id) { delete this.cases[id]; },
+        setCase(id) { this.currentCaseId = id; this.cases[id] ??= {}; },
+        toJSON() { return { cases: this.cases, people: this.people }; }
+    };
+    const scoped = () => ({
+        cases: { "case-002": { old: true } },
+        resetCase(id) { delete this.cases[id]; },
+        setCase(caseData) { this.cases[caseData.id] ??= {}; },
+        setMotivationService() {},
+        setRelationshipService() {},
+        setDependencies() {},
+        toJSON() { return { cases: this.cases }; }
+    });
+    const board = {
+        caseId: "case-002",
+        hypotheses: ["previous deduction"],
+        setCase(id) {
+            if (this.caseId === id) return;
+            this.caseId = id;
+            this.hypotheses = [];
+        },
+        toJSON() { return { caseId: this.caseId, hypotheses: this.hypotheses }; }
+    };
+    const app = {
+        progress: {},
+        caseManager: { currentCase: { id: "case-002" }, toJSON: () => ({ caseState: "active" }) },
+        investigationBoard: board,
+        boardUI: { render() {} },
+        npcMemoryService: memory,
+        npcMotivationService: { setMemoryService() {}, setCase() {} },
+        npcSocialNetwork: scoped(),
+        npcRelationshipService: scoped(),
+        npcManager: { setMemoryService() {}, setSocialNetwork() {}, setRelationshipService() {}, loadNPCsForCase() {} },
+        npcListUI: { render() {} },
+        progressTracker: { startCase() {} },
+        evidenceChainSystem: { loadChainsForCase() {}, checkChains() {} },
+        notesManager: { collectNote() {} },
+        _saveProgress() {}
+    };
+    const EventController = loadEventController({
+        setInterval: () => 1, clearInterval() {}, setTimeout() {}
+    });
+    new EventController(app, bus).bind();
+    bus.emit("case:started", { caseData: { id: "case-002" } });
+
+    assert.deepEqual(Object.keys(memory.cases["case-002"]), []);
+    assert.equal(memory.people.waiter, profile);
+    assert.deepEqual(Object.keys(app.npcSocialNetwork.cases["case-002"]), []);
+    assert.deepEqual(Object.keys(app.npcRelationshipService.cases["case-002"]), []);
+    assert.deepEqual(board.hypotheses, []);
+    assert.equal(board.caseId, "case-002");
+    assert.equal(app.progress.activeCase, "case-002");
+});
