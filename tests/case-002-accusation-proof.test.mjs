@@ -56,7 +56,7 @@ test('correct suspect, motive and weapon without corroboration do not close case
     h.screen._showDeductionResult(verdict, { hide() { hidden = true; } }, h.second);
     assert.match(h.feedback.innerHTML, /ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО/);
     assert.match(h.feedback.innerHTML, /Копия аптечной записи/);
-    assert.match(h.feedback.innerHTML, /Материалы Лоры или признание Кейна/);
+    assert.match(h.feedback.innerHTML, /Документы журналистки или официальное признание/);
     assert.equal(hidden, false);
     assert.equal(h.submit.disabled, false);
     assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
