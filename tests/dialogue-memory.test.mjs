@@ -33,10 +33,11 @@ function createDialogueHarness() {
             labour_inspector: { name: "Илья Руденко", availableForCall: false },
             tram_conductor: { name: "Павел Соколов", availableForCall: false },
             mill_watchman: { name: "Степан Орлов", availableForCall: false },
+            diner_owner: { name: "Элеонора Брукс", availableForCall: false },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
-        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true } })[id] || null; }
+        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true }, diner_cash_slip: { id, name: "Кассовый чек закусочной", icon: "🧾", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
@@ -50,6 +51,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/labour_inspector.js",
         "assets/data/cases/case-002/dialogues/tram_conductor.js",
         "assets/data/cases/case-002/dialogues/mill_watchman.js",
+        "assets/data/cases/case-002/dialogues/diner_owner.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1500,4 +1502,45 @@ test("mill gate ledger does not prove the unknown visitor was absent from the en
     assert.equal(overclaim?.isAvailable, true);
     engine.selectAnswer(overclaim.index);
     assert.match(engine.currentNode.text, /не за весь район/);
+});
+
+test("diner witness provides a cautious possible match and an explicitly unreliable time", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    engine.startDialogue("dialogue-diner-owner");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "recalls_customer"), false);
+
+    inventory.addInsight("unknown_visitor_description");
+    engine.startDialogue("dialogue-diner-owner");
+    const prompt = engine.getAvailableAnswers().find(answer => answer.nextNode === "recalls_customer");
+    assert.equal(prompt?.isAvailable, true);
+    engine.selectAnswer(prompt.index);
+
+    assert.equal(inventory.hasInsight("diner_possible_matching_customer"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "diner_cash_slip"), true);
+    assert.match(engine.currentNode.text, /не поручусь, что это тот же человек/);
+
+    const askDirection = engine.getAvailableAnswers().find(answer => answer.nextNode === "direction_uncertain");
+    assert.equal(askDirection?.isAvailable, true);
+    engine.selectAnswer(askDirection.index);
+    assert.equal(inventory.hasInsight("diner_time_unverified"), true);
+    assert.match(engine.currentNode.text, /не видела, как он вышел/);
+    assert.match(engine.currentNode.text, /часы кассы никто не сверял/);
+
+    const careful = engine.getAvailableAnswers().find(answer => answer.text.includes("время остаётся приблизительным"));
+    assert.equal(careful?.isAvailable, true);
+    engine.selectAnswer(careful.index);
+    assert.equal(memory.hasLongTermMemoryTag("diner_owner", "player_recorded_diner_clock_uncertainty"), true);
+});
+
+test("diner owner rejects treating an uncertain recollection as identification", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    inventory.addInsight("unknown_visitor_description");
+    engine.startDialogue("dialogue-diner-owner");
+    const recall = engine.getAvailableAnswers().find(answer => answer.nextNode === "recalls_customer");
+    engine.selectAnswer(recall.index);
+    const overclaim = engine.getAvailableAnswers().find(answer => answer.nextNode === "rejects_early_identification");
+    assert.equal(overclaim?.isAvailable, true);
+    engine.selectAnswer(overclaim.index);
+    assert.match(engine.currentNode.text, /не видела, как он садился в трамвай/);
+    assert.equal(memory.hasLongTermMemoryTag("diner_owner", "player_overstated_diner_match"), true);
 });
