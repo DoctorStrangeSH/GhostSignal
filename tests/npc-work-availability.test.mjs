@@ -29,7 +29,8 @@ function createManager({ caseId = "case-002", decision = null, hour = 10 } = {})
     });
     vm.runInContext(npcScript, context);
     const clock = { hour };
-    const manager = vm.runInContext("new NPCManager(clock, null)", context);
+    const ManagerClass = vm.runInContext("NPCManager", context);
+    const manager = new ManagerClass(clock, null);
     manager.loadNPCsForCase({ id: caseId, npcs: ["waiter"] });
     manager.setRelationshipService({
         getWitnessWorkDecision(npcId, ruleId) {
