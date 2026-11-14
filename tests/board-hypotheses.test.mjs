@@ -213,3 +213,32 @@ test('alibi review checks the existing minimum travel cost without inventing geo
     const enoughTime = board.reviewAlibiClaims(5);
     assert.equal(enoughTime.length, 0);
 });
+
+test('linked, visited locations warn about opening hours without treating closure as proof', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const visited = [{ id: 'bar', name: 'Бар Джо', hours: { open: 16, close: 2 } },
+        { id: 'station', name: 'Станция', hours: { open: 7, close: 23 } },
+        { id: 'street', name: 'Улица', hours: { open: 0, close: 24 } }];
+    const context = { statements: [{ id: 'witness', status: 'active' }], locations: visited };
+    const add = (id, startMinute, endMinute) => board.addAlibiClaim({ subject: 'Джо',
+        location: 'Версия свидетеля', locationId: id, startMinute, endMinute,
+        precision: 'exact', kind: 'statement', sourceId: 'witness' }, context);
+    assert.equal(add('secret', 1200, 1210), null, 'unknown places cannot be linked');
+    assert.ok(add('bar', 60, 90), 'overnight bar is open before 02:00');
+    assert.ok(add('bar', 120, 135), 'bar closes at 02:00');
+    assert.ok(add('bar', 60, 1080), 'the interior closed period must be detected');
+    assert.ok(add('station', 1380, 1390), 'station closes at 23:00');
+    assert.ok(add('street', 0, 1439), '24-hour places never warn');
+    const findings = board.reviewAlibiLocationHours(visited);
+    assert.equal(findings.length, 3);
+    assert.ok(findings.every(f => f.status === 'outside_public_hours'));
+    assert.ok(findings.every(f => /не доказательство отсутствия/.test(f.reason)));
+    assert.equal(board.reviewAlibiLocationHours([]).length, 0, 'unknown location schedule must not leak');
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.alibiClaims[0].locationId, 'bar');
+    assert.equal(restored.reviewAlibiLocationHours(visited).length, 3);
+    const legacy = board.toJSON();
+    delete legacy.alibiClaims[0].locationId;
+    assert.equal(runtime.restore(legacy).alibiClaims[0].locationId, null);
+});
