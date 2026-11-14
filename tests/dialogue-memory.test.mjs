@@ -2011,3 +2011,30 @@ test("Thomas's latest promise outcome determines which assistance he offers", ()
     assert.equal(engine.currentNode.id, "past_trust_help");
     assert.match(engine.currentNode.text, /сверить время/);
 });
+
+test("Joe offers bounded one-time help only after a reassuring previous case", () => {
+    const { engine, memory } = createDialogueHarness();
+    assert.equal(engine.startDialogue("dialogue-bartender-case2"), true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_earned_help" && a.isAvailable), false);
+    engine.reset();
+
+    memory.setCase("case-001");
+    memory.recordDialogueStarted("bartender", "dialogue-bartender");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "greeting", {
+        text: "Спасибо, Джо, я вас услышал.",
+        tone: "reassuring",
+        memoryTags: ["player_reassured"],
+        memoryImportance: 3
+    });
+    memory.setCase("case-002");
+    assert.equal(engine.startDialogue("dialogue-bartender-case2"), true);
+    const help = engine.getAvailableAnswers().find(a => a.nextNode === "joe_earned_help");
+    assert.equal(help?.isAvailable, true);
+    assert.equal(engine.selectAnswer(help.index).id, "joe_earned_help");
+    assert.match(engine.currentNode.text, /личные сведения сотрудников/);
+
+    engine.reset();
+    assert.equal(engine.startDialogue("dialogue-bartender-case2"), true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_earned_help" && a.isAvailable), false,
+        "Joe should not repeat the special offer once it was used");
+});
