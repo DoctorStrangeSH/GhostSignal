@@ -3078,3 +3078,26 @@ test("Anna accepts an apology without instant forgiveness; independent proof rep
     assert.equal(restored.getAccusationStatus("ex_wife", accusationId), "false");
     assert.equal(restored.getTrust("ex_wife"), repairedTrust);
 });
+
+
+test("Anna confronts a repeated false accuser only after distinct-case misconduct", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase("case-001");
+    memory.recordAccusation("ex_wife", { id: "prior-false", text: "Старое ложное обвинение." });
+    memory.resolveAccusation("ex_wife", "prior-false", "false");
+    memory.setCase("case-002");
+    memory.recordAccusation("ex_wife", {
+        id: "public-final-accusation:case-002:ex_wife", text: "Публичное обвинение."
+    });
+    memory.resolveAccusation("ex_wife", "public-final-accusation:case-002:ex_wife", "false");
+    engine.startDialogue("dialogue-ex-wife");
+    assert.equal(engine._checkCondition("long_term_pattern:repeated_false_accusations"), true);
+    const options = engine.getAvailableAnswers();
+    const repeated = options.find(item => item.nextNode === "anna_repeated_public_apology");
+    const first = options.find(item => item.nextNode === "anna_public_apology");
+    assert.equal(repeated?.isAvailable, true);
+    assert.equal(first?.isAvailable, false);
+    assert.equal(engine.selectAnswer(repeated.index).id, "anna_repeated_public_apology");
+    assert.match(engine.currentNode.text, /другом деле/);
+    assert.equal(memory.recordVerifiedRestitution("ex_wife", "unverified", "unknown"), false);
+});
