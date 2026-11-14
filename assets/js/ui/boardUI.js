@@ -63,11 +63,14 @@ class BoardUI {
                 <span class="board-title">📋 ДОСКА РАССЛЕДОВАНИЯ</span>
                 <button id="btn-board-reset" class="terminal-btn btn-sm">🔄 СБРОС</button>
             </div>
+
+            <div class="board-layout-status" aria-live="polite">${this._renderLayoutStatus()}</div>
             
             <div class="board-canvas" id="board-canvas">
-                <svg class="board-connections" id="board-connections"></svg>
+                <svg class="board-connections" id="board-connections" role="img" aria-label="Схема сопоставления размещённых улик. Линии не подтверждают истинность версии."></svg>
                 <div class="board-slots" id="board-slots">${this._renderSlots()}</div>
             </div>
+            <p class="board-connection-hint"><span class="board-legend-line" aria-hidden="true"></span> Линия показывает соседство на схеме, а не доказанную связь. Проверяйте выводы в гипотезах и показаниях.</p>
             
             <div class="board-evidence-pool">
                 <h4>📦 Доступные улики:</h4>
@@ -92,6 +95,15 @@ class BoardUI {
         const expanded = this._expandedTools?.has(id);
         return `<details class="board-tool" data-tool="${id}" ${expanded ? 'open' : ''}>
             <summary>${label}</summary><div class="board-tool-content">${content}</div></details>`;
+    }
+
+    _renderLayoutStatus() {
+        if (!this.board) return '';
+        const filled = this.board.slots.filter(slot => Boolean(slot.evidenceId)).length;
+        const linked = this.board.connections.filter(conn =>
+            this.board.slots.some(slot => slot.id === conn.from && slot.evidenceId) &&
+            this.board.slots.some(slot => slot.id === conn.to && slot.evidenceId)).length;
+        return `<span>Размещено улик: ${filled} из ${this.board.slots.length}</span><span>Соседних пар: ${linked}</span>`;
     }
 
     _renderInvestigationChecklist() {
