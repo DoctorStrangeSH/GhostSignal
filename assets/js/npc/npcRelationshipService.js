@@ -171,6 +171,7 @@ class NPCRelationshipService {
                         fromRumorAgeMinutesAtLeast: this._optionalClamp(conditions.fromRumorAgeMinutesAtLeast, 0, 10080),
                         requiresActionId: typeof conditions.requiresActionId === 'string' ? conditions.requiresActionId : null,
                         requiresInvestigationOutcome: ['corroborated', 'disputed', 'no_independent_evidence'].includes(conditions.requiresInvestigationOutcome) ? conditions.requiresInvestigationOutcome : null,
+                        requiresConsultationOutcome: ['procedure_guidance', 'written_request_required'].includes(conditions.requiresConsultationOutcome) ? conditions.requiresConsultationOutcome : null,
                         requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080),
                         requiresReceivedActionId: typeof conditions.requiresReceivedActionId === 'string' ? conditions.requiresReceivedActionId : null,
                         requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
@@ -399,6 +400,9 @@ class NPCRelationshipService {
             if (!prior || !Number.isInteger(prior.occurrences) || prior.occurrences < 1) return false;
             if (conditions.requiresInvestigationOutcome &&
                 prior.investigationOutcome !== conditions.requiresInvestigationOutcome) return false;
+            if (conditions.requiresConsultationOutcome &&
+                (prerequisite?.consultationPolicy !== 'witness_protection' ||
+                    prior.consultationOutcome !== conditions.requiresConsultationOutcome)) return false;
             if (conditions.requiresActionAgeMinutes !== null &&
                 (!Number.isFinite(prior.lastTriggeredAt) ||
                     this._now() - prior.lastTriggeredAt < conditions.requiresActionAgeMinutes)) return false;

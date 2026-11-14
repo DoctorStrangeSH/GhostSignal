@@ -435,7 +435,25 @@ const DIALOGUE_WAITER = {
                         tone: "cautious",
                         condition: "all:npc_action_received:joe-alerts-thomas-after-shelter-leak&not:has_visited_node:thomas_received_joe_shelter_warning",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо рассказал тебе, что ответил Миллс по защите свидетеля?",
+                        nextNode: "thomas_hears_mills_documents_required",
+                        tone: "cautious",
+                        condition: "all:npc_action_received:joe-informs-thomas-mills-requires-documents&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_hears_mills_documents_required",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_hears_mills_documents_required: {
+                speaker: "npc",
+                text: "Да, Джо написал мне после разговора с Миллсом. Сержант пока требует письменное обращение и подтверждения угрозы — официальная защита не согласована. Я не слышал Миллса лично, поэтому знаю только то, что передал Джо. Ждать без плана страшно, но говорить, будто мама уже защищена, было бы неправдой.",
+                mood: "worried",
+                innerThought: "Сведения переданы через Джо: Томас не выдаёт их за собственный разговор с сержантом. Действие не подтверждает безопасность семьи.",
+                answers: [
+                    { text: "Не стану обещать охрану, пока не появится официальное подтверждение.", nextNode: "greeting", tone: "calm" },
+                    { text: "Понимаю. Уточню, какие документы можно предоставить.", nextNode: "end_waiter_guarded", tone: "procedural" }
                 ]
             },
 

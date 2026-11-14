@@ -241,6 +241,17 @@ const CASE_002 = {
                 summary: "После просьбы Томаса Джо конфиденциально уточнил у Миллса общую процедуру защиты свидетеля, не передавая адрес семьи. Это не является распоряжением о переезде."
             },
             {
+                id: "joe-informs-thomas-mills-requires-documents", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 180, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresActionId: "joe-asks-mills-about-witness-protection",
+                requiresConsultationOutcome: "written_request_required",
+                requiresActionAgeMinutes: 45,
+                trustDelta: 1, reciprocalTrustDelta: 0,
+                summary: "Получив от Миллса требование письменного запроса, Джо сам предупредил Томаса о задержке с официальной защитой. Никакая охрана ещё не предоставлена."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",

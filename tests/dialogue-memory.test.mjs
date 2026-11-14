@@ -2640,3 +2640,60 @@ test("Mills's witness-protection consultation has stable, evidence-limited outco
         assert.equal(restored.getProtectionConsultationOutcome("bartender", id), expected);
     }
 });
+
+test("Joe relays Mills's written-request outcome to Thomas, never the alternative", () => {
+    for (const [trust, shouldNotify] of [[55, true], [75, false]]) {
+        const { engine, context, memory, inventory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        const caseData = vm.runInContext("CASE_002", context);
+        relations.setCase(caseData);
+        engine.setRelationshipService(relations);
+        const inquiryId = "joe-asks-mills-about-witness-protection";
+        const reportId = "joe-informs-thomas-mills-requires-documents";
+        memory.setRelationshipTrust("bartender", "sergeant", trust);
+
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.hasReceivedInteraction("waiter", reportId), false);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+        gameTime.advance(60);
+        relations.processDueInteractions();
+        gameTime.advance(60);
+        relations.processDueInteractions();
+        gameTime.advance(60);
+        relations.processDueInteractions();
+        assert.equal(relations.hasCompletedInteraction("bartender", inquiryId), true);
+        assert.equal(relations.hasReceivedInteraction("waiter", reportId), false,
+            "a fresh Mills reply must not reach Thomas instantly");
+
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.hasReceivedInteraction("waiter", reportId), shouldNotify);
+        assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+        assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), false);
+        engine.startDialogue("dialogue-waiter");
+        const answer = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_mills_documents_required");
+        assert.equal(answer?.isAvailable ?? false, shouldNotify);
+        if (shouldNotify) {
+            engine.selectAnswer(answer.index);
+            assert.match(engine.currentNode.text, /Джо написал мне/);
+            assert.match(engine.currentNode.text, /не слышал Миллса лично/);
+            assert.match(engine.currentNode.text, /официальная защита не согласована/);
+        }
+        engine.reset();
+
+        const count = relations.cases["case-002"].rules[reportId].occurrences;
+        gameTime.advance(180);
+        relations.processDueInteractions();
+        assert.equal(relations.cases["case-002"].rules[reportId].occurrences, count);
+        context.savedRefusalFollowup = JSON.parse(JSON.stringify(relations.toJSON()));
+        const restored = vm.runInContext("new NPCRelationshipService(savedRefusalFollowup)", context);
+        restored.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        restored.setCase(caseData);
+        assert.equal(restored.hasReceivedInteraction("waiter", reportId), shouldNotify);
+    }
+});
