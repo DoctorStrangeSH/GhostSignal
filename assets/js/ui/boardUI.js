@@ -7,6 +7,7 @@ class BoardUI {
         this.relationshipService = null;
         this.locationManager = null;
         this._draggedEvidence = null;
+        this._selectedEvidenceId = null;
         this._expandedTools = new Set(['checklist', 'hypotheses']);
         this._init();
     }
@@ -70,6 +71,7 @@ class BoardUI {
             
             <div class="board-evidence-pool">
                 <h4>📦 Доступные улики:</h4>
+                <p class="board-selection-help" id="board-selection-help" aria-live="polite">Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.</p>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
 
@@ -128,15 +130,16 @@ class BoardUI {
                 <div class="board-slot ${evidence ? 'slot-filled' : 'slot-empty'}"
                      id="${slot.id}"
                      style="left: ${slot.x}%; top: ${slot.y}%;"
-                     data-slot-id="${slot.id}">
+                     data-slot-id="${slot.id}" role="button" tabindex="0"
+                     aria-label="${this._escapeHTML(slot.label)}: ${this._escapeHTML(evidence?.name || 'свободно')}. Выбрать для размещения улики">
                     <div class="slot-label">${slot.label}</div>
                     <div class="slot-content">
                         ${evidence ? `
                             <span class="slot-evidence-icon">${evidence.icon}</span>
                             <span class="slot-evidence-name">${evidence.name}</span>
-                            <button class="slot-remove-btn" data-slot="${slot.id}">✕</button>
+                            <button class="slot-remove-btn" type="button" data-slot="${slot.id}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
                         ` : `
-                            <span class="slot-placeholder">Перетащите улику</span>
+                            <span class="slot-placeholder">Выберите или перетащите улику</span>
                         `}
                     </div>
                 </div>
@@ -150,10 +153,10 @@ class BoardUI {
         const evidenceObjects = getObjectsByIds(available);
         if (evidenceObjects.length === 0) return '<div class="pool-empty">Все улики на доске</div>';
         return evidenceObjects.map(ev => `
-            <div class="evidence-pool-item" draggable="true" data-evidence-id="${ev.id}">
+            <button type="button" class="evidence-pool-item ${this._selectedEvidenceId === ev.id ? 'is-selected' : ''}" draggable="true" data-evidence-id="${this._escapeHTML(ev.id)}" aria-pressed="${this._selectedEvidenceId === ev.id}">
                 <span class="pool-icon">${ev.icon}</span>
-                <span class="pool-name">${ev.name}</span>
-            </div>
+                <span class="pool-name">${this._escapeHTML(ev.name)}</span>
+            </button>
         `).join('');
     }
     
@@ -165,6 +168,7 @@ class BoardUI {
         }));
         // Drag & Drop из пула в слоты
         this.container.querySelectorAll('.evidence-pool-item').forEach(item => {
+            item.addEventListener('click', () => this._selectEvidence(item.dataset.evidenceId));
             item.addEventListener('dragstart', (e) => {
                 this._draggedEvidence = item.dataset.evidenceId;
                 item.classList.add('dragging');
@@ -178,6 +182,15 @@ class BoardUI {
         
         // Слоты принимают улики
         this.container.querySelectorAll('.board-slot').forEach(slot => {
+            slot.addEventListener('click', event => {
+                if (!event.target.closest?.('.slot-remove-btn')) this._placeSelectedEvidence(slot.dataset.slotId);
+            });
+            slot.addEventListener('keydown', event => {
+                if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest?.('.slot-remove-btn')) {
+                    event.preventDefault();
+                    this._placeSelectedEvidence(slot.dataset.slotId);
+                }
+            });
             slot.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 slot.classList.add('drop-target');
@@ -241,6 +254,30 @@ class BoardUI {
         this._bindChronologyEvents();
         this._bindAlibiEvents();
         this._bindTestimonyEvents();
+    }
+
+    _selectEvidence(evidenceId) {
+        if (!this.board || !this.inventory) return;
+        const available = this.board.getAvailableEvidence(this.inventory.evidence);
+        if (!available.includes(evidenceId)) return;
+        this._selectedEvidenceId = this._selectedEvidenceId === evidenceId ? null : evidenceId;
+        this.container?.querySelectorAll('.evidence-pool-item').forEach(item => {
+            const selected = item.dataset.evidenceId === this._selectedEvidenceId;
+            item.classList.toggle('is-selected', selected);
+            item.setAttribute('aria-pressed', String(selected));
+        });
+        const help = this.container?.querySelector('#board-selection-help');
+        if (help) help.textContent = this._selectedEvidenceId
+            ? 'Улика выбрана. Нажмите на место на доске, чтобы разместить её.'
+            : 'Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.';
+    }
+
+    _placeSelectedEvidence(slotId) {
+        const evidenceId = this._selectedEvidenceId;
+        if (!evidenceId || !slotId || !this.board || !this.inventory) return false;
+        if (!this.board.getAvailableEvidence(this.inventory.evidence).includes(evidenceId)) return false;
+        this._selectedEvidenceId = null;
+        return this.board.placeEvidence(evidenceId, slotId);
     }
 
     _escapeHTML(value) {
