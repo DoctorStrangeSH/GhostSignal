@@ -22,6 +22,14 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Расскажите подробнее о разговоре с Евой.", nextNode: "lora_eva_followup_unverified", tone: "direct" },
                     {
+                        text: "Джо нашёл запись «И. Руденко, заявка 27-Б». Проверьте её независимо.",
+                        nextNode: "lora_verifies_inspection_schedule",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_found_inspection_entry&not:hasInsight:visitor_likely_inspector",
+                        hiddenWhenUnavailable: true
+                    },
+
+                    {
                         text: "У Джо появился неизвестный посетитель. Проверьте этот след отдельно.",
                         nextNode: "lora_checks_unknown_visitor",
                         tone: "calm",
@@ -39,6 +47,14 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
+                    {
+                        text: "Джо нашёл запись «И. Руденко, заявка 27-Б». Проверьте её независимо.",
+                        nextNode: "lora_verifies_inspection_schedule",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_found_inspection_entry&not:hasInsight:visitor_likely_inspector",
+                        hiddenWhenUnavailable: true
+                    },
+
                     {
                         text: "Джо заметил неизвестного посетителя, который спрашивал о Томасе. Можете проверить?",
                         nextNode: "lora_checks_unknown_visitor",
@@ -87,6 +103,16 @@ const DIALOGUE_JOURNALIST = {
                 ]
             },
 
+            lora_verifies_inspection_schedule: {
+                speaker: "npc",
+                text: "Я сверила номер 27-Б с опубликованным графиком городской инспекции труда. В нём есть визит инспектора Ильи Руденко в бар Джо в тот же день и по тому же вопросу. Независимый документ подтверждает назначенный визит. Пока наиболее вероятно, что незнакомец был инспектором, а не человеком Кейна. Но без прямого опознания я не назову это окончательным доказательством личности.",
+                mood: "focused",
+                innerThought: "Два документа согласуются, но ни один не доказывает напрямую личность человека, которого видел Джо.",
+                givesInsight: "visitor_likely_inspector",
+                answers: [
+                    { text: "Отмечу объяснение как вероятное, а не как доказанную невиновность.", nextNode: "investigation", tone: "calm" }
+                ]
+            },
             lora_checks_unknown_visitor: {
                 speaker: "npc",
                 text: "Я проверила записи звонков редакции и спросила у двух сотрудников, бывавших в баре. Никто не может независимо установить, кто тот посетитель и зачем ему Томас. Джо видел человека, но связь с Кейном пока ничем не подтверждена. Адрес укрытия публиковать нельзя.",
