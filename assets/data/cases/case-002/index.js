@@ -241,6 +241,17 @@ const CASE_002 = {
                 summary: "Лора отдельно связалась с Томасом после рассказа Джо об обвинении. Без прямых подтверждений она не публикует версию как факт."
             },
             {
+                id: "lora-updates-joe-after-thomas-check", relationshipId: "joe-lora-source",
+                fromNpcId: "journalist", toNpcId: "bartender", interaction: "support",
+                channel: "message", initialDelayMinutes: 180, everyMinutes: 90,
+                maxOccurrences: 1, fromRumorId: "detective-accused-thomas-after-correction",
+                requiresActionId: "lora-checks-thomas-accusation",
+                requiresInvestigationOutcome: "no_independent_evidence",
+                requiresActionAgeMinutes: 30,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "После отдельного разговора с Томасом Лора сообщила Джо, что не нашла независимых доказательств обвинения и не станет представлять слух как установленный факт."
+            },
+            {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
