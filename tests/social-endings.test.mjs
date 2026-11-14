@@ -42,6 +42,7 @@ test("Perfect ending reflects a fulfilled promise to an NPC", () => {
         { npcMemoryService: memory }
     );
     assert.equal(ending.id, "perfect");
+    assert.equal(ending.title, 'Идеально', 'a fulfilled promise must not degrade a clean resolution');
     assert.match(ending.text, /Базовая концовка/);
     assert.match(ending.text, /Томасу помогли/);
     assert.equal(ending.socialConsequencesApplied, 1);
@@ -58,7 +59,31 @@ test("Ending adds the consequence of a false accusation independently of the cas
         { npcMemoryService: memory }
     );
     assert.equal(ending.id, "perfect");
+    assert.equal(ending.title, '⚖️ РАСКРЫТО С ПОСЛЕДСТВИЯМИ');
+    assert.equal(ending.outcomeQuality, 'compromised');
     assert.match(ending.text, /Детектив признал ложное обвинение/);
+});
+
+test('unresolved accusations prevent a flawless label even when the suspect confesses', () => {
+    const { memory, endings } = loadSystems();
+    memory.recordAccusation('waiter', { id: 'unresolved-claim', text: 'Томас виновен.' });
+    const ending = endings.determineEnding({ id: 'case-002' },
+        { hasInsight: id => id === 'full_confession_kane' }, 6, { npcMemoryService: memory });
+    assert.equal(ending.id, 'perfect', 'the criminal conclusion itself must remain unchanged');
+    assert.equal(ending.outcomeQuality, 'compromised');
+    assert.match(ending.title, /ПОСЛЕДСТВИЯМИ/);
+});
+
+test('a broken promise affects the quality of a solved case without changing the convicted suspect', () => {
+    const { memory, endings } = loadSystems();
+    memory.recordPromise('waiter', { id: 'family', text: 'Защитить семью',
+        fulfillment: { type: 'insight_gained', insightId: 'family_protected' } });
+    memory.settlePromisesForCase('case-002', 'solved');
+    const ending = endings.determineEnding({ id: 'case-002' },
+        { hasInsight: id => id === 'full_confession_kane' }, 6, { npcMemoryService: memory });
+    assert.equal(ending.id, 'perfect');
+    assert.equal(ending.outcomeQuality, 'compromised');
+    assert.match(ending.text, /Томасу не помогли/);
 });
 
 test("Partial ending reflects a broken promise without changing the legal outcome", () => {
@@ -77,4 +102,14 @@ test("Partial ending reflects a broken promise without changing the legal outcom
     assert.equal(ending.id, "partial");
     assert.match(ending.text, /Обещание Томасу нарушено/);
     assert.equal(ending.socialConsequencesApplied, 1);
+});
+
+test('collecting many clues does not grant a perfect ending without the confession', () => {
+    const { endings } = loadSystems();
+    const partial = endings.determineEnding({ id: 'case-002' },
+        { hasInsight: () => false }, 99);
+    assert.equal(partial.id, 'partial');
+    const failed = endings.determineEnding({ id: 'case-002' },
+        { hasInsight: () => false }, 1);
+    assert.equal(failed.id, 'default');
 });
