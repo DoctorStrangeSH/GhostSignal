@@ -144,6 +144,7 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         const validCondition = typeof rule?.condition === "string" &&
             (/^hasInsight:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
+             /^accusation_status:[a-z0-9_:-]{1,100}:(pending|false|retracted|substantiated)$/i.test(rule.condition) ||
              /^npc_action_received:[a-z0-9_:-]{1,64}$/i.test(rule.condition) ||
              /^npc_investigation_outcome:[a-z0-9_:-]{1,64}:(corroborated|disputed|no_independent_evidence)$/i.test(rule.condition));
         if (!rule?.nodeId || !nodes[rule.nodeId] || !validCondition) {
@@ -249,6 +250,10 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
                 }
             }
             for (const condition of expandCondition(answer.condition)) {
+                if (condition.startsWith("accusation_status:") &&
+                    !/^accusation_status:[a-z0-9_:-]{1,100}:(pending|false|retracted|substantiated)$/i.test(condition)) {
+                    errors.push("Dialogue " + id + "/" + nodeId + " has an invalid accusation status condition.");
+                }
                 if (condition.startsWith("case_has_claim:")) {
                     const match = condition.match(/^case_has_claim:([a-z0-9_:-]{1,64}):([a-z0-9_:-]{1,100})$/i);
                     if (!match) errors.push("Dialogue " + id + "/" + nodeId + " has an invalid recorded case-claim condition.");
