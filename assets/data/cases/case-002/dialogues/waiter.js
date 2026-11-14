@@ -29,6 +29,8 @@ const DIALOGUE_WAITER = {
             { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
             { condition: "all:promise_status:thomas-family-protection:fulfilled&not:has_visited_node:promise_kept_opening", nodeId: "promise_kept_opening" },
             { condition: "all:promise_status:thomas-family-protection:broken&not:has_visited_node:promise_broken_opening", nodeId: "promise_broken_opening" },
+            { condition: "all:long_term_memory:promise_broken:thomas-family-protection&not:has_visited_node:past_broken_promise_opening", nodeId: "past_broken_promise_opening" },
+            { condition: "all:long_term_memory:promise_kept:thomas-family-protection&not:has_visited_node:past_kept_promise_opening", nodeId: "past_kept_promise_opening" },
             { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
@@ -36,6 +38,24 @@ const DIALOGUE_WAITER = {
             { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
         ],
         nodes: {
+            past_broken_promise_opening: {
+                speaker: "npc",
+                text: "Я помню, как вы обещали защитить мою семью, а потом не смогли. Мы снова говорим об этом деле, но доверие не начинается с чистого листа. Если хотите мои показания, проверяйте их, а не требуйте верить вам на слово.",
+                mood: "guarded",
+                answers: [
+                    { text: "Ты прав. Сначала факты, потом выводы.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не стану давить на тебя.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            past_kept_promise_opening: {
+                speaker: "npc",
+                text: "В прошлый раз вы сдержали слово и помогли моей семье. Я не забыл этого. Но сейчас давайте всё равно отделять мои собственные наблюдения от того, что я услышал от других.",
+                mood: "relieved",
+                answers: [
+                    { text: "Согласен. Рассказывай только то, что видел сам.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо, Томас. Поговорим позже.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
             promise_kept_opening: {
                 speaker: "npc",
                 text: "Мама сейчас в безопасности. Вы обещали помочь и довели дело до конца. Я это запомню, детектив. Если мне станет известно что-то новое, я расскажу вам сам — без угроз и давления.",
