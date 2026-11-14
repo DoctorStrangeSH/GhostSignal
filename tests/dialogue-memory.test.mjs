@@ -1409,7 +1409,7 @@ test("official cancellation record and direct witness identification distinguish
     assert.match(engine.currentNode.text, /не тот человек/);
     assert.match(engine.currentNode.text, /не говорит, кто именно приходил/);
 
-    const careful = engine.getAvailableAnswers().find(answer => answer.text.includes("личность неизвестного оставим открытым"));
+    const careful = engine.getAvailableAnswers().find(answer => answer.text.toLowerCase().includes("личность неизвестного оставим открытым"));
     assert.equal(careful?.isAvailable, true);
     engine.selectAnswer(careful.index);
     assert.equal(memory.hasLongTermMemoryTag("bartender", "player_completed_cautious_identification"), true);
