@@ -3,12 +3,18 @@ class BoardUI {
         this.container = document.getElementById(containerId);
         this.board = null;
         this.inventory = null;
+        this.memoryService = null;
+        this.relationshipService = null;
+        this.locationManager = null;
         this._draggedEvidence = null;
+        this._selectedEvidenceId = null;
+        this._expandedTools = new Set(['checklist', 'hypotheses']);
         this._init();
     }
     
     setBoard(board) {
         this.board = board;
+        if (board?.hasPreparedRouteQuestion?.('business_rival') || board?.hasDiscussedRouteQuestion?.('business_rival')) this._expandedTools?.add('alibi');
         this.render();
     }
     
@@ -16,11 +22,37 @@ class BoardUI {
         this.inventory = inventory;
         this.render();
     }
+
+    setMemoryService(service) {
+        this.memoryService = service || null;
+        this.render();
+    }
+
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
+        this.render();
+    }
+
+    setLocationManager(manager) {
+        this.locationManager = manager || null;
+        this.render();
+    }
+
+    _knownAlibiLocations() {
+        const active = this.locationManager?.activeCaseData;
+        if (!active?.id) return [];
+        const allowed = new Set([...(active.locations || []), active.startLocation]);
+        return [...(this.locationManager?.visitedLocations || [])].map(id => getLocationById(id))
+            .filter(loc => loc && (allowed.has(loc.id) || allowed.has(loc.parentLocation)));
+    }
     
     _init() {
         if (!this.container) return;
         events.on('board:updated', () => this.render());
         events.on('inventory:changed', () => this.render());
+        events.on('npc:memory_changed', () => this.render());
+        events.on('npc:relationship_changed', () => this.render());
+        events.on('npc:contradiction_presented', () => this.render());
     }
     
     render() {
@@ -31,20 +63,75 @@ class BoardUI {
                 <span class="board-title">📋 ДОСКА РАССЛЕДОВАНИЯ</span>
                 <button id="btn-board-reset" class="terminal-btn btn-sm">🔄 СБРОС</button>
             </div>
+
+            <div class="board-layout-status" aria-live="polite">${this._renderLayoutStatus()}</div>
             
             <div class="board-canvas" id="board-canvas">
-                <svg class="board-connections" id="board-connections"></svg>
+                <svg class="board-connections" id="board-connections" role="img" aria-label="Схема сопоставления размещённых улик. Линии не подтверждают истинность версии."></svg>
                 <div class="board-slots" id="board-slots">${this._renderSlots()}</div>
             </div>
+            <p class="board-connection-hint"><span class="board-legend-line" aria-hidden="true"></span> Линия показывает соседство на схеме, а не доказанную связь. Проверяйте выводы в гипотезах и показаниях.</p>
             
             <div class="board-evidence-pool">
                 <h4>📦 Доступные улики:</h4>
+                <p class="board-selection-help" id="board-selection-help" aria-live="polite">Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.</p>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
+            </div>
+
+            <div class="board-tool-list" aria-label="Инструменты расследования">
+                ${this._renderTool('checklist', '📌 Следственные задачи', this._renderInvestigationChecklist())}
+                ${this._renderTool('hypotheses', '🧩 Гипотезы', this._renderHypotheses())}
+                ${this._renderTool('chronology', '🕰️ Хронология улик', this._renderChronology())}
+                ${this._renderTool('alibi', '📍 Проверка алиби', this._renderAlibiReconstruction())}
+                ${this._renderTool('testimony', '📖 Показания свидетелей', this._renderTestimonyJournal())}
             </div>
         `;
         
         this._bindEvents();
         setTimeout(() => this._drawConnections(), 100);
+    }
+
+    _renderTool(id, label, content) {
+        const expanded = this._expandedTools?.has(id);
+        return `<details class="board-tool" data-tool="${id}" ${expanded ? 'open' : ''}>
+            <summary>${label}</summary><div class="board-tool-content">${content}</div></details>`;
+    }
+
+    _renderLayoutStatus() {
+        if (!this.board) return '';
+        const filled = this.board.slots.filter(slot => Boolean(slot.evidenceId)).length;
+        const linked = this.board.connections.filter(conn =>
+            this.board.slots.some(slot => slot.id === conn.from && slot.evidenceId) &&
+            this.board.slots.some(slot => slot.id === conn.to && slot.evidenceId)).length;
+        return `<span>Размещено улик: ${filled} из ${this.board.slots.length}</span><span>Соседних пар: ${linked}</span>`;
+    }
+
+    _renderInvestigationChecklist() {
+        if (!this.locationManager?.activeCaseData?.id) return '<p class="hypothesis-help">Выберите расследование, чтобы увидеть рабочие задачи.</p>';
+        const checklist = this.board?.getInvestigationChecklist({
+            visitedLocationIds: this._knownAlibiLocations().map(loc => loc.id),
+            evidenceIds: [...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])],
+            statements: this.memoryService?.getStatements?.() || [],
+            thomasTelephoneQuestionAsked: this.memoryService?.hasVisitedNode?.('waiter', 'dialogue-waiter', 'telephone_record_scope') || false,
+            loraReportKnown: this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_heard_unfounded_accusation') ||
+                this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_checked_accusation') || false,
+            loraVerificationOutcome: this.relationshipService?.getInvestigationOutcome?.('journalist', 'lora-checks-thomas-accusation') || null,
+            loraVerificationDiscussed: this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_checked_accusation') || false
+        });
+        if (!checklist) return '';
+        const leads = Array.isArray(checklist.nextActions) ? checklist.nextActions : [];
+        const activeLeads = leads.filter(lead => lead.status !== 'checked');
+        const checkedLeads = leads.filter(lead => lead.status === 'checked');
+        const renderLead = lead => `<li class="checklist-next-action ${lead.status === 'pending' ? 'is-pending' : lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'pending' ? '○' : lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`;
+        return `<div class="investigation-checklist">
+            <p class="hypothesis-help">Это ориентиры по уже открытым сведениям, а не список правильных ответов или обязательных действий для финала дела.</p>
+            <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
+            <ul class="checklist-tasks">${checklist.tasks.map(task => `<li class="${task.done ? 'is-complete' : 'is-pending'}"><span aria-hidden="true">${task.done ? '✓' : '○'}</span> ${this._escapeHTML(task.text)}</li>`).join('')}</ul>
+            ${activeLeads.length ? `<section class="checklist-followups" aria-label="Активные зацепки"><strong>🔎 АКТИВНЫЕ ЗАЦЕПКИ <span class="checklist-count">${activeLeads.length}</span></strong><ul>${activeLeads.map(renderLead).join('')}</ul></section>` : ''}
+            ${checkedLeads.length ? `<details class="checklist-followups checklist-completed"><summary>✓ Проверенные зацепки (${checkedLeads.length})</summary><ul>${checkedLeads.map(renderLead).join('')}</ul></details>` : ''}
+            ${!leads.length && checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
+            ${!leads.length && !checklist.nextAction ? '<p class="checklist-empty">Пока нет новых зацепок. Осматривайте доступные места и сверяйте показания.</p>' : ''}
+        </div>`;
     }
     
     _renderSlots() {
@@ -55,15 +142,16 @@ class BoardUI {
                 <div class="board-slot ${evidence ? 'slot-filled' : 'slot-empty'}"
                      id="${slot.id}"
                      style="left: ${slot.x}%; top: ${slot.y}%;"
-                     data-slot-id="${slot.id}">
+                     data-slot-id="${slot.id}" role="button" tabindex="0"
+                     aria-label="${this._escapeHTML(slot.label)}: ${this._escapeHTML(evidence?.name || 'свободно')}. Выбрать для размещения улики">
                     <div class="slot-label">${slot.label}</div>
                     <div class="slot-content">
                         ${evidence ? `
                             <span class="slot-evidence-icon">${evidence.icon}</span>
                             <span class="slot-evidence-name">${evidence.name}</span>
-                            <button class="slot-remove-btn" data-slot="${slot.id}">✕</button>
+                            <button class="slot-remove-btn" type="button" data-slot="${slot.id}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
                         ` : `
-                            <span class="slot-placeholder">Перетащите улику</span>
+                            <span class="slot-placeholder">Выберите или перетащите улику</span>
                         `}
                     </div>
                 </div>
@@ -77,16 +165,22 @@ class BoardUI {
         const evidenceObjects = getObjectsByIds(available);
         if (evidenceObjects.length === 0) return '<div class="pool-empty">Все улики на доске</div>';
         return evidenceObjects.map(ev => `
-            <div class="evidence-pool-item" draggable="true" data-evidence-id="${ev.id}">
+            <button type="button" class="evidence-pool-item ${this._selectedEvidenceId === ev.id ? 'is-selected' : ''}" draggable="true" data-evidence-id="${this._escapeHTML(ev.id)}" aria-pressed="${this._selectedEvidenceId === ev.id}">
                 <span class="pool-icon">${ev.icon}</span>
-                <span class="pool-name">${ev.name}</span>
-            </div>
+                <span class="pool-name">${this._escapeHTML(ev.name)}</span>
+            </button>
         `).join('');
     }
     
     _bindEvents() {
+        this.container.querySelectorAll('.board-tool').forEach(tool => tool.addEventListener('toggle', () => {
+            if (!this._expandedTools) this._expandedTools = new Set(['hypotheses']);
+            if (tool.open) this._expandedTools.add(tool.dataset.tool);
+            else this._expandedTools.delete(tool.dataset.tool);
+        }));
         // Drag & Drop из пула в слоты
         this.container.querySelectorAll('.evidence-pool-item').forEach(item => {
+            item.addEventListener('click', () => this._selectEvidence(item.dataset.evidenceId));
             item.addEventListener('dragstart', (e) => {
                 this._draggedEvidence = item.dataset.evidenceId;
                 item.classList.add('dragging');
@@ -100,6 +194,15 @@ class BoardUI {
         
         // Слоты принимают улики
         this.container.querySelectorAll('.board-slot').forEach(slot => {
+            slot.addEventListener('click', event => {
+                if (!event.target.closest?.('.slot-remove-btn')) this._placeSelectedEvidence(slot.dataset.slotId);
+            });
+            slot.addEventListener('keydown', event => {
+                if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest?.('.slot-remove-btn')) {
+                    event.preventDefault();
+                    this._placeSelectedEvidence(slot.dataset.slotId);
+                }
+            });
             slot.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 slot.classList.add('drop-target');
@@ -157,6 +260,456 @@ class BoardUI {
         // Сброс доски
         this.container.querySelector('#btn-board-reset')?.addEventListener('click', () => {
             if (this.board) this.board.reset();
+        });
+
+        this._bindHypothesisEvents();
+        this._bindChronologyEvents();
+        this._bindAlibiEvents();
+        this._bindTestimonyEvents();
+    }
+
+    _selectEvidence(evidenceId) {
+        if (!this.board || !this.inventory) return;
+        const available = this.board.getAvailableEvidence(this.inventory.evidence);
+        if (!available.includes(evidenceId)) return;
+        this._selectedEvidenceId = this._selectedEvidenceId === evidenceId ? null : evidenceId;
+        this.container?.querySelectorAll('.evidence-pool-item').forEach(item => {
+            const selected = item.dataset.evidenceId === this._selectedEvidenceId;
+            item.classList.toggle('is-selected', selected);
+            item.setAttribute('aria-pressed', String(selected));
+        });
+        const help = this.container?.querySelector('#board-selection-help');
+        if (help) help.textContent = this._selectedEvidenceId
+            ? 'Улика выбрана. Нажмите на место на доске, чтобы разместить её.'
+            : 'Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.';
+    }
+
+    _placeSelectedEvidence(slotId) {
+        const evidenceId = this._selectedEvidenceId;
+        if (!evidenceId || !slotId || !this.board || !this.inventory) return false;
+        if (!this.board.getAvailableEvidence(this.inventory.evidence).includes(evidenceId)) return false;
+        this._selectedEvidenceId = null;
+        return this.board.placeEvidence(evidenceId, slotId);
+    }
+
+    _escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+
+    _renderChronology() {
+        const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const facts = this.board?.getEvidenceChronology(ids) || [];
+        const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+        return `<section class="testimony-journal" aria-labelledby="chronology-title">
+            <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
+            <h3 id="chronology-title">🕰️ ХРОНОЛОГИЯ УЛИК</h3></div><span class="testimony-count">${facts.length} отметок</span></div>
+            <p class="hypothesis-help">Показаны только обнаруженные документы с точными отметками. Запись о запросе не доказывает состоявшийся звонок или личность звонившего.</p>
+            ${facts.length ? `<ol>${facts.map(f => `<li><strong>${fmt(f.minute)}</strong> — ${this._escapeHTML(f.label)}
+                <small>(${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}). ${this._escapeHTML(f.caveat)}</small></li>`).join('')}</ol>` : '<p>Найдите документ с временными отметками, чтобы начать реконструкцию.</p>'}
+            ${facts.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
+                <select id="chronology-first" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <label for="chronology-second">Вторая отметка</label>
+                <select id="chronology-second" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <button id="chronology-compare" type="button" class="terminal-btn">СОПОСТАВИТЬ ВРЕМЯ</button><div id="chronology-result" aria-live="polite"></div></div>` : ''}
+        </section>`;
+    }
+
+    _bindChronologyEvents() {
+        this.container.querySelector('#chronology-compare')?.addEventListener('click', () => {
+            const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+            const comparison = this.board.compareChronologyFacts(
+                this.container.querySelector('#chronology-first')?.value,
+                this.container.querySelector('#chronology-second')?.value, ids);
+            const target = this.container.querySelector('#chronology-result');
+            if (target) target.textContent = comparison
+                ? `${comparison.minutesApart} мин. между отметками. ${comparison.warning}`
+                : 'Выберите две разные доступные отметки.';
+        });
+    }
+
+    _renderAlibiReconstruction() {
+        const statements = this.memoryService?.getStatements?.() || [];
+        const evidenceIds = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const sources = [
+            ...statements.filter(s => s.status !== 'superseded').map(s => ({ id: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) })),
+            ...evidenceIds.map(id => ({ id: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
+        ];
+        const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+        const claims = this.board?.alibiClaims || [];
+        const knownLocations = this._knownAlibiLocations();
+        const warnings = [
+            ...(this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || []),
+            ...(this.board?.reviewAlibiLocationHours(knownLocations) || []),
+            ...(this.board?.reviewAlibiAccessRestrictions(knownLocations) || []),
+            ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
+        ];
+        const questionReady = this.board?.caseId === 'case-002' && this.board?.hasPreparedRouteQuestion('business_rival');
+        const questionDiscussed = this.board?.caseId === 'case-002' && this.board?.hasDiscussedRouteQuestion?.('business_rival');
+        return `<section class="testimony-journal" aria-labelledby="alibi-title">
+            <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
+            <p class="hypothesis-help">Это ваша реконструкция по найденным источникам, а не подтверждённый маршрут NPC. Указывайте время, место и степень точности из показания или документа. Интервалы через полночь пока нужно разбивать на две записи.</p>
+            ${questionReady ? `<div class="alibi-followup-ready" role="status"><strong>ВОПРОС КЕЙНУ ПОДГОТОВЛЕН</strong><p>Вернитесь к Виктору Кейну и начните разговор заново. Вариант о маршруте появится в допросе. Подготовка вопроса не подтверждает его вину.</p><button type="button" class="terminal-btn btn-sm route-question-cancel">ОТМЕНИТЬ ВОПРОС</button></div>` : ''}
+            ${questionDiscussed ? `<div class="alibi-followup-ready"><strong>ВОПРОС КЕЙНУ ЗАДАН</strong><p>Кейн оспорил предположение о маршруте. Найдите независимые подтверждения отдельных переходов; его ответ не доказывает ни вину, ни невиновность.</p></div>` : ''}
+            <form id="alibi-form" class="hypothesis-form">
+                <input class="terminal-input" name="subject" maxlength="100" required placeholder="Персонаж (одно имя для разных записей)" aria-label="Персонаж">
+                <input class="terminal-input" name="location" maxlength="120" required placeholder="Предполагаемое место" aria-label="Место">
+                <select class="terminal-input" name="locationId" aria-label="Известная локация (необязательно)"><option value="">Не привязывать к известной локации</option>${knownLocations.map(loc => `<option value="${this._escapeHTML(loc.id)}">${this._escapeHTML(loc.name || loc.id)}</option>`).join('')}</select>
+                <p class="hypothesis-help">Привязка доступна только для посещённых мест и позволяет проверить обычные часы работы. Закрытая локация не означает невозможность проникновения.</p>
+                <label>С <input class="terminal-input" type="time" name="start" required></label>
+                <label>По <input class="terminal-input" type="time" name="end" required></label>
+                <select class="terminal-input" name="precision" aria-label="Точность"><option value="approximate">Время приблизительное</option><option value="exact">Время указано точно</option></select>
+                <select class="terminal-input" name="source" required aria-label="Источник"><option value="">Выберите обнаруженный источник</option>${sources.map(s => `<option value="${this._escapeHTML(s.id)}">${this._escapeHTML(s.label)}</option>`).join('')}</select>
+                <button class="terminal-btn btn-sm" type="submit">ДОБАВИТЬ В РЕКОНСТРУКЦИЮ</button>
+            </form>
+            <ol>${claims.map(c => `<li><strong>${this._escapeHTML(c.subject)}</strong>: ${fmt(c.startMinute)}–${fmt(c.endMinute)} · ${this._escapeHTML(c.location)}
+                (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)}${c.locationId ? ' · привязано к посещённой локации' : ''})
+                <button class="terminal-btn btn-sm alibi-remove" data-id="${this._escapeHTML(c.id)}" type="button" aria-label="Удалить версию">✕</button></li>`).join('') || '<li>Пока нет версий местонахождения.</li>'}</ol>
+            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}${
+                w.status === 'route_time_tight' && this.board?.caseId === 'case-002' &&
+                ['кейн', 'виктор кейн'].includes(w.subject.trim().toLocaleLowerCase()) &&
+                !this.board.hasPreparedRouteQuestion('business_rival') && !this.board.hasDiscussedRouteQuestion?.('business_rival')
+                    ? ` <button type="button" class="terminal-btn btn-sm route-question-prepare" data-claim-a="${this._escapeHTML(w.ids[0])}" data-claim-b="${this._escapeHTML(w.ids[1])}">ПОДГОТОВИТЬ ВОПРОС КЕЙНУ</button>` : ''}</li>`).join('')}</ul></div>` : ''}
+        </section>`;
+    }
+
+    _bindAlibiEvents() {
+        this.container.querySelector('#alibi-form')?.addEventListener('submit', e => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const minutes = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+                ? Number(value.slice(0, 2)) * 60 + Number(value.slice(3)) : NaN;
+            const [kind, ...sourceParts] = form.elements.source.value.split(':');
+            const result = this.board?.addAlibiClaim({
+                subject: form.elements.subject.value, location: form.elements.location.value,
+                locationId: form.elements.locationId.value || null,
+                startMinute: minutes(form.elements.start.value), endMinute: minutes(form.elements.end.value),
+                precision: form.elements.precision.value, kind, sourceId: sourceParts.join(':')
+            }, { statements: this.memoryService?.getStatements?.() || [],
+                evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])],
+                locations: this._knownAlibiLocations() });
+            if (!result) events.emit('notification:show', { message: 'Проверьте интервал, источник и отсутствие дублей.', type: 'warning', duration: 3000 });
+        });
+        this.container.querySelectorAll('.alibi-remove').forEach(button => button.addEventListener('click', () =>
+            this.board?.removeAlibiClaim(button.dataset.id)));
+        this.container.querySelectorAll('.route-question-prepare').forEach(button => button.addEventListener('click', () => {
+            const finding = this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes,
+                this._knownAlibiLocations()).find(w => w.ids[0] === button.dataset.claimA && w.ids[1] === button.dataset.claimB);
+            if (finding && this.board.prepareRouteQuestion(finding, 'business_rival'))
+                events.emit('notification:show', { message: 'Вопрос о маршруте подготовлен. Вернитесь к Кейну для повторного допроса.', type: 'info', duration: 5000 });
+        }));
+        this.container.querySelector('.route-question-cancel')?.addEventListener('click', () =>
+            this.board?.cancelRouteQuestion('business_rival'));
+    }
+
+    _renderHypotheses() {
+        const hypotheses = this.board?.hypotheses || [];
+        const evidenceIds = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const evidenceOptions = evidenceIds.map(id => {
+            const obj = getObjectById(id);
+            return obj ? '<option value="evidence:' + this._escapeHTML(id) + '">' + this._escapeHTML(obj.name || id) + '</option>' : '';
+        }).join('');
+        const statements = this.memoryService?.getStatements?.() || [];
+        const statementOptions = statements.map(item =>
+            '<option value="statement:' + this._escapeHTML(item.id) + '"' + (item.status === 'superseded' ? ' disabled' : '') + '>' +
+            this._escapeHTML((item.sourceName || item.npcId) + ' — ' + (item.summary || item.value) + (item.status === 'superseded' ? ' (архив)' : '')) +
+            '</option>'
+        ).join('');
+        const sourceOptions = evidenceOptions + statementOptions;
+        const names = { for: 'Поддерживает', against: 'Противоречит', pending: 'Требует проверки' };
+        const labels = { evidence: 'Улика', statement: 'Показание', assumption: 'Допущение' };
+        const sourceKinds = { firsthand_claim: 'Заявлено личное наблюдение', unverified: 'Способ получения сведений не установлен', unknown: 'Источник не найден' };
+        return `
+            <section class="testimony-journal hypothesis-journal" aria-labelledby="hypothesis-title">
+                <div class="testimony-journal-header"><div>
+                    <span class="testimony-journal-kicker">РАБОЧИЕ ВЕРСИИ ДЕТЕКТИВА</span>
+                    <h3 id="hypothesis-title">🧩 ГИПОТЕЗЫ</h3>
+                </div><span class="testimony-count">${hypotheses.length} версий</span></div>
+                <p class="hypothesis-help">Записи отражают ваши предположения. Игра не подтверждает их автоматически.</p>
+                <form id="hypothesis-create-form" class="hypothesis-form">
+                    <label for="hypothesis-new-text">Новая версия событий</label>
+                    <textarea id="hypothesis-new-text" class="terminal-input" maxlength="240" rows="2" required placeholder="Что, по-вашему, произошло?"></textarea>
+                    <button type="submit" class="terminal-btn">ДОБАВИТЬ ВЕРСИЮ</button>
+                </form>
+                ${hypotheses.map(h => `
+                    <article class="testimony-entry hypothesis-entry">
+                        <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
+                            <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
+                        <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">
+                            <span class="stance-for">+ ${h.links.filter(link => link.stance === 'for').length} за</span>
+                            <span class="stance-against">− ${h.links.filter(link => link.stance === 'against').length} против</span>
+                            <span class="stance-pending">? ${h.links.filter(link => link.stance === 'pending').length} проверить</span>
+                        </div>
+                        <ul class="hypothesis-links">
+                            ${h.links.map((link, index) => {
+                                const object = link.kind === 'evidence' ? getObjectById(link.sourceId) : null;
+                                const statement = link.kind === 'statement' ? statements.find(s => s.id === link.sourceId) : null;
+                                const title = object?.name || (statement ? (statement.sourceName || statement.npcId) + ': ' + (statement.summary || statement.value) : link.sourceId);
+                                const archived = statement?.status === 'superseded';
+                                const missing = link.kind === 'statement' && !statement;
+                                const caution = archived ? ' · Показание пересмотрено — проверьте новую версию' : (missing ? ' · Источник недоступен' : '');
+                                const provenance = statement ? (statement.directObservation === true ? ' · Со слов свидетеля: видел лично' : ' · Источник сведений не подтверждён') : '';
+                                const stanceClass = ['for', 'against', 'pending'].includes(link.stance) ? 'stance-' + link.stance : 'stance-pending';
+                                return `<li class="${stanceClass} ${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}${this._escapeHTML(provenance)}</span>
+                                  ${h.status === 'open' ? `<button type="button" class="terminal-btn btn-sm hypothesis-unlink" data-id="${this._escapeHTML(h.id)}" data-index="${index}" aria-label="Убрать связь">✕</button>` : ''}</li>`;
+                            }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
+                        </ul>
+                        ${(() => {
+                            const overlaps = this.board.reviewHypothesisOverlaps?.(h.id) || [];
+                            if (!overlaps.length) return '';
+                            return `<div class="hypothesis-overlap-review">
+                                <strong>ОБЩИЕ ИСТОЧНИКИ ДЛЯ РАЗНЫХ ВЕРСИЙ</strong>
+                                <p>Повторное использование улики или показания не является независимым подтверждением. Разные оценки сами по себе не доказывают противоречие.</p>
+                                <ul>${overlaps.map(item => {
+                                    const object = item.kind === 'evidence' ? getObjectById(item.sourceId) : null;
+                                    const statement = item.kind === 'statement' ? statements.find(s => s.id === item.sourceId) : null;
+                                    const sourceTitle = object?.name || (statement ? (statement.sourceName || statement.npcId) + ': ' + (statement.summary || statement.value) : item.sourceId);
+                                    return `<li>${this._escapeHTML(labels[item.kind])}: ${this._escapeHTML(sourceTitle)} — также в версии «${this._escapeHTML(item.otherTitle)}»${item.differingAssessment ? ' (оценки различаются)' : ''}.</li>`;
+                                }).join('')}</ul>
+                            </div>`;
+                        })()}
+                        ${(() => {
+                            const review = this.board.reviewHypothesisSources(h.id, statements);
+                            if (!review?.sources.length) return '<p class="hypothesis-help">Прикрепите показания, чтобы проверить происхождение свидетельств.</p>';
+                            const grouped = review.sources.filter(item => item.origin === 'firsthand_claim').length;
+                            const notices = review.warnings.map(item => {
+                                if (item.type === 'missing') return 'Источник записи недоступен: ' + item.ids.join(', ');
+                                if (item.type === 'superseded') return 'Показание пересмотрено: ' + item.ids.join(', ');
+                                if (item.type === 'same_witness') return 'Две записи принадлежат одному свидетелю — это не независимые источники.';
+                                if (item.type === 'shared_rumor_reference') return 'Записи ссылаются на общий слух — повторение не является независимым подтверждением.';
+                                return '';
+                            }).filter(Boolean);
+                            return `<div class="hypothesis-source-review">
+                                <strong>ПРОВЕРКА ИСТОЧНИКОВ</strong>
+                                <p>Показаний: ${review.sources.length}. Заявлены как личное наблюдение: ${grouped}. Остальные требуют выяснения происхождения.</p>
+                                ${notices.length ? '<ul>' + [...new Set(notices)].map(note => '<li>' + this._escapeHTML(note) + '</li>').join('') + '</ul>' : '<small>Совпадение источников пока не обнаружено. Это не доказательство независимости.</small>'}
+                            </div>`;
+                        })()}
+                        ${this._renderSourceInquiries(h, statements, evidenceIds)}
+                        ${h.status === 'open' ? `
+                            <form class="hypothesis-link-form hypothesis-form" data-id="${this._escapeHTML(h.id)}">
+                                <select class="terminal-input hypothesis-source" aria-label="Источник"><option value="">Выберите улику или показание</option>${sourceOptions}<option value="assumption:">Собственное допущение</option></select>
+                                <input class="terminal-input hypothesis-assumption" maxlength="240" placeholder="Текст допущения" aria-label="Допущение">
+                                <select class="terminal-input hypothesis-stance" aria-label="Оценка"><option value="for">Поддерживает</option><option value="against">Противоречит</option><option value="pending">Требует проверки</option></select>
+                                <button class="terminal-btn btn-sm" type="submit">ПРИКРЕПИТЬ</button>
+                            </form>
+                            <button type="button" class="terminal-btn btn-sm hypothesis-revise" data-id="${this._escapeHTML(h.id)}">ИЗМЕНИТЬ ТЕКСТ</button>
+                            <button type="button" class="terminal-btn btn-sm hypothesis-abandon" data-id="${this._escapeHTML(h.id)}">ОТКЛОНИТЬ ВЕРСИЮ</button>
+                        ` : ''}
+                        <details><summary>История изменений (${h.history.length})</summary><ol>${h.history.map(v => `<li>${this._escapeHTML(v.action)}${v.title ? ': ' + this._escapeHTML(v.title) : ''}${v.previous ? ' (было: ' + this._escapeHTML(v.previous) + ')' : ''}${v.sourceId ? ' — ' + this._escapeHTML(v.sourceId) : ''}</li>`).join('')}</ol></details>
+                    </article>
+                `).join('')}
+            </section>
+        `;
+    }
+
+    _bindHypothesisEvents() {
+        this.container.querySelectorAll('.inquiry-start').forEach(button => button.addEventListener('click', () => {
+            const statements = this.memoryService?.getStatements?.() || [];
+            this.board?.startSourceInquiry(button.dataset.hypothesis, button.dataset.rumor, statements);
+        }));
+        this.container.querySelectorAll('.inquiry-lead-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            const choice = form.querySelector('select')?.value || '';
+            const separator = choice.indexOf(':');
+            const kind = choice.slice(0, separator), sourceId = choice.slice(separator + 1);
+            const ok = this.board?.addSourceInquiryLead(form.dataset.id, kind, sourceId,
+                form.querySelector('input')?.value, {
+                    statements: this.memoryService?.getStatements?.() || [],
+                    evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])]
+                });
+            if (!ok) events.emit('notification:show', { message: 'Выберите доступный источник, добавьте заметку. Повторные записи не принимаются.', type: 'warning', duration: 3000 });
+        }));
+        this.container.querySelectorAll('.inquiry-close-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            if (!this.board?.closeSourceInquiry(form.dataset.id, form.querySelector('input')?.value))
+                events.emit('notification:show', { message: 'Для вывода нужна хотя бы одна проверенная запись и ваша формулировка.', type: 'warning', duration: 3000 });
+        }));
+        this.container.querySelector('#hypothesis-create-form')?.addEventListener('submit', e => {
+            e.preventDefault();
+            this.board?.addHypothesis(this.container.querySelector('#hypothesis-new-text')?.value);
+        });
+        this.container.querySelectorAll('.hypothesis-link-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            const selection = form.querySelector('.hypothesis-source')?.value || '';
+            const separator = selection.indexOf(':');
+            const kind = separator >= 0 ? selection.slice(0, separator) : '';
+            const sourceId = kind === 'assumption' ? form.querySelector('.hypothesis-assumption')?.value : selection.slice(separator + 1);
+            if (!this.board?.linkHypothesis(form.dataset.id, kind, sourceId, form.querySelector('.hypothesis-stance')?.value)) {
+                events.emit('notification:show', { message: 'Выберите источник или напишите допущение. Повторная связь не добавлена.', type: 'warning', duration: 3000 });
+            }
+        }));
+        this.container.querySelectorAll('.hypothesis-unlink').forEach(button => button.addEventListener('click', () =>
+            this.board?.unlinkHypothesis(button.dataset.id, Number(button.dataset.index))));
+        this.container.querySelectorAll('.hypothesis-abandon').forEach(button => button.addEventListener('click', () => {
+            if (confirm('Отклонить версию? История останется в журнале.')) this.board?.abandonHypothesis(button.dataset.id);
+        }));
+        this.container.querySelectorAll('.hypothesis-revise').forEach(button => button.addEventListener('click', () => {
+            const current = this.board?.hypotheses.find(h => h.id === button.dataset.id);
+            if (!current) return;
+            const next = prompt('Уточните вашу версию:', current.title);
+            if (next !== null) this.board.reviseHypothesis(current.id, next);
+        }));
+    }
+
+    _renderSourceInquiries(hypothesis, statements, evidenceIds) {
+        const review = this.board.reviewHypothesisSources(hypothesis.id, statements);
+        const rumors = [...new Set(review.sources.flatMap(source => source.linkedRumorIds))];
+        const inquiries = (this.board.sourceInquiries || []).filter(i => i.hypothesisId === hypothesis.id);
+        const options = [
+            ...statements.filter(s => s.status !== 'superseded').map(s => ({ key: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) + ' — ' + (s.summary || s.value) })),
+            ...evidenceIds.map(id => ({ key: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
+        ].map(o => `<option value="${this._escapeHTML(o.key)}">${this._escapeHTML(o.label)}</option>`).join('');
+        if (!rumors.length && !inquiries.length) return '';
+        return `<div class="hypothesis-source-review"><strong>РАССЛЕДОВАНИЕ ЦЕПОЧКИ СЛУХА</strong>
+            <p>Найдите свидетеля, сопоставьте сведения с уликами и запишите собственный вывод. Записи не доказывают правдивость слуха.</p>
+            ${hypothesis.status === 'open' ? rumors.filter(r => !inquiries.some(i => i.rumorId === r)).map(r =>
+                `<button type="button" class="terminal-btn btn-sm inquiry-start" data-hypothesis="${this._escapeHTML(hypothesis.id)}" data-rumor="${this._escapeHTML(r)}">ПРОВЕРИТЬ СЛУХ ${this._escapeHTML(r)}</button>`).join('') : ''}
+            ${inquiries.map(i => `<section class="testimony-entry">
+                <strong>${this._escapeHTML(i.rumorId)} · ${i.status === 'closed' ? 'ВЫВОД ЗАПИСАН' : 'ПРОВЕРЯЕТСЯ'}</strong>
+                <ul>${i.leads.map(l => `<li>${l.kind === 'statement' ? 'Показание' : 'Улика'} ${this._escapeHTML(l.sourceId)}: ${this._escapeHTML(l.note)}</li>`).join('') || '<li>Пока нет проверенных связей.</li>'}</ul>
+                ${i.conclusion ? `<p>Вывод детектива: ${this._escapeHTML(i.conclusion)}</p>` : ''}
+                ${i.status === 'open' && hypothesis.status === 'open' ? `
+                    <form class="hypothesis-form inquiry-lead-form" data-id="${this._escapeHTML(i.id)}">
+                        <select class="terminal-input" required><option value="">Выберите найденный источник</option>${options}</select>
+                        <input class="terminal-input" maxlength="500" required placeholder="Что именно вы выяснили?">
+                        <button class="terminal-btn btn-sm" type="submit">ЗАПИСАТЬ СВЯЗЬ</button>
+                    </form>
+                    <form class="hypothesis-form inquiry-close-form" data-id="${this._escapeHTML(i.id)}">
+                        <input class="terminal-input" maxlength="500" required placeholder="Ваш вывод (не вердикт игры)">
+                        <button class="terminal-btn btn-sm" type="submit">ЗАКРЫТЬ ПРОВЕРКУ</button>
+                    </form>` : ''}
+                <details><summary>История проверки (${i.history.length})</summary><ol>${i.history.map(h => `<li>${this._escapeHTML(h.action)}${h.note ? ': ' + this._escapeHTML(h.note) : ''}</li>`).join('')}</ol></details>
+            </section>`).join('')}
+        </div>`;
+    }
+
+    _renderTestimonyJournal() {
+        const statements = this.memoryService?.getStatements?.() || [];
+        const prepared = this.memoryService?.getPreparedConfrontation?.() || null;
+        const options = statements.map(statement => {
+            const label = `${statement.sourceName || statement.npcId}: ${statement.summary || statement.value}`;
+            const disabled = statement.status === 'superseded' ? 'disabled' : '';
+            const suffix = statement.status === 'superseded' ? ' · ПРЕДЫДУЩАЯ ВЕРСИЯ' : '';
+            return `<option value="${this._escapeHTML(statement.id)}" ${disabled}>${this._escapeHTML(label + suffix)}</option>`;
+        }).join('');
+        const preparedTarget = prepared
+            ? (prepared.contradiction.first.npcId === prepared.targetNpcId
+                ? prepared.contradiction.first.sourceName
+                : prepared.contradiction.second.sourceName)
+            : '';
+
+        return `
+            <section class="testimony-journal" aria-labelledby="testimony-journal-title">
+                <div class="testimony-journal-header">
+                    <div>
+                        <span class="testimony-journal-kicker">АРХИВ РАССЛЕДОВАНИЯ</span>
+                        <h3 id="testimony-journal-title">📜 ЖУРНАЛ ПОКАЗАНИЙ</h3>
+                    </div>
+                    <span class="testimony-count">${statements.length} записей</span>
+                </div>
+                ${statements.length ? `
+                    <div class="testimony-list">
+                        ${statements.map(statement => `
+                            <article class="testimony-entry">
+                                <div class="testimony-entry-heading">
+                                    <strong>${this._escapeHTML(statement.sourceName || statement.npcId)}</strong>
+                                    <span>${this._escapeHTML(statement.timeLabel || 'Время не указано')} · ${statement.status === 'superseded' ? 'ПРЕДЫДУЩАЯ ВЕРСИЯ' : 'АКТУАЛЬНАЯ · ВЕРСИЯ ' + (statement.version || 1)}</span>
+                                </div>
+                                <p>${this._escapeHTML(statement.summary || statement.value)}</p>
+                                <div class="testimony-entry-meta">
+                                    <span>📍 ${this._escapeHTML(statement.location || 'Место не указано')}</span>
+                                    ${statement.circumstances ? `<span>${this._escapeHTML(statement.circumstances)}</span>` : ''}
+                                    ${statement.revisionReason ? `<span>Основание уточнения: ${this._escapeHTML(statement.revisionReason)}</span>` : ''}
+                                </div>
+                            </article>
+                        `).join('')}
+                    </div>
+                    <div class="testimony-compare">
+                        <div class="testimony-compare-title">СОПОСТАВИТЬ ДВА ПОКАЗАНИЯ</div>
+                        <label for="testimony-first">Первое показание</label>
+                        <select id="testimony-first" class="terminal-input">
+                            <option value="">Выберите запись...</option>${options}
+                        </select>
+                        <label for="testimony-second">Второе показание</label>
+                        <select id="testimony-second" class="terminal-input">
+                            <option value="">Выберите запись...</option>${options}
+                        </select>
+                        <button id="btn-compare-testimony" class="terminal-btn" type="button">СОПОСТАВИТЬ</button>
+                        <div id="testimony-comparison-result" aria-live="polite"></div>
+                    </div>
+                    ${prepared ? `
+                        <div class="testimony-prepared">
+                            <strong>ДОПРОС ПОДГОТОВЛЕН</strong>
+                            <span>Противоречие готово к предъявлению: ${this._escapeHTML(preparedTarget || prepared.targetNpcId)}.</span>
+                            <small>Начните разговор с выбранным персонажем — кнопка предъявления появится в окне диалога.</small>
+                        </div>
+                    ` : ''}
+                ` : `
+                    <div class="testimony-empty">Показаний пока нет. Разговаривайте со свидетелями и фиксируйте их утверждения.</div>
+                `}
+            </section>
+        `;
+    }
+
+    _bindTestimonyEvents() {
+        const compareButton = this.container.querySelector('#btn-compare-testimony');
+        compareButton?.addEventListener('click', () => {
+            const firstId = this.container.querySelector('#testimony-first')?.value;
+            const secondId = this.container.querySelector('#testimony-second')?.value;
+            const result = this.memoryService?.compareStatements(firstId, secondId);
+            const output = this.container.querySelector('#testimony-comparison-result');
+            if (!output || !result) return;
+
+            const messages = {
+                missing_selection: 'Выберите оба показания.',
+                same_statement: 'Нельзя сопоставить одну запись с самой собой.',
+                statement_not_found: 'Одна из записей больше недоступна.',
+                superseded_statement: 'Это предыдущая версия показания. Сопоставляйте актуальную запись.',
+                different_topics: 'Эти показания относятся к разным обстоятельствам.',
+                corroboration: 'Показания совпадают и подтверждают друг друга.'
+            };
+            if (result.status !== 'contradiction') {
+                output.innerHTML = `<div class="testimony-result-note">${this._escapeHTML(messages[result.status] || 'Не удалось сопоставить записи.')}</div>`;
+                return;
+            }
+
+            const { first, second } = result.contradiction;
+            const targets = [first, second].filter((item, index, all) =>
+                all.findIndex(candidate => candidate.npcId === item.npcId) === index
+            );
+            output.innerHTML = `
+                <div class="testimony-conflict">
+                    <strong>ОБНАРУЖЕНЫ НЕСОВМЕСТИМЫЕ ПОКАЗАНИЯ</strong>
+                    <div>«${this._escapeHTML(first.summary)}»</div>
+                    <div>«${this._escapeHTML(second.summary)}»</div>
+                    <label for="testimony-target">Кому предъявить противоречие?</label>
+                    <select id="testimony-target" class="terminal-input">
+                        <option value="">Выберите персонажа...</option>
+                        ${targets.map(item => `<option value="${this._escapeHTML(item.npcId)}">${this._escapeHTML(item.sourceName || item.npcId)}</option>`).join('')}
+                    </select>
+                    <button id="btn-prepare-confrontation" class="terminal-btn" type="button">ПОДГОТОВИТЬ ПРЕДЪЯВЛЕНИЕ</button>
+                </div>
+            `;
+
+            output.querySelector('#btn-prepare-confrontation')?.addEventListener('click', () => {
+                const targetNpcId = output.querySelector('#testimony-target')?.value;
+                const prepared = this.memoryService.prepareConfrontation(first.id, second.id, targetNpcId);
+                if (!prepared.prepared) {
+                    const text = prepared.reason === 'already_confronted'
+                        ? 'Эти показания уже предъявлялись этому персонажу.'
+                        : 'Выберите одного из участников показаний.';
+                    events.emit('notification:show', { message: text, type: 'warning', duration: 2800 });
+                    return;
+                }
+                events.emit('notification:show', {
+                    message: 'Противоречие подготовлено. Предъявите его во время разговора с выбранным персонажем.',
+                    type: 'success',
+                    duration: 4000
+                });
+                events.emit('npc:memory_changed', this.memoryService.toJSON());
+            });
         });
     }
     

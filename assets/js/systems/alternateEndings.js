@@ -4,41 +4,73 @@ class AlternateEndings {
     }
 
     // Определить концовку на основе собранных улик и выборов
-    determineEnding(caseData, inventory, insights) {
-        const endingId = this._evaluate(caseData, inventory, insights);
-        return this.endings[endingId] || this._getDefaultEnding(caseData);
+    determineEnding(caseData, inventory, evidenceCount = 0, socialContext = {}) {
+        const registered = typeof window !== 'undefined'
+            ? Object.values(window.ENDINGS || {}).filter(ending => ending.caseId === caseData?.id)
+            : [];
+        const configured = registered.length
+            ? registered
+            : Object.values(this.endings).filter(ending => ending.caseId === caseData?.id);
+        const hasInsight = insightId => Boolean(
+            inventory?.hasInsight?.(insightId) || inventory?.insights?.includes(insightId)
+        );
+
+        const perfect = configured.find(ending =>
+            ending.condition &&
+            ending.condition !== 'default' &&
+            !ending.condition.startsWith('evidence_count_') &&
+            hasInsight(ending.condition)
+        );
+        let selected = perfect;
+
+        const collectedCount = Number.isFinite(evidenceCount)
+            ? evidenceCount
+            : (inventory?.items || []).length;
+        const partial = configured
+            .filter(ending => ending.condition?.startsWith('evidence_count_'))
+            .sort((a, b) => Number(b.condition.split('_').pop()) - Number(a.condition.split('_').pop()))
+            .find(ending => collectedCount >= Number(ending.condition.split('_').pop()));
+        if (!selected && partial) selected = partial;
+        if (!selected) selected = configured.find(ending => ending.condition === 'default') || this._getDefaultEnding(caseData);
+
+        const summary = socialContext?.npcMemoryService?.getCaseSocialSummary?.(caseData?.id);
+        return this._applySocialConsequences(selected, summary);
     }
 
-    _evaluate(caseData, inventory, insights) {
-        if (caseData.id === 'case-001') {
-            const hasAll = inventory.hasItem('train_ticket') && 
-                          inventory.hasItem('victim_diary') && 
-                          inventory.hasItem('torn_photo') &&
-                          insights.includes('mary_confession');
-            
-            const hasPartial = inventory.hasItem('torn_photo') || 
-                               insights.includes('blackwood_affair');
-            
-            const maidEscaped = !insights.includes('mary_confession') && 
-                                inventory.hasItem('train_ticket');
-
-            if (hasAll) return 'perfect';
-            if (maidEscaped) return 'maid_escaped';
-            if (hasPartial) return 'partial';
-            return 'failed';
+    _applySocialConsequences(ending, summary) {
+        if (!ending || !summary?.npcs || !ending.socialConsequences) return ending;
+        const paragraphs = [];
+        for (const [npcId, rules] of Object.entries(ending.socialConsequences)) {
+            const npc = summary.npcs[npcId];
+            if (!npc || !rules) continue;
+            if (npc.promises.fulfilled > 0 && rules.promiseFulfilled) paragraphs.push(rules.promiseFulfilled);
+            if (npc.promises.broken > 0 && rules.promiseBroken) paragraphs.push(rules.promiseBroken);
+            if (Number.isFinite(rules.lowTrustThreshold) && npc.trust <= rules.lowTrustThreshold && rules.lowTrust) {
+                paragraphs.push(rules.lowTrust);
+            }
+            if (npc.rumors.disputed > 0 && rules.disputedRumor) paragraphs.push(rules.disputedRumor);
+            if (npc.accusations.false > 0 && rules.falseAccusation) paragraphs.push(rules.falseAccusation);
+            if (npc.accusations.pending > 0 && rules.pendingAccusation) paragraphs.push(rules.pendingAccusation);
         }
-
-        if (caseData.id === 'case-002') {
-            const rivalGuilty = insights.includes('rival_took_vial');
-            const annaGuilty = insights.includes('suicide_plan') && !rivalGuilty;
-            const sisterRevealed = insights.includes('sisters_revealed');
-
-            if (rivalGuilty && sisterRevealed) return 'rival_caught';
-            if (annaGuilty) return 'anna_confession';
-            return 'mystery';
-        }
-
-        return 'default';
+        const compromised = Object.values(summary.npcs).some(npc =>
+            (npc?.promises?.broken || 0) > 0 ||
+            (npc?.accusations?.false || 0) > 0 ||
+            (npc?.accusations?.pending || 0) > 0
+        );
+        const isPerfect = ending.condition && ending.condition !== 'default' &&
+            !ending.condition.startsWith('evidence_count_');
+        if (!paragraphs.length && !(compromised && isPerfect)) return ending;
+        return {
+            ...ending,
+            // Correct deduction and ethical conduct are separate judgments.
+            // A confession may solve the crime without making the detective flawless.
+            ...(compromised && isPerfect ? {
+                title: '⚖️ РАСКРЫТО С ПОСЛЕДСТВИЯМИ',
+                outcomeQuality: 'compromised'
+            } : {}),
+            text: [ending.text || '', ...paragraphs].filter(Boolean).join('\n\n'),
+            socialConsequencesApplied: paragraphs.length
+        };
     }
 
     _getDefaultEnding(caseData) {

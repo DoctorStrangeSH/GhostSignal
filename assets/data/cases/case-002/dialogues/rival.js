@@ -3,6 +3,34 @@ const DIALOGUE_RIVAL_FULL = {
     npcId: "business_rival",
     type: "face_to_face",
 
+    contradictionReactions: {
+        "kane-presence-during-poisoning": {
+            text: "Вы сопоставили мои слова с показаниями Томаса. Хорошо, я вернулся в зал после короткого выхода в коридор. Но это ещё не доказывает, что я подходил к столику Блэквуда. Томас мог видеть только то, что хотел увидеть.",
+            mood: "defensive",
+            givesInsight: "kane_alibi_broken",
+            answers: [
+                { text: "Томас видел, как вы подсыпали порошок в стакан.", nextNode: "caught_in_lie", tone: "direct", condition: "lie_exposed:kane-left-before-poisoning" },
+                { text: "Почему вы солгали о том, что уехали из бара?", nextNode: "why", tone: "direct", condition: "pressure_at_least:20" },
+                { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
+            ]
+        }
+    },
+
+    evidenceReactions: {
+        bar_photo: {
+            text: "Фотография доказывает лишь то, что я был в баре. Она не показывает, что я подходил к столику Блэквуда.",
+            mood: "defensive"
+        },
+        poison_vial: {
+            text: "Я не обязан объяснять вам каждый пузырёк. Вы строите обвинение на догадках.",
+            mood: "cold"
+        },
+        prescription_copy: {
+            text: "Рецепт подтверждает покупку снотворного Анной. Но он ничего не говорит о том, кто подменил содержимое.",
+            mood: "guarded"
+        }
+    },
+
     context: {
         title: "Допросная",
         text: "Кейн сидит за столом в допросной. Без галстука. Без лоска. Просто уставший человек, на которого давят стены.",
@@ -11,15 +39,95 @@ const DIALOGUE_RIVAL_FULL = {
 
     tree: {
         start: "confrontation",
+        entryRules: [
+            { condition: "hasInsight:full_confession_kane", nodeId: "post_confession_opening" },
+            { condition: "has_claim:kane-admits-return-to-bar", nodeId: "revised_opening" }
+        ],
         nodes: {
+            post_confession_opening: {
+                speaker: "npc",
+                text: "Я уже подписал признание, детектив. Моя версия событий больше не меняется. Если вы пришли за новыми обвинениями, у меня нечего добавить.",
+                mood: "resigned",
+                answers: [
+                    { text: "Я проверяю, что в протоколе отражено именно ваше признание.", nextNode: "post_confession_end", tone: "calm" }
+                ]
+            },
+            post_confession_end: {
+                speaker: "npc",
+                text: "Проверяйте. Теперь мне остаётся отвечать за то, что я сделал.",
+                mood: "tired",
+                endDialogue: true
+            },
+            revised_opening: {
+                speaker: "npc",
+                text: "Мы уже выяснили, что я выходил в коридор и возвращался. Я исправил своё алиби. Но возвращение в зал не означает признание в отравлении. Какие у вас новые факты?",
+                mood: "guarded",
+                answers: [
+                    { text: "Я сопоставил время ваших перемещений с известными переходами. Каким маршрутом вы шли?", nextNode: "route_question_response", tone: "direct", condition: "route_question_prepared" },
+                    { text: "Давайте сопоставим ваши слова с остальными свидетельствами.", nextNode: "why", tone: "direct" },
+                    { text: "Пока вопросов больше нет.", nextNode: "interview_paused", tone: "calm" }
+                ]
+            },
             confrontation: {
                 speaker: "npc",
-                text: "Значит, вы всё-таки докопались. Я думал, у меня есть ещё пара дней. Но вы оказались... эффективным.",
+                text: "Я ушёл из бара до того, как Блэквуду стало плохо. К его столику я не подходил. Вы можете проверить время — я уже был в коридоре.",
                 mood: "defeated",
-                innerThought: "Он не отрицает. Это упрощает дело.",
+                innerThought: "Он заранее подготовил алиби. Нужно сопоставить его слова с показаниями свидетелей.",
+                claim: {
+                    id: "kane-left-before-poisoning",
+                    topic: "kane-presence-during-poisoning",
+                    value: "left-before-poisoning",
+                    summary: "Кейн утверждает, что покинул бар до отравления и не подходил к столику",
+                    sourceName: "Виктор Кейн",
+                    location: "Офис Виктора Кейна",
+                    timeLabel: "Допрос после сбора свидетельств",
+                    circumstances: "Алиби изложено в ответ на вопрос о его присутствии в баре",
+                    deception: { deliberate: true, motive: "self_preservation" }
+                },
                 answers: [
+                    { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "hasInsight:waiter_saw_poisoning" },
+                    { text: "Я восстановил возможный маршрут и заметил нехватку времени. Как вы перемещались?", nextNode: "route_question_response", tone: "direct", condition: "route_question_prepared" },
                     { text: "Расскажите, зачем вы это сделали.", nextNode: "why", tone: "calm" },
-                    { text: "Вы убили человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                    {
+                        text: "Вы подали возражение на предыдущий допрос?",
+                        nextNode: "kane_formal_objection",
+                        tone: "direct",
+                        condition: "npc_action_completed:kane-files-objection"
+                    },
+                    { text: "Вы пытались убить человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                ]
+            },
+
+            route_question_response: {
+                speaker: "npc",
+                text: "Вы сложили минуты на бумаге, детектив. Но это ещё не мой маршрут. Я не стану подтверждать чужую догадку. Назовите точные свидетельства о каждом переходе — тогда мы сможем обсудить время.",
+                mood: "guarded",
+                innerThought: "Кейн не подтверждает маршрут. Нужны отдельные свидетельства о точках пути и времени, а не только расчёт.",
+                answers: [
+                    { text: "Проверю каждый участок и вернусь к этому вопросу.", nextNode: "interview_paused", tone: "calm" }
+                ]
+            },
+
+            kane_formal_objection: {
+                speaker: "npc",
+                text: "Я попросил сержанта внести мои возражения в протокол. Вы назвали меня убийцей прежде, чем предъявили достаточно доказательств. Я буду отвечать на конкретные вопросы, но не позволю подменять показания догадками.",
+                mood: "guarded",
+                answers: [
+                    { text: "Возражение внесено. Давайте вернёмся к проверяемым фактам.", nextNode: "why", tone: "calm", trustDelta: 2 },
+                    { text: "Документы и свидетели важнее ваших формулировок.", nextNode: "why", tone: "direct" }
+                ]
+            },
+
+            caught_in_lie: {
+                speaker: "npc",
+                text: "Томас? Он молодой и напуганный. Вы уверены, что правильно его поняли? Я вышел в коридор, но к столику Блэквуда не возвращался.",
+                mood: "defensive",
+                innerThought: "Кейн пытается обесценить показания свидетеля. Его алиби больше не выглядит надёжным.",
+                givesInsight: "kane_alibi_broken",
+                answers: [
+                    { text: "Бармен тоже видел, как вы забрали пузырёк.", nextNode: "why", tone: "direct", condition: "hasInsight:kane_stole_vial" },
+                    { text: "Тогда объясните, что вы сделали с пузырьком.", nextNode: "why", tone: "direct", condition: "hasInsight:kane_stole_vial" },
+                    { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
                 ]
             },
 
@@ -29,8 +137,55 @@ const DIALOGUE_RIVAL_FULL = {
                 mood: "bitter",
                 innerThought: "Он хочет исповедаться. Нужно слушать.",
                 answers: [
-                    { text: "Я слушаю.", nextNode: "confession" }
+                    {
+                        text: "У меня есть показания о порошке и похищенном пузырьке. Расскажите всё по порядку.",
+                        nextNode: "confession",
+                        tone: "direct",
+                        condition: "all:hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial&not:case_has_claim:waiter:waiter-kane-at-poisoning-v2&not:case_has_claim:waiter:waiter-kane-at-poisoning-reconsidered"
+                    },
+                    {
+                        text: "У меня есть фотография из бара и свидетельство о пузырьке. Ваше прежнее алиби не выдерживает проверки.",
+                        nextNode: "confession",
+                        tone: "direct",
+                        condition: "all:hasInsight:hard_evidence_kane&hasInsight:kane_stole_vial"
+                    },
+                    {
+                        text: "Томас видел, как вы вернулись в зал. Ваше прежнее алиби неверно.",
+                        nextNode: "partial_return",
+                        tone: "direct",
+                        condition: "hasInsight:waiter_saw_poisoning"
+                    },
+                    { text: "Пока мне недостаточно доказательств. Я вернусь к этому разговору.", nextNode: "interview_paused", tone: "calm" }
                 ]
+            },
+
+            partial_return: {
+                speaker: "npc",
+                text: "Да, я выходил в коридор, а потом вернулся в зал. Я сказал, что ушёл раньше, потому что боялся, что меня обвинят только из-за ссоры с Блэквудом. Но возвращение в зал не доказывает, что я отравил его.",
+                mood: "guarded",
+                claim: {
+                    id: "kane-admits-return-to-bar",
+                    topic: "kane-presence-during-poisoning",
+                    value: "returned-to-bar",
+                    summary: "Кейн исправил прежнее алиби: признал возвращение в зал после выхода в коридор, но отрицает отравление",
+                    sourceName: "Виктор Кейн",
+                    location: "Допросная",
+                    timeLabel: "Повторный разговор после сопоставления показаний",
+                    circumstances: "Уточнение собственных слов после предъявления показаний Томаса",
+                    revisesClaimId: "kane-left-before-poisoning",
+                    revisionReason: "confronted_with_witness"
+                },
+                answers: [
+                    { text: "Я зафиксировал изменение ваших показаний.", nextNode: "interview_paused", tone: "calm" },
+                    { text: "Теперь объясните, что произошло дальше.", nextNode: "why", tone: "direct" }
+                ]
+            },
+
+            interview_paused: {
+                speaker: "npc",
+                text: "И правильно. Я не собираюсь признаваться в том, чего вы не доказали. Если хотите продолжить, принесите факты, а не предположения.",
+                mood: "guarded",
+                endDialogue: true
             },
 
             confession: {
@@ -56,7 +211,7 @@ const DIALOGUE_RIVAL_FULL = {
 
             final_decision: {
                 speaker: "npc",
-                text: "Я купил цианид. Для себя — на случай, если не смогу жить с позором. Но в баре я увидел Анну. Она уронила пузырёк со снотворным. И я подумал: «Вот он — шанс». Я подменил содержимое.",
+                text: "Я купил цианид под видом реактива для лаборатории. Сначала держал его для себя — на случай, если не смогу жить с позором. В баре я увидел, как Анна уронила пузырёк со снотворным. Я поднял его через салфетку, а потом в уборной перелил туда цианид из своей склянки. Вернулся и дождался, когда Блэквуд отвлечётся. После первого глотка он понял, что происходит. Я оставил пузырёк под столом — хотел, чтобы полиция нашла только отпечатки Анны.",
                 mood: "cold",
                 innerThought: "Импульсивное решение. Или спланированное?",
                 answers: [

@@ -33,6 +33,18 @@ registerData('object', {
         icon: "🪟", takeable: false,
         interactions: { examine: { text: "Пыль нетронута. Окно не открывали уже несколько дней. На стекле — едва заметные следы пальцев.", timeCost: 5 } }
     },
+    door_chain: {
+        id: "door_chain", name: "Дверная цепочка", type: "static_object",
+        description: "Цепочка на двери номера. На скобе заметна свежая царапина, а в пазу застрял тонкий металлический обломок.",
+        icon: "⛓️", takeable: false,
+        interactions: { examine: { text: "На скобе свежая царапина. В пазу застрял короткий кусок стальной проволоки с загнутым концом. Похоже, цепочку можно было задвинуть снаружи, просунув крючок в щель между дверью и косяком.", timeCost: 5, givesInsight: "chain_trick", spawnsItem: "wire_fragment" } }
+    },
+    wire_fragment: {
+        id: "wire_fragment", name: "Обломок стальной проволоки", type: "evidence",
+        description: "Короткий отрезок стальной проволоки с загнутым концом. На металле остались волокна ткани.",
+        icon: "🪝", takeable: true, isEvidence: true, weight: 0,
+        interactions: { examine: { text: "Крючок на конце подходит к ширине паза дверной цепочки. Это не случайный мусор: проволокой можно было зацепить цепь и закрыть её уже снаружи.", timeCost: 3, givesInsight: "chain_trick_confirmed" } }
+    },
     wardrobe: {
         id: "wardrobe", name: "Шкаф", type: "container",
         description: "Пустой шкаф. Вешалки сиротливо покачиваются от сквозняка. На дне что-то блестит.",
@@ -137,7 +149,7 @@ registerData('object', {
     },
     search_warrant: {
         id: "search_warrant", name: "Ордер на обыск", type: "key_item",
-        description: "Официальный ордер на обыск квартиры мистера Блэквуда. Подписан судьёй.",
+        description: "Судебный ордер по текущему делу. Разрешает обыск указанного помещения и запрос защищённых документов, перечисленных в ходатайстве.",
         icon: "📋", takeable: true, isKeyItem: true, weight: 0,
         interactions: { examine: { text: "Ордер подписан судьёй. Теперь вы можете законно проникнуть в квартиру жертвы и осмотреть её.", timeCost: 5 } }
     },
@@ -218,6 +230,12 @@ registerData('object', {
         description: "Окошко кассы. Кассир скучает за стеклом.",
         icon: "🎫", takeable: false,
         interactions: { examine: { text: "Кассир говорит, что женщина, похожая на горничную, купила билет час назад.", timeCost: 5, givesInsight: "maid_here" } }
+    },
+    locker_key: {
+        id: "locker_key", name: "Ключ от камеры хранения", type: "key_item",
+        description: "Небольшой латунный ключ с биркой от камеры хранения. На бирке стёрт номер, но видна цифра 17.",
+        icon: "🔑", takeable: true, isKeyItem: true, weight: 0,
+        interactions: { examine: { text: "Ключ от камеры хранения №17. Мэри явно что-то оставила на вокзале.", timeCost: 2, givesInsight: "locker_17" } }
     },
     lost_and_found: {
         id: "lost_and_found", name: "Бюро находок", type: "container",

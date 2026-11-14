@@ -6,6 +6,23 @@ class GameTime {
         this._listeners = [];
     }
     
+    // Установить время напрямую и уведомить интерфейс/системы.
+    setTime(hour, minute = 0, day = this.day) {
+        const oldPeriod = this.getPeriod();
+        this.hour = hour;
+        this.minute = minute;
+        this.day = day;
+        const newPeriod = this.getPeriod();
+        this._notify({
+            hour: this.hour,
+            minute: this.minute,
+            day: this.day,
+            period: newPeriod,
+            periodChanged: oldPeriod !== newPeriod,
+            oldPeriod
+        });
+    }
+
     // Продвинуть время на указанные минуты
     advance(minutes) {
         if (minutes <= 0) return;

@@ -2,9 +2,14 @@ class LocationManager {
     constructor(gameTime) {
         this.gameTime = gameTime;
         this.currentLocation = null;
+        this.activeCaseData = null;
         this.unlockedLocations = new Set(['police_station', 'hotel_grand', 'hotel_room_304', 'bar_joe', 'alley']);
         this.visitedLocations = new Set();
         this._listeners = [];
+    }
+
+    setActiveCase(caseData) {
+        this.activeCaseData = caseData || null;
     }
 
     // Проверить, доступна ли локация сейчас
@@ -118,12 +123,19 @@ class LocationManager {
         const location = getLocationById(locationId);
         if (!location) return [];
 
-        let items = [...location.defaultItems];
+        let items = [...(location.defaultItems || [])];
 
-        // Ночные предметы
-        if (location.nightOnlyItems && this.gameTime?.isNighttime()) {
-            items = [...items, ...location.nightOnlyItems];
+        // Предметы конкретной сцены дела добавляются к базовым объектам локации.
+        const caseScenes = this.activeCaseData?.scenes?.filter(scene => scene.locationId === locationId) || [];
+        caseScenes.forEach(scene => items.push(...(scene.highlightObjects || [])));
+
+        // Ночные предметы локации и всех сцен доступны только после наступления темноты.
+        if (this.gameTime?.isNighttime()) {
+            items.push(...(location.nightOnlyItems || []));
+            caseScenes.forEach(scene => items.push(...(scene.nightOnlyObjects || [])));
         }
+
+        items = [...new Set(items)];
 
         // Погодные предметы
         if (window.app?.weatherSystem) {

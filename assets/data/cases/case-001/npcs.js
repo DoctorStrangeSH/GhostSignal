@@ -22,7 +22,7 @@ registerData('npc', {
         availableForChat: true,
         dialogueId: "dialogue-porter",
         canGiveEvidence: [],
-        canGiveInsights: ["suspicious_visitor", "maid_evening_visit", "locked_from_inside"],
+        canGiveInsights: ["suspicious_visitor", "mary_had_access", "locked_from_inside"],
         specialConditions: [
             {
                 id: "porter_confession",
@@ -53,6 +53,11 @@ registerData('npc', {
         canGiveInsights: ["bar_meeting_details", "suspicious_couple", "blackwood_wanted_to_disappear"],
         specialConditions: [
             {
+                id: "case_two_bartender_dialogue",
+                condition: "case:case-002",
+                dialogueId: "dialogue-bartender-case2"
+            },
+            {
                 id: "after_finding_note",
                 condition: "hasItem:hidden_note",
                 dialogueId: "dialogue-bartender"
@@ -78,7 +83,7 @@ registerData('npc', {
         availableForChat: false,
         dialogueId: "dialogue-housekeeper",
         canGiveEvidence: [],
-        canGiveInsights: ["mary_alibi", "mary_suspicion", "mary_confession"],
+        canGiveInsights: ["mary_alibi", "mary_suspicion", "mary_used_sedative", "mary_full_confession"],
         specialConditions: [
             {
                 id: "confronted_with_photo",

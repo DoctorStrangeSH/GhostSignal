@@ -95,6 +95,7 @@ class DeductionScreen {
                 return;
             }
 
+            events.emit('deduction:attempted', { caseId: caseData.id });
             const result = this._checkDeduction(caseData, suspect, motive, weapon);
             this._showDeductionResult(result, modal, caseData);
         });

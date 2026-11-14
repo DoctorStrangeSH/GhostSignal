@@ -9,7 +9,7 @@ const CASE_001 = {
     description: "Мистер Блэквуд, постоялец отеля «Гранд», исчез из запертого номера 304. Дверь закрыта изнутри, окно не открывали. Признаков взлома нет. Администрация отеля просит провести расследование.",
     
     // === ВРЕМЯ СТАРТА ===
-    startTime: { hour: 8, minute: 0, day: 1 },
+    startTime: { hour: 20, minute: 0, day: 1 },
     
     // === ЛОКАЦИИ ===
     locations: [
@@ -37,6 +37,84 @@ const CASE_001 = {
         "coroner"
     ],
     
+    // === ЖИВЫЕ ОТНОШЕНИЯ NPC ===
+    // Эти связи скрыты от детектива, пока не подтверждены в разговоре или уликой.
+    npcRelationships: {
+        goals: [
+            {
+                id: "protect_mary", npcId: "porter", title: "Не оставить Мэри одну",
+                description: "Фрэнк хочет убедиться, что Мэри в безопасности и не несёт весь груз одна.",
+                priority: 90, target: 2
+            },
+            {
+                id: "maintain_bar_community", npcId: "bartender", title: "Сохранить связи бара",
+                description: "Джо старается не потерять людей, которые поддерживают его бар и друг друга.",
+                priority: 75, target: 2
+            },
+            {
+                id: "keep_in_touch_with_mills", npcId: "bartender", title: "Оставаться на связи с Миллсом",
+                description: "Джо хочет понимать, что происходит в участке, не вмешиваясь в расследование.",
+                priority: 55, target: 1
+            }
+        ],
+        bonds: [
+            { id: "porter-housekeeper", fromNpcId: "porter", toNpcId: "housekeeper", relationship: "protective_colleagues", label: "Коллеги, почти семья", trust: 82, reciprocal: true },
+            { id: "porter-bartender", fromNpcId: "porter", toNpcId: "bartender", relationship: "neighborhood_friends", label: "Давние знакомые", trust: 64, reciprocal: true },
+            { id: "elias-bartender", fromNpcId: "elias", toNpcId: "bartender", relationship: "regulars", label: "Знакомые из бара", trust: 61, reciprocal: true },
+            { id: "bartender-sergeant", fromNpcId: "bartender", toNpcId: "sergeant", relationship: "cautious_contacts", label: "Осторожные знакомые", trust: 55, reciprocal: true }
+        ],
+        autonomousInteractions: [
+            {
+                id: "porter-checks-mary", relationshipId: "porter-housekeeper",
+                fromNpcId: "porter", toNpcId: "housekeeper", interaction: "support",
+                goalId: "protect_mary", goalProgress: 1,
+                channel: "phone",
+                initialDelayMinutes: 90, everyMinutes: 240,
+                minTrust: 55, fromPressureBelow: 75, toPressureBelow: 75,
+                trustDelta: 2, reciprocalTrustDelta: 1,
+                summary: "Фрэнк проверил, как Мэри справляется со сменой."
+            },
+            {
+                id: "mary-snaps-at-frank", relationshipId: "porter-housekeeper",
+                fromNpcId: "housekeeper", toNpcId: "porter", interaction: "conflict",
+                channel: "phone",
+                initialDelayMinutes: 180, everyMinutes: 240,
+                fromPressureAtLeast: 45,
+                trustDelta: -5, reciprocalTrustDelta: -3,
+                summary: "Мэри резко ответила Фрэнку, когда тревога взяла верх."
+            },
+            {
+                id: "frank-reconciles-mary", relationshipId: "porter-housekeeper",
+                fromNpcId: "porter", toNpcId: "housekeeper", interaction: "reconcile",
+                goalId: "protect_mary", goalProgress: 1,
+                channel: "phone",
+                initialDelayMinutes: 240, everyMinutes: 240,
+                maxTrust: 58, fromPressureBelow: 35, toPressureBelow: 35,
+                trustDelta: 8, reciprocalTrustDelta: 6,
+                summary: "Фрэнк спокойно поговорил с Мэри и попытался вернуть доверие."
+            },
+            {
+                id: "joe-checks-mills", relationshipId: "bartender-sergeant",
+                fromNpcId: "bartender", toNpcId: "sergeant", interaction: "support",
+                goalId: "keep_in_touch_with_mills", goalProgress: 1,
+                channel: "phone",
+                initialDelayMinutes: 180, everyMinutes: 360, maxOccurrences: 1,
+                minTrust: 45, fromPressureBelow: 75,
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Джо позвонил сержанту Миллсу и осторожно уточнил, как продвигается расследование."
+            },
+            {
+                id: "joe-and-elias-catch-up", relationshipId: "elias-bartender",
+                fromNpcId: "bartender", toNpcId: "elias", interaction: "support",
+                goalId: "maintain_bar_community", goalProgress: 1,
+                channel: "phone",
+                initialDelayMinutes: 180, everyMinutes: 360, maxOccurrences: 1,
+                minTrust: 50, trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Джо и Элиас обменялись новостями за стойкой."
+            }
+        ]
+    },
+
     // === СОБЫТИЯ ===
     events: [
         {
@@ -55,6 +133,12 @@ const CASE_001 = {
             trigger: "choice",
             text: "Сержант хмурится: «Подробности в отчёте портье. Идите, детектив, время не ждёт.»",
             action: "accept_case"
+        },
+        {
+            id: "chain_trick_revealed",
+            trigger: "insight:chain_trick",
+            type: "notification",
+            message: "Цепочку можно было закрыть снаружи крючком из проволоки. Проверьте, не оставила ли Мэри объяснение этого трюка."
         },
         {
             id: "discover_diary",
@@ -84,7 +168,7 @@ const CASE_001 = {
         },
         {
             id: "all_evidence_found",
-            trigger: "evidence_count:5",
+            trigger: "evidence_count:6",
             type: "narrative",
             title: "Картина проясняется",
             text: "У вас достаточно улик. Блэквуд планировал побег с горничной, но что-то пошло не так. Пора составить обвинение."
@@ -105,7 +189,7 @@ const CASE_001 = {
             locationId: "hotel_room_304",
             trigger: "first_visit:hotel_room_304",
             text: "Номер 304. Беспорядок. Кровать смята. На ковре — тёмное пятно. Окно закрыто. Зеркало висит криво — за ним что-то виднеется.",
-            highlightObjects: ["bed_304", "carpet_stain", "window_304", "mirror"]
+            highlightObjects: ["bed_304", "carpet_stain", "window_304", "door_chain", "mirror"]
         },
         {
             id: "bar_intro",
@@ -142,16 +226,8 @@ const CASE_001 = {
     boardSlots: 4,
     
     // === ЦЕПОЧКИ УЛИК ===
-    evidenceChains: [
-        {
-            id: "chain_001",
-            name: "План побега",
-            requiredEvidence: ["hidden_note", "train_ticket", "torn_photo"],
-            requiredInsights: ["bar_meeting", "planned_escape"],
-            bonusInsight: "full_escape_plan",
-            description: "Вы восстановили план побега Блэквуда. Он собирался уехать с горничной."
-        }
-    ],
+    // Canonical chain definitions are registered in the matching evidence.js file.
+    evidenceChains: [],
     
     // === СЛЕЖКИ ===
     stakeouts: [

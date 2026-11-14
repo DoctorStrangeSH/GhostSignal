@@ -9,6 +9,9 @@ class NPCListUI {
         this.npcManager = manager;
         events.on('npcs:loaded', () => this.render());
         events.on('time:changed', () => this.render());
+        events.on('npc:memory_changed', () => this.render());
+        events.on('npc:social_network_changed', () => this.render());
+        events.on('npc:contradiction_presented', () => this.render());
         this.render();
     }
     
@@ -46,13 +49,106 @@ class NPCListUI {
             return;
         }
         
-        // Рендерим карточки
-        this.container.innerHTML = npcs.map(npc => this._createNPCCard(npc)).join('');
+        // Хроника контактов идёт перед карточками и обновляется вместе с социальной сетью.
+        const socialEvents = this.npcManager.getSocialEventLog?.(10) || [];
+        this.container.innerHTML = this._createSocialEventLog(socialEvents) + npcs.map(npc => this._createNPCCard(npc)).join('');
         
         // Вешаем обработчики
         this._bindEvents();
     }
     
+    _escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+
+    _createSocialEventLog(socialEvents) {
+        const labels = {
+            reported: 'ЗАПИСАНО',
+            scheduled: 'ОЖИДАЕТ ПЕРЕДАЧИ',
+            delivered: 'ПЕРЕДАНО',
+            withheld: 'СКРЫТО',
+            betrayal: 'НАРУШЕНА ЛОЯЛЬНОСТЬ',
+            delayed: 'ОТЛОЖЕНО',
+            expired: 'НЕ ДОШЛО',
+            duplicate: 'ПОВТОР',
+            relationship_support: 'ОТНОШЕНИЯ УКРЕПИЛИСЬ',
+            relationship_conflict: 'КОНФЛИКТ',
+            relationship_reconciled: 'ПРИМИРЕНИЕ',
+            relationship_avoidance: 'ДИСТАНЦИЯ'
+        };
+        const channelLabels = { in_person: 'личная встреча', phone: 'звонок', message: 'сообщение' };
+        const entries = (socialEvents || []).map(item => {
+            const from = this._escapeHTML(item.fromName || 'Неизвестный');
+            const to = this._escapeHTML(item.toName || 'неизвестному адресату');
+            const protectedName = this._escapeHTML(item.protectedNpcName || 'близкого человека');
+            const channel = this._escapeHTML(channelLabels[item.channel] || 'контакт');
+            const time = this._escapeHTML(`ДЕНЬ ${item.day || 1} · ${item.time || '--:--'}`);
+            const status = this._escapeHTML(labels[item.type] || 'СОБЫТИЕ');
+            let headline = '';
+            let detail = '';
+
+            if (item.type === 'reported') {
+                headline = `${from} сообщил о поведении детектива`;
+            } else if (item.type === 'scheduled') {
+                headline = `${from} → ${to} · ${channel}`;
+                detail = 'Передача запланирована, ожидает подходящего времени и доступности участников.';
+            } else if (item.type === 'delivered') {
+                headline = `${from} передал сведения: ${to}`;
+                detail = item.summary || 'Содержание сообщения не записано.';
+            } else if (item.type === 'withheld') {
+                headline = `${from} скрыл сведения от ${to}`;
+                detail = `Затрагивался ${protectedName}. Причина: защита отношений.`;
+            } else if (item.type === 'betrayal') {
+                headline = `${from} нарушил защиту ${protectedName}`;
+                detail = 'Под давлением персонаж перестал хранить сведения в тайне и передал их дальше.';
+            } else if (item.type === 'delayed') {
+                headline = `${from} → ${to} · передача отложена`;
+                detail = item.summary || 'Участники пока не могут связаться.';
+            } else if (item.type.startsWith('relationship_')) {
+                const actions = {
+                    relationship_support: 'поддержали друг друга',
+                    relationship_conflict: 'поссорились',
+                    relationship_reconciled: 'помирились',
+                    relationship_avoidance: 'отдалились'
+                };
+                headline = `${from} и ${to} · ${actions[item.type] || 'изменили отношения'}`;
+                detail = item.summary || 'Между персонажами произошли изменения.';
+            } else if (item.type === 'expired') {
+                headline = `${from} → ${to} · сообщение не дошло`;
+                detail = 'Окно доставки истекло до того, как контакт состоялся.';
+            } else {
+                headline = `${from} → ${to} · повторная передача не выполнена`;
+                detail = 'Получатель уже располагал этими сведениями.';
+            }
+
+            return `
+                <article class="npc-social-event event-${this._escapeHTML(item.type)}">
+                    <div class="npc-social-event-meta">
+                        <span>${time}</span><strong>${status}</strong>
+                    </div>
+                    <div class="npc-social-event-title">${this._escapeHTML(headline)}</div>
+                    ${detail ? `<p>${this._escapeHTML(detail)}</p>` : ''}
+                </article>
+            `;
+        }).join('');
+
+        return `
+            <section class="npc-social-log" aria-label="Хроника социальных контактов">
+                <header class="npc-social-log-header">
+                    <div>
+                        <span class="npc-social-log-kicker">ДЕЛО · СОЦИАЛЬНАЯ СЕТЬ</span>
+                        <h3>ИЗВЕСТНЫЕ КОНТАКТЫ</h3>
+                    </div>
+                    <span class="npc-social-log-count">${socialEvents.length}</span>
+                </header>
+                <p class="npc-social-log-caption">Только события, подтверждённые разговором, наблюдением или документом.</p>
+                ${entries || '<div class="npc-social-log-empty">Пока нет подтверждённых сведений о контактах между персонажами.</div>'}
+            </section>
+        `;
+    }
+
     _createNPCCard(npc) {
         const statusIcons = {
             'at_work': '💼',
@@ -103,6 +199,61 @@ class NPCListUI {
                     ${!npc.available ? `<button class="terminal-btn npc-wait-btn" disabled>⏳ НЕДОСТУПЕН</button>` : ''}
                 </div>
                 
+                ${npc.memory ? `
+                    <div class="npc-memory">
+                        <div class="npc-memory-heading"><span>ДОВЕРИЕ</span><strong>${npc.memory.trust}%</strong></div>
+                        <div class="npc-trust-track"><span style="width: ${npc.memory.trust}%;"></span></div>
+                        <div class="npc-memory-meta">Разговоров: ${npc.memory.conversations} · Улик предъявлено: ${npc.memory.presentedEvidence.length}</div>
+                        ${npc.psychology ? `
+                            <div class="npc-psychology-state state-${npc.psychology.disposition}">
+                                <span>СОСТОЯНИЕ</span><strong>${npc.psychology.label}</strong>
+                            </div>
+                            ${npc.psychology.cooperation ? `
+                                <div class="npc-psychology-state npc-cooperation-state cooperation-${npc.psychology.cooperation.state}">
+                                    <span>СОТРУДНИЧЕСТВО</span><strong>${npc.psychology.cooperation.label}</strong>
+                                </div>
+                            ` : ''}
+                        ` : ''}
+                        ${npc.memory.liesExposed?.length ? `
+                            <div class="npc-lies-exposed">⚠ Раскрыто ложных показаний: ${npc.memory.liesExposed.length}</div>
+                        ` : ''}
+                        ${npc.memory.accusations?.length ? `
+                            <div class="npc-accusations">
+                                <div class="npc-accusations-heading">ОБВИНЕНИЯ ДЕТЕКТИВА</div>
+                                ${[...npc.memory.accusations].slice(-2).reverse().map(accusation => {
+                                    const labels = { pending: 'НЕ СНЯТО', false: 'ЛОЖНОЕ ОБВИНЕНИЕ', retracted: 'ОТОЗВАНО', substantiated: 'ПОДТВЕРЖДЕНО' };
+                                    return `<div class="npc-accusation accusation-${accusation.status}">
+                                        <span>${labels[accusation.status] || 'ЗАПИСАНО'}</span>
+                                        <p>${accusation.text}</p>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                        ${npc.promises?.length ? `
+                            <div class="npc-promises">
+                                <div class="npc-promises-heading">ОБЕЩАНИЯ ДЕТЕКТИВА</div>
+                                ${[...npc.promises].slice(-2).reverse().map(promise => {
+                                    const labels = { pending: 'ОЖИДАЕТ', fulfilled: 'ВЫПОЛНЕНО', broken: 'НАРУШЕНО' };
+                                    return `<div class="npc-promise promise-${promise.status}">
+                                        <span>${labels[promise.status] || 'ЗАПИСАНО'}</span>
+                                        <p>${promise.text}</p>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                ${npc.relationships?.length ? `
+                    <div class="npc-relationships">
+                        <div class="npc-relationships-heading">ПОДТВЕРЖДЁННЫЕ СВЯЗИ</div>
+                        ${npc.relationships.slice(0, 4).map(relationship => `
+                            <div class="npc-relationship relationship-${this._escapeHTML(relationship.status)}">
+                                <span>${this._escapeHTML(relationship.name)}</span>
+                                <small>${this._escapeHTML(relationship.label)} · ${this._escapeHTML(relationship.statusLabel)}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
                 ${npc.insightsGiven && npc.insightsGiven.length > 0 ? `
                     <div class="npc-insights">💡 Поделился информацией: ${npc.insightsGiven.length}</div>
                 ` : ''}

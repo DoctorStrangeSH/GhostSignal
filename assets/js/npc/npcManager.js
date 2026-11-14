@@ -5,6 +5,22 @@ class NPCManager {
         this.activeNPCs = [];
         this.npcStates = {};
         this.autoTriggered = [];
+        this.currentCaseId = null;
+        this.memoryService = null;
+        this.socialNetwork = null;
+        this.relationshipService = null;
+    }
+
+    setMemoryService(service) {
+        this.memoryService = service || null;
+    }
+
+    setSocialNetwork(service) {
+        this.socialNetwork = service || null;
+    }
+
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
     }
 
     loadNPCsForCase(caseData) {
@@ -15,6 +31,7 @@ class NPCManager {
             return;
         }
 
+        this.currentCaseId = caseData.id || null;
         this.activeNPCs = caseData.npcs
             .map(id => getNPCById(id))
             .filter(Boolean);
@@ -61,7 +78,7 @@ class NPCManager {
             };
         }
 
-        return { available: true, reason: 'awake', location: schedule.locations?.work || null, message: `${npc.name} доступен` };
+        return { available: true, reason: 'awake', location: schedule.locations?.home || schedule.locations?.work || null, message: `${npc.name} доступен` };
     }
 
     getNPCStatus(npcId) {
@@ -70,6 +87,15 @@ class NPCManager {
 
         const availability = this.isNPCAvailable(npcId);
         const state = this.npcStates[npcId] || {};
+        const memory = this.memoryService?.getMemory(npcId) || null;
+        if (memory) {
+            delete memory.relationshipTrusts;
+            delete memory.rumors;
+            delete memory.cooperation;
+            delete memory.cooperationHistory;
+        }
+        const knownRelationships = this.relationshipService?.getKnownRelationshipsForNPC(npcId) ||
+            this.socialNetwork?.getRelationshipsForNPC(npcId) || [];
 
         return {
             ...npc,
@@ -78,13 +104,22 @@ class NPCManager {
             canChat: npc.availableForChat && availability.available,
             lastInteraction: state.lastInteraction,
             insightsGiven: state.insightsGiven || [],
-            evidenceGiven: state.evidenceGiven || []
+            evidenceGiven: state.evidenceGiven || [],
+            memory,
+            psychology: this.memoryService?.getPsychologicalState(npcId, npc.psychology) || null,
+            promises: this.memoryService?.getPromises(npcId) || [],
+            relationships: knownRelationships,
+            socialLinks: knownRelationships
         };
     }
 
     getAllNPCStatuses() {
         if (!this.activeNPCs || this.activeNPCs.length === 0) return [];
         return this.activeNPCs.map(npc => this.getNPCStatus(npc.id)).filter(Boolean);
+    }
+
+    getSocialEventLog(limit = 12, npcId = null) {
+        return this.socialNetwork?.getKnownEventLog(limit, npcId) || [];
     }
 
     getNPCsAtLocation(locationId) {
@@ -163,6 +198,10 @@ class NPCManager {
     _checkCondition(conditionStr) {
         if (!conditionStr) return true;
 
+        if (conditionStr.startsWith('case:')) {
+            return this.currentCaseId === conditionStr.slice('case:'.length);
+        }
+
         if (conditionStr.startsWith('hasItem:')) {
             const itemId = conditionStr.replace('hasItem:', '');
             return this.inventory?.hasItem(itemId) || false;
@@ -198,20 +237,40 @@ class NPCManager {
     toJSON() {
         return {
             activeNPCs: this.activeNPCs.map(n => n.id),
+            currentCaseId: this.currentCaseId,
             npcStates: JSON.parse(JSON.stringify(this.npcStates)),
             autoTriggered: [...this.autoTriggered]
         };
     }
 
-    static fromJSON(json, gameTime, inventory) {
+    static fromJSON(json, gameTime, inventory, currentCaseId = null) {
         const manager = new NPCManager(gameTime, inventory);
-        if (json) {
-            manager.npcStates = json.npcStates || {};
-            manager.autoTriggered = json.autoTriggered || [];
-            if (json.activeNPCs && json.activeNPCs.length > 0) {
-                manager.activeNPCs = json.activeNPCs.map(id => getNPCById(id)).filter(Boolean);
-            }
+        manager.currentCaseId = currentCaseId || json?.currentCaseId || null;
+        const snapshotMatchesCase = !currentCaseId || json?.currentCaseId === currentCaseId;
+        manager.npcStates = snapshotMatchesCase ? (json?.npcStates || {}) : {};
+        manager.autoTriggered = snapshotMatchesCase ? (json?.autoTriggered || []) : [];
+
+        const savedNPCs = snapshotMatchesCase && Array.isArray(json?.activeNPCs)
+            ? json.activeNPCs.map(id => getNPCById(id)).filter(Boolean)
+            : [];
+        if (savedNPCs.length > 0) {
+            manager.activeNPCs = savedNPCs;
+        } else if (manager.currentCaseId) {
+            const caseData = getCaseById(manager.currentCaseId);
+            manager.activeNPCs = (caseData?.npcs || []).map(id => getNPCById(id)).filter(Boolean);
         }
+
+        manager.activeNPCs.forEach(npc => {
+            if (!manager.npcStates[npc.id]) {
+                manager.npcStates[npc.id] = {
+                    dialoguesCompleted: [],
+                    evidenceGiven: [],
+                    insightsGiven: [],
+                    lastInteraction: null
+                };
+            }
+        });
+
         return manager;
     }
 }

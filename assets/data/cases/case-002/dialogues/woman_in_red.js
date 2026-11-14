@@ -19,13 +19,30 @@ const DIALOGUE_WOMAN_IN_RED = {
                 innerThought: "Она ждала меня. Это настораживает.",
                 answers: [
                     { text: "Кто вы такая?", nextNode: "identity" },
+                    {
+                        text: "Вы связывались с Анной после нашего разговора?",
+                        nextNode: "eva_protected_anna",
+                        tone: "calm",
+                        condition: "npc_action_completed:eva-protects-anna-after-pressure"
+                    },
                     { text: "Вы были здесь в ночь отравления.", nextNode: "that_night" }
+                ]
+            },
+
+            eva_protected_anna: {
+                speaker: "npc",
+                text: "Я позвонила ей снова. Анна была напугана. Я попросила её не оставаться одной — но это не означает, что я собираюсь прятать от вас правду. Я расскажу о том, что действительно видела.",
+                mood: "protective",
+                answers: [
+                    { text: "Спасибо. Я проверю показания без давления на Анну.", nextNode: "that_night", tone: "reassuring", trustDelta: 2 },
+                    { text: "Мне важно знать, что вы сами наблюдали.", nextNode: "that_night", tone: "direct" }
                 ]
             },
 
             identity: {
                 speaker: "npc",
                 text: "Меня зовут Ева. Ева Ковалёва. Анна — моя старшая сестра.",
+                revealRelationships: ["sisters-anna-eva"],
                 mood: "serious",
                 innerThought: "Сестра! Вот это поворот.",
                 givesInsight: "sisters_revealed",
@@ -67,7 +84,7 @@ const DIALOGUE_WOMAN_IN_RED = {
 
             saw_him: {
                 speaker: "npc",
-                text: "Нет. Было темно. Но я видела, как он что-то прятал в карман. А через минуту бармен налил Блэквуду виски.",
+                text: "Нет. Было темно. Я видела, как он что-то прятал в карман, а затем на несколько минут вышел в коридор. Вернувшись, он дождался, пока бармен отвернётся, и подошёл к столику Блэквуда.",
                 mood: "suspicious",
                 innerThought: "Совпадение? Не думаю.",
                 answers: [

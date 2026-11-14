@@ -174,20 +174,54 @@ class AuthUI {
         if (!modalBody || !modalTitle || !modalFooter) return;
         
         const user = this.authManager.getUser();
-        
+        const hasConflict = Boolean(storage.get('cloud_conflict_backup'));
+
         modalTitle.textContent = '👤 АККАУНТ';
         modalBody.innerHTML = `
             <p>Вы вошли как: <strong>${user?.email || 'Неизвестно'}</strong></p>
             <p style="font-size: 12px; color: var(--text-dim);">Прогресс синхронизируется автоматически.</p>
+            ${hasConflict ? `
+                <div class="auth-error" role="status">
+                    Обнаружены две версии сохранения. Текущий локальный прогресс не перезаписан.
+                    Выберите, какую версию оставить.
+                </div>
+            ` : ''}
         `;
         modalFooter.innerHTML = `
+            ${hasConflict ? `
+                <button id="btn-use-cloud-save" class="terminal-btn">ВОССТАНОВИТЬ ОБЛАЧНУЮ КОПИЮ</button>
+                <button id="btn-keep-local-save" class="terminal-btn">ОСТАВИТЬ ЛОКАЛЬНУЮ</button>
+            ` : ''}
             <button id="btn-logout" class="terminal-btn" style="border-color: var(--accent-red-bright);">ВЫЙТИ</button>
             <button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ</button>
         `;
-        
+
         const modal = new bootstrap.Modal(document.getElementById('universal-modal'));
         modal.show();
-        
+
+        document.getElementById('btn-use-cloud-save')?.addEventListener('click', async () => {
+            const resolved = await window.app?.syncManager?.resolveConflict('cloud');
+            if (resolved) modal.hide();
+        });
+
+        document.getElementById('btn-keep-local-save')?.addEventListener('click', async () => {
+            const resolved = await window.app?.syncManager?.resolveConflict('local');
+            if (resolved) {
+                modal.hide();
+                events.emit('notification:show', {
+                    message: 'Локальное сохранение отправлено в облако.',
+                    type: 'success',
+                    duration: 3000
+                });
+            } else {
+                events.emit('notification:show', {
+                    message: 'Не удалось сохранить локальную версию в облако. Обе копии сохранены.',
+                    type: 'error',
+                    duration: 4000
+                });
+            }
+        });
+
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await this.authManager.logout();
             modal.hide();

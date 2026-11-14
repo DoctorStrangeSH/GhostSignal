@@ -20,16 +20,29 @@ class CaseManager {
         }
         
         this.currentCase = caseData;
+        this.locationManager?.setActiveCase?.(caseData);
         this.caseState = 'active';
         this.completedEvents = [];
         this.visitedLocations = [];
         this.evidenceFound = 0;
+
+        // Exploration belongs to the active investigation. A new case must
+        // not inherit visited locations from a previous case's map.
+        this.locationManager?.visitedLocations?.clear?.();
         
         // Устанавливаем время начала дела
         if (caseData.startTime) {
-            this.gameTime.hour = caseData.startTime.hour;
-            this.gameTime.minute = caseData.startTime.minute;
-            this.gameTime.day = caseData.startTime.day;
+            if (typeof this.gameTime.setTime === 'function') {
+                this.gameTime.setTime(
+                    caseData.startTime.hour,
+                    caseData.startTime.minute,
+                    caseData.startTime.day
+                );
+            } else {
+                this.gameTime.hour = caseData.startTime.hour;
+                this.gameTime.minute = caseData.startTime.minute;
+                this.gameTime.day = caseData.startTime.day;
+            }
         }
         
         // Разблокируем локации дела
@@ -42,8 +55,12 @@ class CaseManager {
             });
         }
         
-        // Перемещаемся в стартовую локацию
+        // Применяем уже имеющиеся ключевые предметы к условиям доступа.
+        this._checkUnlockConditions();
+
+        // Новый забег начинается в стартовой точке без оплаты перехода из прошлого дела.
         const startLoc = caseData.startLocation || 'police_station';
+        if (this.locationManager) this.locationManager.currentLocation = null;
         this.locationManager.travelTo(startLoc);
         
         // Запускаем вступительное событие
@@ -192,7 +209,11 @@ class CaseManager {
     }
     
     _checkEvidenceCount() {
-        const required = 5;  // Минимум улик для финала
+        const thresholdEvent = this.currentCase?.events?.find(event => {
+            const [kind, count] = (event.trigger || '').split(':');
+            return kind === 'evidence_count' && Number.isInteger(Number(count));
+        });
+        const required = thresholdEvent ? Number(thresholdEvent.trigger.split(':')[1]) : 5;
         if (this.evidenceFound >= required) {
             const event = this.currentCase?.events?.find(e => e.trigger === `evidence_count:${required}`);
             if (event) this._triggerEvent(event);
@@ -253,14 +274,20 @@ class CaseManager {
     }
     
     // Восстановление
-    static fromJSON(json, gameTime, locationManager, inventory) {
+    static fromJSON(json, gameTime, locationManager, inventory, fallbackCaseId = null) {
         const manager = new CaseManager(gameTime, locationManager, inventory);
-        if (json?.currentCaseId) {
-            manager.currentCase = getCaseById(json.currentCaseId);
-            manager.caseState = json.caseState || 'active';
-            manager.completedEvents = json.completedEvents || [];
-            manager.visitedLocations = json.visitedLocations || [];
-            manager.evidenceFound = json.evidenceFound || 0;
+        const caseId = fallbackCaseId || json?.currentCaseId;
+        if (caseId) {
+            manager.currentCase = getCaseById(caseId);
+            if (manager.currentCase) {
+                const snapshotMatchesCase = !fallbackCaseId || json?.currentCaseId === fallbackCaseId;
+                manager.locationManager?.setActiveCase?.(manager.currentCase);
+                manager.caseState = snapshotMatchesCase ? (json?.caseState || 'active') : 'active';
+                manager.completedEvents = snapshotMatchesCase ? (json?.completedEvents || []) : [];
+                manager.visitedLocations = snapshotMatchesCase ? (json?.visitedLocations || []) : [];
+                manager.evidenceFound = snapshotMatchesCase ? (json?.evidenceFound || 0) : 0;
+                manager._checkUnlockConditions();
+            }
         }
         return manager;
     }

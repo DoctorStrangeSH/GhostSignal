@@ -3,6 +3,7 @@ class EvidenceChainSystem {
         this.inventory = inventory;
         this.chains = [];          // Зарегистрированные цепочки
         this.completedChains = []; // Завершённые цепочки
+        this.currentCaseId = null;
     }
     
     // Зарегистрировать цепочку улик
@@ -57,26 +58,37 @@ class EvidenceChainSystem {
     }
     
     // Загрузить цепочки для дела
-    loadChainsForCase(caseData) {
+    loadChainsForCase(caseData, preserveCompleted = false) {
+        const sameCase = this.currentCaseId === (caseData?.id || null);
+        const completed = preserveCompleted && sameCase ? [...this.completedChains] : [];
         this.chains = [];
-        this.completedChains = [];
-        
-        if (caseData?.evidenceChains) {
-            caseData.evidenceChains.forEach(chain => this.registerChain(chain));
-        }
+        this.completedChains = completed;
+        this.currentCaseId = caseData?.id || null;
+
+        const registeredChains = typeof window !== 'undefined'
+            ? Object.values(window.EVIDENCE_CHAINS || {}).filter(chain => chain.caseId === this.currentCaseId)
+            : [];
+        const caseChains = registeredChains.length
+            ? registeredChains
+            : (caseData?.evidenceChains || []);
+
+        caseChains.forEach(chain => this.registerChain(chain));
     }
     
     // Сериализация
     toJSON() {
         return {
-            completedChains: [...this.completedChains]
+            completedChains: [...this.completedChains],
+            currentCaseId: this.currentCaseId
         };
     }
     
-    static fromJSON(json, inventory) {
+    static fromJSON(json, inventory, currentCaseId = null) {
         const system = new EvidenceChainSystem(inventory);
         if (json) {
-            system.completedChains = json.completedChains || [];
+            const snapshotMatchesCase = !currentCaseId || !json.currentCaseId || json.currentCaseId === currentCaseId;
+            system.completedChains = snapshotMatchesCase ? (json.completedChains || []) : [];
+            system.currentCaseId = currentCaseId || json.currentCaseId || null;
         }
         return system;
     }

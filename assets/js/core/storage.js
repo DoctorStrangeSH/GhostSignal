@@ -2,17 +2,26 @@ class StorageManager {
     constructor() {
         this.prefix = 'detective_archive_';
         this.version = CONFIG.version;
+        this.versionMismatch = false;
+        this.savedVersion = null;
         this._checkVersion();
     }
     
     // Проверка версии сохранений
     _checkVersion() {
         const savedVersion = localStorage.getItem(this.prefix + 'version');
-        if (savedVersion && savedVersion !== this.version) {
-            console.warn(`Storage version mismatch: ${savedVersion} -> ${this.version}`);
-            // В будущем: миграция данных
+        this.savedVersion = savedVersion;
+
+        if (!savedVersion) {
+            localStorage.setItem(this.prefix + 'version', this.version);
+            return;
         }
-        localStorage.setItem(this.prefix + 'version', this.version);
+
+        if (savedVersion !== this.version) {
+            this.versionMismatch = true;
+            console.warn(`Storage version mismatch: ${savedVersion} -> ${this.version}. Existing saves are preserved until a migration is available.`);
+            return;
+        }
     }
     
     // Сохранить значение
@@ -43,9 +52,33 @@ class StorageManager {
         localStorage.removeItem(this.prefix + key);
     }
     
-    // Сохранить весь прогресс игры
+    // Сохранить весь прогресс игры с метаданными для безопасной синхронизации.
     saveProgress(data) {
-        return this.set('progress', data);
+        const currentData = data && typeof data === 'object' ? { ...data } : {};
+        const previous = this.loadProgress();
+        const nextComparable = { ...currentData };
+        delete nextComparable._sync;
+
+        const previousComparable = previous && typeof previous === 'object' ? { ...previous } : null;
+        if (previousComparable) delete previousComparable._sync;
+
+        const changed = !previousComparable ||
+            JSON.stringify(nextComparable) !== JSON.stringify(previousComparable);
+        const previousMeta = previous?._sync || {};
+        const incomingMeta = currentData._sync || {};
+        const revision = Math.max(
+            Number(previousMeta.revision) || 0,
+            Number(incomingMeta.revision) || 0
+        ) + (changed ? 1 : 0);
+        const updatedAt = changed
+            ? Date.now()
+            : Math.max(Number(previousMeta.updatedAt) || 0, Number(incomingMeta.updatedAt) || 0);
+
+        delete currentData._sync;
+        return this.set('progress', {
+            ...currentData,
+            _sync: { revision: revision || 1, updatedAt }
+        });
     }
     
     // Загрузить весь прогресс

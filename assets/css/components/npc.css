@@ -168,3 +168,262 @@
 .npc-card {
     animation: fade-in 0.3s ease-out;
 }
+
+.npc-memory {
+    margin-top: 10px;
+    padding: 9px 10px;
+    border: 1px solid rgba(212, 160, 23, 0.16);
+    background: rgba(212, 160, 23, 0.035);
+}
+.npc-memory-heading {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+.npc-memory-heading strong { color: var(--accent-amber); font-size: 10px; }
+.npc-trust-track {
+    height: 4px;
+    margin: 6px 0;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.npc-trust-track span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-amber));
+}
+.npc-memory-meta { color: var(--text-dim); font-size: 9px; }
+
+/* Psychological state: trust is visible, pressure remains an investigative signal. */
+.npc-psychology-state {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 8px;
+    border: 1px solid rgba(190, 160, 110, 0.18);
+    background: rgba(190, 160, 110, 0.045);
+    font-size: 9px;
+}
+.npc-psychology-state > span {
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+.npc-psychology-state strong {
+    color: var(--text-secondary);
+    text-align: right;
+    font-weight: 600;
+}
+.npc-psychology-state.state-cooperative strong { color: var(--accent-green); }
+.npc-psychology-state.state-pressured strong,
+.npc-psychology-state.state-overwhelmed strong { color: var(--accent-red-bright); }
+.npc-psychology-state.state-distrustful strong { color: var(--accent-amber); }
+.npc-cooperation-state.cooperation-withdrawn strong,
+.npc-cooperation-state.cooperation-reluctant strong { color: var(--accent-red-bright); }
+.npc-cooperation-state.cooperation-guarded strong { color: var(--accent-amber); }
+.npc-cooperation-state.cooperation-willing strong,
+.npc-cooperation-state.cooperation-ready strong { color: var(--accent-green); }
+.npc-lies-exposed {
+    margin-top: 6px;
+    color: var(--accent-red-bright);
+    font-size: 9px;
+}
+
+/* Long-term promises are part of the NPC's remembered relationship with the detective. */
+.npc-promises {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.npc-promises-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-promise {
+    margin-top: 5px;
+    padding: 6px 8px;
+    border-left: 2px solid rgba(212, 160, 23, 0.45);
+    background: rgba(212, 160, 23, 0.035);
+}
+.npc-promise > span {
+    color: var(--accent-amber);
+    font-size: 8px;
+    letter-spacing: 1px;
+}
+.npc-promise p {
+    margin: 3px 0 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+    line-height: 1.45;
+}
+.npc-promise.promise-fulfilled { border-left-color: var(--accent-green); }
+.npc-promise.promise-fulfilled > span { color: var(--accent-green); }
+.npc-promise.promise-broken { border-left-color: var(--accent-red-bright); }
+.npc-promise.promise-broken > span { color: var(--accent-red-bright); }
+
+/* Reports passed between contacts remain attributed and explicitly unverified. */
+.npc-rumors {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(212, 160, 23, 0.12);
+}
+.npc-rumors-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-rumor {
+    margin-top: 5px;
+    padding: 6px 8px;
+    border-left: 2px solid rgba(190, 150, 90, 0.55);
+    background: rgba(190, 150, 90, 0.035);
+}
+.npc-rumor > span {
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 0.7px;
+}
+.npc-rumor p {
+    margin: 3px 0 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+    line-height: 1.45;
+}
+
+/* Accusations remain visible so apologies never erase their consequences. */
+.npc-accusations { margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(180, 70, 70, 0.18); }
+.npc-accusations-heading { margin-bottom: 6px; color: var(--text-dim); font-size: 8px; letter-spacing: 1.2px; }
+.npc-accusation { margin-top: 5px; padding: 6px 8px; border-left: 2px solid rgba(180, 70, 70, 0.55); background: rgba(180, 70, 70, 0.035); }
+.npc-accusation > span { color: var(--text-dim); font-size: 8px; letter-spacing: 0.7px; }
+.npc-accusation p { margin: 3px 0 0; color: var(--text-secondary); font-size: 9px; line-height: 1.45; }
+.npc-accusation-false > span { color: var(--accent-red-bright); }
+
+/* Social graph: visible ties and their current trust, not just a list of names. */
+.npc-social-links {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(150, 170, 150, 0.16);
+}
+.npc-social-links-heading {
+    margin-bottom: 6px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 1.2px;
+}
+.npc-social-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 0;
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+.npc-social-link small {
+    color: var(--text-dim);
+    font-size: 8px;
+    text-align: right;
+}
+
+/* Case-level social timeline: actual deliveries are separated from planned or withheld contacts. */
+.npc-social-log {
+    margin: 0 0 14px;
+    padding: 13px 14px;
+    border: 1px solid rgba(212, 160, 23, 0.2);
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(212, 160, 23, 0.055), rgba(10, 13, 18, 0.28));
+}
+.npc-social-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.npc-social-log-kicker {
+    color: var(--accent-amber);
+    font-size: 8px;
+    letter-spacing: 1.5px;
+}
+.npc-social-log-header h3 {
+    margin: 3px 0 0;
+    color: var(--text-bright);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+}
+.npc-social-log-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 25px;
+    height: 25px;
+    border: 1px solid rgba(212, 160, 23, 0.28);
+    border-radius: 50%;
+    color: var(--accent-amber);
+    font-size: 10px;
+}
+.npc-social-log-caption {
+    margin: 6px 0 10px;
+    color: var(--text-dim);
+    font-size: 9px;
+}
+.npc-social-event {
+    margin-top: 7px;
+    padding: 8px 9px;
+    border-left: 2px solid rgba(150, 160, 170, 0.38);
+    background: rgba(0, 0, 0, 0.16);
+}
+.npc-social-event-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 8px;
+    letter-spacing: 0.7px;
+}
+.npc-social-event-meta strong {
+    color: var(--accent-amber);
+    font-weight: 600;
+}
+.npc-social-event-title {
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    line-height: 1.4;
+}
+.npc-social-event p {
+    margin: 4px 0 0;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1.45;
+}
+.npc-social-event.event-delivered { border-left-color: var(--accent-green); }
+.npc-social-event.event-withheld { border-left-color: var(--accent-red-bright); }
+.npc-social-event.event-betrayal { border-left-color: var(--accent-red-bright); background: rgba(180, 70, 70, 0.07); }
+.npc-relationships { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color, rgba(255,255,255,.12)); }
+.npc-relationships-heading { margin-bottom: 7px; color: var(--accent-cyan, #78b8c5); font-size: .68rem; letter-spacing: .12em; }
+.npc-relationship { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; margin-top: 5px; border-left: 2px solid var(--accent-cyan, #78b8c5); background: rgba(120,184,197,.05); }
+.npc-relationship span { color: var(--text-primary, #e6e6e6); font-size: .82rem; }
+.npc-relationship small { color: var(--text-muted, #9aa0a6); font-size: .68rem; }
+.npc-relationship.relationship-strained, .npc-relationship.relationship-hostile { border-left-color: var(--accent-red-bright, #d45c55); background: rgba(180,70,70,.06); }
+.npc-relationship.relationship-close, .npc-relationship.relationship-friendly { border-left-color: var(--accent-green, #299d71); }
+.npc-social-event.event-relationship_conflict { border-left-color: var(--accent-red-bright); }
+.npc-social-event.event-relationship_reconciled, .npc-social-event.event-relationship_support { border-left-color: var(--accent-green, #299d71); }
+.npc-social-event.event-relationship_avoidance { border-left-color: var(--text-muted, #9aa0a6); }
+
+
+.npc-social-event.event-expired,
+.npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
+.npc-social-log-empty {
+    padding: 10px;
+    border: 1px dashed rgba(180, 180, 180, 0.16);
+    color: var(--text-dim);
+    font-size: 9px;
+    text-align: center;
+}

@@ -56,6 +56,7 @@ class CallInterface {
                     <div class="call-dialogue" id="call-dialogue">
                         <div class="dialogue-messages" id="dialogue-messages"></div>
                         <div class="dialogue-answers" id="dialogue-answers"></div>
+                        <div class="dialogue-evidence-tools" id="dialogue-evidence-tools"></div>
                     </div>
                     <div class="call-controls">
                         <button id="btn-hangup" class="call-btn hangup-btn">🔴 СБРОСИТЬ</button>
@@ -89,6 +90,8 @@ class CallInterface {
         document.getElementById('call-role').textContent = npc.role;
         document.getElementById('dialogue-messages').innerHTML = '';
         document.getElementById('dialogue-answers').innerHTML = '';
+        const evidenceTools = document.getElementById('dialogue-evidence-tools');
+        if (evidenceTools) evidenceTools.innerHTML = '';
         document.getElementById('call-duration').textContent = '00:00';
 
         // Анимация волн
@@ -197,6 +200,89 @@ class CallInterface {
                 answersContainer.appendChild(btn);
             });
         }
+
+        this._renderEvidenceTools();
+    }
+
+    _renderEvidenceTools() {
+        const container = document.getElementById('dialogue-evidence-tools');
+        if (!container || !this.dialogueEngine?.currentDialogue) return;
+
+        const allItems = this.dialogueEngine.inventory?.getAllItems?.() || [];
+        const evidence = allItems.length
+            ? allItems.filter(item => item.isEvidence)
+            : (this.dialogueEngine.inventory?.getEvidence?.() || []);
+        const prepared = this.dialogueEngine.memoryService?.getPreparedConfrontation?.(this.currentNPC?.id);
+        const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+        const sections = [];
+
+        if (evidence.length) {
+            sections.push(`
+                <div class="evidence-present-row">
+                    <select id="dialogue-evidence-select" class="terminal-input" aria-label="Выберите улику для предъявления">
+                        <option value="">-- Предъявить улику --</option>
+                        ${evidence.map(item => `<option value="${item.id}">${item.icon || '📄'} ${item.name}</option>`).join('')}
+                    </select>
+                    <button id="btn-present-evidence" class="terminal-btn" type="button">ПРЕДЪЯВИТЬ УЛИКУ</button>
+                </div>
+            `);
+        }
+
+        if (prepared) {
+            const first = prepared.contradiction.first;
+            const second = prepared.contradiction.second;
+            sections.push(`
+                <div class="prepared-contradiction">
+                    <div class="prepared-contradiction-kicker">ПОДГОТОВЛЕНО ПО ДОСЬЕ</div>
+                    <p><strong>${escapeHTML(first.sourceName || first.npcId)}:</strong> ${escapeHTML(first.summary)}</p>
+                    <p><strong>${escapeHTML(second.sourceName || second.npcId)}:</strong> ${escapeHTML(second.summary)}</p>
+                    <button id="btn-present-contradiction" class="terminal-btn" type="button">ПРЕДЪЯВИТЬ ПРОТИВОРЕЧИЕ</button>
+                </div>
+            `);
+        }
+
+        container.innerHTML = sections.join('');
+
+        document.getElementById('btn-present-evidence')?.addEventListener('click', () => {
+            const evidenceId = document.getElementById('dialogue-evidence-select')?.value;
+            if (!evidenceId) {
+                events.emit('notification:show', {
+                    message: 'Сначала выберите улику',
+                    type: 'warning',
+                    duration: 2000
+                });
+                return;
+            }
+
+            const result = this.dialogueEngine.presentEvidence(evidenceId);
+            if (!result.success) {
+                const message = result.reason === 'already_presented'
+                    ? 'Вы уже предъявляли эту улику этому персонажу'
+                    : 'Эта улика сейчас недоступна';
+                events.emit('notification:show', { message, type: 'info', duration: 2500 });
+            }
+        });
+
+        document.getElementById('btn-present-contradiction')?.addEventListener('click', () => {
+            const messages = document.getElementById('dialogue-messages');
+            if (messages) {
+                const playerMsg = document.createElement('div');
+                playerMsg.className = 'dialogue-message player-message';
+                playerMsg.innerHTML = '<span class="message-speaker">ВЫ:</span><span class="message-text">Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.</span>';
+                messages.appendChild(playerMsg);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            const result = this.dialogueEngine.presentPreparedContradiction();
+            if (!result.success) {
+                const message = result.reason === 'already_confronted'
+                    ? 'Это противоречие уже предъявлялось'
+                    : 'Сначала подготовьте противоречие на доске расследования';
+                events.emit('notification:show', { message, type: 'warning', duration: 2800 });
+            }
+        });
     }
 
     _typewriterEffect(element) {

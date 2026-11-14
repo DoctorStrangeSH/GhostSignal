@@ -27,7 +27,7 @@ const DIALOGUE_HOUSEKEEPER = {
                         text: "Не лгите мне. Я знаю, что вы были в номере 304 в ночь исчезновения.", 
                         nextNode: "caught_lie",
                         tone: "aggressive",
-                        condition: "hasInsight:maid_evening_visit"
+                        condition: "hasInsight:mary_had_access"
                     }
                 ]
             },
@@ -125,7 +125,19 @@ const DIALOGUE_HOUSEKEEPER = {
                 innerThought: "Вот оно. Полное признание.",
                 givesInsight: "mary_full_confession",
                 answers: [
+                    { text: "Дверь была заперта цепочкой изнутри. Как вы закрыли её снаружи?", nextNode: "chain_trick_explanation", condition: "hasInsight:chain_trick" },
                     { text: "Где он сейчас, Мэри?", nextNode: "where_is_he" }
+                ]
+            },
+
+            chain_trick_explanation: {
+                speaker: "npc",
+                text: "Я знала, что вы заметите цепочку. У меня была тонкая стальная проволока с загнутым концом. Я вышла, прикрыла дверь и через щель зацепила цепочку, сдвинув её в скобу. Думала, следов не останется. Видимо, кусочек проволоки сломался и застрял там.",
+                mood: "ashamed",
+                innerThought: "Значит, цепочка была частью инсценировки. Запертая комната оказалась ловушкой для следствия.",
+                givesInsight: "chain_trick_confirmed",
+                answers: [
+                    { text: "Теперь расскажите, где Блэквуд.", nextNode: "where_is_he" }
                 ]
             },
 

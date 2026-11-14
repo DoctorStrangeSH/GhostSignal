@@ -7,7 +7,7 @@ registerData('object', {
         id: "overturned_glass", name: "Опрокинутый стакан", type: "evidence",
         description: "Стакан с остатками жидкости. Пахнет горьким миндалём — характерный запах цианида.",
         icon: "🥃", takeable: true, isEvidence: true, weight: 1,
-        interactions: { examine: { text: "На дне стакана — белый осадок. Цианид. Яд был подсыпан в напиток. Профессионально и быстро.", timeCost: 5, givesInsight: "cyanide_poison" } }
+        interactions: { examine: { text: "На дне стакана — белый осадок. Цианид. Под ножкой стола вы замечаете маленький пузырёк, прикрытый салфеткой. Кто-то оставил его так, чтобы он выглядел случайно обронённым.", timeCost: 5, givesInsight: "cyanide_poison", spawnsItem: "poison_vial" } }
     },
     red_scarf: {
         id: "red_scarf", name: "Красный шарф", type: "evidence",
@@ -17,9 +17,15 @@ registerData('object', {
     },
     poison_vial: {
         id: "poison_vial", name: "Пузырёк из-под яда", type: "evidence",
-        description: "Маленький стеклянный пузырёк. Этикетка стёрта. На стекле — отпечатки пальцев.",
+        description: "Маленький стеклянный пузырёк. Этикетка стёрта. На стекле — отпечатки Анны; крышка и горлышко тщательно протёрты.",
         icon: "🧪", takeable: true, isEvidence: true, weight: 1,
-        interactions: { examine: { text: "Отпечатки принадлежат Анне Ковалёвой. Но яд внутри — не снотворное, а цианид. Кто-то заменил содержимое.", timeCost: 10, givesInsight: "fingerprints_found" } }
+        interactions: { examine: { text: "Отпечатки на стекле принадлежат Анне Ковалёвой. На крышке нет пригодных для сравнения следов. Внутри — цианид, хотя Анна покупала хлоралгидрат. Кто-то подменил содержимое, стараясь не оставить своих отпечатков.", timeCost: 10, givesInsight: "fingerprints_found" } }
+    },
+    anna_desk: {
+        id: "anna_desk", name: "Письменный стол Анны", type: "container",
+        description: "Небольшой стол у окна. В ящике — счета, старые письма и смятая записка.",
+        icon: "🗄️", takeable: false,
+        interactions: { examine: { text: "Под стопкой счетов лежит записка, написанная рукой Анны. Она угрожала Блэквуду, но дата показывает: записка появилась до того, как Кейн украл пузырёк.", timeCost: 5, spawnsItem: "threat_note", givesInsight: "angry_writer" } }
     },
     threat_note: {
         id: "threat_note", name: "Записка с угрозами", type: "evidence",
@@ -61,13 +67,62 @@ registerData('object', {
         id: "press_photos", name: "Фотографии прессы", type: "static_object",
         description: "Стена с фотографиями городской хроники за последний месяц.",
         icon: "📸", takeable: false,
-        interactions: { examine: { text: "Фото бара в ночь отравления. На снимке видно: Кейн наклоняется и поднимает пузырёк Анны!", timeCost: 10, givesInsight: "photo_evidence", spawnsItem: "bar_photo" } }
+        interactions: { examine: { text: "Контактный отпечаток с плёнки фотографа, снимавшего пятничный вечер в баре. На дальнем плане Кейн наклоняется у стойки и поднимает небольшой предмет через салфетку.", timeCost: 10, givesInsight: "photo_evidence", spawnsItem: "bar_photo" } }
     },
     bar_photo: {
         id: "bar_photo", name: "Фотография из бара", type: "evidence",
         description: "Снимок бара в ночь отравления. Кейн у стойки, Анна отворачивается, пузырёк исчезает.",
         icon: "📸", takeable: true, isEvidence: true, weight: 0,
-        interactions: { examine: { text: "Вот он — момент кражи. Кейн поднимает пузырёк и кладёт в карман. Фото не врёт.", timeCost: 5, givesInsight: "kane_caught" } }
+        interactions: { examine: { text: "Кейн поднимает небольшой предмет через салфетку и убирает его в карман. Сам предмет на кадре неразличим, но время совпадает с рассказами Евы и официанта. Это подтверждение их показаний, а не самостоятельное доказательство содержимого пузырька.", timeCost: 5, givesInsight: "kane_caught" } }
+    },
+    tram_route_entry: {
+        id: "tram_route_entry", name: "Выписка из путевого листа трамвая №4", type: "evidence",
+        description: "Запись дежурного кондуктора: задержка у остановки возле бара около 22:15 и пассажир, вышедший у старой текстильной улицы.",
+        icon: "🎟️", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "В путевом листе зафиксирована задержка трамвая №4 около 22:15 у остановки возле бара. Кондуктор отдельно отметил пассажира в тёмном пальто, вышедшего у старой текстильной улицы. Запись подтверждает маршрут и время, но не имя пассажира и не то, что он был внутри бара.",
+                timeCost: 5,
+                givesInsight: "tram_passenger_route_corroboration"
+            }
+        }
+    },
+    inspection_register: {
+        id: "inspection_register", name: "Журнал городской инспекции", type: "static_object",
+        description: "Прошитый журнал с регистрационными номерами, назначенными проверками и заверенными отметками об отмене.",
+        icon: "📚", takeable: false,
+        interactions: {
+            examine: {
+                text: "В заверенной выписке по заявке 27-Б указано: инспектор Илья Руденко назначен на проверку бара «У Джо». Ниже стоит отметка об отмене в 15:40 из-за несчастного случая на текстильной фабрике. В графе замены — прочерк. Это первичная служебная запись: визит был назначен, затем отменён; фактического посещения она не подтверждает.",
+                timeCost: 10,
+                givesInsight: "inspection_cancellation_record",
+                spawnsItem: "inspection_cancellation_copy"
+            }
+        }
+    },
+    inspection_cancellation_copy: {
+        id: "inspection_cancellation_copy", name: "Заверенная выписка об отмене заявки 27-Б", type: "evidence",
+        description: "Официальная копия журнала городской инспекции. Назначение Ильи Руденко отменено в 15:40; замена не назначена.",
+        icon: "📄", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Номер заявки 27-Б, дата, подпись дежурного регистратора и штамп отдела совпадают с записью в журнале. Документ подтверждает отмену визита Руденко, но не устанавливает, кто позднее пришёл в бар под видом инспектора.",
+                timeCost: 5,
+                givesInsight: "inspection_cancellation_record"
+            }
+        }
+    },
+    inspector_service_card: {
+        id: "inspector_service_card", name: "Служебное удостоверение Ильи Руденко", type: "evidence",
+        description: "Действующее удостоверение инспектора ИТ-0417 с фотографией и подписью отдела кадров.",
+        icon: "🪪", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Фотография, номер ИТ-0417 и подпись отдела кадров подтверждают, что предъявитель — Илья Руденко. Удостоверение не доказывает, что он был в баре в ночь происшествия.",
+                timeCost: 5,
+                givesInsight: "rudenko_identity_documents_verified"
+            }
+        }
     },
     rival_desk: {
         id: "rival_desk", name: "Стол Кейна", type: "container",
@@ -98,6 +153,84 @@ registerData('object', {
         description: "Подшивки газет за последний год. Статьи о Кейне и его бизнесе.",
         icon: "🗄️", takeable: false,
         interactions: { examine: { text: "Лора Лейн писала о Кейне не раз. Она знала о его тёмных делах задолго до отравления.", timeCost: 5 } }
+    },
+    mill_gate_notice: {
+        id: "mill_gate_notice", name: "Объявление о закрытии фабрики", type: "static_object",
+        description: "Выцветшее объявление управляющего: фабрика закрыта на ремонт на двенадцать дней, вход посторонним запрещён.",
+        icon: "📌", takeable: false,
+        interactions: {
+            examine: {
+                text: "Объявление подтверждает, что фабрика закрыта на ремонт уже двенадцать дней. Для входа требуется распоряжение управляющего. Само объявление не доказывает, что никто не мог оказаться на территории незаконно.",
+                timeCost: 2,
+                givesInsight: "mill_closed_for_repairs"
+            }
+        }
+    },
+    diner_cash_slip: {
+        id: "diner_cash_slip", name: "Кассовый чек закусочной", type: "evidence",
+        description: "Чек на чашку кофе, пробитый около десяти вечера по часам кассового аппарата. Время аппарата на этой неделе не сверяли.",
+        icon: "🧾", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "На чеке указано время 22:03. Кассирская лента подтверждает покупку кофе, но в закусочной не ведут именной учёт посетителей. Время аппарата не сверяли с официальными часами, поэтому чек не позволяет точно установить время визита и не связывает покупку с конкретным человеком.",
+                timeCost: 5,
+                givesInsight: "diner_time_unverified"
+            }
+        }
+    },
+    mill_shift_extract: {
+        id: "mill_shift_extract", name: "Выписка из журнала ночной смены", type: "evidence",
+        description: "Заверенная выписка: боковые ворота старой текстильной фабрики опечатаны в 21:50, утренняя проверка подтвердила целостность пломбы; зарегистрированных посетителей нет.",
+        icon: "📋", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Запись сторожа подтверждает, что боковые ворота фабрики были опечатаны в 21:50 и оставались закрытыми до утренней проверки. В журнале нет зарегистрированных посетителей. Это исключает незарегистрированный проход через эти ворота при целой пломбе, но не устанавливает местонахождение неизвестного на всей улице и не доказывает отсутствие связи с фабрикой.",
+                timeCost: 5,
+                givesInsight: "mill_gate_seal_intact"
+            }
+        }
+    },
+    public_telephone_booth: {
+        id: "public_telephone_booth", name: "Уличная телефонная будка", type: "static_object",
+        description: "Старая телефонная будка на текстильной улице. На внутренней табличке указан номер линии и адрес городской телефонной станции.",
+        icon: "☎️", takeable: false,
+        interactions: {
+            examine: {
+                text: "На табличке указан номер обслуживающей линии и адрес телефонной станции. В будке нет журнала звонков или записывающего устройства. Номер линии поможет запросить только те служебные документы, которые действительно сохранились на станции.",
+                timeCost: 3,
+                givesInsight: "textile_street_phone_line"
+            }
+        }
+    },
+    telephone_exchange_slip: {
+        id: "telephone_exchange_slip", name: "Карточка междугороднего запроса", type: "evidence",
+        timelineFacts: [{ id: "request-2218", minute: 22 * 60 + 18, label: "Станция приняла междугородний запрос", scope: "textile-district-line", certainty: "recorded", caveat: "Неизвестны номер аппарата, звонивший и результат соединения" }],
+        description: "Служебная копия карточки: запрос с линии текстильного района принят в 22:18 по сверенным часам станции, адресован на Восточный узел. Поле номера абонента не сохранилось; результат соединения не отмечен.",
+        icon: "📞", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Карточка фиксирует принятие междугороднего запроса в 22:18 по служебным часам, сверенным с главным хронометром. Она не содержит номера вызываемого абонента, номера конкретной будки или имени звонившего. Отметки об успешном соединении нет. Это подтверждение служебного запроса, а не доказательство состоявшегося разговора.",
+                timeCost: 5,
+                givesInsight: "telephone_exchange_request_record"
+            }
+        }
+    },
+    booth_t17_maintenance_ticket: {
+        id: "booth_t17_maintenance_ticket", name: "Наряд на ремонт будки Т-17", type: "evidence",
+        timelineFacts: [
+            { id: "fault-2155", minute: 21 * 60 + 55, label: "Обнаружен нестабильный контакт", scope: "booth-t17", certainty: "recorded", caveat: "Не означает непрерывного полного отключения" },
+            { id: "failed-2205", minute: 22 * 60 + 5, label: "Контрольный вызов не прошёл", scope: "booth-t17", certainty: "recorded", caveat: "Относится к одному контрольному вызову" },
+            { id: "restored-2241", minute: 22 * 60 + 41, label: "Повторная проверка после ремонта", scope: "booth-t17", certainty: "recorded", caveat: "Не устанавливает состояние всех промежуточных минут" }
+        ],
+        description: "Технический наряд: нестабильный контакт в колодце Т-17 зафиксирован в 21:55; контрольный вызов с этой будки не прошёл в 22:05; восстановление контакта и повторная проверка — 22:41.",
+        icon: "🛠️", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Наряд относится только к телефонной будке Т-17. В 21:55 обнаружен нестабильный контакт, контрольный вызов с аппарата не прошёл в 22:05, повторная проверка после ремонта завершилась в 22:41. Документ не подтверждает полное отключение линии на всём промежутке и не устанавливает источник междугороднего запроса, принятого станцией в 22:18.",
+                timeCost: 5,
+                givesInsight: "booth_t17_fault_window"
+            }
+        }
     },
     bank_records: {
         id: "bank_records", name: "Банковские записи", type: "static_object",
