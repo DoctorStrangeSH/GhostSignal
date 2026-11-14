@@ -475,6 +475,20 @@ class InvestigationBoard {
         return true;
     }
 
+    // Shared material across player theories is not independent corroboration.
+    reviewHypothesisOverlaps(id) {
+        const entry = this.hypotheses.find(h => h.id === id && h.status === 'open');
+        if (!entry) return [];
+        const active = this.hypotheses.filter(h => h.id !== id && h.status === 'open');
+        return entry.links.filter(link => ['evidence', 'statement'].includes(link.kind)).flatMap(link =>
+            active.flatMap(other => {
+                const matching = other.links.find(candidate => candidate.kind === link.kind && candidate.sourceId === link.sourceId);
+                return matching ? [{ kind: link.kind, sourceId: link.sourceId, stance: link.stance,
+                    otherHypothesisId: other.id, otherTitle: other.title, otherStance: matching.stance,
+                    differingAssessment: link.stance !== matching.stance }] : [];
+            }));
+    }
+
     // Advisory source audit; it never scores the correctness of a hypothesis.
     reviewHypothesisSources(id, statements = []) {
         const entry = this.hypotheses.find(h => h.id === id);
