@@ -106,6 +106,13 @@ const DIALOGUE_JOURNALIST = {
                         tone: "cautious",
                         condition: "heard_rumor:detective-accused-thomas-after-correction",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Что показал ваш отдельный разговор с Томасом?",
+                        nextNode: "lora_checked_accusation",
+                        tone: "direct",
+                        condition: "npc_investigation_outcome:lora-checks-thomas-accusation:no_independent_evidence",
+                        hiddenWhenUnavailable: true
                     }
                 ]
             },
@@ -224,6 +231,15 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Вы правы. Пусть он расскажет без моего присутствия.", nextNode: "investigation", tone: "reassuring" },
                     { text: "Я предъявлю вам документы, когда они будут проверены.", nextNode: "investigation", tone: "direct" }
+                ]
+            },
+            lora_checked_accusation: {
+                speaker: "npc",
+                text: "Я связалась с Томасом отдельно от вас. Он рассказал, что испугался обвинения после исправления своих показаний. Но наш разговор сам по себе не делает меня очевидцем вашей беседы. Я отмечу его слова как сообщение из первоисточника, проверю протокол и не стану публиковать обвинение как установленный факт без независимого подтверждения.",
+                mood: "focused",
+                answers: [
+                    { text: "Сверим протокол и независимые записи.", nextNode: "investigation", tone: "procedural" },
+                    { text: "Вы правильно отделяете рассказ от подтверждения.", nextNode: "investigation", tone: "reassuring" }
                 ]
             },
 
