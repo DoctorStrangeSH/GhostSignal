@@ -152,6 +152,18 @@ class CaseManager {
     checkFinalAnswer(answer) {
         if (!this.currentCase?.finalQuestion) return null;
         
+        const proof = assessAccusationEvidence(this.currentCase, this.inventory);
+        if (!proof.sufficient) {
+            return {
+                isCorrect: false,
+                insufficientEvidence: true,
+                proof,
+                title: '⚖️ ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО',
+                text: this.currentCase.proofRequirements.hint ||
+                    'Пока нельзя оценить обвинение: нужны независимые подтверждения.'
+            };
+        }
+
         const normalizedAnswer = answer.toLowerCase().trim();
         const acceptableAnswers = this.currentCase.finalQuestion.acceptableAnswers;
         
@@ -166,19 +178,6 @@ class CaseManager {
             return false;
         });
         
-        const proof = assessAccusationEvidence(this.currentCase, this.inventory);
-        if (isCorrect && !proof.sufficient) {
-            return {
-                isCorrect: false,
-                theoryCorrect: true,
-                insufficientEvidence: true,
-                proof,
-                title: '⚖️ ВЕРСИЯ НЕ ДОКАЗАНА',
-                text: this.currentCase.proofRequirements.hint ||
-                    'Вы выбрали правдоподобную версию, но для обвинения нужны независимые подтверждения.'
-            };
-        }
-
         const feedback = isCorrect ?
             this.currentCase.finalQuestion.feedbackCorrect :
             this.currentCase.finalQuestion.feedbackIncorrect;
