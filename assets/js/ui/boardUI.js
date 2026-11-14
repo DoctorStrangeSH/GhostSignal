@@ -436,6 +436,11 @@ class BoardUI {
                     <article class="testimony-entry hypothesis-entry">
                         <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
                             <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
+                        <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">
+                            <span class="stance-for">+ ${h.links.filter(link => link.stance === 'for').length} за</span>
+                            <span class="stance-against">− ${h.links.filter(link => link.stance === 'against').length} против</span>
+                            <span class="stance-pending">? ${h.links.filter(link => link.stance === 'pending').length} проверить</span>
+                        </div>
                         <ul class="hypothesis-links">
                             ${h.links.map((link, index) => {
                                 const object = link.kind === 'evidence' ? getObjectById(link.sourceId) : null;
@@ -445,7 +450,8 @@ class BoardUI {
                                 const missing = link.kind === 'statement' && !statement;
                                 const caution = archived ? ' · Показание пересмотрено — проверьте новую версию' : (missing ? ' · Источник недоступен' : '');
                                 const provenance = statement ? (statement.directObservation === true ? ' · Со слов свидетеля: видел лично' : ' · Источник сведений не подтверждён') : '';
-                                return `<li class="${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}${this._escapeHTML(provenance)}</span>
+                                const stanceClass = ['for', 'against', 'pending'].includes(link.stance) ? 'stance-' + link.stance : 'stance-pending';
+                                return `<li class="${stanceClass} ${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}${this._escapeHTML(provenance)}</span>
                                   ${h.status === 'open' ? `<button type="button" class="terminal-btn btn-sm hypothesis-unlink" data-id="${this._escapeHTML(h.id)}" data-index="${index}" aria-label="Убрать связь">✕</button>` : ''}</li>`;
                             }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
                         </ul>
