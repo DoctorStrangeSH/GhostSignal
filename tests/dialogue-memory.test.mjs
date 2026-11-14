@@ -2521,3 +2521,68 @@ test("Thomas requests a contingency on his own after Joe's warning, without fabr
     restored.setCase(caseData);
     assert.equal(restored.hasCompletedInteraction("waiter", requestId), true);
 });
+
+test("Joe consults Mills only after Thomas asks for help and keeps protection unverified", () => {
+    const { engine, context, memory, inventory, gameTime, socialNetwork } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+    const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    const caseData = vm.runInContext("CASE_002", context);
+    relations.setCase(caseData);
+    engine.setRelationshipService(relations);
+    const warningId = "joe-alerts-thomas-after-shelter-leak";
+    const requestId = "thomas-asks-joe-for-shelter-contingency";
+    const inquiryId = "joe-asks-mills-about-witness-protection";
+
+    gameTime.advance(90);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("bartender", inquiryId), false,
+        "Joe cannot contact Mills before Thomas asks");
+    memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasReceivedInteraction("waiter", warningId), true);
+    assert.equal(relations.hasCompletedInteraction("bartender", inquiryId), false);
+
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("waiter", requestId), true);
+    assert.equal(relations.hasCompletedInteraction("bartender", inquiryId), false,
+        "Thomas's request cannot instantly imply an official consultation");
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("bartender", inquiryId), true);
+    assert.equal(relations.hasReceivedInteraction("sergeant", inquiryId), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+    assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), false);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const response = engine.getAvailableAnswers().find(a => a.nextNode === "joe_checked_protection_procedure");
+    assert.equal(response?.isAvailable, true);
+    engine.selectAnswer(response.index);
+    assert.match(engine.currentNode.text, /не называл ни адреса, ни местонахождения/i);
+    assert.match(engine.currentNode.text, /не согласованная охрана/i);
+    engine.reset();
+
+    const count = relations.cases["case-002"].rules[inquiryId].occurrences;
+    gameTime.advance(180);
+    relations.processDueInteractions();
+    assert.equal(relations.cases["case-002"].rules[inquiryId].occurrences, count);
+    context.savedJoeMills = JSON.parse(JSON.stringify(relations.toJSON()));
+    const restored = vm.runInContext("new NPCRelationshipService(savedJoeMills)", context);
+    restored.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    restored.setCase(caseData);
+    assert.equal(restored.hasCompletedInteraction("bartender", inquiryId), true);
+
+    inventory.addInsight("thomas_family_protected");
+    engine.startDialogue("dialogue-bartender-case2");
+    if (engine.currentNode.id !== "greeting") {
+        const back = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+        assert.equal(back?.isAvailable, true);
+        engine.selectAnswer(back.index);
+    }
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_checked_protection_procedure"), false,
+        "an obsolete contingency is hidden after actual safety confirmation");
+});
