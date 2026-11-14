@@ -448,17 +448,27 @@ const CASE_002 = {
                 summary: "Лора прислала Джо настойчивое сообщение: ей нужен эксклюзив до утра."
             },
             {
+                id: "joe-tells-lora-about-staffing-pressure", relationshipId: "joe-lora-source",
+                fromNpcId: "bartender", toNpcId: "journalist", interaction: "support",
+                channel: "message", initialDelayMinutes: 60, everyMinutes: 360,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "joe-reorganizes-bar-after-extended-leave",
+                requiresReceivedActionAgeMinutes: 60,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Джо сам сообщил Лоре, что из-за продлённого отсутствия Томаса ему пришлось перестроить работу бара. Он не раскрыл личных подробностей Томаса."
+            },
+            {
                 id: "lora-checks-joe", relationshipId: "joe-lora-source",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "support",
                 goalId: "maintain_bar_community", goalNpcId: "bartender", goalProgress: 1,
                 channel: "message",
                 initialDelayMinutes: 300, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 50, fromPressureBelow: 65,
-                requiresReceivedActionId: "joe-reorganizes-bar-after-extended-leave",
+                requiresReceivedActionId: "joe-tells-lora-about-staffing-pressure",
                 requiresReceivedActionAgeMinutes: 60,
                 trustDelta: 1, reciprocalTrustDelta: 1,
                 toCooperationDelta: 5,
-                summary: "Заметив, что Джо пришлось перестроить работу бара из-за длительного отсутствия Томаса, Лора написала ему и предложила помощь с передачей сообщений и поиском контактов. Она не берёт на себя работу бармена и не давит на Томаса с возвращением."
+                summary: "Получив сообщение Джо о перегрузке бара, Лора предложила помочь с передачей сообщений и поиском контактов. Она не берёт на себя работу бармена и не давит на Томаса с возвращением."
             }
         ]
     },
