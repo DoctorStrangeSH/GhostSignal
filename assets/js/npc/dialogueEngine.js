@@ -438,6 +438,10 @@ class DialogueEngine {
             return Boolean(this.relationshipService?.isKnownRelationship(conditionStr.slice('relationship_known:'.length)));
         }
 
+        if (conditionStr.startsWith('prior_case_memory:')) {
+            return Boolean(npcId && this.memoryService?.hasLongTermMemoryTagFromPriorCase(npcId,
+                conditionStr.slice('prior_case_memory:'.length)));
+        }
         if (conditionStr.startsWith('long_term_memory:')) {
             return Boolean(npcId && this.memoryService?.hasLongTermMemoryTag(npcId, conditionStr.slice('long_term_memory:'.length)));
         }
