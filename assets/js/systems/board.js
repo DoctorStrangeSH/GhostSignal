@@ -216,7 +216,7 @@ class InvestigationBoard {
                 history: Array.isArray(h.history) ? h.history.filter(v => v && typeof v.action === 'string') : []
             })) : [];
             board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
-                ...board.hypotheses.map(h => Number(h.id.match(/^hyp-(\\d+)$/)?.[1] || 0) + 1));
+                ...board.hypotheses.map(h => Number(h.id.match(/^hyp-(\d+)$/)?.[1] || 0) + 1));
         }
         return board;
     }
