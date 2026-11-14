@@ -221,7 +221,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "direct",
                         condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:joe_refuses_family_location",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Томас сам обратился к вам после предупреждения?",
+                        nextNode: "joe_received_thomas_contingency_request",
+                        tone: "cautious",
+                        condition: "all:npc_action_received:thomas-asks-joe-for-shelter-contingency&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_received_thomas_contingency_request",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_received_thomas_contingency_request: {
+                speaker: "npc",
+                text: "Да. После моего предупреждения Томас сам написал и попросил помочь проверить запасной план для матери. Я могу связаться с людьми, которым доверяю, но пока мы только обсуждаем варианты. Ни нового адреса, ни подтверждения переезда у меня для вас нет. Томас сам должен убедиться, что мать добралась до безопасного места.",
+                mood: "worried",
+                innerThought: "Самостоятельная просьба Томаса — реальное действие, но не новая улика и не доказательство завершённой эвакуации.",
+                answers: [
+                    { text: "Понимаю. Не стану считать подготовку состоявшимся переездом.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо. Проверю безопасность вместе с Томасом.", nextNode: "end_bartender_guarded", tone: "reassuring" }
                 ]
             },
 
