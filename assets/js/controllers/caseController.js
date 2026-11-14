@@ -36,7 +36,9 @@ class CaseController {
         if (caseTitle) caseTitle.textContent = caseData.title || '';
 
         app.progress.activeCase = caseId;
-        app._saveProgress();
+        // Persist the complete case snapshot immediately: selecting/continuing
+        // a case must not depend on the next timed autosave.
+        app._quickSave();
         return true;
     }
 }

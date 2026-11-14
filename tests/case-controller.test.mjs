@@ -36,7 +36,7 @@ function createHarness(overrides = {}) {
         locationManager: { currentLocation: null },
         sceneRenderer: { renderLocation(id) { calls.push(["renderLocation", id]); } },
         navigateTo(id) { calls.push(["navigateTo", id]); },
-        _saveProgress() { calls.push(["save"]); }
+        _quickSave() { calls.push(["save"]); }
     };
     Object.assign(app, overrides.app || {});
     const document = { getElementById(id) { return elements[id] || null; } };
@@ -81,6 +81,33 @@ test("CaseController resumes the active case without resetting CaseManager state
         ["renderLocation", "bar_joe"],
         ["save"]
     ]);
+});
+
+test("CaseController saves the selected case and existing evidence in one snapshot", () => {
+    const snapshots = [];
+    const app = {
+        progress: { activeCase: null },
+        caseManager: {
+            currentCase: null,
+            caseState: null,
+            loadCase(id) { this.currentCase = { id }; this.caseState = "active"; return true; }
+        },
+        locationManager: { currentLocation: "police_station" },
+        investigationBoard: { toJSON: () => ({ evidenceSlots: ["letter"] }) },
+        navigateTo() {},
+        _quickSave() {
+            snapshots.push({
+                activeCase: this.progress.activeCase,
+                boardData: this.investigationBoard.toJSON()
+            });
+            return true;
+        }
+    };
+    const CaseController = loadCaseController({ document: { getElementById: () => null } });
+    const controller = new CaseController(app, id => ({ id, title: "The Hotel Room" }));
+
+    assert.equal(controller.loadCase("case-001"), true);
+    assert.deepEqual(snapshots, [{ activeCase: "case-001", boardData: { evidenceSlots: ["letter"] } }]);
 });
 
 test("CaseController refuses unknown cases without navigating or saving", () => {
