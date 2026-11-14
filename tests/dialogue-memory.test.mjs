@@ -1561,7 +1561,7 @@ test("telephone exchange records a district request but cannot identify the call
 
     assert.equal(inventory.hasInsight("telephone_exchange_request_record"), true);
     assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "telephone_exchange_slip"), true);
-    assert.match(engine.currentNode.text, /номер абонента/);
+    assert.match(engine.currentNode.text, /номером абонента/);
     assert.match(engine.currentNode.text, /не подтверждение, что разговор состоялся/);
 
     const cautious = engine.getAvailableAnswers().find(answer => answer.nextNode === "limits_record");
