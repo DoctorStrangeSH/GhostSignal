@@ -134,6 +134,19 @@ registerData('location', {
         defaultItems: [],
         unlockedByDefault: true
     },
+    telephone_maintenance_depot: {
+        id: "telephone_maintenance_depot",
+        name: "Ремонтная мастерская телефонной сети",
+        type: "public",
+        description: "Небольшая мастерская городской телефонной службы. На стене — схема кабельных колодцев и шкаф с нарядами на ремонт.",
+        hours: { open: 7, close: 19 },
+        icon: "🛠️",
+        mapPosition: { x: 48, y: 39 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["line_technician"],
+        defaultItems: [],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
