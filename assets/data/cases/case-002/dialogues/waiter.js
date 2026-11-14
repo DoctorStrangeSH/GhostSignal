@@ -528,6 +528,8 @@ const DIALOGUE_WAITER = {
                 mood: "relieved",
                 innerThought: "Это подтверждение фактической защиты со слов члена семьи, а не вывод из признания подозреваемого.",
                 givesInsight: "thomas_family_protected",
+                verifiedRestitution: { id: 'thomas-family-safety-after-false-accusation',
+                    accusationId: 'thomas-lied-about-poisoning', requiresInsight: 'thomas_family_protected' },
                 answers: [
                     { text: "Хорошо. Продолжим расследование без риска для твоей семьи.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
