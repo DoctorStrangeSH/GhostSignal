@@ -278,6 +278,32 @@ registerData('npc', {
         canGiveInsights: ["telephone_exchange_request_record", "telephone_time_calibrated"],
         specialConditions: []
     },
+    line_technician: {
+        id: "line_technician",
+        name: "Генри Кларк",
+        role: "Техник городской телефонной сети",
+        description: "Практичный мастер, отвечающий за кабельные колодцы и уличные аппараты. Точно знает границы своего участка и не делает выводов о чужих линиях.",
+        icon: "👨‍🔧",
+        mood: "professional",
+        psychology: {
+            opennessThreshold: 55, pressureThreshold: 63, calmPressureLimit: 13,
+            labels: { cooperative: "Готов показать наряд", pressured: "Отвечает по регламенту", overwhelmed: "Прекращает разговор", distrustful: "Отказывает в архиве" }
+        },
+        schedule: {
+            awake: { start: 6, end: 21 },
+            atWork: { start: 7, end: 19 },
+            sleeps: { start: 21, end: 6 },
+            locations: { work: "telephone_maintenance_depot", home: null },
+            daysOff: [],
+            exceptions: []
+        },
+        availableForCall: false,
+        availableForChat: false,
+        dialogueId: "dialogue-line-technician",
+        canGiveEvidence: ["booth_t17_maintenance_ticket"],
+        canGiveInsights: ["booth_t17_fault_window", "booth_t17_not_confirmed_source"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
