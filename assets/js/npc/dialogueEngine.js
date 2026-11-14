@@ -456,6 +456,12 @@ class DialogueEngine {
         if (conditionStr.startsWith('long_term_memory:')) {
             return Boolean(npcId && this.memoryService?.hasLongTermMemoryTag(npcId, conditionStr.slice('long_term_memory:'.length)));
         }
+        if (conditionStr === 'long_term_pattern:consistent_support') {
+            return Boolean(npcId && this.memoryService?.getLongTermBehaviorPattern(npcId)?.consistentSupport);
+        }
+        if (conditionStr === 'long_term_pattern:repeated_pressure') {
+            return Boolean(npcId && this.memoryService?.getLongTermBehaviorPattern(npcId)?.repeatedPressure);
+        }
         const longTermTrust = conditionStr.match(/^long_term_trust_(at_least|below):([0-9]+([.][0-9]+)?)$/);
         if (longTermTrust) {
             const [, operator, rawThreshold] = longTermTrust;
