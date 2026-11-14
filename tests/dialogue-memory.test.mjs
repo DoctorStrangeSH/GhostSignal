@@ -34,10 +34,11 @@ function createDialogueHarness() {
             tram_conductor: { name: "Павел Соколов", availableForCall: false },
             mill_watchman: { name: "Степан Орлов", availableForCall: false },
             diner_owner: { name: "Элеонора Брукс", availableForCall: false },
+            telephone_operator: { name: "Марта Вейл", availableForCall: false },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
-        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true }, diner_cash_slip: { id, name: "Кассовый чек закусочной", icon: "🧾", isEvidence: true } })[id] || null; }
+        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true }, diner_cash_slip: { id, name: "Кассовый чек закусочной", icon: "🧾", isEvidence: true }, public_telephone_booth: { id, name: "Уличная телефонная будка", icon: "☎️" }, telephone_exchange_slip: { id, name: "Карточка междугороднего запроса", icon: "📞", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
@@ -52,6 +53,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/tram_conductor.js",
         "assets/data/cases/case-002/dialogues/mill_watchman.js",
         "assets/data/cases/case-002/dialogues/diner_owner.js",
+        "assets/data/cases/case-002/dialogues/telephone_operator.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1543,4 +1545,42 @@ test("diner owner rejects treating an uncertain recollection as identification",
     engine.selectAnswer(overclaim.index);
     assert.match(engine.currentNode.text, /не видела, как он садился в трамвай/);
     assert.equal(memory.hasLongTermMemoryTag("diner_owner", "player_overstated_diner_match"), true);
+});
+
+test("telephone exchange records a district request but cannot identify the caller or destination number", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    engine.startDialogue("dialogue-telephone-operator");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_service_register"), false);
+
+    inventory.addInsight("diner_possible_matching_customer");
+    inventory.addInsight("textile_street_phone_line");
+    engine.startDialogue("dialogue-telephone-operator");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_service_register");
+    assert.equal(check?.isAvailable, true);
+    engine.selectAnswer(check.index);
+
+    assert.equal(inventory.hasInsight("telephone_exchange_request_record"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "telephone_exchange_slip"), true);
+    assert.match(engine.currentNode.text, /номер абонента/);
+    assert.match(engine.currentNode.text, /не подтверждение, что разговор состоялся/);
+
+    const cautious = engine.getAvailableAnswers().find(answer => answer.nextNode === "limits_record");
+    assert.equal(cautious?.isAvailable, true);
+    engine.selectAnswer(cautious.index);
+    assert.equal(inventory.hasInsight("telephone_time_calibrated"), true);
+    assert.equal(memory.hasLongTermMemoryTag("telephone_operator", "player_respected_telephone_record_limits"), true);
+});
+
+test("telephone exchange rejects attributing an unassigned request to the diner visitor", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    inventory.addInsight("diner_possible_matching_customer");
+    inventory.addInsight("textile_street_phone_line");
+    engine.startDialogue("dialogue-telephone-operator");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_service_register");
+    engine.selectAnswer(check.index);
+    const overclaim = engine.getAvailableAnswers().find(answer => answer.nextNode === "overstates_record");
+    assert.equal(overclaim?.isAvailable, true);
+    engine.selectAnswer(overclaim.index);
+    assert.match(engine.currentNode.text, /нет имени, номера аппарата/);
+    assert.equal(memory.hasLongTermMemoryTag("telephone_operator", "player_overstated_telephone_match"), true);
 });
