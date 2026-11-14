@@ -4,6 +4,7 @@ class BoardUI {
         this.board = null;
         this.inventory = null;
         this.memoryService = null;
+        this.relationshipService = null;
         this.locationManager = null;
         this._draggedEvidence = null;
         this._expandedTools = new Set(['checklist', 'hypotheses']);
@@ -26,6 +27,11 @@ class BoardUI {
         this.render();
     }
 
+    setRelationshipService(service) {
+        this.relationshipService = service || null;
+        this.render();
+    }
+
     setLocationManager(manager) {
         this.locationManager = manager || null;
         this.render();
@@ -44,6 +50,7 @@ class BoardUI {
         events.on('board:updated', () => this.render());
         events.on('inventory:changed', () => this.render());
         events.on('npc:memory_changed', () => this.render());
+        events.on('npc:relationship_changed', () => this.render());
         events.on('npc:contradiction_presented', () => this.render());
     }
     
@@ -91,7 +98,11 @@ class BoardUI {
             visitedLocationIds: this._knownAlibiLocations().map(loc => loc.id),
             evidenceIds: [...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])],
             statements: this.memoryService?.getStatements?.() || [],
-            thomasTelephoneQuestionAsked: this.memoryService?.hasVisitedNode?.('waiter', 'dialogue-waiter', 'telephone_record_scope') || false
+            thomasTelephoneQuestionAsked: this.memoryService?.hasVisitedNode?.('waiter', 'dialogue-waiter', 'telephone_record_scope') || false,
+            loraReportKnown: this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_heard_unfounded_accusation') ||
+                this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_checked_accusation') || false,
+            loraVerificationOutcome: this.relationshipService?.getInvestigationOutcome?.('journalist', 'lora-checks-thomas-accusation') || null,
+            loraVerificationDiscussed: this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_checked_accusation') || false
         });
         if (!checklist) return '';
         return `<div class="investigation-checklist">
@@ -99,7 +110,7 @@ class BoardUI {
             <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
             <ul class="checklist-tasks">${checklist.tasks.map(task => `<li class="${task.done ? 'is-complete' : 'is-pending'}"><span aria-hidden="true">${task.done ? '✓' : '○'}</span> ${this._escapeHTML(task.text)}</li>`).join('')}</ul>
             ${(checklist.nextActions || []).length ? `<div class="checklist-followups"><strong>ОТКРЫТЫЕ ЗАЦЕПКИ</strong><ul>${checklist.nextActions.map(lead =>
-                `<li class="checklist-next-action ${lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`).join('')}</ul></div>`
+                `<li class="checklist-next-action ${lead.status === 'checked' ? 'is-checked' : lead.status === 'pending' ? 'is-pending' : 'is-available'}"><span aria-hidden="true">${lead.status === 'checked' ? '✓' : lead.status === 'pending' ? '○' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`).join('')}</ul></div>`
                 : checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
         </div>`;
     }
