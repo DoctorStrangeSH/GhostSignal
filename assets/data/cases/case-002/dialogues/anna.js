@@ -20,6 +20,20 @@ const DIALOGUE_ANNA = {
                 text: "Детектив... Ева уже звонила мне после ваших вопросов. Я готова говорить о том вечере, но прошу не использовать мою сестру как средство давления.",
                 mood: "guarded",
                 answers: [
+                    {
+                        text: "Анна, я должен извиниться за публичное обвинение.",
+                        nextNode: "anna_public_apology",
+                        tone: "reassuring",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:has_visited_node:anna_public_apology",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "У меня есть признание Кейна. Я хочу исправить нанесённый вам вред.",
+                        nextNode: "anna_public_restitution",
+                        tone: "calm",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&hasInsight:full_confession_kane&not:has_visited_node:anna_public_restitution",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Я буду спрашивать только о том, что вы сами помните.", nextNode: "was_there", tone: "calm" },
                     { text: "Понимаю. Как вы себя чувствуете?", nextNode: "eva_supported_anna", tone: "reassuring" }
                 ]
@@ -31,6 +45,20 @@ const DIALOGUE_ANNA = {
                 mood: "angry",
                 innerThought: "Она на взводе. Нужно быть осторожным.",
                 answers: [
+                    {
+                        text: "Анна, я должен извиниться за публичное обвинение.",
+                        nextNode: "anna_public_apology",
+                        tone: "reassuring",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:has_visited_node:anna_public_apology",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "У меня есть признание Кейна. Я хочу исправить нанесённый вам вред.",
+                        nextNode: "anna_public_restitution",
+                        tone: "calm",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&hasInsight:full_confession_kane&not:has_visited_node:anna_public_restitution",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Я детектив. Расследую отравление в баре. Вы были там.", nextNode: "was_there", tone: "calm" },
                     {
                         text: "Ева сказала, что беспокоится о вас. Как вы себя чувствуете?",
@@ -39,6 +67,38 @@ const DIALOGUE_ANNA = {
                         condition: "npc_action_received:eva-protects-anna-after-pressure"
                     },
                     { text: "Анна, я знаю, что вы принесли яд в бар.", nextNode: "direct_accusation", tone: "aggressive", condition: "hasItem:poison_vial" }
+                ]
+            },
+
+            anna_public_apology: {
+                speaker: "npc",
+                text: "Вы сказали это при людях, детектив. Теперь меня узнают по вашему обвинению. Я услышала извинения, но не могу просто сделать вид, что ничего не было. Исправьте то, что сказали, фактами — тогда мы сможем говорить о доверии.",
+                mood: "hurt",
+                innerThought: "Одних слов недостаточно: Анна требует проверяемого исправления публичного вреда.",
+                answers: [
+                    { text: "Вы правы. Я проверю факты и вернусь с подтверждением.", nextNode: "was_there", tone: "reassuring" },
+                    {
+                        text: "У меня есть признание Кейна. Вот подтверждение.",
+                        nextNode: "anna_public_restitution",
+                        tone: "calm",
+                        condition: "hasInsight:full_confession_kane",
+                        hiddenWhenUnavailable: true
+                    }
+                ]
+            },
+
+            anna_public_restitution: {
+                speaker: "npc",
+                text: "Это уже конкретное подтверждение. Спасибо, что вернулись и признали свою ошибку. Но слова, сказанные при других, не исчезнут сразу. Я готова снова обсуждать факты, только не требуйте от меня мгновенного доверия.",
+                mood: "guarded",
+                innerThought: "Доказанное исправление частично восстанавливает контакт, но запись о ложном обвинении остаётся в памяти.",
+                verifiedRestitution: {
+                    id: "anna-public-accusation-repaired-with-kane-confession",
+                    accusationId: "public-final-accusation:case-002:ex_wife",
+                    requiresInsight: "full_confession_kane"
+                },
+                answers: [
+                    { text: "Я понимаю. Не буду требовать прощения.", nextNode: "was_there", tone: "reassuring" }
                 ]
             },
 
