@@ -69,6 +69,19 @@ registerData('location', {
         defaultItems: ["inspection_register"],
         unlockedByDefault: true
     },
+    tram_depot: {
+        id: "tram_depot",
+        name: "Трамвайное депо",
+        type: "public",
+        description: "Ночное депо с путевыми листами, расписаниями и комнатой отдыха кондукторов.",
+        hours: { open: 5, close: 24 },
+        icon: "🚋",
+        mapPosition: { x: 35, y: 48 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["tram_conductor"],
+        defaultItems: [],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
