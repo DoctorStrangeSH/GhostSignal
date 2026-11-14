@@ -240,21 +240,29 @@ class CaseManager {
         }
     }
     
-    _checkEvidenceCount() {
-        const thresholdEvent = this.currentCase?.events?.find(event => {
+    _finalEvidenceThreshold() {
+        const trigger = this.currentCase?.events?.find(event => {
             const [kind, count] = (event.trigger || '').split(':');
-            return kind === 'evidence_count' && Number.isInteger(Number(count));
+            return kind === 'evidence_count' && Number.isInteger(Number(count)) && Number(count) > 0;
         });
-        const required = thresholdEvent ? Number(thresholdEvent.trigger.split(':')[1]) : 5;
-        if (this.evidenceFound >= required) {
-            const event = this.currentCase?.events?.find(e => e.trigger === `evidence_count:${required}`);
-            if (event) this._triggerEvent(event);
-            
-            // Показываем кнопку обвинения
-            events.emit('case:ready_for_final', true);
-        }
+        return trigger ? Number(trigger.trigger.split(':')[1]) : 5;
     }
-    
+
+    // Used by the live game and the resume flow. Never replays narrative events.
+    isReadyForFinal() {
+        return this.caseState === 'active' &&
+            Boolean(this.currentCase?.finalQuestion) &&
+            this.evidenceFound >= this._finalEvidenceThreshold();
+    }
+
+    _checkEvidenceCount() {
+        if (!this.isReadyForFinal()) return;
+        const required = this._finalEvidenceThreshold();
+        const event = this.currentCase?.events?.find(e => e.trigger === `evidence_count:${required}`);
+        if (event) this._triggerEvent(event);
+        events.emit('case:ready_for_final', true);
+    }
+
     _checkUnlockConditions() {
         if (!this.currentCase?.unlockConditions) return;
         
