@@ -1062,3 +1062,26 @@ test("Thomas accepts a retraction without instantly forgiving an unsupported lie
     assert.equal(engine.currentNode.id, "apology_acknowledged_opening");
     assert.equal(engine.getAvailableAnswers().some(a => a.resolveAccusation?.id === "thomas-lied-about-poisoning"), false);
 });
+
+test("Thomas can return to factual testimony after an apology without reopening the false accusation", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "near-victim-table-before-collapse", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    memory.recordAccusation("waiter", {
+        id: "thomas-lied-about-poisoning", text: "Безосновательное обвинение"
+    });
+    memory.resolveAccusation("waiter", "thomas-lied-about-poisoning", "false", "Детектив признал ошибку");
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "apology_acknowledged_opening");
+    const followUp = engine.getAvailableAnswers().find(a => a.nextNode === "revised_testimony_opening");
+    assert.equal(followUp?.isAvailable, true);
+    engine.selectAnswer(followUp.index);
+    assert.match(engine.currentNode.text, /не видел, как порошок/);
+    assert.equal(memory.getAccusationStatus("waiter", "thomas-lied-about-poisoning"), "false");
+    assert.equal(memory.getAccusations("waiter").length, 1);
+});
