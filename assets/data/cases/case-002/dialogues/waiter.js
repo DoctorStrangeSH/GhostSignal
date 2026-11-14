@@ -437,6 +437,13 @@ const DIALOGUE_WAITER = {
                         hiddenWhenUnavailable: true
                     },
                     {
+                        text: "Джо прислал тебе предупреждение о моих разговорах с ним?",
+                        nextNode: "thomas_hears_joe_reputation_warning",
+                        tone: "cautious",
+                        condition: "all:npc_action_received:joe-warns-thomas-after-repeated-pressure&not:has_visited_node:thomas_hears_joe_reputation_warning",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Джо предупредил тебя о том, что первое укрытие оказалось раскрыто?",
                         nextNode: "thomas_received_joe_shelter_warning",
                         tone: "cautious",
@@ -464,6 +471,17 @@ const DIALOGUE_WAITER = {
                         condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:document_help&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_prepares_supporting_documents",
                         hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_hears_joe_reputation_warning: {
+                speaker: "npc",
+                text: "Да, Джо сам написал мне. Он сказал, что вы несколько раз давили на него в разных расследованиях. При этих разговорах меня не было, поэтому я не могу подтвердить их сам. Но Джо предложил присутствовать, если понадобятся дополнительные вопросы, и попросил не передавать вам личные сведения сотрудников. Я решу сам, что готов рассказать. О том вечере могу говорить только то, что видел лично.",
+                mood: "guarded",
+                innerThought: "Томас узнал о репутации детектива из прямого сообщения Джо. Он не выдаёт пересказ за собственные воспоминания и не отказывается от фактических показаний.",
+                answers: [
+                    { text: "Понимаю. Не прошу личных сведений, уточним только твои наблюдения.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Уважу твоё решение. Поговорим позже.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
             },
 
