@@ -858,9 +858,12 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
         "\n;globalThis.loadedCase = CASE_002;",
         caseContext
     );
-    const { memory, network, relationships, advance, caseData, context } = createHarness({
+    const { memory, network, relationships, advance, caseData, context, availability } = createHarness({
         caseData: caseContext.loadedCase
     });
+    for (const npcId of ["ex_wife", "woman_in_red", "journalist"]) {
+        availability[npcId] = { available: true, location: npcId };
+    }
     const evaRule = "eva-supports-anna-after-public-accusation";
     const loraRule = "lora-checks-anna-public-accusation";
     const id = "public-final-accusation:case-002:ex_wife";
