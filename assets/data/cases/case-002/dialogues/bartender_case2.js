@@ -26,6 +26,8 @@ const DIALOGUE_BARTENDER_CASE2 = {
         ],
         nodes: {
             joe_after_protection_verified_opening: {
+                verifiedRestitution: { id: 'joe-confirmed-thomas-family-safety',
+                    priorMemoryTag: 'player_threatened', requiresInsight: 'thomas_family_protected' },
                 speaker: "npc",
                 text: "Томас подтвердил, что мать добралась до безопасного места. Хорошо, что теперь она под присмотром. Но я помню и прежнюю утечку. Если у вас новые сведения, говорите осторожно — без имён и адресов посторонним.",
                 mood: "guarded",
