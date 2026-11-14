@@ -199,6 +199,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 givesInsight: "joe_rules_out_rudenko",
                 answers: [
                     {
+                        text: "Опишите неизвестного подробнее. Я хочу проверить его маршрут, не делая выводов о личности.",
+                        nextNode: "joe_describes_unknown_visitor",
+                        tone: "procedural",
+                        condition: "not:hasInsight:unknown_visitor_description",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Зафиксируем, что Руденко не был посетителем. Личность неизвестного оставим открытым вопросом.",
                         nextNode: "greeting",
                         tone: "calm",
@@ -215,6 +222,24 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         memorySummary: "После того как Джо исключил Руденко, детектив без доказательств приписал неизвестного посетителя Кейну.",
                         memoryTags: ["player_assumed_kane_link_without_evidence"],
                         memoryImportance: 3
+                    }
+                ]
+            },
+            joe_describes_unknown_visitor: {
+                speaker: "npc",
+                text: "Он был заметно моложе Руденко, невысокий — примерно мне до плеча. Тёмное пальто, узкие плечи. Когда он снял перчатку, я заметил на правой руке светлую повязку или бинт. Говорил тихо, без явного акцента. Он спросил, когда Томас вернётся, и ушёл пешком в сторону остановки. Я не видел его лица достаточно долго, чтобы уверенно опознать по фотографии.",
+                mood: "focused",
+                innerThought: "Я могу описать то, что запомнил. Но если детектив превратит эти детали в готовый портрет, он рискует подогнать под него первого встречного.",
+                givesInsight: "unknown_visitor_description",
+                answers: [
+                    {
+                        text: "Спасибо. Я проверю остановку и путевые листы. Пока это только описание свидетеля.",
+                        nextNode: "greeting",
+                        tone: "calm",
+                        trustDelta: 1,
+                        memorySummary: "Джо дал описание неизвестного посетителя: невысокий молодой мужчина в тёмном пальто, с повязкой на правой руке. Детектив не назвал это опознанием.",
+                        memoryTags: ["player_recorded_description_cautiously"],
+                        memoryImportance: 2
                     }
                 ]
             },
