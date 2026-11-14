@@ -30,6 +30,7 @@ function createDialogueHarness() {
             },
             bartender: { name: "Джо", availableForCall: true },
             journalist: { name: "Лора", availableForCall: true },
+            labour_inspector: { name: "Илья Руденко", availableForCall: true },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
@@ -44,6 +45,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/waiter.js",
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
         "assets/data/cases/case-002/dialogues/journalist.js",
+        "assets/data/cases/case-002/dialogues/labour_inspector.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1372,4 +1374,51 @@ test("a cautious visitor assessment does not create a rumor or damage the journa
     assert.equal(memory.hasLongTermMemoryTag("journalist", "player_respected_visitor_uncertainty"), true);
     advance(60);
     assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), false);
+});
+
+test("official cancellation record and direct witness identification distinguish appointment, attendance and identity", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+
+    engine.startDialogue("dialogue-labour-inspector");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "rudenko_checks_register"), false);
+
+    inventory.addInsight("inspection_cancellation_record");
+    engine.startDialogue("dialogue-labour-inspector");
+    const verifyRegister = engine.getAvailableAnswers().find(answer => answer.nextNode === "rudenko_checks_register");
+    assert.equal(verifyRegister?.isAvailable, true);
+    engine.selectAnswer(verifyRegister.index);
+    assert.equal(inventory.hasInsight("rudenko_denies_visit"), true);
+
+    const verifyIdentity = engine.getAvailableAnswers().find(answer => answer.nextNode === "rudenko_identity_documents");
+    assert.equal(verifyIdentity?.isAvailable, true);
+    engine.selectAnswer(verifyIdentity.index);
+    assert.equal(inventory.hasInsight("rudenko_identity_documents_verified"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "inspector_service_card"), true);
+
+    const accompany = engine.getAvailableAnswers().find(answer => answer.nextNode === "rudenko_agrees_to_identification");
+    assert.equal(accompany?.isAvailable, true);
+    engine.selectAnswer(accompany.index);
+    assert.equal(inventory.hasInsight("rudenko_agreed_to_identification"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const identification = engine.getAvailableAnswers().find(answer => answer.nextNode === "joe_identifies_different_visitor");
+    assert.equal(identification?.isAvailable, true);
+    engine.selectAnswer(identification.index);
+    assert.equal(inventory.hasInsight("joe_rules_out_rudenko"), true);
+    assert.match(engine.currentNode.text, /не тот человек/);
+    assert.match(engine.currentNode.text, /не говорит, кто именно приходил/);
+
+    const careful = engine.getAvailableAnswers().find(answer => answer.text.includes("личность неизвестного оставим открытым"));
+    assert.equal(careful?.isAvailable, true);
+    engine.selectAnswer(careful.index);
+    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_completed_cautious_identification"), true);
+});
+
+test("the inspector's denial cannot be obtained from the appointment record alone", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+    engine.startDialogue("dialogue-labour-inspector");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "rudenko_checks_register"), false);
+    assert.equal(inventory.hasInsight("rudenko_denies_visit"), false);
 });
