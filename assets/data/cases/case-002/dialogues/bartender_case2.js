@@ -66,6 +66,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Лора не смогла установить личность посетителя. Проверьте записи о визитах за тот вечер.",
+                        nextNode: "joe_finds_visitor_log",
+                        tone: "calm",
+                        condition: "all:hasInsight:unknown_visitor_unverified&not:hasInsight:joe_found_inspection_entry",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "После переезда матери Томаса никто не интересовался её местонахождением?",
                         nextNode: "joe_reports_unknown_visitor",
                         tone: "calm",
@@ -154,6 +161,16 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 ]
             },
 
+            joe_finds_visitor_log: {
+                speaker: "npc",
+                text: "Нашёл в журнале учёта посетителей запись за тот вечер: «И. Руденко, проверка условий труда», номер служебной заявки 27-Б. Почерк и время совпадают с моими записями о том незнакомце. Но запись могла быть оставлена кем угодно. Нужно проверить номер заявки не через меня.",
+                mood: "thoughtful",
+                innerThought: "Это документальная зацепка из бара, но запись не является удостоверением личности посетителя.",
+                givesInsight: "joe_found_inspection_entry",
+                answers: [
+                    { text: "Сверю служебную заявку с независимыми записями.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
             joe_reports_unknown_visitor: {
                 speaker: "npc",
                 text: "Вчера заходил незнакомец и спросил, когда Томас вернётся на смену. Он не назвал себя и не спрашивал адрес матери. Я не стал ничего рассказывать. Не знаю, был ли это человек Кейна — возможно, обычный посетитель.",
