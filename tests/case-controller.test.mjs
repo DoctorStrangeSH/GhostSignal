@@ -168,18 +168,18 @@ test("new playthrough clears run-only systems without replacing shared objects",
 
     assert.equal(controller.loadCase("case-001"), true);
     assert.equal(app.inventory, inventory);
-    assert.deepEqual(inventory.items, []);
-    assert.deepEqual(inventory.evidence, []);
-    assert.deepEqual(inventory.insights, []);
+    assert.equal(inventory.items.length, 0);
+    assert.equal(inventory.evidence.length, 0);
+    assert.equal(inventory.insights.length, 0);
     assert.equal(inventory.currentWeight, 0);
-    assert.deepEqual(notes.collectedNotes, []);
-    assert.deepEqual(notes.highlightedFragments, []);
+    assert.equal(notes.collectedNotes.length, 0);
+    assert.equal(notes.highlightedFragments.length, 0);
     assert.equal(notes.activeNote, null);
-    assert.deepEqual(stakeout.activeStakeouts, []);
-    assert.deepEqual(stakeout.completedStakeouts, []);
-    assert.deepEqual(interrogation.npcGone, {});
-    assert.deepEqual(interrogation.backupPaths, {});
-    assert.deepEqual(chains.completedChains, []);
+    assert.equal(stakeout.activeStakeouts.length, 0);
+    assert.equal(stakeout.completedStakeouts.length, 0);
+    assert.equal(Object.keys(interrogation.npcGone).length, 0);
+    assert.equal(Object.keys(interrogation.backupPaths).length, 0);
+    assert.equal(chains.completedChains.length, 0);
     assert.equal(chains.currentCaseId, null);
 });
 
