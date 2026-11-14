@@ -332,7 +332,8 @@ class InvestigationBoard {
     // A spoiler-free checklist derived exclusively from player-visible state.
     // It is guidance, not authored case completion logic or evidence discovery.
     getInvestigationChecklist({ visitedLocationIds = [], evidenceIds = [], statements = [],
-        thomasTelephoneQuestionAsked = false } = {}) {
+        thomasTelephoneQuestionAsked = false, loraReportKnown = false,
+        loraVerificationOutcome = null, loraVerificationDiscussed = false } = {}) {
         const visited = new Set(Array.isArray(visitedLocationIds) ? visitedLocationIds : []);
         const evidence = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
         const witnesses = new Set((Array.isArray(statements) ? statements : [])
@@ -356,6 +357,17 @@ class InvestigationBoard {
             nextActions.push(thomasTelephoneQuestionAsked
                 ? { id: 'thomas-telephone', status: 'checked', text: 'Томаса уже спросили о телефонном запросе. Он не видел звонившего; нужен независимый источник.' }
                 : { id: 'thomas-telephone', status: 'available', text: 'Найдена карточка телефонной станции: вернитесь к Томасу и уточните, видел ли он звонившего.' });
+        }
+        if (this.caseId === 'case-002' && loraReportKnown) {
+            const checked = loraVerificationDiscussed;
+            const available = loraVerificationOutcome === 'no_independent_evidence';
+            nextActions.push({ id: 'lora-thomas-verification',
+                status: checked ? 'checked' : available ? 'available' : 'pending',
+                text: checked
+                    ? 'Лора обсудила отдельный разговор с Томасом: это ещё не независимое подтверждение первоначального обвинения.'
+                    : available
+                        ? 'Лора провела отдельный разговор с Томасом. Вернитесь к ней, чтобы узнать, что удалось проверить.'
+                        : 'Лора узнала о спорном обвинении Томаса и планирует проверить рассказ. Не считайте пересказ доказанным фактом.' });
         }
         return { tasks, nextActions, nextAction: nextActions[0]?.text || null,
             completed: tasks.filter(t => t.done).length };
