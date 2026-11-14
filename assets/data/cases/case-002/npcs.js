@@ -238,8 +238,8 @@ registerData('npc', {
             labels: { cooperative: "Готова вспомнить детали", pressured: "Отвечает настороженно", overwhelmed: "Прекращает разговор", distrustful: "Не желает вмешиваться" }
         },
         schedule: {
-            awake: { start: 0, end: 24 },
-            atWork: { start: 0, end: 24 },
+            awake: { start: 0, end: 23 },
+            atWork: { start: 0, end: 23 },
             sleeps: null,
             locations: { work: "night_diner", home: null },
             daysOff: [],
