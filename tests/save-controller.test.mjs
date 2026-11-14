@@ -16,7 +16,7 @@ function loadSaveController(globals = {}) {
 
 test("SaveController captures every persistent system before saving", () => {
     const saved = [];
-    const storage = { saveProgress(progress) { saved.push(structuredClone(progress)); } };
+    const storage = { saveProgress(progress) { saved.push(structuredClone(progress)); return true; } };
     const serialize = key => ({ source: key });
     const app = {
         progress: { activeCase: "case-002" },
@@ -65,11 +65,34 @@ test("SaveController safely skips saves before progress is initialized", () => {
 test("SaveController can persist progress without rebuilding a full snapshot", () => {
     const progress = { activeCase: "case-001", solvedCases: [] };
     let saved = null;
-    const storage = { saveProgress(value) { saved = value; } };
+    const storage = { saveProgress(value) { saved = value; return true; } };
     const app = { progress };
     const SaveController = loadSaveController();
     const controller = new SaveController(app, storage);
 
     assert.equal(controller.saveProgress(), true);
     assert.equal(saved, progress);
+});
+
+test("SaveController reports failed writes and does not claim a successful quick save", () => {
+    const progress = { activeCase: "case-001" };
+    let attempts = 0;
+    const storage = {
+        saveProgress() { attempts++; return false; }
+    };
+    const app = {
+        progress,
+        npcMemoryService: { toJSON() { return { cases: { "case-001": { witness: true } } }; } },
+        npcSocialNetwork: { toJSON() { return { cases: { "case-001": { rumor: true } } }; } },
+        npcRelationshipService: { toJSON() { return { cases: { "case-001": { trust: 42 } } }; } }
+    };
+    const controller = new (loadSaveController())(app, storage);
+
+    assert.equal(controller.quickSave(), false);
+    assert.equal(attempts, 1);
+    assert.deepEqual(progress.npcMemoryData.cases["case-001"], { witness: true });
+    assert.deepEqual(progress.npcSocialData.cases["case-001"], { rumor: true });
+    assert.deepEqual(progress.npcRelationshipData.cases["case-001"], { trust: 42 });
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(attempts, 2);
 });
