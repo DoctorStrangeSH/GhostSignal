@@ -21,6 +21,13 @@ const DIALOGUE_JOURNALIST = {
                 mood: "focused",
                 answers: [
                     { text: "Расскажите подробнее о разговоре с Евой.", nextNode: "lora_eva_followup_unverified", tone: "direct" },
+                    {
+                        text: "У Джо появился неизвестный посетитель. Проверьте этот след отдельно.",
+                        nextNode: "lora_checks_unknown_visitor",
+                        tone: "calm",
+                        condition: "all:hasInsight:unknown_visitor_asked_about_thomas&not:hasInsight:unknown_visitor_unverified",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Давайте вернёмся к документам о Кейне.", nextNode: "investigation", tone: "calm" }
                 ]
             },
