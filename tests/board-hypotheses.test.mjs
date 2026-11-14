@@ -307,3 +307,29 @@ test('authored travel routes respect direction, visited stops and uncertain timi
     assert.equal(directed.reviewAlibiRoutes([{ from: 'bar', to: 'booth', minutes: 30 }], locations).length, 0,
         'directed edge must not imply travel in the opposite direction');
 });
+
+test('route follow-up requires a real pair of alibi claims and survives only its own case', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const context = { statements: [{ id: 'w', status: 'active' }] };
+    const add = (location, startMinute) => board.addAlibiClaim({
+        subject: 'Кейн', location, startMinute, endMinute: startMinute + 5,
+        precision: 'exact', kind: 'statement', sourceId: 'w'
+    }, context);
+    const first = add('Бар', 1200), second = add('Будка', 1210);
+    assert.equal(board.prepareRouteQuestion({ status: 'route_time_tight', ids: ['fake', second] }, 'business_rival'), false);
+    const finding = { status: 'route_time_tight', ids: [first, second] };
+    assert.equal(board.prepareRouteQuestion(finding, 'business_rival'), true);
+    assert.equal(board.prepareRouteQuestion(finding, 'business_rival'), false);
+    assert.equal(board.hasPreparedRouteQuestion('business_rival'), true);
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.hasPreparedRouteQuestion('business_rival'), true);
+    assert.equal(restored.removeAlibiClaim(first), true);
+    assert.equal(restored.hasPreparedRouteQuestion('business_rival'), false);
+    restored.setCase('case-001');
+    assert.equal(restored.routeQuestions.length, 0);
+    const legacy = board.toJSON();
+    delete legacy.routeQuestions;
+    assert.equal(runtime.restore(legacy).hasPreparedRouteQuestion('business_rival'), false);
+});
