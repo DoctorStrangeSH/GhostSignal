@@ -32,6 +32,13 @@ const DIALOGUE_WOMAN_IN_RED = {
                         condition: "npc_action_completed:eva-supports-anna-after-public-accusation",
                         hiddenWhenUnavailable: true
                     },
+                    {
+                        text: "Анна рассказала вам, как мы исправили обвинение?",
+                        nextNode: "eva_heard_verified_restitution",
+                        tone: "cautious",
+                        condition: "heard_rumor:verified-restitution-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Кто вы такая?", nextNode: "identity" },
                     {
                         text: "Вы связывались с Анной после нашего разговора?",
@@ -40,6 +47,17 @@ const DIALOGUE_WOMAN_IN_RED = {
                         condition: "npc_action_completed:eva-protects-anna-after-pressure"
                     },
                     { text: "Вы были здесь в ночь отравления.", nextNode: "that_night" }
+                ]
+            },
+
+            eva_heard_verified_restitution: {
+                speaker: "npc",
+                text: "Анна сказала, что вы вернулись с признанием Кейна и признали ошибку. Я рада, что вы не оставили её один на один с обвинением. Но я пока знаю об этом с её слов и хочу сама убедиться в том, что документы действительно подтверждают сказанное.",
+                mood: "cautious",
+                innerThought: "Ева видит поступок детектива, но не делает собственную проверку ненужной.",
+                answers: [
+                    { text: "Понимаю. Я не прошу забыть случившееся.", nextNode: "that_night", tone: "reassuring" },
+                    { text: "Проверяйте документы независимо.", nextNode: "that_night", tone: "calm" }
                 ]
             },
 
