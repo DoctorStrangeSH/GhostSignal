@@ -46,6 +46,7 @@ function createDialogueHarness() {
         "assets/js/npc/npcMemoryService.js",
         "assets/js/npc/npcMotivationService.js",
         "assets/js/npc/npcSocialNetwork.js",
+        "assets/js/systems/board.js",
         "assets/js/npc/dialogueEngine.js",
         "assets/data/cases/case-002/dialogues/waiter.js",
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
@@ -862,6 +863,43 @@ test('Thomas answers the telephone record follow-up only after the document is f
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === 'telephone_record_scope'), false);
     loaded.setCase('case-001');
     assert.equal(loaded.hasVisitedNode('waiter', 'dialogue-waiter', 'telephone_record_scope'), false);
+});
+
+test('Thomas telephone lead follows a real dialogue and remains checked after restoring memory and board', () => {
+    const { engine, memory, inventory, context } = createDialogueHarness();
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    board.setCase('case-002');
+    engine.setInvestigationBoard(board);
+    const checklist = (activeMemory, activeBoard) => activeBoard.getInvestigationChecklist({
+        evidenceIds: inventory.items,
+        statements: activeMemory.getStatements(),
+        thomasTelephoneQuestionAsked: activeMemory.hasVisitedNode('waiter', 'dialogue-waiter', 'telephone_record_scope')
+    });
+
+    assert.equal(checklist(memory, board).nextActions.length, 0);
+    memory.recordClaim('waiter', { id: 'waiter-kane-at-poisoning', topic: 'kane-presence-during-poisoning',
+        value: 'saw-poisoning', summary: 'Томас видел Кейна у стола' });
+    assert.equal(checklist(memory, board).nextActions.length, 0, 'a witness alone must not expose the document');
+    inventory.items.push('telephone_exchange_slip');
+    assert.equal(checklist(memory, board).nextActions[0].status, 'available');
+
+    assert.equal(engine.startDialogue('dialogue-waiter'), true);
+    const question = engine.getAvailableAnswers().find(answer => answer.nextNode === 'telephone_record_scope');
+    assert.equal(question?.isAvailable, true);
+    assert.equal(engine.selectAnswer(question.index).id, 'telephone_record_scope');
+    assert.equal(checklist(memory, board).nextActions[0].status, 'checked');
+
+    context.savedMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+    context.savedBoard = JSON.parse(JSON.stringify(board.toJSON()));
+    const reloadedMemory = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    const reloadedBoard = vm.runInContext('InvestigationBoard.fromJSON(savedBoard)', context);
+    assert.equal(checklist(reloadedMemory, reloadedBoard).nextActions[0].status, 'checked');
+    engine.setMemoryService(reloadedMemory);
+    assert.equal(engine.startDialogue('dialogue-waiter'), true);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === 'telephone_record_scope'), false);
+    reloadedBoard.setCase('case-001');
+    reloadedMemory.setCase('case-001');
+    assert.equal(checklist(reloadedMemory, reloadedBoard).nextActions.length, 0);
 });
 
 test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
