@@ -3160,3 +3160,40 @@ test("Several source overclaims in one investigation never form a repeated-case 
     assert.equal(engine._checkCondition("long_term_pattern:repeated_source_overclaim"), false);
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_repeated_source_overclaim"), false);
 });
+
+
+test("Joe remembers repeated pressure from separate investigations, but not repeated choices in one case", () => {
+    const { engine, memory } = createDialogueHarness();
+    for (const [caseId, nodeId] of [["case-001", "first-pressure"], ["case-002", "second-pressure"]]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", nodeId, {
+            text: "Я добьюсь ответа любой ценой.", tone: "threatening"
+        });
+    }
+    const pattern = memory.getLongTermBehaviorPattern("bartender");
+    assert.equal(pattern.pressuredCases, 2);
+    assert.equal(pattern.repeatedPressure, true);
+
+    memory.setCase("case-002");
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "joe_remembers_repeated_pressure");
+    assert.match(engine.currentNode.text, /не в одном деле/);
+    assert.match(engine.currentNode.text, /не стану торопить Томаса/);
+
+    const answer = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
+    assert.equal(answer?.isAvailable, true);
+    engine.selectAnswer(answer.index);
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.notEqual(engine.currentNode.id, "joe_remembers_repeated_pressure",
+        "the personal-history opening is shown only once");
+
+    const singleCase = createDialogueHarness();
+    for (let i = 0; i < 4; i++) {
+        singleCase.memory.recordAnswerSelected("bartender", "pressure-dialogue", "pressure-" + i, {
+            text: "Я добьюсь ответа любой ценой.", tone: "threatening"
+        });
+    }
+    assert.equal(singleCase.memory.getLongTermBehaviorPattern("bartender").pressuredCases, 1);
+    singleCase.engine.startDialogue("dialogue-bartender-case2");
+    assert.notEqual(singleCase.engine.currentNode.id, "joe_remembers_repeated_pressure");
+});
