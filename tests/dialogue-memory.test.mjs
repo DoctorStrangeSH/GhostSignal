@@ -1915,3 +1915,55 @@ test("Thomas remembers a broken promise after a failed investigation", () => {
     assert.match(engine.currentNode.text, /обещали/);
     assert.equal(engine._checkCondition("promise_status:thomas-family-protection:broken"), true);
 });
+
+test("Thomas remembers the specific broken family promise after replaying the same case", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Я защищу твою семью.",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    });
+    assert.equal(memory.settlePromisesForCase("case-002", "failed").length, 1);
+    engine.reset();
+    assert.equal(memory.resetCase("case-002"), true);
+    memory.setCase("case-002");
+
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "past_broken_promise_opening");
+    assert.match(engine.currentNode.text, /не начинается с чистого листа/);
+    assert.equal(engine._checkCondition("promise_status:thomas-family-protection:broken"), false);
+    engine.reset();
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.notEqual(engine.currentNode.id, "past_broken_promise_opening");
+});
+
+test("Thomas remembers a fulfilled family promise across playthroughs", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Я защищу твою семью.",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    });
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "thomas_family_protected"
+    }).length, 1);
+    engine.reset();
+    memory.resetCase("case-002");
+    memory.setCase("case-002");
+
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "past_kept_promise_opening");
+    assert.match(engine.currentNode.text, /сдержали слово/);
+});
+
+test("unrelated promise memories cannot trigger Thomas's family-specific opening", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "unrelated-promise", text: "Я верну документы.",
+        fulfillment: { type: "insight_gained", insightId: "other_documents" }
+    });
+    memory.settlePromisesForCase("case-002", "failed");
+    memory.resetCase("case-002");
+    memory.setCase("case-002");
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.notEqual(engine.currentNode.id, "past_broken_promise_opening");
+    assert.notEqual(engine.currentNode.id, "past_kept_promise_opening");
+});
