@@ -422,6 +422,10 @@ class DialogueEngine {
         }
         
         const npcId = this.currentDialogue?.npcId;
+        if (conditionStr.startsWith('has_visited_node:')) {
+            return Boolean(npcId && this.memoryService?.hasVisitedNode(npcId,
+                this.currentDialogue?.id, conditionStr.slice('has_visited_node:'.length)));
+        }
         if (conditionStr === 'route_question_prepared') {
             return Boolean(npcId && this.investigationBoard?.hasPreparedRouteQuestion(npcId));
         }
