@@ -109,7 +109,7 @@ class App {
         this.mapRenderer = new MapRenderer('map-container'); this.mapRenderer.setLocationManager(this.locationManager);
 
         this.caseManager = CaseManager.fromJSON(this.progress.caseData, this.gameTime, this.locationManager, this.inventory, this.progress.activeCase);
-        this.caseListUI = new CaseListUI('cases-list'); this.caseListUI.setProgress(this.progress);
+        this.caseListUI = new CaseListUI('cases-list'); this.caseListUI.setProgress(this.progress, caseId => this.caseController.canResume(caseId));
 
         this.npcManager = NPCManager.fromJSON(this.progress.npcData, this.gameTime, this.inventory, this.progress.activeCase);
         this.npcMemoryService = NPCMemoryService.fromJSON(this.progress.npcMemoryData, this.progress.activeCase);
