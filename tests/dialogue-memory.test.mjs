@@ -1026,3 +1026,39 @@ test("Thomas names detective pressure as the cause of his later retraction", () 
     assert.match(engine.currentNode.text, /пригрозили/);
     assert.equal(memory.getAccusations("waiter").length, 0);
 });
+
+test("Thomas accepts a retraction without instantly forgiving an unsupported lie accusation", () => {
+    const { engine, memory, advance } = createDialogueHarness();
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning-v2", topic: "kane-presence-during-poisoning",
+        value: "near-victim-table-before-collapse", revisesClaimId: "waiter-kane-at-poisoning"
+    });
+    engine.startDialogue("dialogue-waiter");
+    const accusation = engine.getAvailableAnswers().find(a => a.accusation?.id === "thomas-lied-about-poisoning");
+    engine.selectAnswer(accusation.index);
+    const afterAccusation = memory.getMemory("waiter").cooperation;
+    assert.equal(memory.getAccusationStatus("waiter", "thomas-lied-about-poisoning"), "pending");
+
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "accused_after_revision_opening");
+    const apology = engine.getAvailableAnswers().find(a => a.resolveAccusation?.id === "thomas-lied-about-poisoning");
+    assert.equal(apology?.isAvailable, true);
+    engine.selectAnswer(apology.index);
+    assert.equal(engine.currentNode.id, "apology_not_forgiven");
+    assert.equal(memory.getAccusationStatus("waiter", "thomas-lied-about-poisoning"), "false");
+    assert.ok(memory.getMemory("waiter").cooperation < afterAccusation,
+        "admitting a false accusation must not instantly erase its damage");
+    assert.equal(memory.hasClaim("waiter", "waiter-kane-at-poisoning-v2"), true);
+    advance(15);
+    assert.equal(memory.hasRumor("bartender", "detective-retracted-thomas-lie-accusation"), true);
+
+    const snapshot = memory.toJSON();
+    assert.equal(snapshot.cases["case-002"].waiter.accusations.find(a =>
+        a.id === "thomas-lied-about-poisoning").status, "false");
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "apology_acknowledged_opening");
+    assert.equal(engine.getAvailableAnswers().some(a => a.resolveAccusation?.id === "thomas-lied-about-poisoning"), false);
+});
