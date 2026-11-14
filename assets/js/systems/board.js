@@ -7,6 +7,7 @@ class InvestigationBoard {
         this.hypotheses = [];
         this.sourceInquiries = [];
         this.alibiClaims = [];
+        this.routeQuestions = [];
         this.nextAlibiId = 1;
         this.nextInquiryId = 1;
         this.nextHypothesisId = 1;
@@ -299,6 +300,21 @@ class InvestigationBoard {
         return findings;
     }
 
+    prepareRouteQuestion(finding, npcId) {
+        if (finding?.status !== 'route_time_tight' || !Array.isArray(finding.ids) || finding.ids.length !== 2 ||
+            typeof npcId !== 'string' || !/^[a-z0-9_:-]{1,64}$/i.test(npcId) ||
+            !finding.ids.every(id => this.alibiClaims.some(c => c.id === id)) ||
+            this.routeQuestions.some(q => q.npcId === npcId && q.ids.join('|') === finding.ids.join('|'))) return false;
+        this.routeQuestions.push({ npcId, ids: [...finding.ids], caseId: this.caseId });
+        events.emit('board:updated', { action: 'route_question_prepared', npcId });
+        return true;
+    }
+
+    hasPreparedRouteQuestion(npcId) {
+        return this.routeQuestions.some(q => q.npcId === npcId && q.caseId === this.caseId &&
+            q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
+    }
+
     checkConclusions() {
         // Проверяем ключевые пары
         const pairs = [
@@ -337,6 +353,7 @@ class InvestigationBoard {
         this.nextHypothesisId = 1;
         this.caseId = id;
         this.alibiClaims = [];
+        this.routeQuestions = [];
         this.nextAlibiId = 1;
         events.emit('board:updated', { action: 'case_switched', caseId: id });
         return true;
@@ -486,6 +503,7 @@ class InvestigationBoard {
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
             sourceInquiries: this.sourceInquiries.map(i => ({ ...i, leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
             alibiClaims: this.alibiClaims.map(c => ({ ...c })),
+            routeQuestions: this.routeQuestions.map(q => ({ ...q, ids: [...q.ids] })),
             nextAlibiId: this.nextAlibiId,
             nextInquiryId: this.nextInquiryId,
             nextHypothesisId: this.nextHypothesisId,
@@ -530,6 +548,11 @@ class InvestigationBoard {
                 location: c.location.slice(0, 120), locationId: typeof c.locationId === 'string' ? c.locationId.slice(0, 120) : null,
                 sourceId: c.sourceId.slice(0, 240), kind: c.kind,
                 precision: c.precision, startMinute: c.startMinute, endMinute: c.endMinute })) : [];
+            board.routeQuestions = Array.isArray(json.routeQuestions) ? json.routeQuestions.filter(q =>
+                q && typeof q.npcId === 'string' && Array.isArray(q.ids) && q.ids.length === 2 &&
+                q.ids.every(id => typeof id === 'string' && board.alibiClaims.some(c => c.id === id)) &&
+                typeof q.caseId === 'string' && q.caseId === board.caseId).map(q =>
+                ({ npcId: q.npcId.slice(0, 64), ids: [...q.ids], caseId: q.caseId })) : [];
             board.nextAlibiId = Math.max(1, Number.isSafeInteger(json.nextAlibiId) ? json.nextAlibiId : 1,
                 ...board.alibiClaims.map(c => Number(c.id.match(/^alibi-(\d+)$/)?.[1] || 0) + 1));
             board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
