@@ -1,5 +1,6 @@
 class DeductionScreen {
-    constructor() {
+    constructor(inventory = null) {
+        this.inventory = inventory;
         this._bindEvents();
     }
 
@@ -122,9 +123,11 @@ class DeductionScreen {
         const weaponCorrect = weapon === correct.weapon;
 
         const allCorrect = suspectCorrect && motiveCorrect && weaponCorrect;
+        const proof = assessAccusationEvidence(caseData, this.inventory);
 
         return {
             allCorrect,
+            proof,
             suspectCorrect,
             motiveCorrect,
             weaponCorrect,
@@ -138,7 +141,15 @@ class DeductionScreen {
 
         feedback.classList.remove('hidden');
 
-        if (result.allCorrect) {
+        if (result.allCorrect && !result.proof.sufficient) {
+            feedback.innerHTML = `
+                <div class="feedback feedback-error">
+                    <h4>⚖️ ВЕРСИЯ ЕСТЬ — ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО</h4>
+                    <p>Вы правильно связали подозреваемого, мотив и орудие. Однако эта версия пока не выдержит проверки.</p>
+                    <p style="margin-top: 8px;">${caseData.proofRequirements?.hint || 'Найдите независимые подтверждения версии.'}</p>
+                </div>
+            `;
+        } else if (result.allCorrect) {
             feedback.innerHTML = `
                 <div class="feedback feedback-success">
                     <h4>✅ ВСЁ ВЕРНО!</h4>
@@ -160,7 +171,7 @@ class DeductionScreen {
                     <p>Подозреваемый: ${result.suspectCorrect ? '✅' : '❌'}</p>
                     <p>Мотив: ${result.motiveCorrect ? '✅' : '❌'}</p>
                     <p>Орудие: ${result.weaponCorrect ? '✅' : '❌'}</p>
-                    <p style="margin-top: 8px;">Подумайте ещё. У вас есть все улики.</p>
+                    <p style="margin-top: 8px;">Подумайте ещё. Проверьте версии и сопоставьте найденные материалы.</p>
                 </div>
             `;
         }
