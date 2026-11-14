@@ -27,12 +27,22 @@ const DIALOGUE_WAITER = {
         entryRules: [
             { condition: "accusation_status:thomas-lied-about-poisoning:pending", nodeId: "accused_after_revision_opening" },
             { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
+            { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
             { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
         ],
         nodes: {
+            joe_after_lora_support_opening: {
+                speaker: "npc",
+                text: "Джо поговорил со мной после сообщения Лоры. Она проверила историю, но пока не нашла независимых доказательств обвинения. Я рад, что Джо не отвернулся, однако мне всё ещё страшно и я не хочу снова повторять чужие догадки как факт.",
+                mood: "cautious",
+                answers: [
+                    { text: "Спасибо, что рассказал. Буду опираться на проверяемые сведения.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не стану давить на тебя. До встречи.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
             accused_after_revision_opening: {
                 speaker: "npc",
                 text: "Вы назвали меня лжецом, когда я исправил показания. Прежде чем спрашивать о Кейне снова, скажите: вы действительно считаете, что я специально обманул вас?",
