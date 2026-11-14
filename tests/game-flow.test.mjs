@@ -130,3 +130,15 @@ test("Case 002 runtime routes the bartender, exposes the crime-scene clue and un
     }, caseManager.evidenceFound);
     assert.equal(perfect.id, "case-002-perfect");
 });
+
+test('opening another case clears previously visited places', () => {
+    const { systems } = createRuntime();
+    const { caseManager, locationManager } = systems;
+    assert.equal(caseManager.loadCase('case-002'), true);
+    locationManager.visitedLocations.add('telephone_exchange');
+    locationManager.visitedLocations.add('night_diner');
+    assert.ok(locationManager.visitedLocations.has('night_diner'));
+    assert.equal(caseManager.loadCase('case-001'), true);
+    assert.deepEqual(Array.from(locationManager.visitedLocations), ['police_station']);
+    assert.equal(locationManager.activeCaseData.id, 'case-001');
+});
