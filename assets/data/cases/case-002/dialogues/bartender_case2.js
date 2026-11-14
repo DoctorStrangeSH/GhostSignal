@@ -315,7 +315,14 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         cooperationDelta: -3,
                         memorySummary: "Детектив настоял на неподтверждённой идентификации посетителя вопреки осторожности Джо.",
                         memoryTags: ["player_doubled_down_on_visitor_overclaim"],
-                        memoryImportance: 3
+                        memoryImportance: 3,
+                        report: {
+                            id: "joe-warns-thomas-of-visitor-overclaim",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            sourceName: "Джо",
+                            text: "Детектив после проверки Лоры продолжил утверждать, что личность посетителя установлена. Я возразил: ни запись, ни график не доказывают, кто стоял у стойки. Это моя оценка разговора, а не новые сведения о посетителе."
+                        }
                     }
                 ]
             },
