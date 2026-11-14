@@ -6,6 +6,8 @@ class InvestigationBoard {
         this.evidenceOnBoard = []; // ID улик на доске
         this.hypotheses = [];
         this.sourceInquiries = [];
+        this.alibiClaims = [];
+        this.nextAlibiId = 1;
         this.nextInquiryId = 1;
         this.nextHypothesisId = 1;
         this.caseId = null;
@@ -135,6 +137,50 @@ class InvestigationBoard {
     }
 
     // Проверить, сделаны ли правильные выводы
+    addAlibiClaim({ subject, location, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
+        const who = String(subject ?? '').trim().slice(0, 100);
+        const where = String(location ?? '').trim().slice(0, 120);
+        const source = String(sourceId ?? '').trim().slice(0, 240);
+        if (!who || !where || !source || !Number.isInteger(startMinute) || !Number.isInteger(endMinute) ||
+            startMinute < 0 || endMinute >= 1440 || startMinute > endMinute ||
+            !['exact', 'approximate'].includes(precision)) return null;
+        if (kind === 'statement' && !context.statements?.some(s => s.id === source && s.status !== 'superseded')) return null;
+        if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return null;
+        if (!['statement', 'evidence'].includes(kind) || this.alibiClaims.some(c =>
+            c.subject === who && c.location === where && c.startMinute === startMinute &&
+            c.endMinute === endMinute && c.kind === kind && c.sourceId === source)) return null;
+        const entry = { id: 'alibi-' + this.nextAlibiId++, subject: who, location: where,
+            startMinute, endMinute, precision, kind, sourceId: source };
+        this.alibiClaims.push(entry);
+        events.emit('board:updated', { action: 'alibi_claim_added', id: entry.id });
+        return entry.id;
+    }
+
+    removeAlibiClaim(id) {
+        const index = this.alibiClaims.findIndex(c => c.id === id);
+        if (index < 0) return false;
+        this.alibiClaims.splice(index, 1);
+        events.emit('board:updated', { action: 'alibi_claim_removed', id });
+        return true;
+    }
+
+    reviewAlibiClaims() {
+        const overlaps = [];
+        for (let i = 0; i < this.alibiClaims.length; i++) {
+            for (let j = i + 1; j < this.alibiClaims.length; j++) {
+                const a = this.alibiClaims[i], b = this.alibiClaims[j];
+                if (a.subject.toLocaleLowerCase() !== b.subject.toLocaleLowerCase() ||
+                    a.location.toLocaleLowerCase() === b.location.toLocaleLowerCase() ||
+                    Math.max(a.startMinute, b.startMinute) > Math.min(a.endMinute, b.endMinute)) continue;
+                overlaps.push({ ids: [a.id, b.id], subject: a.subject, status: 'needs_verification',
+                    reason: a.precision === 'approximate' || b.precision === 'approximate'
+                        ? 'Пересекаются приблизительные интервалы; уточните время и возможность перемещения.'
+                        : 'В одно время указаны разные места; проверьте точность источников и возможность перемещения.' });
+            }
+        }
+        return overlaps;
+    }
+
     checkConclusions() {
         // Проверяем ключевые пары
         const pairs = [
@@ -172,6 +218,8 @@ class InvestigationBoard {
         this.nextInquiryId = 1;
         this.nextHypothesisId = 1;
         this.caseId = id;
+        this.alibiClaims = [];
+        this.nextAlibiId = 1;
         events.emit('board:updated', { action: 'case_switched', caseId: id });
         return true;
     }
@@ -319,6 +367,8 @@ class InvestigationBoard {
             evidenceOnBoard: [...this.evidenceOnBoard],
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
             sourceInquiries: this.sourceInquiries.map(i => ({ ...i, leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
+            alibiClaims: this.alibiClaims.map(c => ({ ...c })),
+            nextAlibiId: this.nextAlibiId,
             nextInquiryId: this.nextInquiryId,
             nextHypothesisId: this.nextHypothesisId,
             caseId: this.caseId
@@ -353,6 +403,16 @@ class InvestigationBoard {
             })) : [];
             board.nextInquiryId = Math.max(1, Number.isSafeInteger(json.nextInquiryId) ? json.nextInquiryId : 1,
                 ...board.sourceInquiries.map(i => Number(i.id.match(/^inquiry-(\d+)$/)?.[1] || 0) + 1));
+            board.alibiClaims = Array.isArray(json.alibiClaims) ? json.alibiClaims.filter(c =>
+                c && typeof c.id === 'string' && typeof c.subject === 'string' && typeof c.location === 'string' &&
+                typeof c.sourceId === 'string' && ['evidence', 'statement'].includes(c.kind) &&
+                ['exact', 'approximate'].includes(c.precision) && Number.isInteger(c.startMinute) &&
+                Number.isInteger(c.endMinute) && c.startMinute >= 0 && c.endMinute < 1440 &&
+                c.startMinute <= c.endMinute).map(c => ({ id: c.id, subject: c.subject.slice(0, 100),
+                location: c.location.slice(0, 120), sourceId: c.sourceId.slice(0, 240), kind: c.kind,
+                precision: c.precision, startMinute: c.startMinute, endMinute: c.endMinute })) : [];
+            board.nextAlibiId = Math.max(1, Number.isSafeInteger(json.nextAlibiId) ? json.nextAlibiId : 1,
+                ...board.alibiClaims.map(c => Number(c.id.match(/^alibi-(\d+)$/)?.[1] || 0) + 1));
             board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
                 ...board.hypotheses.map(h => Number(h.id.match(/^hyp-(\d+)$/)?.[1] || 0) + 1));
         }
