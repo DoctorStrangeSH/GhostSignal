@@ -389,7 +389,8 @@ class DialogueEngine {
         if (node.verifiedRestitution && this.currentDialogue?.npcId &&
             this.inventory?.hasInsight?.(node.verifiedRestitution.requiresInsight)) {
             if (this.memoryService?.recordVerifiedRestitution(this.currentDialogue.npcId,
-                node.verifiedRestitution.id, node.verifiedRestitution.accusationId)) this._notifyMemoryChanged();
+                node.verifiedRestitution.id, node.verifiedRestitution.accusationId,
+                node.verifiedRestitution.priorMemoryTag)) this._notifyMemoryChanged();
         }
         
         // Спавн предмета (если есть)
