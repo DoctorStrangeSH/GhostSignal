@@ -526,6 +526,24 @@ test('board UI supports select-and-place without dragging and rejects unavailabl
     assert.ok(states.some(([key, value]) => key === 'aria-pressed' && value === 'true'));
 });
 
+test('board layout reports occupied neighbors without calling them confirmed evidence links', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.board = { slots: [
+        { id: 'one', evidenceId: 'photo' }, { id: 'two', evidenceId: 'letter' },
+        { id: 'three', evidenceId: null }
+    ], connections: [
+        { from: 'one', to: 'two' }, { from: 'two', to: 'three' }
+    ] };
+    const status = ui._renderLayoutStatus();
+    assert.match(status, /Размещено улик: 2 из 3/);
+    assert.match(status, /Соседних пар: 1/);
+    assert.doesNotMatch(status, /подтвержден|доказан/i);
+    ui.board.slots[0].evidenceId = null;
+    assert.match(ui._renderLayoutStatus(), /Соседних пар: 0/);
+});
+
 test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
