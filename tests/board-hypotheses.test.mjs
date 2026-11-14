@@ -333,3 +333,23 @@ test('route follow-up requires a real pair of alibi claims and survives only its
     delete legacy.routeQuestions;
     assert.equal(runtime.restore(legacy).hasPreparedRouteQuestion('business_rival'), false);
 });
+
+test('alibi UI only offers visited locations from the current case, including its sublocations', () => {
+    const locationById = {
+        bar_joe: { id: 'bar_joe', name: 'Бар' },
+        hotel_grand: { id: 'hotel_grand', name: 'Отель' },
+        hotel_room_304: { id: 'hotel_room_304', name: 'Номер', parentLocation: 'hotel_grand' },
+        telephone_exchange: { id: 'telephone_exchange', name: 'Станция' }
+    };
+    const context = vm.createContext({ getLocationById: id => locationById[id],
+        document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.locationManager = { visitedLocations: new Set(Object.keys(locationById)),
+        activeCaseData: { id: 'case-001', locations: ['hotel_grand'], startLocation: 'hotel_grand' } };
+    assert.deepEqual(Array.from(ui._knownAlibiLocations(), loc => loc.id), ['hotel_grand', 'hotel_room_304']);
+    ui.locationManager.activeCaseData = { id: 'case-002', locations: ['bar_joe', 'telephone_exchange'], startLocation: 'bar_joe' };
+    assert.deepEqual(Array.from(ui._knownAlibiLocations(), loc => loc.id), ['bar_joe', 'telephone_exchange']);
+    ui.locationManager.activeCaseData = null;
+    assert.equal(ui._knownAlibiLocations().length, 0);
+});
