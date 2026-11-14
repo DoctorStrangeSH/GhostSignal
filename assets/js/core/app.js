@@ -145,7 +145,7 @@ class App {
         // Legacy snapshots had no case ID; associate them with the active saved case.
         this.investigationBoard.setCase(this.progress.activeCase, true);
         this.dialogueEngine.setInvestigationBoard(this.investigationBoard);
-        this.boardUI = new BoardUI('board-area'); this.boardUI.setBoard(this.investigationBoard); this.boardUI.setInventory(this.inventory); this.boardUI.setMemoryService(this.npcMemoryService); this.boardUI.setLocationManager(this.locationManager);
+        this.boardUI = new BoardUI('board-area'); this.boardUI.setBoard(this.investigationBoard); this.boardUI.setInventory(this.inventory); this.boardUI.setMemoryService(this.npcMemoryService); this.boardUI.setLocationManager(this.locationManager); this.boardUI.setRelationshipService(this.npcRelationshipService);
 
         this.notesManager = NotesManager.fromJSON(this.progress.notesData);
         this.notesUI = new NotesUI('notes-content'); this.notesUI.setNotesManager(this.notesManager);
