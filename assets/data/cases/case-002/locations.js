@@ -95,6 +95,19 @@ registerData('location', {
         defaultItems: ["mill_gate_notice"],
         unlockedByDefault: true
     },
+    night_diner: {
+        id: "night_diner",
+        name: "Закусочная «У последнего трамвая»",
+        type: "public",
+        description: "Небольшая круглосуточная закусочная на старой текстильной улице. Запотевшие окна, стойка из тёмного дерева и часы, которые давно отстают.",
+        hours: { open: 0, close: 24 },
+        icon: "☕",
+        mapPosition: { x: 31, y: 54 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["diner_owner"],
+        defaultItems: [],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
