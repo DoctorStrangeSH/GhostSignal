@@ -2365,3 +2365,50 @@ test("Lora's editorial choice waits for completed checks and never publishes aut
     result = "disputed";
     assert.equal(relations.getEditorialDecision("journalist", "lora-questions-joe-about-threat"), "withheld");
 });
+
+test("Joe independently withholds the family shelter location without blocking the case", () => {
+    const { engine, inventory, memory, context } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_refuses_family_location"), false);
+    engine.reset();
+
+    inventory.addInsight("joe_arranged_safe_lodging");
+    engine.startDialogue("dialogue-bartender-case2");
+    const request = engine.getAvailableAnswers().find(a => a.nextNode === "joe_refuses_family_location");
+    assert.equal(request?.isAvailable, true);
+    engine.selectAnswer(request.index);
+    assert.match(engine.currentNode.text, /не даёт мне права раскрывать их адрес/i);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false,
+        "Joe refusing an address cannot independently verify a completed move");
+    const returnToCase = engine.getAvailableAnswers().find(a => a.nextNode === "retell");
+    assert.equal(returnToCase?.isAvailable, true);
+
+    engine.reset();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_refuses_family_location"), false,
+        "a privacy refusal is not repeatedly offered once heard");
+    context.savedJoePrivacy = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedJoePrivacy, 'case-002')", context);
+    assert.ok(restored, "the refusal remains compatible with persisted NPC memory");
+});
+
+test("Thomas retains control of his mother's address even after an offer of help", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    inventory.addInsight("joe_arranged_safe_lodging");
+    engine.startDialogue("dialogue-waiter");
+    const request = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_keeps_family_location_private");
+    assert.equal(request?.isAvailable, true);
+    engine.selectAnswer(request.index);
+    assert.match(engine.currentNode.text, /Адрес я не назову/);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+    const testimony = engine.getAvailableAnswers().find(a => a.nextNode === "he_saw");
+    assert.equal(testimony?.isAvailable, true);
+    engine.selectAnswer(testimony.index);
+    assert.match(engine.currentNode.text, /Кейн|вечер|видел/i);
+    engine.reset();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_keeps_family_location_private"), false);
+
+    assert.equal(memory.getNPCValueAlignment("waiter", "witness_safety"), "unseen",
+        "refusing a privacy request must not impersonate a kept promise");
+});

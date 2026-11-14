@@ -214,7 +214,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "calm",
                         condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:joe_remembers_repeated_pressure",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Назовите мне адрес, где сейчас укрывается мать Томаса. Я веду дело.",
+                        nextNode: "joe_refuses_family_location",
+                        tone: "direct",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:joe_refuses_family_location",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_refuses_family_location: {
+                speaker: "npc",
+                text: "Нет, детектив. Я помог семье найти укрытие, но это не даёт мне права раскрывать их адрес даже вам. После прежней утечки я тем более не стану рисковать. Если вам нужно проверить безопасность, поговорите с Томасом напрямую: он сам решит, что может подтвердить. Мои показания о вечере в баре остаются в силе.",
+                mood: "guarded",
+                innerThought: "Джо защищает частную жизнь семьи независимо от доверия к детективу. Он не сообщает адрес и не утверждает, что переезд уже завершён.",
+                answers: [
+                    { text: "Вы правы. Попрошу Томаса лично подтвердить, что семья в безопасности.", nextNode: "greeting", tone: "calm", memoryImportance: 2, memoryTags: ["player_respected_family_privacy"] },
+                    { text: "Мне нужны только ваши показания о баре.", nextNode: "retell", tone: "calm" }
                 ]
             },
 
