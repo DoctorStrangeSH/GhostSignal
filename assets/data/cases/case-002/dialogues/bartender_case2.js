@@ -151,7 +151,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "Помните, как вы давили на меня в прошлый раз? Я не забыл.",
                         nextNode: "remembers_threat",
                         tone: "direct",
-                        condition: "long_term_memory:player_threatened"
+                        condition: "prior_case_memory:player_threatened"
                     },
                     {
                         text: "Похоже, мы так и не научились доверять друг другу.",
@@ -163,7 +163,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "В прошлый раз вы выслушали меня. Я это ценю.",
                         nextNode: "remembers_kindness",
                         tone: "reassuring",
-                        condition: "long_term_memory:player_reassured"
+                        condition: "prior_case_memory:player_reassured"
                     },
                     { text: "Вы знали, что Кейн купил цианид в аптеке?", nextNode: "about_kane", tone: "direct", condition: "hasInsight:kane_bought_cyanide" },
                     {
