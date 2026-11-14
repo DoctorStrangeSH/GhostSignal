@@ -1220,6 +1220,25 @@ test('Lora challenges an accusation only after its report reaches her and treats
     assert.match(engine.currentNode.text, /не могу подтвердить/);
 });
 
+test('Lora reports an independent interview without upgrading it to corroborated evidence', () => {
+    const { engine } = createDialogueHarness();
+    engine.startDialogue('dialogue-journalist');
+    assert.equal(engine.getAvailableAnswers().some(answer =>
+        answer.nextNode === 'lora_checked_accusation' && answer.isAvailable), false);
+    engine.setRelationshipService({
+        getInvestigationOutcome(npcId, ruleId) {
+            return npcId === 'journalist' && ruleId === 'lora-checks-thomas-accusation'
+                ? 'no_independent_evidence' : null;
+        }, toJSON() { return {}; }
+    });
+    engine.startDialogue('dialogue-journalist');
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === 'lora_checked_accusation');
+    assert.equal(check?.isAvailable, true);
+    engine.selectAnswer(check.index);
+    assert.match(engine.currentNode.text, /не делает меня очевидцем/);
+    assert.match(engine.currentNode.text, /без независимого подтверждения/);
+});
+
 test("Thomas names detective pressure as the cause of his later retraction", () => {
     const { engine, memory } = createDialogueHarness();
     memory.recordClaim("waiter", {
