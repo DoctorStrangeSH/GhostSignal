@@ -537,6 +537,28 @@ test("autonomous actions wait for a rumor personally received by the acting NPC"
     assert.equal(restored.toJSON().cases["case-relationship-test"].rules["rumor-driven-support"].occurrences, 1);
 });
 
+test('a late rumor cannot cause an immediate autonomous response before its own waiting period', () => {
+    const config = {
+        bonds: [{ id: 'a-b', fromNpcId: 'a', toNpcId: 'b', trust: 60, reciprocal: true }],
+        autonomousInteractions: [{ id: 'deliberate-reaction', relationshipId: 'a-b',
+            fromNpcId: 'a', toNpcId: 'b', interaction: 'support', channel: 'message',
+            initialDelayMinutes: 30, everyMinutes: 30, maxOccurrences: 1,
+            fromRumorId: 'late-lead', fromRumorAgeMinutesAtLeast: 30 }]
+    };
+    const { memory, relationships, advance } = createHarness({ caseData: { npcRelationships: config } });
+    assert.equal(advance(329).changed, 0);
+    memory.receiveSocialRumor('a', { id: 'late-lead', kind: 'detective_behavior', text: 'Позднее сообщение.' }, {
+        fromNpcId: 'witness', originalSourceNpcId: 'witness',
+        sourceEvent: { dialogueId: 'witness', nodeId: '1', answerText: 'Сведения.' },
+        receivedAtGameMinute: 809, recipientTrust: 80
+    });
+    assert.equal(advance(1).changed, 0);
+    assert.equal(relationships.hasCompletedInteraction('a', 'deliberate-reaction'), false);
+    assert.equal(advance(30).changed, 1);
+    assert.equal(relationships.hasCompletedInteraction('a', 'deliberate-reaction'), true);
+    assert.equal(advance(60).changed, 0);
+});
+
 test("rumor-driven actions can demand corroboration rather than treating gossip as fact", () => {
     const config = {
         bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],

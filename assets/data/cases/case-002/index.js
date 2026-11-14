@@ -203,6 +203,7 @@ const CASE_002 = {
                 channel: "in_person", requiresSameLocation: true,
                 initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
                 fromRumorId: "detective-threatened-thomas", fromRumorConfidenceAtLeast: 55,
+                fromRumorAgeMinutesAtLeast: 30,
                 fromPressureBelow: 80,
                 trustDelta: 3, reciprocalTrustDelta: 2, toCooperationDelta: 8,
                 summary: "Узнав об угрозах детектива, Джо поддержал Томаса и предложил ему помощь."
