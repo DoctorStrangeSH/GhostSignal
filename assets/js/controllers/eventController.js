@@ -270,15 +270,30 @@ class EventController {
             app._quickSave();
         });
 
-        on('case:failed', (data) => {
-            const caseId = data?.caseId || app.caseManager?.currentCase?.id || app.progress?.activeCase;
-            if (caseId) {
-                this._notifyPromiseChanges(app.npcMemoryService?.settlePromisesForCase(caseId, 'failed'));
-            }
-            app.ttsEngine?.playErrorSound();
+        on('case:failed', (data = {}) => {
+            const caseId = data.caseId || app.caseManager?.currentCase?.id || app.progress?.activeCase;
+            if (!caseId || app.progress?.activeCase !== caseId ||
+                app.caseManager?.caseState === 'failed') return;
+
+            // Finalize the run once. Otherwise reload exposes a dead Continue
+            // action and repeated events can double-count failure penalties.
+            if (app.caseManager) app.caseManager.caseState = 'failed';
+            this._notifyPromiseChanges(app.npcMemoryService?.settlePromisesForCase(caseId, 'failed'));
+            app.progress.activeCase = null;
+            app.progress.caseData = app.caseManager?.toJSON?.() || app.progress.caseData;
+            const failedCases = Array.isArray(app.progress.failedCases) ? app.progress.failedCases : [];
+            if (!failedCases.includes(caseId)) app.progress.failedCases = [...failedCases, caseId];
+
+            const caseData = app.caseManager?.currentCase || getCaseById(caseId) || { id: caseId, title: caseId };
+            app.progressTracker?.caseFailed(caseData);
             app.reputationSystem?.caseFailed(data);
-            app.progress.reputationData = app.reputationSystem?.toJSON();
-            app._saveProgress();
+            app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
+            app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
+            app.caseListUI?.setProgress(app.progress);
+            app._updateMainMenu?.();
+            document.getElementById('btn-continue')?.classList.add('hidden');
+            if (app._quickSave) app._quickSave();
+            else app._saveProgress?.();
         });
 
         on('weather:changed', (data) => {
