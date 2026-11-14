@@ -33,6 +33,13 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
                     {
+                        text: "Джо заметил неизвестного посетителя, который спрашивал о Томасе. Можете проверить?",
+                        nextNode: "lora_checks_unknown_visitor",
+                        tone: "calm",
+                        condition: "all:hasInsight:unknown_visitor_asked_about_thomas&not:hasInsight:unknown_visitor_unverified",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "После Джо вы попытались поговорить с Евой?",
                         nextNode: "lora_eva_followup_unverified",
                         tone: "cautious",
@@ -73,6 +80,16 @@ const DIALOGUE_JOURNALIST = {
                 ]
             },
 
+            lora_checks_unknown_visitor: {
+                speaker: "npc",
+                text: "Я проверила записи звонков редакции и спросила у двух сотрудников, бывавших в баре. Никто не может независимо установить, кто тот посетитель и зачем ему Томас. Джо видел человека, но связь с Кейном пока ничем не подтверждена. Адрес укрытия публиковать нельзя.",
+                mood: "focused",
+                innerThought: "Отсутствие независимых подтверждений не доказывает ни угрозу, ни её отсутствие.",
+                givesInsight: "unknown_visitor_unverified",
+                answers: [
+                    { text: "Оставим предупреждение открытым и будем собирать факты.", nextNode: "investigation", tone: "calm" }
+                ]
+            },
             lora_eva_followup_unverified: {
                 speaker: "npc",
                 text: "Да, связалась с Евой. Но её показаний недостаточно, чтобы независимо подтвердить или опровергнуть рассказ Томаса. Я не стану выдавать догадки за доказательства — даже если редактор требует материал к утру.",
