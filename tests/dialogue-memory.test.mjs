@@ -837,6 +837,33 @@ test('Kane answers an explicitly prepared route question without confessing or a
     assert.equal(engine.getAvailableAnswers().find(a => a.condition === condition)?.isAvailable, false);
 });
 
+test('Thomas answers the telephone record follow-up only after the document is found, once per case', () => {
+    const { engine, memory, inventory, context } = createDialogueHarness();
+    memory.recordClaim('waiter', { id: 'waiter-kane-at-poisoning', topic: 'kane-presence-during-poisoning',
+        value: 'saw-poisoning', summary: 'Томас видел Кейна у стола' });
+    assert.equal(engine.startDialogue('dialogue-waiter'), true);
+    assert.equal(engine.currentNode.id, 'testimony_given_opening');
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === 'telephone_record_scope'), false);
+    inventory.items.push('telephone_exchange_slip');
+    assert.equal(engine.startDialogue('dialogue-waiter'), true);
+    const followup = engine.getAvailableAnswers().find(a => a.nextNode === 'telephone_record_scope');
+    assert.equal(followup?.isAvailable, true);
+    assert.equal(engine.selectAnswer(followup.index).id, 'telephone_record_scope');
+    assert.match(engine.currentNode.text, /не знаю, кто сделал запрос/);
+    assert.equal(inventory.hasInsight('full_confession_kane'), false);
+    assert.equal(memory.hasVisitedNode('waiter', 'dialogue-waiter', 'telephone_record_scope'), true);
+    context.savedMemory = memory.toJSON();
+    const loaded = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    for (let i = 0; i < 110; i++) loaded.recordNodeVisited('waiter', 'dialogue-waiter', { id: 'follow-up-' + i });
+    assert.equal(loaded.hasVisitedNode('waiter', 'dialogue-waiter', 'telephone_record_scope'), true,
+        'asked status must outlive the bounded recent dialogue history');
+    engine.setMemoryService(loaded);
+    assert.equal(engine.startDialogue('dialogue-waiter'), true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === 'telephone_record_scope'), false);
+    loaded.setCase('case-001');
+    assert.equal(loaded.hasVisitedNode('waiter', 'dialogue-waiter', 'telephone_record_scope'), false);
+});
+
 test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
     const { engine, inventory, memory, context } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning");
