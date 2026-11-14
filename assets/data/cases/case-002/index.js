@@ -252,6 +252,17 @@ const CASE_002 = {
                 summary: "Получив от Миллса требование письменного запроса, Джо сам предупредил Томаса о задержке с официальной защитой. Никакая охрана ещё не предоставлена."
             },
             {
+                id: "thomas-decides-work-after-protection-delay", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "waiter", toNpcId: "bartender", interaction: "support",
+                witnessDecisionPolicy: "work_after_protection_delay",
+                channel: "message", initialDelayMinutes: 270, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "joe-informs-thomas-mills-requires-documents",
+                requiresReceivedActionAgeMinutes: 30,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "После задержки официальной защиты Томас самостоятельно решил, как поступить с работой и подготовкой документов; это не отменяет прежних показаний."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
