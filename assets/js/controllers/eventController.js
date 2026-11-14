@@ -47,8 +47,17 @@ class EventController {
         on('case:load', (id) => app.loadCase(id));
 
         on('case:started', (data) => {
+            const caseId = data.caseData.id;
+            // This event marks a NEW playthrough, never a resume. Keep people's
+            // long-term profiles but discard run-specific claims and rumors.
+            app.npcMemoryService?.resetCase(caseId);
+            app.npcSocialNetwork?.resetCase(caseId);
+            app.npcRelationshipService?.resetCase(caseId);
+            // setCase is intentionally a no-op for an unchanged ID; reset the
+            // board first so replaying the same investigation starts blank.
+            if (app.investigationBoard?.caseId === caseId) app.investigationBoard.setCase(null);
             app.progress.activeCase = app.caseManager.currentCase?.id;
-            app.investigationBoard?.setCase(data.caseData.id);
+            app.investigationBoard?.setCase(caseId);
             app.progress.boardData = app.investigationBoard?.toJSON();
             app.boardUI?.render();
             app.npcMemoryService?.setCase(data.caseData.id);
