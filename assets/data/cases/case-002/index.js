@@ -452,8 +452,8 @@ const CASE_002 = {
                 fromNpcId: "bartender", toNpcId: "journalist", interaction: "support",
                 channel: "message", initialDelayMinutes: 60, everyMinutes: 360,
                 maxOccurrences: 1,
-                requiresReceivedActionId: "joe-reorganizes-bar-after-extended-leave",
-                requiresReceivedActionAgeMinutes: 60,
+                requiresActionId: "joe-reorganizes-bar-after-extended-leave",
+                requiresActionAgeMinutes: 60,
                 trustDelta: 0, reciprocalTrustDelta: 0,
                 summary: "Джо сам сообщил Лоре, что из-за продлённого отсутствия Томаса ему пришлось перестроить работу бара. Он не раскрыл личных подробностей Томаса."
             },
