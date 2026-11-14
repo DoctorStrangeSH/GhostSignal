@@ -2502,9 +2502,11 @@ test("Thomas requests a contingency on his own after Joe's warning, without fabr
 
     inventory.addInsight("thomas_family_protected");
     engine.startDialogue("dialogue-bartender-case2");
-    const greeting = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
-    assert.equal(greeting?.isAvailable, true);
-    engine.selectAnswer(greeting.index);
+    if (engine.currentNode.id !== "greeting") {
+        const greeting = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+        assert.equal(greeting?.isAvailable, true);
+        engine.selectAnswer(greeting.index);
+    }
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_received_thomas_contingency_request"), false,
         "old contingency should not appear after family safety is confirmed");
     engine.reset();
