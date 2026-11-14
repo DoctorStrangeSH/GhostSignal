@@ -386,6 +386,11 @@ class DialogueEngine {
         if (node.givesInsight) {
             this.inventory?.addInsight(node.givesInsight);
         }
+        if (node.verifiedRestitution && this.currentDialogue?.npcId &&
+            this.inventory?.hasInsight?.(node.verifiedRestitution.requiresInsight)) {
+            if (this.memoryService?.recordVerifiedRestitution(this.currentDialogue.npcId,
+                node.verifiedRestitution.id, node.verifiedRestitution.accusationId)) this._notifyMemoryChanged();
+        }
         
         // Спавн предмета (если есть)
         if (node.spawnsItem) {
