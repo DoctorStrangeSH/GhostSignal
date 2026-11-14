@@ -405,3 +405,60 @@ test("private deductions cannot be injected into the rumor network", () => {
     assert.equal(network.getPendingDeliveries().length, 0);
     assert.equal(network.publishPublicAccusation("ex_wife", "unrelated-id").published, false);
 });
+
+test("verified correction propagates only after Anna receives it, with separate sourced timeline", () => {
+    const { memory, network, advance } = createHarness();
+    const accused = "ex_wife";
+    const accusationId = "public-final-accusation:case-002:ex_wife";
+    const restitutionId = "anna-public-accusation-repaired-with-kane-confession";
+    const correctionId = "verified-restitution-case-002-ex_wife";
+    const sourceEvent = { dialogueId: "dialogue-ex-wife", nodeId: "anna_public_restitution" };
+
+    assert.equal(network.publishVerifiedRestitution(accused, restitutionId, accusationId, sourceEvent).published, false);
+    memory.recordAccusation(accused, { id: accusationId, text: "Детектив обвинил Анну" });
+    memory.resolveAccusation(accused, accusationId, "false");
+    assert.equal(network.publishVerifiedRestitution(accused, restitutionId, accusationId, sourceEvent).published, false,
+        "apology and accusation resolution without restitution cannot create a correction rumor");
+
+    memory.recordVerifiedRestitution(accused, restitutionId, accusationId);
+    assert.equal(network.publishVerifiedRestitution(accused, restitutionId, accusationId, sourceEvent).published, false,
+        "proof held in inventory is not a witnessed conversation");
+    memory.recordNodeVisited(accused, sourceEvent.dialogueId, { id: sourceEvent.nodeId, speaker: "npc" });
+
+    const result = network.publishVerifiedRestitution(accused, restitutionId, accusationId, sourceEvent);
+    assert.equal(result.published, true);
+    assert.equal(result.queued, 1);
+    assert.equal(network.publishVerifiedRestitution(accused, restitutionId, accusationId, sourceEvent).published, false);
+    assert.equal(memory.hasRumor("woman_in_red", correctionId), false);
+    advance(10);
+    const eva = memory.getRumors("woman_in_red").find(item => item.id === correctionId);
+    assert.ok(eva);
+    assert.equal(eva.originalSourceNpcId, accused);
+    assert.equal(eva.sourceDialogueId, sourceEvent.dialogueId);
+    assert.equal(eva.sourceNodeId, sourceEvent.nodeId);
+    assert.equal(eva.reportedBy, accused);
+    assert.equal(memory.hasRumor("journalist", correctionId), false);
+
+    advance(20);
+    const lora = memory.getRumors("journalist").find(item => item.id === correctionId);
+    assert.ok(lora);
+    assert.equal(lora.reportedBy, "woman_in_red");
+    assert.equal(lora.originalSourceNpcId, accused);
+    assert.equal(lora.transmissionPath.join(">"), "ex_wife>woman_in_red>journalist");
+    assert.match(lora.text, /проверить независимо/);
+});
+
+test("a correction rumor rejects mismatched records and cannot be fabricated for an innocent case", () => {
+    const { memory, network } = createHarness();
+    const accusationId = "public-final-accusation:case-002:ex_wife";
+    const restitutionId = "anna-public-accusation-repaired-with-kane-confession";
+    const source = { dialogueId: "dialogue-ex-wife", nodeId: "anna_public_restitution" };
+    memory.recordAccusation("ex_wife", { id: accusationId, text: "Ложное обвинение" });
+    memory.resolveAccusation("ex_wife", accusationId, "false");
+    memory.recordNodeVisited("ex_wife", source.dialogueId, { id: source.nodeId });
+    assert.equal(network.publishVerifiedRestitution("ex_wife", restitutionId, accusationId, source).published, false);
+    assert.equal(network.publishVerifiedRestitution("woman_in_red", restitutionId, accusationId, source).published, false);
+    assert.equal(network.publishVerifiedRestitution("ex_wife", restitutionId, accusationId,
+        { dialogueId: "other", nodeId: source.nodeId }).published, false);
+    assert.equal(network.getPendingDeliveries().length, 0);
+});
