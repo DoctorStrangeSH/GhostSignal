@@ -390,7 +390,15 @@ class DialogueEngine {
             this.inventory?.hasInsight?.(node.verifiedRestitution.requiresInsight)) {
             if (this.memoryService?.recordVerifiedRestitution(this.currentDialogue.npcId,
                 node.verifiedRestitution.id, node.verifiedRestitution.accusationId,
-                node.verifiedRestitution.priorMemoryTag)) this._notifyMemoryChanged();
+                node.verifiedRestitution.priorMemoryTag)) {
+                const published = this.socialNetwork?.publishVerifiedRestitution(
+                    this.currentDialogue.npcId, node.verifiedRestitution.id,
+                    node.verifiedRestitution.accusationId,
+                    { dialogueId: this.currentDialogue.id, nodeId: node.id }
+                );
+                if (published?.published) events.emit('npc:social_network_changed', { reason: 'verified_restitution' });
+                this._notifyMemoryChanged();
+            }
         }
         
         // Спавн предмета (если есть)
