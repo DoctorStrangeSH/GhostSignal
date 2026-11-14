@@ -109,6 +109,31 @@ class InvestigationBoard {
         return inventoryEvidence.filter(id => !this.evidenceOnBoard.includes(id));
     }
 
+    // Only discovered evidence contributes to the chronology. Documents may
+    // describe different devices or events, even when their times overlap.
+    getEvidenceChronology(discoveredIds = []) {
+        return [...new Set(Array.isArray(discoveredIds) ? discoveredIds : [])].flatMap(evidenceId => {
+            const object = getObjectById(evidenceId);
+            if (!object?.isEvidence || !Array.isArray(object.timelineFacts)) return [];
+            return object.timelineFacts.filter(fact => Number.isInteger(fact.minute) && fact.minute >= 0 && fact.minute < 1440 &&
+                typeof fact.id === 'string' && typeof fact.label === 'string' && typeof fact.scope === 'string')
+                .map(fact => ({ evidenceId, id: fact.id, minute: fact.minute, label: fact.label,
+                    scope: fact.scope, certainty: fact.certainty || 'unknown', caveat: fact.caveat || '' }));
+        }).sort((a, b) => a.minute - b.minute || a.id.localeCompare(b.id));
+    }
+
+    compareChronologyFacts(firstId, secondId, discoveredIds = []) {
+        const facts = this.getEvidenceChronology(discoveredIds);
+        const first = facts.find(f => f.id === firstId);
+        const second = facts.find(f => f.id === secondId);
+        if (!first || !second || first.id === second.id) return null;
+        return { first, second, minutesApart: Math.abs(first.minute - second.minute),
+            sameScope: first.scope === second.scope,
+            warning: first.scope === second.scope
+                ? 'Записи относятся к одному объекту, но сами по себе не устанавливают непрерывное состояние между отметками.'
+                : 'Записи относятся к разным объектам. Совпадение времени не устанавливает их связь, личность участника или противоречие.' };
+    }
+
     // Проверить, сделаны ли правильные выводы
     checkConclusions() {
         // Проверяем ключевые пары
