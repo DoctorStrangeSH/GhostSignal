@@ -75,7 +75,7 @@ const DIALOGUE_WOMAN_IN_RED = {
                 speaker: "npc",
                 text: "Да. Он сел рядом с Анной. Они не разговаривали. Но я видела, как он смотрел на пузырёк. А потом Анна отвернулась — и пузырёк исчез.",
                 mood: "suspicious",
-                innerThought: "Кейн взял пузырёк. Это подтверждение!",
+                innerThought: "Кейн мог взять пузырёк, но Ева не видела сам момент. Это версия для проверки.",
                 givesInsight: "rival_took_vial_confirmed",
                 answers: [
                     { text: "Вы видели, как он взял его?", nextNode: "saw_him" }

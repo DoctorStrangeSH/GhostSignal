@@ -61,12 +61,24 @@ test('correct suspect, motive and weapon without corroboration do not close case
 });
 
 test('independent corroboration can come from alternative routes; the correct case two verdict solves', () => {
-    for (const insight of ['kane_bought_cyanide', 'rival_took_vial_confirmed', 'full_poison_path']) {
+    for (const insight of ['hard_evidence_kane', 'full_confession_kane']) {
         const h = createHarness(['prescription_copy', 'bar_photo'], [insight]);
         const verdict = h.screen._checkDeduction(h.second, 'business_rival', 'revenge', 'poison');
         assert.equal(verdict.proof.sufficient, true);
         h.screen._showDeductionResult(verdict, { hide() {} }, h.second);
         assert.equal(h.emitted.filter(event => event.name === 'case:solved').length, 1);
+    }
+});
+
+test('a pharmacy note and uncertain witness inference are not independent corroboration', () => {
+    for (const insight of ['kane_bought_cyanide', 'rival_took_vial_confirmed', 'full_poison_path']) {
+        const h = createHarness(['prescription_copy', 'bar_photo'], [insight]);
+        const verdict = h.screen._checkDeduction(h.second, 'business_rival', 'revenge', 'poison');
+        assert.equal(verdict.allCorrect, true);
+        assert.equal(verdict.proof.sufficient, false);
+        assert.equal(verdict.proof.missingCorroboration, true);
+        h.screen._showDeductionResult(verdict, { hide() {} }, h.second);
+        assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
     }
 });
 
