@@ -383,3 +383,8 @@
 .hypothesis-source-review strong { color: var(--accent-amber); font-size: 9px; letter-spacing: 1px; }
 .hypothesis-source-review p, .hypothesis-source-review li, .hypothesis-source-review small { margin: 6px 0; color: var(--text-secondary); font-size: 10px; line-height: 1.45; }
 .hypothesis-source-review ul { padding-left: 17px; margin-bottom: 0; }
+
+.hypothesis-overlap-review { margin: 10px 0; padding: 9px; border-left: 3px solid #7b9db3; background: rgba(123,157,179,.075); overflow-wrap: anywhere; }
+.hypothesis-overlap-review strong { color: #a9c7d9; font-size: 9px; letter-spacing: .7px; }
+.hypothesis-overlap-review p, .hypothesis-overlap-review li { color: var(--text-secondary); font-size: 10px; line-height: 1.5; margin: 6px 0; }
+.hypothesis-overlap-review ul { margin-bottom: 0; padding-left: 17px; }
