@@ -108,6 +108,19 @@ registerData('location', {
         defaultItems: [],
         unlockedByDefault: true
     },
+    textile_phone_booth: {
+        id: "textile_phone_booth",
+        name: "Телефонная будка на текстильной улице",
+        type: "public",
+        description: "Узкая уличная будка с потёртой трубкой и табличкой обслуживающей линии. Внутри пахнет мокрой шерстью и машинным маслом.",
+        hours: { open: 0, close: 23 },
+        icon: "☎️",
+        mapPosition: { x: 35, y: 50 },
+        scenes: { day: null, night: null },
+        npcsPresent: [],
+        defaultItems: ["public_telephone_booth"],
+        unlockedByDefault: true
+    },
     telephone_exchange: {
         id: "telephone_exchange",
         name: "Городская телефонная станция",
@@ -115,10 +128,10 @@ registerData('location', {
         description: "Небольшая телефонная станция с ручным коммутатором, журналами неисправностей и архивом служебных карточек.",
         hours: { open: 7, close: 23 },
         icon: "☎️",
-        mapPosition: { x: 39, y: 43 },
+        mapPosition: { x: 43, y: 43 },
         scenes: { day: null, night: null },
         npcsPresent: ["telephone_operator"],
-        defaultItems: ["public_telephone_booth"],
+        defaultItems: [],
         unlockedByDefault: true
     },
     bank: {
