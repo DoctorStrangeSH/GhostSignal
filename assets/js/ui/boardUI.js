@@ -238,7 +238,8 @@ class BoardUI {
         const warnings = [
             ...(this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || []),
             ...(this.board?.reviewAlibiLocationHours(knownLocations) || []),
-            ...(this.board?.reviewAlibiAccessRestrictions(knownLocations) || [])
+            ...(this.board?.reviewAlibiAccessRestrictions(knownLocations) || []),
+            ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
         ];
         return `<section class="testimony-journal" aria-labelledby="alibi-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
