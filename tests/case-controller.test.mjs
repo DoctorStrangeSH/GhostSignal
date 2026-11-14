@@ -134,3 +134,22 @@ test("CaseController safely refuses to run before app progress and CaseManager a
     assert.equal(controller.loadCase("case-001"), false);
     assert.deepEqual(calls, []);
 });
+
+test("Continue is available only for a matching active case", () => {
+    const { controller, app } = createHarness();
+    app.progress.activeCase = "case-001";
+    app.caseManager.currentCase = { id: "case-001" };
+    app.caseManager.caseState = "active";
+    assert.equal(controller.canResume(), true);
+    assert.equal(controller.canResume("case-999"), false);
+
+    for (const state of ["failed", "solved", null]) {
+        app.caseManager.caseState = state;
+        assert.equal(controller.canResume(), false, "closed case: " + state);
+    }
+    app.caseManager.caseState = "active";
+    app.caseManager.currentCase = { id: "case-002" };
+    assert.equal(controller.canResume(), false, "different case cannot be resumed");
+    app.progress.activeCase = null;
+    assert.equal(controller.canResume(), false, "missing active case cannot be resumed");
+});
