@@ -141,7 +141,7 @@ class DeductionScreen {
 
         feedback.classList.remove('hidden');
 
-        if (result.allCorrect && !result.proof.sufficient) {
+        if (!result.proof.sufficient) {
             const requirements = caseData.proofRequirements || {};
             const missingLabels = result.proof.missingItems.map(
                 id => requirements.itemLabels?.[id] || 'Необходимая улика'
@@ -153,7 +153,7 @@ class DeductionScreen {
             feedback.innerHTML = `
                 <div class="feedback feedback-error">
                     <h4>⚖️ ВЕРСИЯ ЕСТЬ — ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО</h4>
-                    <p>Вы правильно связали подозреваемого, мотив и орудие. Однако эта версия пока не выдержит проверки.</p>
+                    <p>Пока нельзя оценить обвинение: сначала соберите необходимую доказательную базу.</p>
                     <p style="margin-top: 8px;">Осталось подтвердить:</p>
                     <ul>${missingList}</ul>
                 </div>
@@ -176,11 +176,8 @@ class DeductionScreen {
         } else {
             feedback.innerHTML = `
                 <div class="feedback feedback-error">
-                    <h4>❌ НЕ ВСЁ ВЕРНО</h4>
-                    <p>Подозреваемый: ${result.suspectCorrect ? '✅' : '❌'}</p>
-                    <p>Мотив: ${result.motiveCorrect ? '✅' : '❌'}</p>
-                    <p>Орудие: ${result.weaponCorrect ? '✅' : '❌'}</p>
-                    <p style="margin-top: 8px;">Подумайте ещё. Проверьте версии и сопоставьте найденные материалы.</p>
+                    <h4>❌ ОБВИНЕНИЕ НЕ ПОДТВЕРЖДЕНО</h4>
+                    <p>Ваша реконструкция событий содержит ошибку. Сопоставьте мотив, обстоятельства и независимые доказательства, затем попробуйте снова.</p>
                 </div>
             `;
         }
