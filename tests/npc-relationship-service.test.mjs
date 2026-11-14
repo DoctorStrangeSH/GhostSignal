@@ -1016,3 +1016,64 @@ test("case two gives Joe a delayed private warning based only on his own repeate
     assert.equal(relationships.hasCompletedInteraction("bartender", id), true);
     assert.equal(relationships.hasReceivedInteraction("waiter", id), true);
 });
+
+test("a witness independently chooses escorted interview after personally repeated pressure", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1 },
+            { id: "witness-reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 60,
+                interviewDecisionPolicy: "after_reputation_warning" }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    memory.setCase("prior-investigation");
+    memory.recordAnswerSelected("b", "dialogue-b", "prior-threat", { text: "Отвечай.", tone: "threatening" });
+    memory.setCase(caseData.id);
+    memory.recordAnswerSelected("b", "dialogue-b", "current-threat", { text: "Отвечай.", tone: "threatening" });
+    advance(30);
+    assert.equal(relationships.hasReceivedInteraction("b", "warning"), true);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), null);
+    advance(59);
+    assert.equal(relationships.hasCompletedInteraction("b", "witness-reply"), false);
+    advance(30);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "request_joe_present");
+    memory.getMemory("b").pressure = 0;
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "request_joe_present",
+        "later changes cannot rewrite an already sent decision");
+    context.savedInterview = relationships.toJSON();
+    context.savedInterviewMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedInterview, savedInterviewMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.getWitnessInterviewDecision("b", "witness-reply"), "request_joe_present");
+});
+
+test("receiving a warning does not force mediation when a witness has not personally been pressured", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, maxOccurrences: 1 },
+            { id: "witness-reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 30,
+                interviewDecisionPolicy: "after_reputation_warning" }
+        ]
+    };
+    const { relationships, advance } = createHarness({ caseData: { npcRelationships: config } });
+    advance(30);
+    advance(30);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
+    assert.equal(relationships.getWitnessInterviewDecision("a", "witness-reply"), null,
+        "only the actual witness owns the decision");
+});
