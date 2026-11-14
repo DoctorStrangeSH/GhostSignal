@@ -258,7 +258,11 @@ class BoardUI {
             <ol>${claims.map(c => `<li><strong>${this._escapeHTML(c.subject)}</strong>: ${fmt(c.startMinute)}–${fmt(c.endMinute)} · ${this._escapeHTML(c.location)}
                 (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)}${c.locationId ? ' · привязано к посещённой локации' : ''})
                 <button class="terminal-btn btn-sm alibi-remove" data-id="${this._escapeHTML(c.id)}" type="button" aria-label="Удалить версию">✕</button></li>`).join('') || '<li>Пока нет версий местонахождения.</li>'}</ol>
-            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}</li>`).join('')}</ul></div>` : ''}
+            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}${
+                w.status === 'route_time_tight' && this.board?.caseId === 'case-002' &&
+                ['кейн', 'виктор кейн'].includes(w.subject.trim().toLocaleLowerCase()) &&
+                !this.board.hasPreparedRouteQuestion('business_rival')
+                    ? ` <button type="button" class="terminal-btn btn-sm route-question-prepare" data-claim-a="${this._escapeHTML(w.ids[0])}" data-claim-b="${this._escapeHTML(w.ids[1])}">ПОДГОТОВИТЬ ВОПРОС КЕЙНУ</button>` : ''}</li>`).join('')}</ul></div>` : ''}
         </section>`;
     }
 
@@ -281,6 +285,12 @@ class BoardUI {
         });
         this.container.querySelectorAll('.alibi-remove').forEach(button => button.addEventListener('click', () =>
             this.board?.removeAlibiClaim(button.dataset.id)));
+        this.container.querySelectorAll('.route-question-prepare').forEach(button => button.addEventListener('click', () => {
+            const finding = this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes,
+                this._knownAlibiLocations()).find(w => w.ids[0] === button.dataset.claimA && w.ids[1] === button.dataset.claimB);
+            if (finding && this.board.prepareRouteQuestion(finding, 'business_rival'))
+                events.emit('notification:show', { message: 'Вопрос о маршруте подготовлен. Вернитесь к Кейну для повторного допроса.', type: 'info', duration: 5000 });
+        }));
     }
 
     _renderHypotheses() {
