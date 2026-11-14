@@ -602,6 +602,11 @@ const CASE_002 = {
     proofRequirements: {
         requiredItems: ["prescription_copy", "bar_photo"],
         anyInsights: ["hard_evidence_kane", "full_confession_kane"],
+        itemLabels: {
+            prescription_copy: "Копия аптечной записи",
+            bar_photo: "Фотография из бара"
+        },
+        corroborationLabel: "Материалы Лоры или признание Кейна",
         hint: "Версия о Кейне логична, но для предъявления нужны аптечная запись, фотография из бара и независимые материалы Лоры или признание Кейна. Показание Евы о возможной краже само по себе не считается доказательством. Продолжайте расследование."
     },
 
