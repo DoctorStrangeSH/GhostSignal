@@ -10,6 +10,17 @@ class NPCMemoryService {
         this.currentCaseId = currentCaseId || snapshot?.currentCaseId || null;
         this.cases = this._clone(snapshot?.cases || {});
         this.people = this._clone(snapshot?.people || {});
+        // Run the targeted migration before any incoming event can resolve an old promise.
+        const legacyPromises = this.cases?.['case-002']?.waiter?.promises;
+        if (Array.isArray(legacyPromises)) {
+            for (const promise of legacyPromises) {
+                if (promise?.id === 'thomas-family-protection' && promise.status === 'pending' &&
+                    promise.fulfillment?.type === 'insight_gained' &&
+                    promise.fulfillment.insightId === 'full_confession_kane') {
+                    promise.fulfillment.insightId = 'thomas_family_protected';
+                }
+            }
+        }
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
     }
 
