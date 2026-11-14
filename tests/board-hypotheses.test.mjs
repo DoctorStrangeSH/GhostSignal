@@ -192,3 +192,24 @@ test('alibi reconstructions flag overlapping locations without deciding whether 
     assert.equal(restored.alibiClaims.length, 0);
     assert.equal(restored.nextAlibiId, 1);
 });
+
+test('alibi review checks the existing minimum travel cost without inventing geographic routes', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const context = { statements: [{ id: 'witness', status: 'active' }], evidenceIds: ['ticket'] };
+    const first = board.addAlibiClaim({ subject: 'Кейн', location: 'Бар', startMinute: 1320, endMinute: 1325,
+        precision: 'exact', kind: 'statement', sourceId: 'witness' }, context);
+    const second = board.addAlibiClaim({ subject: 'Кейн', location: 'Телефонная станция', startMinute: 1335, endMinute: 1340,
+        precision: 'exact', kind: 'evidence', sourceId: 'ticket' }, context);
+    assert.ok(first && second);
+    assert.deepEqual(board.reviewAlibiClaims(), []);
+    const [finding] = board.reviewAlibiClaims(20);
+    assert.equal(finding.status, 'travel_time_tight');
+    assert.equal(finding.gapMinutes, 10);
+    assert.equal(finding.minimumTravelMinutes, 20);
+    assert.match(finding.reason, /обычный переход в игре занимает 20 мин/);
+    assert.equal('route' in finding, false);
+    assert.equal('distance' in finding, false);
+    const enoughTime = board.reviewAlibiClaims(5);
+    assert.deepEqual(enoughTime, []);
+});
