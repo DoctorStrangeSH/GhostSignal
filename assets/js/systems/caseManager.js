@@ -1,3 +1,22 @@
+// A correct theory is not the same as a supported accusation. Cases without
+// proofRequirements retain their existing rules.
+function assessAccusationEvidence(caseData, inventory) {
+    const requirements = caseData?.proofRequirements;
+    if (!requirements) return { sufficient: true, missingItems: [], missingCorroboration: false };
+
+    const missingItems = (requirements.requiredItems || [])
+        .filter(itemId => !inventory?.hasItem?.(itemId));
+    const alternatives = requirements.anyInsights || [];
+    const missingCorroboration = alternatives.length > 0 &&
+        !alternatives.some(insightId => inventory?.hasInsight?.(insightId));
+
+    return {
+        sufficient: missingItems.length === 0 && !missingCorroboration,
+        missingItems,
+        missingCorroboration
+    };
+}
+
 class CaseManager {
     constructor(gameTime, locationManager, inventory) {
         this.gameTime = gameTime;
@@ -147,10 +166,23 @@ class CaseManager {
             return false;
         });
         
-        const feedback = isCorrect ? 
-            this.currentCase.finalQuestion.feedbackCorrect : 
+        const proof = assessAccusationEvidence(this.currentCase, this.inventory);
+        if (isCorrect && !proof.sufficient) {
+            return {
+                isCorrect: false,
+                theoryCorrect: true,
+                insufficientEvidence: true,
+                proof,
+                title: '⚖️ ВЕРСИЯ НЕ ДОКАЗАНА',
+                text: this.currentCase.proofRequirements.hint ||
+                    'Вы выбрали правдоподобную версию, но для обвинения нужны независимые подтверждения.'
+            };
+        }
+
+        const feedback = isCorrect ?
+            this.currentCase.finalQuestion.feedbackCorrect :
             this.currentCase.finalQuestion.feedbackIncorrect;
-        
+
         if (isCorrect) {
             this.caseState = 'solved';
             events.emit('case:solved', { 
