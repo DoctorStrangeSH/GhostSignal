@@ -742,3 +742,32 @@ test("NPCMemoryService prepares and records a contradiction confrontation exactl
     assert.equal(restored.prepareConfrontation("waiter-at-bar", "kane-left-early", "business_rival").reason, "already_confronted");
     assert.equal(restored.getMemory("business_rival").dialogueHistory.some(entry => entry.type === "contradiction_presented"), true);
 });
+
+
+test("Repeated false accusations are counted across cases, not repeated claims within one case", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-001");
+    for (const id of ["wrong-one", "wrong-two"]) {
+        memory.recordAccusation("ex_wife", { id, text: "Обвинение без доказательств." });
+        assert.equal(memory.resolveAccusation("ex_wife", id, "false").resolved, true);
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("ex_wife").falseAccusationCases, 1);
+    assert.equal(memory.getLongTermBehaviorPattern("ex_wife").repeatedFalseAccusations, false);
+
+    memory.setCase("case-002");
+    memory.recordAccusation("ex_wife", { id: "wrong-three", text: "Новое публичное обвинение." });
+    memory.resolveAccusation("ex_wife", "wrong-three", "false");
+    assert.equal(memory.getLongTermBehaviorPattern("ex_wife").falseAccusationCases, 2);
+    assert.equal(memory.getLongTermBehaviorPattern("ex_wife").repeatedFalseAccusations, true);
+    const before = memory.getMemory("ex_wife");
+    const longTermTrust = memory.getLongTermProfile("ex_wife").trust;
+    assert.equal(memory.recordVerifiedRestitution("ex_wife", "repair", "wrong-three"), true);
+    const after = memory.getMemory("ex_wife");
+    assert.equal(after.trust - before.trust, 1);
+    assert.equal(after.cooperation - before.cooperation, 2);
+    assert.equal(memory.getLongTermProfile("ex_wife").trust, longTermTrust);
+    assert.equal(memory.recordVerifiedRestitution("ex_wife", "repair", "wrong-three"), false);
+
+    const restored = NPCMemoryService.fromJSON(JSON.parse(JSON.stringify(memory.toJSON())), "case-002");
+    assert.equal(restored.getLongTermBehaviorPattern("ex_wife").repeatedFalseAccusations, true);
+});
