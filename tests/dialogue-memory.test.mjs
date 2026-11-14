@@ -832,6 +832,26 @@ test("Kane's procedural objection is discussed only after his autonomous respons
     assert.match(engine.currentNode.text, /возражения в протокол/i);
 });
 
+test('Joe hears Lora’s cautious conclusion only after her independent follow-up message', () => {
+    const { engine } = createDialogueHarness();
+    let received = false;
+    engine.setRelationshipService({
+        hasReceivedInteraction(npcId, ruleId) {
+            return received && npcId === 'bartender' && ruleId === 'lora-updates-joe-after-thomas-check';
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue('dialogue-bartender-case2');
+    const condition = 'npc_action_received:lora-updates-joe-after-thomas-check';
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.condition === condition), false);
+    received = true;
+    const answer = engine.getAvailableAnswers().find(item => item.condition === condition);
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, 'joe_lora_thomas_check_update');
+    assert.match(engine.currentNode.text, /независимого подтверждения обвинению пока нет/);
+    assert.doesNotMatch(engine.currentNode.text, /доказано|установлено, что.*лож/i);
+});
+
 test('Kane answers an explicitly prepared route question without confessing or adding an insight', () => {
     const { engine, inventory } = createDialogueHarness();
     let prepared = false;
