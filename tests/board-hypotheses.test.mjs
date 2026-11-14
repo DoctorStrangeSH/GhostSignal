@@ -507,3 +507,23 @@ test('checklist keeps Kane and Thomas leads separate and never reveals the telep
     board.setCase('case-001');
     assert.equal(board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'], statements }).nextActions.length, 0);
 });
+
+test('Lora autonomous verification appears only after the detective learns the report', () => {
+    const { create } = boardRuntime();
+    const board = create();
+    board.setCase('case-002');
+    assert.equal(board.getInvestigationChecklist({ loraVerificationOutcome: 'no_independent_evidence' }).nextActions.length, 0,
+        'an off-screen investigation must not leak knowledge to the player');
+    const pending = board.getInvestigationChecklist({ loraReportKnown: true });
+    assert.equal(pending.nextActions[0].status, 'pending');
+    const ready = board.getInvestigationChecklist({ loraReportKnown: true,
+        loraVerificationOutcome: 'no_independent_evidence' });
+    assert.equal(ready.nextActions[0].status, 'available');
+    const read = board.getInvestigationChecklist({ loraReportKnown: true,
+        loraVerificationOutcome: 'no_independent_evidence', loraVerificationDiscussed: true });
+    assert.equal(read.nextActions[0].status, 'checked');
+    assert.match(read.nextActions[0].text, /не независимое подтверждение/);
+    board.setCase('case-001');
+    assert.equal(board.getInvestigationChecklist({ loraReportKnown: true,
+        loraVerificationOutcome: 'no_independent_evidence' }).nextActions.length, 0);
+});
