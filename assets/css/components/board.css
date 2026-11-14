@@ -238,3 +238,18 @@
     .testimony-entry-heading { flex-direction: column; gap: 3px; }
     .testimony-entry-heading span { text-align: left; }
 }
+
+/* Player-authored hypotheses, kept distinct from verified deductions. */
+.hypothesis-journal { border-color: rgba(212, 160, 23, 0.32); }
+.hypothesis-help { color: var(--text-dim); font-size: 11px; line-height: 1.5; margin: 10px 0; }
+.hypothesis-form { display: grid; gap: 7px; margin: 12px 0; }
+.hypothesis-form label { color: var(--text-secondary); font-size: 10px; }
+.hypothesis-form .terminal-input { width: 100%; min-width: 0; font-size: 11px; }
+.hypothesis-form textarea { resize: vertical; }
+.hypothesis-entry { margin-top: 9px; overflow-wrap: anywhere; }
+.hypothesis-entry .testimony-entry-heading strong { color: var(--text-primary); font-size: 12px; font-family: var(--font-serif); }
+.hypothesis-links { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 5px; }
+.hypothesis-links li { display: flex; align-items: center; justify-content: space-between; gap: 7px; font-size: 10px; color: var(--text-secondary); border-bottom: 1px solid rgba(212,160,23,.09); padding: 4px 0; }
+.hypothesis-entry details { margin-top: 10px; color: var(--text-dim); font-size: 10px; }
+.hypothesis-entry details ol { padding-left: 18px; margin: 6px 0; line-height: 1.7; }
+.hypothesis-entry > .terminal-btn { margin: 4px 6px 4px 0; }
