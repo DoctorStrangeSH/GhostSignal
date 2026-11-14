@@ -243,6 +243,7 @@ class BoardUI {
                                 ${notices.length ? '<ul>' + [...new Set(notices)].map(note => '<li>' + this._escapeHTML(note) + '</li>').join('') + '</ul>' : '<small>Совпадение источников пока не обнаружено. Это не доказательство независимости.</small>'}
                             </div>`;
                         })()}
+                        ${this._renderSourceInquiries(h, statements, evidenceIds)}
                         ${h.status === 'open' ? `
                             <form class="hypothesis-link-form hypothesis-form" data-id="${this._escapeHTML(h.id)}">
                                 <select class="terminal-input hypothesis-source" aria-label="Источник"><option value="">Выберите улику или показание</option>${sourceOptions}<option value="assumption:">Собственное допущение</option></select>
@@ -261,6 +262,27 @@ class BoardUI {
     }
 
     _bindHypothesisEvents() {
+        this.container.querySelectorAll('.inquiry-start').forEach(button => button.addEventListener('click', () => {
+            const statements = this.memoryService?.getStatements?.() || [];
+            this.board?.startSourceInquiry(button.dataset.hypothesis, button.dataset.rumor, statements);
+        }));
+        this.container.querySelectorAll('.inquiry-lead-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            const choice = form.querySelector('select')?.value || '';
+            const separator = choice.indexOf(':');
+            const kind = choice.slice(0, separator), sourceId = choice.slice(separator + 1);
+            const ok = this.board?.addSourceInquiryLead(form.dataset.id, kind, sourceId,
+                form.querySelector('input')?.value, {
+                    statements: this.memoryService?.getStatements?.() || [],
+                    evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])]
+                });
+            if (!ok) events.emit('notification:show', { message: 'Выберите доступный источник, добавьте заметку. Повторные записи не принимаются.', type: 'warning', duration: 3000 });
+        }));
+        this.container.querySelectorAll('.inquiry-close-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            if (!this.board?.closeSourceInquiry(form.dataset.id, form.querySelector('input')?.value))
+                events.emit('notification:show', { message: 'Для вывода нужна хотя бы одна проверенная запись и ваша формулировка.', type: 'warning', duration: 3000 });
+        }));
         this.container.querySelector('#hypothesis-create-form')?.addEventListener('submit', e => {
             e.preventDefault();
             this.board?.addHypothesis(this.container.querySelector('#hypothesis-new-text')?.value);
@@ -286,6 +308,38 @@ class BoardUI {
             const next = prompt('Уточните вашу версию:', current.title);
             if (next !== null) this.board.reviseHypothesis(current.id, next);
         }));
+    }
+
+    _renderSourceInquiries(hypothesis, statements, evidenceIds) {
+        const review = this.board.reviewHypothesisSources(hypothesis.id, statements);
+        const rumors = [...new Set(review.sources.flatMap(source => source.linkedRumorIds))];
+        const inquiries = (this.board.sourceInquiries || []).filter(i => i.hypothesisId === hypothesis.id);
+        const options = [
+            ...statements.filter(s => s.status !== 'superseded').map(s => ({ key: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) + ' — ' + (s.summary || s.value) })),
+            ...evidenceIds.map(id => ({ key: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
+        ].map(o => `<option value="${this._escapeHTML(o.key)}">${this._escapeHTML(o.label)}</option>`).join('');
+        if (!rumors.length && !inquiries.length) return '';
+        return `<div class="hypothesis-source-review"><strong>РАССЛЕДОВАНИЕ ЦЕПОЧКИ СЛУХА</strong>
+            <p>Найдите свидетеля, сопоставьте сведения с уликами и запишите собственный вывод. Записи не доказывают правдивость слуха.</p>
+            ${hypothesis.status === 'open' ? rumors.filter(r => !inquiries.some(i => i.rumorId === r)).map(r =>
+                `<button type="button" class="terminal-btn btn-sm inquiry-start" data-hypothesis="${this._escapeHTML(hypothesis.id)}" data-rumor="${this._escapeHTML(r)}">ПРОВЕРИТЬ СЛУХ ${this._escapeHTML(r)}</button>`).join('') : ''}
+            ${inquiries.map(i => `<section class="testimony-entry">
+                <strong>${this._escapeHTML(i.rumorId)} · ${i.status === 'closed' ? 'ВЫВОД ЗАПИСАН' : 'ПРОВЕРЯЕТСЯ'}</strong>
+                <ul>${i.leads.map(l => `<li>${l.kind === 'statement' ? 'Показание' : 'Улика'} ${this._escapeHTML(l.sourceId)}: ${this._escapeHTML(l.note)}</li>`).join('') || '<li>Пока нет проверенных связей.</li>'}</ul>
+                ${i.conclusion ? `<p>Вывод детектива: ${this._escapeHTML(i.conclusion)}</p>` : ''}
+                ${i.status === 'open' && hypothesis.status === 'open' ? `
+                    <form class="hypothesis-form inquiry-lead-form" data-id="${this._escapeHTML(i.id)}">
+                        <select class="terminal-input" required><option value="">Выберите найденный источник</option>${options}</select>
+                        <input class="terminal-input" maxlength="500" required placeholder="Что именно вы выяснили?">
+                        <button class="terminal-btn btn-sm" type="submit">ЗАПИСАТЬ СВЯЗЬ</button>
+                    </form>
+                    <form class="hypothesis-form inquiry-close-form" data-id="${this._escapeHTML(i.id)}">
+                        <input class="terminal-input" maxlength="500" required placeholder="Ваш вывод (не вердикт игры)">
+                        <button class="terminal-btn btn-sm" type="submit">ЗАКРЫТЬ ПРОВЕРКУ</button>
+                    </form>` : ''}
+                <details><summary>История проверки (${i.history.length})</summary><ol>${i.history.map(h => `<li>${this._escapeHTML(h.action)}${h.note ? ': ' + this._escapeHTML(h.note) : ''}</li>`).join('')}</ol></details>
+            </section>`).join('')}
+        </div>`;
     }
 
     _renderTestimonyJournal() {
