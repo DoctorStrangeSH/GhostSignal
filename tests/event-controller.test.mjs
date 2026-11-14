@@ -330,7 +330,7 @@ test("failed cases close once, preserve settled NPC promises and cannot be resum
 
     assert.equal(app.caseManager.caseState, "failed");
     assert.equal(app.progress.activeCase, null);
-    assert.deepEqual(app.progress.failedCases, ["case-002"]);
+    assert.deepEqual([...app.progress.failedCases], ["case-002"]);
     assert.deepEqual(app.progress.solvedCases, ["case-001"]);
     assert.deepEqual(app.progress.trackerData, { failed: 1 });
     assert.deepEqual(sequence, [
