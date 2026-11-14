@@ -85,6 +85,41 @@
     margin: 0;
 }
 
+.investigation-checklist {
+    color: var(--text-secondary);
+}
+
+.checklist-progress {
+    margin: 8px 0;
+    color: var(--accent-amber-glow);
+    font-weight: 700;
+}
+
+.checklist-tasks {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 7px;
+}
+
+.checklist-tasks li {
+    padding: 8px 10px;
+    border-left: 2px solid rgba(212, 160, 23, 0.35);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.checklist-tasks li.is-complete { border-color: var(--accent-amber); }
+.checklist-tasks li.is-complete span { color: var(--accent-amber-glow); }
+.checklist-tasks li.is-pending { color: var(--text-dim); }
+
+.checklist-next-action {
+    border: 1px solid rgba(212, 160, 23, 0.32);
+    padding: 10px;
+    margin: 12px 0 0;
+    border-radius: var(--radius-md);
+}
+
 .board-slot {
     position: absolute;
     transform: translate(-50%, -50%);
