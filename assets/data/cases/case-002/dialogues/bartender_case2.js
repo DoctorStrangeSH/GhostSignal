@@ -185,7 +185,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                             fromNpcId: "waiter",
                             toNpcId: "bartender"
                         }
+                    },
+                    {
+                        text: "Джо, вы мне уже помогали. Согласитесь добровольно ещё раз сверить время смены?",
+                        nextNode: "joe_earned_help",
+                        tone: "reassuring",
+                        cooperationDelta: 7,
+                        condition: "all:prior_case_memory:player_reassured&long_term_trust_at_least:50&not:has_visited_node:joe_earned_help",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_earned_help: {
+                speaker: "npc",
+                text: "Я могу ещё раз сверить время своей смены и записи, которые делал сам. Но я не отдам вам личные сведения сотрудников и не стану утверждать, кто приходил, пока это не проверят по независимым документам.",
+                mood: "thoughtful",
+                answers: [
+                    { text: "Спасибо. Сверим записи официально и без поспешных обвинений.", nextNode: "retell", tone: "calm" },
+                    { text: "Договорились. Вернусь с официальным запросом.", nextNode: "end_bartender2", tone: "calm" }
                 ]
             },
 
