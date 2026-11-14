@@ -289,6 +289,46 @@ class NPCSocialNetwork {
         return { published: true, queued };
     }
 
+    // Unlike dialogue rumors, a public accusation originates from an actual
+    // case-memory record, not from a fabricated NPC dialogue answer. The accused
+    // can tell a trusted contact; subsequent transfers follow normal edges.
+    publishPublicAccusation(accusedNpcId, accusationId) {
+        const expectedId = 'public-final-accusation:' + this.currentCaseId + ':' + accusedNpcId;
+        if (!this.caseConfig || !accusedNpcId || accusationId !== expectedId ||
+            this.memoryService?.getAccusationStatus(accusedNpcId, accusationId) !== 'false') {
+            return { published: false, reason: 'unverified_public_accusation' };
+        }
+        const state = this._ensureState();
+        const reportId = 'public-accusation-' + this.currentCaseId + '-' + accusedNpcId;
+        if (state.publishedIds.includes(reportId)) return { published: false, reason: 'already_published' };
+
+        const report = {
+            id: reportId, kind: 'detective_behavior', targetNpcId: 'detective',
+            sourceName: this._name(accusedNpcId),
+            text: 'Детектив публично обвинил ' + this._name(accusedNpcId) +
+                '. Обвинение оспаривается; его основания нужно проверять независимо.'
+        };
+        // The provenance points to the recorded player action, not to an
+        // invented conversation. receiveSocialRumor keeps this trail intact.
+        const sourceEvent = {
+            dialogueId: 'public_accusation',
+            nodeId: accusationId,
+            answerText: 'Публичное обвинение: ' + this._name(accusedNpcId),
+            tone: 'accusatory'
+        };
+        state.publishedIds.push(reportId);
+        this._recordEvent('reported', {
+            fromNpcId: accusedNpcId, reportId, reportKind: report.kind,
+            summary: report.text, reason: 'verified_public_accusation'
+        });
+        const queued = this._queueOutgoing(accusedNpcId, report, sourceEvent, {
+            originalSourceNpcId: accusedNpcId,
+            originalSourceName: this._name(accusedNpcId),
+            path: [accusedNpcId], hops: 0
+        });
+        return { published: true, queued };
+    }
+
     _canDeliver(delivery) {
         if (!this.npcManager?.isNPCAvailable) return false;
         const sender = this.npcManager.isNPCAvailable(delivery.fromNpcId);
