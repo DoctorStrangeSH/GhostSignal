@@ -86,6 +86,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         }
                     },
                     {
+                        text: "Я привёл Илью Руденко. Посмотрите на него: это тот человек, которого вы видели?",
+                        nextNode: "joe_identifies_different_visitor",
+                        tone: "procedural",
+                        condition: "all:hasInsight:joe_found_inspection_entry&hasInsight:inspection_cancellation_record&hasInsight:rudenko_denies_visit&hasInsight:rudenko_agreed_to_identification",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "После переезда матери Томаса никто не интересовался её местонахождением?",
                         nextNode: "joe_reports_unknown_visitor",
                         tone: "calm",
@@ -182,6 +189,33 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 givesInsight: "joe_found_inspection_entry",
                 answers: [
                     { text: "Сверю служебную заявку с независимыми записями.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
+            joe_identifies_different_visitor: {
+                speaker: "npc",
+                text: "Нет. Это не тот человек. Я хорошо рассмотрел посетителя: он был моложе, ниже и говорил иначе. Я не узнаю в Руденко мужчину, который спрашивал о Томасе. Теперь у нас есть две независимые вещи: инспектор действительно был назначен, но его визит отменили; и я лично не опознаю его как посетителя. Это исключает Руденко как человека у стойки, но не говорит, кто именно приходил и кто его послал.",
+                mood: "serious",
+                innerThought: "Я могу уверенно сказать, что это не тот человек, которого видел. Но у меня нет оснований назвать незнакомца человеком Кейна или обвинять кого-то ещё.",
+                givesInsight: "joe_rules_out_rudenko",
+                answers: [
+                    {
+                        text: "Зафиксируем, что Руденко не был посетителем. Личность неизвестного оставим открытым вопросом.",
+                        nextNode: "greeting",
+                        tone: "calm",
+                        trustDelta: 2,
+                        memorySummary: "Детектив провёл очное опознание с Джо и зафиксировал, что Руденко не был неизвестным посетителем; личность самого посетителя осталась неустановленной.",
+                        memoryTags: ["player_completed_cautious_identification"],
+                        memoryImportance: 3
+                    },
+                    {
+                        text: "Значит, это точно был человек Кейна.",
+                        nextNode: "greeting",
+                        tone: "defensive",
+                        trustDelta: -3,
+                        memorySummary: "После того как Джо исключил Руденко, детектив без доказательств приписал неизвестного посетителя Кейну.",
+                        memoryTags: ["player_assumed_kane_link_without_evidence"],
+                        memoryImportance: 3
+                    }
                 ]
             },
             joe_reports_unknown_visitor: {
