@@ -2773,11 +2773,9 @@ test("Joe reacts only to the work decision Thomas actually sent him", () => {
         const caseData = vm.runInContext("CASE_002", context);
         relations.setCase(caseData);
         const decisionId = "thomas-decides-work-after-protection-delay";
-        const joeLeaveId = "joe-supports-thomas-after-work-decision";
-        const joeDocsId = "joe-helps-thomas-prepare-documents";
         memory.setRelationshipTrust("bartender", "sergeant", 55);
         memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
-        for (const minutes of [90, 60, 60, 60, 90, 90]) {
+        for (const minutes of [90, 60, 60, 60, 90]) {
             gameTime.advance(minutes);
             relations.processDueInteractions();
         }
@@ -2793,7 +2791,6 @@ test("Joe reacts only to the work decision Thomas actually sent him", () => {
         assert.equal(relations.hasCompletedInteraction("bartender", otherRule), false);
         assert.equal(memory.getMemory("waiter").cooperation, cooperationBefore + expectedCooperationDelta);
         const saved = JSON.parse(JSON.stringify(relations.toJSON()));
-        const restored = vm.runInContext("new NPCRelationshipService(savedJoeReaction)", context);
         context.savedJoeReaction = saved;
         const reloaded = vm.runInContext("new NPCRelationshipService(savedJoeReaction)", context);
         reloaded.setDependencies(memory, npcManager, gameTime, socialNetwork);
