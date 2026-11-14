@@ -850,3 +850,66 @@ test('a recipient reacts to a delivered NPC message only after it arrives and ti
     restored.setCase(caseData);
     assert.equal(restored.hasCompletedInteraction('b', 'response'), true);
 });
+
+test("case two: Eva supports Anna and Lora checks the accusation only after receiving the rumor", () => {
+    const caseContext = vm.createContext({});
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8") +
+        "\n;globalThis.loadedCase = CASE_002;",
+        caseContext
+    );
+    const { memory, network, relationships, advance, caseData, context } = createHarness({
+        caseData: caseContext.loadedCase
+    });
+    const evaRule = "eva-supports-anna-after-public-accusation";
+    const loraRule = "lora-checks-anna-public-accusation";
+    const id = "public-final-accusation:case-002:ex_wife";
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
+
+    // Passing game time alone cannot trigger either action before anyone hears.
+    advance(20);
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
+
+    memory.recordAccusation("ex_wife", { id, text: "Публичное обвинение Анны" });
+    memory.resolveAccusation("ex_wife", id, "false");
+    assert.equal(network.publishPublicAccusation("ex_wife", id).published, true);
+    const rumorId = "public-accusation-case-002-ex_wife";
+
+    advance(10);
+    network.processDueDeliveries();
+    assert.equal(memory.hasRumor("woman_in_red", rumorId), true);
+    assert.equal(memory.hasRumor("journalist", rumorId), false);
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
+
+    advance(20);
+    network.processDueDeliveries();
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), true);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
+
+    advance(10);
+    network.processDueDeliveries();
+    assert.equal(memory.hasRumor("journalist", rumorId), true);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
+
+    advance(50);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), true);
+    assert.equal(relationships.getInvestigationOutcome("journalist", loraRule), "no_independent_evidence");
+    assert.equal(relationships.getEditorialDecision("journalist", loraRule), "withheld");
+    assert.equal(relationships.toJSON().cases[caseData.id].rules[evaRule].occurrences, 1);
+    assert.equal(relationships.toJSON().cases[caseData.id].rules[loraRule].occurrences, 1);
+
+    const snapshot = relationships.toJSON();
+    context.savedRelationshipState = snapshot;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedRelationshipState, memory, npcManager, clock, network)",
+        context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.hasCompletedInteraction("woman_in_red", evaRule), true);
+    assert.equal(restored.hasCompletedInteraction("journalist", loraRule), true);
+    advance(120);
+    assert.equal(relationships.toJSON().cases[caseData.id].rules[evaRule].occurrences, 1);
+    assert.equal(relationships.toJSON().cases[caseData.id].rules[loraRule].occurrences, 1);
+});
