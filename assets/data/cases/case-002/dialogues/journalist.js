@@ -21,6 +21,20 @@ const DIALOGUE_JOURNALIST = {
                 mood: "focused",
                 answers: [
                     {
+                        text: "Как моя работа с источниками в прошлых делах влияет на ваше доверие?",
+                        nextNode: "lora_consistent_source_integrity",
+                        tone: "cautious",
+                        condition: "all:long_term_pattern:consistent_source_integrity&not:has_visited_node:lora_consistent_source_integrity",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Почему вы снова сомневаетесь в моих заявлениях?",
+                        nextNode: "lora_repeated_source_overclaim",
+                        tone: "cautious",
+                        condition: "all:long_term_pattern:repeated_source_overclaim&not:has_visited_node:lora_repeated_source_overclaim",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Ева сообщила вам, что я исправил ошибку перед Анной?",
                         nextNode: "lora_heard_verified_restitution_anna",
                         tone: "cautious",
@@ -114,6 +128,20 @@ const DIALOGUE_JOURNALIST = {
                 mood: "sharp",
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
+                    {
+                        text: "Как моя работа с источниками в прошлых делах влияет на ваше доверие?",
+                        nextNode: "lora_consistent_source_integrity",
+                        tone: "cautious",
+                        condition: "all:long_term_pattern:consistent_source_integrity&not:has_visited_node:lora_consistent_source_integrity",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Почему вы снова сомневаетесь в моих заявлениях?",
+                        nextNode: "lora_repeated_source_overclaim",
+                        tone: "cautious",
+                        condition: "all:long_term_pattern:repeated_source_overclaim&not:has_visited_node:lora_repeated_source_overclaim",
+                        hiddenWhenUnavailable: true
+                    },
                     {
                         text: "Ева сообщила вам, что я исправил ошибку перед Анной?",
                         nextNode: "lora_heard_verified_restitution_anna",
@@ -404,6 +432,28 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Она в курсе дела. Может быть полезна.",
                 answers: [
                     { text: "Тогда расскажите, что вы знаете о Кейне.", nextNode: "investigation" }
+                ]
+            },
+
+            lora_consistent_source_integrity: {
+                speaker: "npc",
+                text: "Мы уже не в первый раз сверяем спорные утверждения. В разных расследованиях вы отделяли возможное от доказанного — я это помню. Поэтому могу открыто обсуждать метод проверки и документы. Но имена тех, кто говорил со мной конфиденциально, я всё равно не назову: их безопасность важнее нашего доверия.",
+                mood: "thoughtful",
+                innerThought: "Речь о личном опыте Лоры, а не о слухах о поступках детектива.",
+                answers: [
+                    { text: "Согласен. Оставим источников под защитой и проверим документы.", nextNode: "investigation", tone: "reassuring", trustDelta: 1 },
+                    { text: "Спасибо. Продолжим, когда будут новые подтверждения.", nextNode: "end_journalist", tone: "calm" }
+                ]
+            },
+
+            lora_repeated_source_overclaim: {
+                speaker: "npc",
+                text: "В нескольких наших расследованиях вы называли предварительную версию установленным фактом. Я помню собственные разговоры с вами, а не чужие пересказы. Поэтому не стану передавать имена конфиденциальных собеседников или строить статью на ваших заверениях. Если принесёте документы, проверю их происхождение независимо.",
+                mood: "guarded",
+                innerThought: "Профессиональная граница не лишает игрока возможности работать с проверяемыми уликами.",
+                answers: [
+                    { text: "Это справедливо. Давайте проверять документы отдельно.", nextNode: "investigation", tone: "calm" },
+                    { text: "Понимаю. Вернусь с первоисточниками.", nextNode: "end_journalist", tone: "calm" }
                 ]
             },
 
