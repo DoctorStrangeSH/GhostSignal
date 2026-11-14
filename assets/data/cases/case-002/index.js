@@ -218,6 +218,17 @@ const CASE_002 = {
                 summary: "После повторного давления детектива в разных расследованиях Джо сам предупредил Томаса, что будет присутствовать при дополнительных беседах и не станет раскрывать чужие личные сведения."
             },
             {
+                id: "thomas-chooses-interview-boundaries-after-joe-warning", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "waiter", toNpcId: "bartender", interaction: "support",
+                interviewDecisionPolicy: "after_reputation_warning",
+                channel: "message", initialDelayMinutes: 150, everyMinutes: 60,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "joe-warns-thomas-after-repeated-pressure",
+                requiresReceivedActionAgeMinutes: 60,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Получив предупреждение Джо, Томас самостоятельно определил условия будущих интервью: попросить Джо присутствовать или беседовать без посредника, сохраняя границы частной жизни."
+            },
+            {
                 id: "joe-alerts-thomas-after-shelter-leak", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
