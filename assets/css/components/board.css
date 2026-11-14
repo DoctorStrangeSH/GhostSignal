@@ -253,3 +253,5 @@
 .hypothesis-entry details { margin-top: 10px; color: var(--text-dim); font-size: 10px; }
 .hypothesis-entry details ol { padding-left: 18px; margin: 6px 0; line-height: 1.7; }
 .hypothesis-entry > .terminal-btn { margin: 4px 6px 4px 0; }
+
+.hypothesis-links .hypothesis-source-caution { border-left: 2px solid var(--accent-red-bright); padding-left: 6px; color: var(--accent-amber); }
