@@ -105,13 +105,18 @@ class BoardUI {
             loraVerificationDiscussed: this.memoryService?.hasVisitedNode?.('journalist', 'dialogue-journalist', 'lora_checked_accusation') || false
         });
         if (!checklist) return '';
+        const leads = Array.isArray(checklist.nextActions) ? checklist.nextActions : [];
+        const activeLeads = leads.filter(lead => lead.status !== 'checked');
+        const checkedLeads = leads.filter(lead => lead.status === 'checked');
+        const renderLead = lead => `<li class="checklist-next-action ${lead.status === 'pending' ? 'is-pending' : lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'pending' ? '○' : lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`;
         return `<div class="investigation-checklist">
             <p class="hypothesis-help">Это ориентиры по уже открытым сведениям, а не список правильных ответов или обязательных действий для финала дела.</p>
             <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
             <ul class="checklist-tasks">${checklist.tasks.map(task => `<li class="${task.done ? 'is-complete' : 'is-pending'}"><span aria-hidden="true">${task.done ? '✓' : '○'}</span> ${this._escapeHTML(task.text)}</li>`).join('')}</ul>
-            ${(checklist.nextActions || []).length ? `<div class="checklist-followups"><strong>ОТКРЫТЫЕ ЗАЦЕПКИ</strong><ul>${checklist.nextActions.map(lead =>
-                `<li class="checklist-next-action ${lead.status === 'checked' ? 'is-checked' : lead.status === 'pending' ? 'is-pending' : 'is-available'}"><span aria-hidden="true">${lead.status === 'checked' ? '✓' : lead.status === 'pending' ? '○' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`).join('')}</ul></div>`
-                : checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
+            ${activeLeads.length ? `<section class="checklist-followups" aria-label="Активные зацепки"><strong>🔎 АКТИВНЫЕ ЗАЦЕПКИ <span class="checklist-count">${activeLeads.length}</span></strong><ul>${activeLeads.map(renderLead).join('')}</ul></section>` : ''}
+            ${checkedLeads.length ? `<details class="checklist-followups checklist-completed"><summary>✓ Проверенные зацепки (${checkedLeads.length})</summary><ul>${checkedLeads.map(renderLead).join('')}</ul></details>` : ''}
+            ${!leads.length && checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
+            ${!leads.length && !checklist.nextAction ? '<p class="checklist-empty">Пока нет новых зацепок. Осматривайте доступные места и сверяйте показания.</p>' : ''}
         </div>`;
     }
     
