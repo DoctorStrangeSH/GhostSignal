@@ -2889,3 +2889,47 @@ test("Thomas does not review temporary leave when he chose document help", () =>
     relations.processDueInteractions();
     assert.equal(relations.hasCompletedInteraction("waiter", "thomas-reviews-temporary-leave"), false);
 });
+
+test("Joe reports the leave review Thomas actually sent, without revealing private safety details", () => {
+    for (const [newPressure, completedAction, hiddenAction, nodeId] of [
+        [15, "joe-welcomes-thomas-back-to-work", "joe-respects-thomas-extended-leave", "joe_thomas_returned_to_work"],
+        [85, "joe-respects-thomas-extended-leave", "joe-welcomes-thomas-back-to-work", "joe_thomas_extended_leave"]
+    ]) {
+        const { engine, context, memory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        relations.setCase(vm.runInContext("CASE_002", context));
+        engine.setRelationshipService(relations);
+        memory.setRelationshipTrust("bartender", "sergeant", 55);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+        for (const minutes of [90, 60, 60, 60, 90]) {
+            gameTime.advance(minutes);
+            relations.processDueInteractions();
+        }
+        memory.cases["case-002"].waiter.pressure = 80;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        memory.cases["case-002"].waiter.pressure = newPressure;
+        gameTime.advance(1440);
+        relations.processDueInteractions();
+        assert.equal(relations.hasCompletedInteraction("bartender", completedAction), false);
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.hasCompletedInteraction("bartender", completedAction), true);
+        assert.equal(relations.hasCompletedInteraction("bartender", hiddenAction), false);
+        engine.startDialogue("dialogue-bartender-case2");
+        const available = engine.getAvailableAnswers();
+        const answer = available.find(item => item.nextNode === nodeId);
+        assert.equal(answer?.isAvailable, true);
+        assert.equal(available.some(item => item.condition?.includes(hiddenAction)), false);
+        assert.equal(engine.selectAnswer(answer.index).id, nodeId);
+        assert.match(engine.currentNode.text, /Томас/);
+        assert.doesNotMatch(engine.currentNode.text, /улица|дом №|квартира №/i);
+        const back = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
+        assert.equal(engine.selectAnswer(back.index).id, "greeting");
+        assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === nodeId), false);
+    }
+});
