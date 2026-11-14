@@ -75,3 +75,27 @@ test('legacy save adopts current case without losing existing evidence or hypoth
     assert.equal(board.hypotheses.length, 1);
     assert.equal(board.toJSON().caseId, 'case-001');
 });
+
+
+test('source audit flags one witness, shared rumor and revised records without a truth verdict', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const id = board.addHypothesis('Два рассказа подтверждают друг друга');
+    board.linkHypothesis(id, 'statement', 'claim-a', 'for');
+    board.linkHypothesis(id, 'statement', 'claim-b', 'for');
+    board.linkHypothesis(id, 'statement', 'claim-old', 'against');
+    board.linkHypothesis(id, 'statement', 'claim-missing', 'pending');
+    const review = board.reviewHypothesisSources(id, [
+        { id: 'claim-a', npcId: 'thomas', topic: 'phone', directObservation: true, status: 'active', corroboratesRumorIds: ['rumor-x'] },
+        { id: 'claim-b', npcId: 'thomas', topic: 'phone', directObservation: false, status: 'active', refutesRumorIds: ['rumor-x'] },
+        { id: 'claim-old', npcId: 'joe', topic: 'phone', status: 'superseded' }
+    ]);
+    assert.equal(review.sources[0].origin, 'firsthand_claim');
+    assert.equal(review.sources[1].origin, 'unverified');
+    assert.ok(review.warnings.some(w => w.type === 'same_witness'));
+    assert.ok(review.warnings.some(w => w.type === 'shared_rumor_reference'));
+    assert.ok(review.warnings.some(w => w.type === 'superseded'));
+    assert.ok(review.warnings.some(w => w.type === 'missing'));
+    assert.equal('correct' in review, false);
+    assert.equal(board.reviewHypothesisSources('unknown'), null);
+});
