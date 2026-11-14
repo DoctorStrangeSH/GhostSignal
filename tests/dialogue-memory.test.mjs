@@ -1214,3 +1214,39 @@ test("leaking Thomas's first shelter blocks safety confirmation until a differen
     assert.equal(inventory.hasInsight("thomas_family_address_exposed"), true,
         "recovery does not erase the recorded breach");
 });
+
+test("Joe's post-protection visitor warning remains unverified after Lora's independent check", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    inventory.insights.push("thomas_family_protected");
+    engine.startDialogue("dialogue-bartender-case2");
+    const inquiry = engine.getAvailableAnswers().find(a => a.nextNode === "joe_reports_unknown_visitor");
+    assert.equal(inquiry?.isAvailable, true);
+    engine.selectAnswer(inquiry.index);
+    assert.equal(inventory.hasInsight("unknown_visitor_asked_about_thomas"), true);
+    assert.equal(inventory.hasInsight("thomas_family_address_exposed"), false);
+    assert.equal(memory.getPromises("waiter").length, 0);
+
+    engine.startDialogue("dialogue-journalist");
+    const verify = engine.getAvailableAnswers().find(a => a.nextNode === "lora_checks_unknown_visitor");
+    assert.equal(verify?.isAvailable, true);
+    engine.selectAnswer(verify.index);
+    assert.match(engine.currentNode.text, /не подтверждена/);
+    assert.equal(inventory.hasInsight("unknown_visitor_unverified"), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), true);
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_checks_unknown_visitor"), false);
+});
+
+test("Lora can check the visitor from her alternate opening after investigating Eva", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("unknown_visitor_asked_about_thomas");
+    engine.setRelationshipService({
+        getInvestigationOutcome(npcId, ruleId) {
+            return npcId === "journalist" && ruleId === "lora-interviews-eva-about-threat"
+                ? "no_independent_evidence" : null;
+        }, toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.currentNode.id, "lora_second_check_opening");
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "lora_checks_unknown_visitor")?.isAvailable, true);
+});
