@@ -363,8 +363,16 @@
 .hypothesis-form textarea { resize: vertical; }
 .hypothesis-entry { margin-top: 9px; overflow-wrap: anywhere; }
 .hypothesis-entry .testimony-entry-heading strong { color: var(--text-primary); font-size: 12px; font-family: var(--font-serif); }
+.hypothesis-stance-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; font-size: 10px; }
+.hypothesis-stance-summary span { padding: 5px 8px; border-radius: var(--radius-md); background: rgba(255,255,255,.035); border: 1px solid rgba(212,160,23,.12); }
+.hypothesis-stance-summary .stance-for { color: #8bc3a7; }
+.hypothesis-stance-summary .stance-against { color: #e4a09b; }
+.hypothesis-stance-summary .stance-pending { color: var(--accent-amber-glow); }
 .hypothesis-links { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 5px; }
 .hypothesis-links li { display: flex; align-items: center; justify-content: space-between; gap: 7px; font-size: 10px; color: var(--text-secondary); border-bottom: 1px solid rgba(212,160,23,.09); padding: 4px 0; }
+.hypothesis-links li.stance-for { border-left: 3px solid #60977a; padding-left: 8px; }
+.hypothesis-links li.stance-against { border-left: 3px solid #b96f6b; padding-left: 8px; }
+.hypothesis-links li.stance-pending { border-left: 3px solid var(--accent-amber); padding-left: 8px; }
 .hypothesis-entry details { margin-top: 10px; color: var(--text-dim); font-size: 10px; }
 .hypothesis-entry details ol { padding-left: 18px; margin: 6px 0; line-height: 1.7; }
 .hypothesis-entry > .terminal-btn { margin: 4px 6px 4px 0; }
