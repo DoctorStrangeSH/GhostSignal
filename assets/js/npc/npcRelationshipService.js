@@ -176,6 +176,7 @@ class NPCRelationshipService {
                         requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080),
                         requiresReceivedActionId: typeof conditions.requiresReceivedActionId === 'string' ? conditions.requiresReceivedActionId : null,
                         requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
+                        requiresWitnessWorkDecision: ['temporary_leave', 'document_help'].includes(conditions.requiresWitnessWorkDecision) ? conditions.requiresWitnessWorkDecision : null,
                         fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
                         fromDialogueNodeId: typeof conditions.fromDialogueNodeId === 'string' ? conditions.fromDialogueNodeId : null
                     },
@@ -418,6 +419,8 @@ class NPCRelationshipService {
             if (conditions.requiresReceivedActionAgeMinutes !== null &&
                 (!Number.isFinite(prior.lastTriggeredAt) ||
                     this._now() - prior.lastTriggeredAt < conditions.requiresReceivedActionAgeMinutes)) return false;
+            if (conditions.requiresWitnessWorkDecision &&
+                prior.witnessWorkDecision !== conditions.requiresWitnessWorkDecision) return false;
         }
         if (conditions.goalId) {
             const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
