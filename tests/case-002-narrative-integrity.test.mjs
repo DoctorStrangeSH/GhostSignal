@@ -44,3 +44,21 @@ test('case two does not present revised witness accounts as unquestionable court
     assert.match(witnessChain.description, /пересмотренные показания/i);
     assert.match(witnessChain.narrative, /не была очевидицей/i);
 });
+
+test('Eva and the bar photo preserve uncertainty about the missing vial', () => {
+    const registry = {};
+    const context = vm.createContext({
+        console: { log() {} },
+        registerData(type, data) { registry[type] = data; }
+    });
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/cases/case-002/dialogues/woman_in_red.js'), 'utf8'), context);
+    vm.runInContext('globalThis.eva = DIALOGUE_WOMAN_IN_RED', context);
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/cases/case-002/objects.js'), 'utf8'), context);
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/cases/case-002/evidence.js'), 'utf8'), context);
+
+    const description = context.eva.tree.nodes.describe_man;
+    assert.equal(description.givesInsight, 'rival_took_vial_confirmed'); // legacy save ID remains stable
+    assert.match(description.innerThought, /не видела сам момент/);
+    assert.match(registry.object.bar_photo.interactions.examine.text, /не подтверждает ни кражу/);
+    assert.match(registry.evidence.chain_002_poison_path.description, /не доказывает каждый/);
+});
