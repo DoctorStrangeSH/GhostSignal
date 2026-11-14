@@ -144,6 +144,7 @@ class App {
         this.investigationBoard = InvestigationBoard.fromJSON(this.progress.boardData);
         // Legacy snapshots had no case ID; associate them with the active saved case.
         this.investigationBoard.setCase(this.progress.activeCase, true);
+        this.dialogueEngine.setInvestigationBoard(this.investigationBoard);
         this.boardUI = new BoardUI('board-area'); this.boardUI.setBoard(this.investigationBoard); this.boardUI.setInventory(this.inventory); this.boardUI.setMemoryService(this.npcMemoryService); this.boardUI.setLocationManager(this.locationManager);
 
         this.notesManager = NotesManager.fromJSON(this.progress.notesData);
@@ -275,7 +276,7 @@ class App {
         body.querySelector('#btn-reset-case')?.addEventListener('click', () => {
             if (confirm('Сбросить дело?')) {
                 this.inventory = new Inventory(); this.inventory.addItem('magnifying_glass'); this.inventoryUI.setInventory(this.inventory);
-                this.investigationBoard = new InvestigationBoard(); this.boardUI.setBoard(this.investigationBoard);
+                this.investigationBoard = new InvestigationBoard(); this.boardUI.setBoard(this.investigationBoard); this.dialogueEngine?.setInvestigationBoard(this.investigationBoard);
                 this.notesManager = new NotesManager(); this.notesUI.setNotesManager(this.notesManager);
                 this.npcManager = new NPCManager(this.gameTime, this.inventory);
                 this.npcManager.setMemoryService(this.npcMemoryService);
