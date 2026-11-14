@@ -2983,3 +2983,44 @@ test("Joe reorganizes understaffed bar only after Thomas extends his leave", () 
         assert.equal(reloaded.hasCompletedInteraction("bartender", action), shouldReorganize);
     }
 });
+
+
+test("Lora offers Joe practical help only after she can know the bar is understaffed", () => {
+    const { context, memory, gameTime, socialNetwork } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+    const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    relations.setCase(vm.runInContext("CASE_002", context));
+
+    const joeStaffingId = "joe-reorganizes-bar-after-extended-leave";
+    const loraHelpId = "lora-checks-joe";
+    const caseState = relations.cases["case-002"];
+    caseState.rules[joeStaffingId] = {
+        nextDueAt: null, lastTriggeredAt: null, occurrences: 0, deferrals: 0, completed: false
+    };
+    const loraRule = caseState.rules[loraHelpId];
+    assert.ok(loraRule, "Lora's help rule should be initialized");
+    const cooperationBefore = memory.getMemory("bartender").cooperation;
+
+    gameTime.advance(300);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("journalist", loraHelpId), false);
+
+    caseState.rules[joeStaffingId] = {
+        nextDueAt: null, lastTriggeredAt: relations._now() - 60, occurrences: 1, deferrals: 0, completed: true
+    };
+    gameTime.advance(360);
+    relations.processDueInteractions();
+
+    assert.equal(relations.hasCompletedInteraction("journalist", loraHelpId), true);
+    assert.equal(memory.getMemory("bartender").cooperation, cooperationBefore + 5);
+    assert.equal(relations.hasCompletedInteraction("bartender", loraHelpId), false);
+
+    context.savedLoraHelp = JSON.parse(JSON.stringify(relations.toJSON()));
+    context.restoredLoraHelp = vm.runInContext("NPCRelationshipService.fromJSON(savedLoraHelp)", context);
+    context.restoredLoraHelp.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    context.restoredLoraHelp.setCase(vm.runInContext("CASE_002", context));
+    assert.equal(context.restoredLoraHelp.hasCompletedInteraction("journalist", loraHelpId), true);
+});
