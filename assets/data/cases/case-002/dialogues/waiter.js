@@ -122,7 +122,8 @@ const DIALOGUE_WAITER = {
                         hiddenWhenUnavailable: true
                     },
                     { text: "Почему ты изменил показания после нашего разговора?", nextNode: "revision_under_pressure_reason", tone: "calm" },
-                    { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                    { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter_guarded", tone: "reassuring" },
+                    { text: "В журнале телефонной станции отмечен запрос. Ты видел Кейна у телефона?", nextNode: "telephone_record_scope", tone: "calm", condition: "all:hasItem:telephone_exchange_slip&not:has_visited_node:telephone_record_scope", hiddenWhenUnavailable: true }
                 ]
             },
             revised_testimony_opening: {
@@ -169,7 +170,8 @@ const DIALOGUE_WAITER = {
                             text: "Когда я честно уточнил, что видел, детектив обвинил меня в умышленной лжи."
                         }
                     },
-                    { text: "Спасибо за точность. Других вопросов пока нет.", nextNode: "end_waiter", tone: "reassuring" }
+                    { text: "Спасибо за точность. Других вопросов пока нет.", nextNode: "end_waiter", tone: "reassuring" },
+                    { text: "В журнале станции есть запись о запросе. Ты видел Кейна у телефона?", nextNode: "telephone_record_scope", tone: "calm", condition: "all:hasItem:telephone_exchange_slip&not:has_visited_node:telephone_record_scope", hiddenWhenUnavailable: true }
                 ]
             },
             revision_under_pressure_reason: {
@@ -190,6 +192,15 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Это важно. Я проверю хронологию по независимым материалам.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 4 },
                     { text: "Пока рано решать, кто лгал.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
+            telephone_record_scope: {
+                speaker: "npc",
+                text: "Нет, детектив. Я работал в зале. Я видел Кейна в баре, но не следил за телефонной будкой и не знаю, кто сделал запрос на станции. Не записывайте мои догадки как показания.",
+                mood: "guarded",
+                innerThought: "Документ фиксирует запрос станции, но Томас не может связать его с конкретным человеком. Нужен независимый источник о звонке.",
+                answers: [
+                    { text: "Понял. Отмечу границы того, что ты видел.", nextNode: "end_waiter", tone: "calm" }
                 ]
             },
             unfounded_lie_accusation: {
@@ -228,7 +239,8 @@ const DIALOGUE_WAITER = {
                         condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning",
                         hiddenWhenUnavailable: true
                     },
-                    { text: "Спасибо. Я проверю твои показания.", nextNode: "end_waiter", tone: "reassuring" }
+                    { text: "Спасибо. Я проверю твои показания.", nextNode: "end_waiter", tone: "reassuring" },
+                    { text: "В телефонном журнале есть время запроса. Ты видел, кто пользовался телефоном?", nextNode: "telephone_record_scope", tone: "calm", condition: "all:hasItem:telephone_exchange_slip&not:has_visited_node:telephone_record_scope", hiddenWhenUnavailable: true }
                 ]
             },
             supported_opening: {
