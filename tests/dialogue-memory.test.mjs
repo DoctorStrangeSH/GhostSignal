@@ -279,7 +279,7 @@ test("DialogueEngine records a promise made to Thomas as a pending NPC memory", 
     assert.equal(promises[0].id, "thomas-family-protection");
     assert.equal(promises[0].status, "pending");
     assert.equal(promises[0].fulfillment.type, "insight_gained");
-    assert.equal(promises[0].fulfillment.insightId, "full_confession_kane");
+    assert.equal(promises[0].fulfillment.insightId, "thomas_family_protected");
     assert.equal(memory.getMemory("waiter").dialogueHistory.some(entry => entry.type === "promise_made"), true);
 });
 
@@ -1086,4 +1086,54 @@ test("Thomas can return to factual testimony after an apology without reopening 
         "the accusation must not be repeatable after it is resolved");
     assert.equal(memory.getAccusationStatus("waiter", "thomas-lied-about-poisoning"), "false");
     assert.equal(memory.getAccusations("waiter").length, 1);
+});
+
+test("Thomas's protection promise needs a real family confirmation, not just Kane's confession", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Обеспечить безопасность семьи Томаса",
+        caseId: "case-002", fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    inventory.insights.push("full_confession_kane");
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "full_confession_kane"
+    }).length, 0);
+    assert.equal(memory.getPromises("waiter")[0].status, "pending");
+
+    let joeHasHelped = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat" && joeHasHelped;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-bartender-case2");
+    const arrangement = () => engine.getAvailableAnswers().find(a => a.nextNode === "joe_safe_lodging_arranged");
+    assert.equal(arrangement()?.isAvailable, false, "Joe must have independently supported Thomas first");
+    joeHasHelped = true;
+    assert.equal(arrangement()?.isAvailable, true);
+    engine.selectAnswer(arrangement().index);
+    assert.equal(engine.currentNode.id, "joe_safe_lodging_arranged");
+    assert.equal(inventory.hasInsight("joe_arranged_safe_lodging"), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+    assert.equal(memory.getPromises("waiter")[0].status, "pending");
+
+    engine.startDialogue("dialogue-waiter");
+    const confirmation = engine.getAvailableAnswers().find(a => a.nextNode === "family_safety_confirmed");
+    assert.equal(confirmation?.isAvailable, true);
+    engine.selectAnswer(confirmation.index);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), true);
+    const resolved = memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "thomas_family_protected"
+    });
+    assert.equal(resolved.length, 1);
+    assert.equal(memory.getPromises("waiter")[0].status, "fulfilled");
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "thomas_family_protected"
+    }).length, 0);
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "family_safety_confirmed"), false);
 });
