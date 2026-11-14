@@ -3013,7 +3013,13 @@ test("Lora offers Joe practical help only after she can know the bar is understa
     };
     gameTime.advance(360);
     relations.processDueInteractions();
+    const joeUpdateId = "joe-tells-lora-about-staffing-pressure";
+    assert.equal(relations.hasCompletedInteraction("bartender", joeUpdateId), true);
+    assert.equal(relations.hasReceivedInteraction("journalist", joeUpdateId), true);
+    assert.equal(relations.hasCompletedInteraction("journalist", loraHelpId), false);
 
+    gameTime.advance(360);
+    relations.processDueInteractions();
     assert.equal(relations.hasCompletedInteraction("journalist", loraHelpId), true);
     assert.equal(memory.getMemory("bartender").cooperation, cooperationBefore + 5);
     assert.equal(relations.hasCompletedInteraction("bartender", loraHelpId), false);
