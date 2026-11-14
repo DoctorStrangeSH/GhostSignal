@@ -153,6 +153,35 @@ class NPCMemoryService {
 
     // Count behavioral patterns across distinct cases, not repeated dialogue clicks.
     // A case with both care and pressure remains mixed rather than erasing the harm.
+    // NPC-specific values are inferred from recorded acts, never from a generic trust score.
+    // Conflicting memories stay contested: a later good deed cannot erase the earlier breach.
+    getNPCValueAlignment(npcId, valueId) {
+        const criteria = {
+            waiter: {
+                witness_safety: {
+                    upheld: 'promise_kept:thomas-family-protection',
+                    breached: 'promise_broken:thomas-family-protection'
+                }
+            },
+            journalist: {
+                source_integrity: {
+                    upheld: 'player_respected_visitor_uncertainty',
+                    breached: 'player_overstated_visitor_identity'
+                }
+            }
+        };
+        const rule = criteria[npcId]?.[valueId];
+        if (!rule) return 'unseen';
+        const memories = this.people?.[npcId]?.memories || [];
+        const hasTag = tag => memories.some(memory => Array.isArray(memory.tags) && memory.tags.includes(tag));
+        const upheld = hasTag(rule.upheld);
+        const breached = hasTag(rule.breached);
+        if (upheld && breached) return 'contested';
+        if (upheld) return 'upheld';
+        if (breached) return 'breached';
+        return 'unseen';
+    }
+
     getLongTermBehaviorPattern(npcId) {
         const positiveTags = new Set([
             'player_reassured', 'player_respected_visitor_uncertainty',
