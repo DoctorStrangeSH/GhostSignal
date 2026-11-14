@@ -131,7 +131,6 @@ const DIALOGUE_JOURNALIST = {
                             id: "detective-overstated-visitor-identity",
                             kind: "detective_behavior",
                             networkPropagation: true,
-                            targetNpcId: "bartender",
                             sourceName: "Лора",
                             text: "Детектив объявил личность неизвестного посетителя установленной, хотя совпадение записи и графика подтверждает только назначенный визит, а не личность человека у стойки."
                         }
