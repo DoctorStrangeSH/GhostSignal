@@ -31,6 +31,15 @@ const CASE_002 = {
     ],
     
     startLocation: "police_station",
+
+    // Рабочие сценарные оценки обычных переходов, не карта реального пути NPC.
+    // Неописанный переход означает недостаток сведений, а не невозможность пути.
+    alibiRoutes: [
+        { from: 'bar_joe', to: 'alley', minutes: 5, bidirectional: true },
+        { from: 'alley', to: 'textile_phone_booth', minutes: 12, bidirectional: true },
+        { from: 'textile_phone_booth', to: 'telephone_exchange', minutes: 15, bidirectional: true },
+        { from: 'alley', to: 'night_diner', minutes: 10, bidirectional: true }
+    ],
     
     // === NPC ===
     npcs: [
