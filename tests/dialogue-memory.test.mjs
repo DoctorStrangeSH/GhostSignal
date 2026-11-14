@@ -947,6 +947,35 @@ test('verified family safety partly repairs trust after a false accusation, only
     assert.equal(restored.getAccusationStatus('waiter', 'thomas-lied-about-poisoning'), 'false');
 });
 
+test('Joe partially rebuilds trust only after verified help following prior-case threats', () => {
+    const { engine, memory, inventory, context } = createDialogueHarness();
+    const verifiedNode = () => engine.currentDialogue.tree.nodes.joe_after_protection_verified_opening;
+    engine.startDialogue('dialogue-bartender-case2');
+    const untouched = memory.getMemory('bartender').trust;
+    inventory.addInsight('thomas_family_protected');
+    engine._processNodeEffects(verifiedNode());
+    assert.equal(memory.getMemory('bartender').trust, untouched,
+        'help alone cannot erase a past harm that did not occur');
+
+    memory.setCase('case-001');
+    memory.recordAnswerSelected('bartender', 'dialogue-bartender', 'threat', {
+        text: 'Я заставлю вас говорить.', tone: 'threatening', memoryTags: ['player_threatened']
+    });
+    memory.setCase('case-002');
+    const before = memory.getMemory('bartender').trust;
+    engine._processNodeEffects(verifiedNode());
+    assert.equal(memory.getMemory('bartender').trust, before + 4);
+    engine._processNodeEffects(verifiedNode());
+    assert.equal(memory.getMemory('bartender').trust, before + 4);
+    assert.equal(memory.hasLongTermMemoryTag('bartender', 'player_threatened'), true);
+
+    context.savedMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    engine.setMemoryService(restored);
+    engine._processNodeEffects(verifiedNode());
+    assert.equal(restored.getMemory('bartender').trust, before + 4);
+});
+
 test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
     const { engine, inventory, memory, context } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning");
