@@ -954,18 +954,21 @@ class NPCMemoryService {
             : null;
     }
 
-    recordVerifiedRestitution(npcId, restitutionId, accusationId) {
-        if (typeof restitutionId !== 'string' || !restitutionId || !accusationId) return false;
+    recordVerifiedRestitution(npcId, restitutionId, accusationId, priorMemoryTag = null) {
+        if (typeof restitutionId !== 'string' || !restitutionId || (!accusationId && !priorMemoryTag)) return false;
         const memory = this._ensureNPC(npcId);
-        if (!memory || memory.restitutions.includes(restitutionId) ||
-            !memory.accusations.some(item => item.id === accusationId && item.status === 'false')) return false;
+        if (!memory || memory.restitutions.includes(restitutionId)) return false;
+        const accusationHarm = accusationId && memory.accusations.some(item =>
+            item.id === accusationId && item.status === 'false');
+        const priorHarm = priorMemoryTag && this.hasLongTermMemoryTagFromPriorCase(npcId, priorMemoryTag);
+        if (!accusationHarm && !priorHarm) return false;
         memory.restitutions.push(restitutionId);
         // A concrete repair helps, but cannot undo the original accusation.
         memory.trust = Math.min(100, memory.trust + 4);
         this._adjustCooperationMemory(memory, npcId, 5, 'verified_restitution:' + restitutionId);
-        this._append(memory, { type: 'verified_restitution', restitutionId, accusationId });
+        this._append(memory, { type: 'verified_restitution', restitutionId, accusationId: accusationId || null, priorMemoryTag });
         this._recordLongTermMemory(npcId, {
-            type: 'verified_restitution', summary: 'После ошибочного обвинения детектив выполнил реальное обещание помощи.',
+            type: 'verified_restitution', summary: 'После прежнего давления детектив подтвердил реальную помощь близким свидетеля.',
             sentiment: 'mixed', importance: 4, tags: ['verified_restitution'], trustDelta: 2
         });
         return true;
