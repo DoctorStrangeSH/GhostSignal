@@ -99,6 +99,13 @@ const DIALOGUE_JOURNALIST = {
                             fromNpcId: "bartender",
                             toNpcId: "journalist"
                         }
+                    },
+                    {
+                        text: "Джо передал вам, что я обвинял Томаса после исправления показаний?",
+                        nextNode: "lora_heard_unfounded_accusation",
+                        tone: "cautious",
+                        condition: "heard_rumor:detective-accused-thomas-after-correction",
+                        hiddenWhenUnavailable: true
                     }
                 ]
             },
@@ -206,6 +213,17 @@ const DIALOGUE_JOURNALIST = {
                 answers: [
                     { text: "Я поступил неправильно. Томас был напуган, а я не услышал его.", nextNode: "investigation", tone: "reassuring" },
                     { text: "Это не ваше дело. Я отвечаю за расследование.", nextNode: "investigation", tone: "defensive" }
+                ]
+            },
+
+            lora_heard_unfounded_accusation: {
+                speaker: "npc",
+                text: "Джо пересказал слова Томаса: после того как тот уточнил показания, вы назвали его лжецом. Я не присутствовала при разговоре и пока не могу подтвердить каждую деталь. Но если свидетель исправляет неточность, это повод проверить факты, а не принуждать его повторять удобную версию. Я попрошу Томаса изложить события самостоятельно.",
+                mood: "guarded",
+                innerThought: "Это сообщение из вторых рук. Нельзя выдавать его за собственное наблюдение или доказательство вины детектива.",
+                answers: [
+                    { text: "Вы правы. Пусть он расскажет без моего присутствия.", nextNode: "investigation", tone: "reassuring" },
+                    { text: "Я предъявлю вам документы, когда они будут проверены.", nextNode: "investigation", tone: "direct" }
                 ]
             },
 
