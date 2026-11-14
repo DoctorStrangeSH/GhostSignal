@@ -69,6 +69,20 @@ class NPCManager {
 
         if (schedule.atWork) {
             const atWork = this._isInTimeRange(currentHour, schedule.atWork.start, schedule.atWork.end);
+            // A witness's recorded decision outlives the dialogue that caused it.
+            // During his normal shift Thomas stays at home if he took temporary leave.
+            // Do not silently turn this into an approved protection arrangement.
+            const onTemporaryLeave = this.currentCaseId === 'case-002' && npcId === 'waiter' &&
+                this.relationshipService?.getWitnessWorkDecision?.(
+                    'waiter', 'thomas-decides-work-after-protection-delay'
+                ) === 'temporary_leave';
+            if (atWork && onTemporaryLeave) {
+                const home = schedule.locations?.home || null;
+                return {
+                    available: Boolean(home), reason: 'temporary_leave', location: home,
+                    message: home ? `${npc.name} временно не выходит на смены` : `${npc.name} временно недоступен на работе`
+                };
+            }
             const location = atWork ? schedule.locations.work : schedule.locations.home;
             return {
                 available: true,
