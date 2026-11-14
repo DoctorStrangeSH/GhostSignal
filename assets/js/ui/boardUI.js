@@ -189,7 +189,7 @@ class BoardUI {
         }).join('');
         const statements = this.memoryService?.getStatements?.() || [];
         const statementOptions = statements.map(item =>
-            '<option value="statement:' + this._escapeHTML(item.id) + '">' +
+            '<option value="statement:' + this._escapeHTML(item.id) + '"' + (item.status === 'superseded' ? ' disabled' : '') + '>' +
             this._escapeHTML((item.sourceName || item.npcId) + ' — ' + (item.summary || item.value) + (item.status === 'superseded' ? ' (архив)' : '')) +
             '</option>'
         ).join('');
@@ -217,7 +217,10 @@ class BoardUI {
                                 const object = link.kind === 'evidence' ? getObjectById(link.sourceId) : null;
                                 const statement = link.kind === 'statement' ? statements.find(s => s.id === link.sourceId) : null;
                                 const title = object?.name || (statement ? (statement.sourceName || statement.npcId) + ': ' + (statement.summary || statement.value) : link.sourceId);
-                                return `<li><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}</span>
+                                const archived = statement?.status === 'superseded';
+                                const missing = link.kind === 'statement' && !statement;
+                                const caution = archived ? ' · Показание пересмотрено — проверьте новую версию' : (missing ? ' · Источник недоступен' : '');
+                                return `<li class="${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}</span>
                                   ${h.status === 'open' ? `<button type="button" class="terminal-btn btn-sm hypothesis-unlink" data-id="${this._escapeHTML(h.id)}" data-index="${index}" aria-label="Убрать связь">✕</button>` : ''}</li>`;
                             }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
                         </ul>
