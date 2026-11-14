@@ -25,6 +25,13 @@ const DIALOGUE_WOMAN_IN_RED = {
                         condition: "heard_rumor:public-accusation-case-002-ex_wife",
                         hiddenWhenUnavailable: true
                     },
+                    {
+                        text: "Вы ещё раз звонили Анне после обвинения?",
+                        nextNode: "eva_independent_support_after_accusation",
+                        tone: "calm",
+                        condition: "npc_action_completed:eva-supports-anna-after-public-accusation",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Кто вы такая?", nextNode: "identity" },
                     {
                         text: "Вы связывались с Анной после нашего разговора?",
@@ -44,6 +51,16 @@ const DIALOGUE_WOMAN_IN_RED = {
                 answers: [
                     { text: "Я понимаю, почему вы её защищаете. Давайте опираться только на проверенные факты.", nextNode: "that_night", tone: "reassuring", cooperationDelta: 2 },
                     { text: "Мне всё ещё нужны ваши собственные наблюдения.", nextNode: "that_night", tone: "direct" }
+                ]
+            },
+
+            eva_independent_support_after_accusation: {
+                speaker: "npc",
+                text: "Да. Я позвонила ей сама, когда узнала, что произошло. Убедилась, что Анна не одна, и попросила её записать, что именно было сказано. Это не доказывает ни её вину, ни невиновность. Но теперь я не стану молчать, если её осудят до проверки фактов.",
+                mood: "protective",
+                answers: [
+                    { text: "Я проверю первоисточники, а не пересказы.", nextNode: "that_night", tone: "reassuring" },
+                    { text: "Расскажите только о том, что видели лично.", nextNode: "that_night", tone: "direct" }
                 ]
             },
 
