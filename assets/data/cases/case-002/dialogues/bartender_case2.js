@@ -193,6 +193,42 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         cooperationDelta: 7,
                         condition: "all:prior_case_memory:player_reassured&long_term_trust_at_least:50&not:has_visited_node:joe_earned_help",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Я ошибся с личностью посетителя. Поможете мне исправить сказанное Томасу?",
+                        nextNode: "joe_offer_visitor_repair",
+                        tone: "reassuring",
+                        condition: "all:long_term_memory:player_doubled_down_on_visitor_overclaim&not:long_term_memory:player_retracted_visitor_overclaim&not:has_visited_node:joe_offer_visitor_repair",
+                        hiddenWhenUnavailable: true
+                    }
+                ]
+            },
+
+            joe_offer_visitor_repair: {
+                speaker: "npc",
+                text: "Вы действительно хотите исправить запись, а не просто успокоить Томаса? Тогда скажите прямо: мы не знаем, кто приходил, и семья не должна полагаться на вашу прежнюю уверенность. Я могу передать ему ваши слова, но он сам решит, доверять ли вам.",
+                mood: "cautious",
+                answers: [
+                    {
+                        text: "Да. Мой прежний вывод был необоснованным. Передайте Томасу, что я его отзываю.",
+                        nextNode: "greeting",
+                        tone: "reassuring",
+                        trustDelta: 2,
+                        memoryImportance: 3,
+                        memoryTags: ["player_retracted_visitor_overclaim"],
+                        memorySummary: "Детектив открыто отозвал прежнее уверенное утверждение о личности посетителя. Джо согласился передать исправление Томасу.",
+                        report: {
+                            id: "joe-reports-detective-visitor-correction",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            sourceName: "Джо",
+                            text: "Детектив лично признал при мне, что его уверенное утверждение о личности посетителя было необоснованным, и попросил передать Томасу исправление. Проверка личности посетителя всё ещё требуется."
+                        }
+                    },
+                    {
+                        text: "Я пока не готов официально отзывать свой вывод.",
+                        nextNode: "greeting",
+                        tone: "cautious"
                     }
                 ]
             },

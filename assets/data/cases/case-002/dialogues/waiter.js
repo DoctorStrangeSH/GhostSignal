@@ -394,7 +394,30 @@ const DIALOGUE_WAITER = {
                             fromNpcId: "bartender",
                             toNpcId: "waiter"
                         }
+                    },
+                    {
+                        text: "Джо передал тебе, что я официально отозвал вывод о посетителе?",
+                        nextNode: "thomas_hears_visitor_correction",
+                        tone: "calm",
+                        condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&heard_rumor:joe-reports-detective-visitor-correction&not:has_visited_node:thomas_hears_visitor_correction",
+                        hiddenWhenUnavailable: true,
+                        revealSocialEvents: {
+                            reportId: "joe-reports-detective-visitor-correction",
+                            eventTypes: ["delivered"],
+                            fromNpcId: "bartender",
+                            toNpcId: "waiter"
+                        }
                     }
+                ]
+            },
+
+            thomas_hears_visitor_correction: {
+                speaker: "npc",
+                text: "Да, Джо передал, что вы при нём отозвали прежний вывод. Я рад, что вы признали ошибку, но помню, как уверенно вы говорили раньше. Это не доказывает, кто приходил в бар, и не отменяет опасности для моей семьи. Если вы продолжите проверять факты без давления, нам будет проще разговаривать.",
+                mood: "cautious",
+                answers: [
+                    { text: "Справедливо. Буду проверять сведения и не стану требовать доверия сразу.", nextNode: "he_saw", tone: "reassuring", cooperationDelta: 2 },
+                    { text: "Спасибо, что выслушал. Поговорим позже.", nextNode: "end_waiter", tone: "calm" }
                 ]
             },
 
