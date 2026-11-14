@@ -196,6 +196,7 @@ class BoardUI {
         const sourceOptions = evidenceOptions + statementOptions;
         const names = { for: 'Поддерживает', against: 'Противоречит', pending: 'Требует проверки' };
         const labels = { evidence: 'Улика', statement: 'Показание', assumption: 'Допущение' };
+        const sourceKinds = { firsthand_claim: 'Заявлено личное наблюдение', unverified: 'Способ получения сведений не установлен', unknown: 'Источник не найден' };
         return `
             <section class="testimony-journal hypothesis-journal" aria-labelledby="hypothesis-title">
                 <div class="testimony-journal-header"><div>
@@ -220,10 +221,28 @@ class BoardUI {
                                 const archived = statement?.status === 'superseded';
                                 const missing = link.kind === 'statement' && !statement;
                                 const caution = archived ? ' · Показание пересмотрено — проверьте новую версию' : (missing ? ' · Источник недоступен' : '');
-                                return `<li class="${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}</span>
+                                const provenance = statement ? (statement.directObservation === true ? ' · Со слов свидетеля: видел лично' : ' · Источник сведений не подтверждён') : '';
+                                return `<li class="${archived || missing ? 'hypothesis-source-caution' : ''}"><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}${this._escapeHTML(caution)}${this._escapeHTML(provenance)}</span>
                                   ${h.status === 'open' ? `<button type="button" class="terminal-btn btn-sm hypothesis-unlink" data-id="${this._escapeHTML(h.id)}" data-index="${index}" aria-label="Убрать связь">✕</button>` : ''}</li>`;
                             }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
                         </ul>
+                        ${(() => {
+                            const review = this.board.reviewHypothesisSources(h.id, statements);
+                            if (!review?.sources.length) return '<p class="hypothesis-help">Прикрепите показания, чтобы проверить происхождение свидетельств.</p>';
+                            const grouped = review.sources.filter(item => item.origin === 'firsthand_claim').length;
+                            const notices = review.warnings.map(item => {
+                                if (item.type === 'missing') return 'Источник записи недоступен: ' + item.ids.join(', ');
+                                if (item.type === 'superseded') return 'Показание пересмотрено: ' + item.ids.join(', ');
+                                if (item.type === 'same_witness') return 'Две записи принадлежат одному свидетелю — это не независимые источники.';
+                                if (item.type === 'shared_rumor_reference') return 'Записи ссылаются на общий слух — повторение не является независимым подтверждением.';
+                                return '';
+                            }).filter(Boolean);
+                            return `<div class="hypothesis-source-review">
+                                <strong>ПРОВЕРКА ИСТОЧНИКОВ</strong>
+                                <p>Показаний: ${review.sources.length}. Заявлены как личное наблюдение: ${grouped}. Остальные требуют выяснения происхождения.</p>
+                                ${notices.length ? '<ul>' + [...new Set(notices)].map(note => '<li>' + this._escapeHTML(note) + '</li>').join('') + '</ul>' : '<small>Совпадение источников пока не обнаружено. Это не доказательство независимости.</small>'}
+                            </div>`;
+                        })()}
                         ${h.status === 'open' ? `
                             <form class="hypothesis-link-form hypothesis-form" data-id="${this._escapeHTML(h.id)}">
                                 <select class="terminal-input hypothesis-source" aria-label="Источник"><option value="">Выберите улику или показание</option>${sourceOptions}<option value="assumption:">Собственное допущение</option></select>
