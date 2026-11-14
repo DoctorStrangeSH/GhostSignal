@@ -142,6 +142,8 @@ class App {
         this.minigameManager = new MinigameManager(); this.minigameManager.setContainer('modal-body'); this._registerMinigames();
 
         this.investigationBoard = InvestigationBoard.fromJSON(this.progress.boardData);
+        // Legacy snapshots had no case ID; associate them with the active saved case.
+        this.investigationBoard.setCase(this.progress.activeCase, true);
         this.boardUI = new BoardUI('board-area'); this.boardUI.setBoard(this.investigationBoard); this.boardUI.setInventory(this.inventory); this.boardUI.setMemoryService(this.npcMemoryService);
 
         this.notesManager = NotesManager.fromJSON(this.progress.notesData);
