@@ -202,7 +202,7 @@ test('alibi review checks the existing minimum travel cost without inventing geo
     const second = board.addAlibiClaim({ subject: 'Кейн', location: 'Телефонная станция', startMinute: 1335, endMinute: 1340,
         precision: 'exact', kind: 'evidence', sourceId: 'ticket' }, context);
     assert.ok(first && second);
-    assert.deepEqual(board.reviewAlibiClaims(), []);
+    assert.equal(board.reviewAlibiClaims().length, 0);
     const [finding] = board.reviewAlibiClaims(20);
     assert.equal(finding.status, 'travel_time_tight');
     assert.equal(finding.gapMinutes, 10);
@@ -211,5 +211,5 @@ test('alibi review checks the existing minimum travel cost without inventing geo
     assert.equal('route' in finding, false);
     assert.equal('distance' in finding, false);
     const enoughTime = board.reviewAlibiClaims(5);
-    assert.deepEqual(enoughTime, []);
+    assert.equal(enoughTime.length, 0);
 });
