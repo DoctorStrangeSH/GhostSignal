@@ -2215,6 +2215,10 @@ test("behavioral reputation counts distinct investigations instead of farmed dia
             text: "Спасибо, Джо.", tone: "reassuring"
         });
     }
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "verified-action", {
+        text: "Я сверил запись и исправил вывод.", tone: "calm",
+        memoryTags: ["player_completed_cautious_identification"], memoryImportance: 3
+    });
     memory.setCase("case-002");
     engine.startDialogue("dialogue-bartender-case2");
     assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 1);
