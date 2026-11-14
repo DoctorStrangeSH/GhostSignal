@@ -394,7 +394,7 @@ class DialogueEngine {
                 const published = this.socialNetwork?.publishVerifiedRestitution(
                     this.currentDialogue.npcId, node.verifiedRestitution.id,
                     node.verifiedRestitution.accusationId,
-                    { dialogueId: this.currentDialogue.id, nodeId: node.id }
+                    { dialogueId: this.currentDialogue.id, nodeId: this.currentNode?.id }
                 );
                 if (published?.published) events.emit('npc:social_network_changed', { reason: 'verified_restitution' });
                 this._notifyMemoryChanged();
