@@ -479,6 +479,28 @@ test('board checklist hides case guidance before a case is selected and escapes 
     assert.doesNotMatch(html, /<script>|<img/);
 });
 
+test('board UI prioritizes active leads and collapses completed leads without revealing unsafe HTML', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.locationManager = { activeCaseData: { id: 'case-002' }, visitedLocations: new Set() };
+    ui.inventory = { evidence: [] };
+    ui.board = { evidenceOnBoard: [], getInvestigationChecklist: () => ({ completed: 1,
+        tasks: [{ text: 'Проверить документ', done: true }],
+        nextActions: [
+            { status: 'checked', text: 'Старый <script>вопрос</script>' },
+            { status: 'pending', text: 'Лора ещё проверяет' },
+            { status: 'available', text: 'Поговорить с Джо' }
+        ] }) };
+    const html = ui._renderInvestigationChecklist();
+    assert.match(html, /АКТИВНЫЕ ЗАЦЕПКИ/);
+    assert.match(html, /Проверенные зацепки \(1\)/);
+    assert.ok(html.indexOf('Лора ещё проверяет') < html.indexOf('Старый'));
+    assert.match(html, /&lt;script&gt;вопрос&lt;\/script&gt;/);
+    assert.doesNotMatch(html, /<script>/);
+    assert.equal((html.match(/checklist-next-action/g) || []).length, 3);
+});
+
 test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
