@@ -52,6 +52,7 @@ class BoardUI {
 
             ${this._renderHypotheses()}
             ${this._renderChronology()}
+            ${this._renderAlibiReconstruction()}
             ${this._renderTestimonyJournal()}
         `;
         
@@ -173,6 +174,7 @@ class BoardUI {
 
         this._bindHypothesisEvents();
         this._bindChronologyEvents();
+        this._bindAlibiEvents();
         this._bindTestimonyEvents();
     }
 
@@ -211,6 +213,54 @@ class BoardUI {
                 ? `${comparison.minutesApart} мин. между отметками. ${comparison.warning}`
                 : 'Выберите две разные доступные отметки.';
         });
+    }
+
+    _renderAlibiReconstruction() {
+        const statements = this.memoryService?.getStatements?.() || [];
+        const evidenceIds = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const sources = [
+            ...statements.filter(s => s.status !== 'superseded').map(s => ({ id: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) })),
+            ...evidenceIds.map(id => ({ id: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
+        ];
+        const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+        const claims = this.board?.alibiClaims || [];
+        const warnings = this.board?.reviewAlibiClaims() || [];
+        return `<section class="testimony-journal" aria-labelledby="alibi-title">
+            <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
+            <p class="hypothesis-help">Это ваша реконструкция по найденным источникам, а не подтверждённый маршрут NPC. Указывайте время, место и степень точности из показания или документа. Интервалы через полночь пока нужно разбивать на две записи.</p>
+            <form id="alibi-form" class="hypothesis-form">
+                <input class="terminal-input" name="subject" maxlength="100" required placeholder="Персонаж (одно имя для разных записей)" aria-label="Персонаж">
+                <input class="terminal-input" name="location" maxlength="120" required placeholder="Предполагаемое место" aria-label="Место">
+                <label>С <input class="terminal-input" type="time" name="start" required></label>
+                <label>По <input class="terminal-input" type="time" name="end" required></label>
+                <select class="terminal-input" name="precision" aria-label="Точность"><option value="approximate">Время приблизительное</option><option value="exact">Время указано точно</option></select>
+                <select class="terminal-input" name="source" required aria-label="Источник"><option value="">Выберите обнаруженный источник</option>${sources.map(s => `<option value="${this._escapeHTML(s.id)}">${this._escapeHTML(s.label)}</option>`).join('')}</select>
+                <button class="terminal-btn btn-sm" type="submit">ДОБАВИТЬ В РЕКОНСТРУКЦИЮ</button>
+            </form>
+            <ol>${claims.map(c => `<li><strong>${this._escapeHTML(c.subject)}</strong>: ${fmt(c.startMinute)}–${fmt(c.endMinute)} · ${this._escapeHTML(c.location)}
+                (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)})
+                <button class="terminal-btn btn-sm alibi-remove" data-id="${this._escapeHTML(c.id)}" type="button" aria-label="Удалить версию">✕</button></li>`).join('') || '<li>Пока нет версий местонахождения.</li>'}</ol>
+            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}</li>`).join('')}</ul></div>` : ''}
+        </section>`;
+    }
+
+    _bindAlibiEvents() {
+        this.container.querySelector('#alibi-form')?.addEventListener('submit', e => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const minutes = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+                ? Number(value.slice(0, 2)) * 60 + Number(value.slice(3)) : NaN;
+            const [kind, ...sourceParts] = form.elements.source.value.split(':');
+            const result = this.board?.addAlibiClaim({
+                subject: form.elements.subject.value, location: form.elements.location.value,
+                startMinute: minutes(form.elements.start.value), endMinute: minutes(form.elements.end.value),
+                precision: form.elements.precision.value, kind, sourceId: sourceParts.join(':')
+            }, { statements: this.memoryService?.getStatements?.() || [],
+                evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])] });
+            if (!result) events.emit('notification:show', { message: 'Проверьте интервал, источник и отсутствие дублей.', type: 'warning', duration: 3000 });
+        });
+        this.container.querySelectorAll('.alibi-remove').forEach(button => button.addEventListener('click', () =>
+            this.board?.removeAlibiClaim(button.dataset.id)));
     }
 
     _renderHypotheses() {
