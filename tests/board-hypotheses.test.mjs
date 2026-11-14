@@ -154,6 +154,30 @@ test('rumor inquiry requires observed references, discovered leads and persists 
     assert.equal(restored.nextInquiryId, 1);
 });
 
+test('investigation checklist tracks player-created source inquiries without inventing evidence', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const hypothesis = board.addHypothesis('Слух о <посетителе>');
+    board.linkHypothesis(hypothesis, 'statement', 'claim-a', 'pending');
+    const statements = [{ id: 'claim-a', status: 'active', corroboratesRumorIds: ['rumor-one'] }];
+    const inquiry = board.startSourceInquiry(hypothesis, 'rumor-one', statements);
+    const leads = () => board.getInvestigationChecklist({ statements }).nextActions.filter(item => item.id === inquiry);
+    assert.equal(leads().length, 1);
+    assert.equal(leads()[0].status, 'pending');
+    assert.match(leads()[0].text, /Найдите доступное показание/);
+    assert.doesNotMatch(leads()[0].text, /личность посетителя установлена/);
+    board.addSourceInquiryLead(inquiry, 'statement', 'claim-a', 'Это пересказ', { statements });
+    assert.equal(leads()[0].status, 'available');
+    const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(loaded.getInvestigationChecklist({ statements }).nextActions.find(item => item.id === inquiry).status, 'available');
+    board.closeSourceInquiry(inquiry, 'Пока не доказано');
+    assert.equal(leads()[0].status, 'checked');
+    assert.match(leads()[0].text, /не как установленный факт/);
+    board.setCase('case-001');
+    assert.equal(board.getInvestigationChecklist().nextActions.some(item => item.id === inquiry), false);
+});
+
 test('hearsay can initiate a source inquiry without being labelled firsthand evidence', () => {
     const { create } = boardRuntime();
     const board = create();
