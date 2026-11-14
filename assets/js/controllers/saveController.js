@@ -11,8 +11,7 @@ class SaveController {
 
     saveProgress() {
         if (!this.app.progress) return false;
-        this.storage.saveProgress(this.app.progress);
-        return true;
+        return this.storage.saveProgress(this.app.progress) === true;
     }
 
     quickSave() {
