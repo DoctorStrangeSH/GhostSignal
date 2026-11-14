@@ -178,6 +178,7 @@ class NPCRelationshipService {
                         requiresReceivedActionId: typeof conditions.requiresReceivedActionId === 'string' ? conditions.requiresReceivedActionId : null,
                         requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
                         requiresWitnessWorkDecision: ['temporary_leave', 'document_help'].includes(conditions.requiresWitnessWorkDecision) ? conditions.requiresWitnessWorkDecision : null,
+                        requiresLeaveReviewOutcome: ['return_to_work', 'extend_leave'].includes(conditions.requiresLeaveReviewOutcome) ? conditions.requiresLeaveReviewOutcome : null,
                         fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
                         fromDialogueNodeId: typeof conditions.fromDialogueNodeId === 'string' ? conditions.fromDialogueNodeId : null
                     },
@@ -424,6 +425,9 @@ class NPCRelationshipService {
                     this._now() - prior.lastTriggeredAt < conditions.requiresReceivedActionAgeMinutes)) return false;
             if (conditions.requiresWitnessWorkDecision &&
                 prior.witnessWorkDecision !== conditions.requiresWitnessWorkDecision) return false;
+            if (conditions.requiresLeaveReviewOutcome &&
+                (received?.leaveReviewPolicy !== 'after_temporary_leave' ||
+                    prior.leaveReviewOutcome !== conditions.requiresLeaveReviewOutcome)) return false;
         }
         if (conditions.goalId) {
             const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
