@@ -2,11 +2,13 @@ class CaseListUI {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.progress = null;
+        this.canResume = null;
         this._init();
     }
     
-    setProgress(progress) {
+    setProgress(progress, canResume = null) {
         this.progress = progress;
+        if (typeof canResume === 'function') this.canResume = canResume;
         this.render();
     }
     
@@ -32,7 +34,11 @@ class CaseListUI {
         
         this.container.innerHTML = cases.map(caseData => {
             const isSolved = solvedCases.includes(caseData.id);
-            const isActive = this.progress?.activeCase === caseData.id;
+            const isActive = this.canResume
+                ? this.canResume(caseData.id)
+                : this.progress?.activeCase === caseData.id &&
+                    this.progress?.caseData?.currentCaseId === caseData.id &&
+                    this.progress?.caseData?.caseState === 'active';
             const difficultyStars = '⭐'.repeat(caseData.difficulty);
             
             return `
