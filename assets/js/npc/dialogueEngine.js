@@ -498,6 +498,10 @@ class DialogueEngine {
         if (editorialDecision) {
             return Boolean(npcId && this.relationshipService?.getEditorialDecision?.(npcId, editorialDecision[1]) === editorialDecision[2].toLowerCase());
         }
+        const consultationCondition = conditionStr.match(/^npc_protection_consultation:([a-z0-9_:-]{1,64}):(procedure_guidance|written_request_required)$/i);
+        if (consultationCondition) {
+            return Boolean(npcId && this.relationshipService?.getProtectionConsultationOutcome?.(npcId, consultationCondition[1]) === consultationCondition[2].toLowerCase());
+        }
         if (conditionStr.startsWith('npc_action_received:')) {
             const ruleId = conditionStr.slice('npc_action_received:'.length);
             return Boolean(npcId && this.relationshipService?.hasReceivedInteraction?.(npcId, ruleId));
