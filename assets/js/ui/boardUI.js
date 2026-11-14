@@ -456,6 +456,20 @@ class BoardUI {
                             }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
                         </ul>
                         ${(() => {
+                            const overlaps = this.board.reviewHypothesisOverlaps?.(h.id) || [];
+                            if (!overlaps.length) return '';
+                            return `<div class="hypothesis-overlap-review">
+                                <strong>ОБЩИЕ ИСТОЧНИКИ ДЛЯ РАЗНЫХ ВЕРСИЙ</strong>
+                                <p>Повторное использование улики или показания не является независимым подтверждением. Разные оценки сами по себе не доказывают противоречие.</p>
+                                <ul>${overlaps.map(item => {
+                                    const object = item.kind === 'evidence' ? getObjectById(item.sourceId) : null;
+                                    const statement = item.kind === 'statement' ? statements.find(s => s.id === item.sourceId) : null;
+                                    const sourceTitle = object?.name || (statement ? (statement.sourceName || statement.npcId) + ': ' + (statement.summary || statement.value) : item.sourceId);
+                                    return `<li>${this._escapeHTML(labels[item.kind])}: ${this._escapeHTML(sourceTitle)} — также в версии «${this._escapeHTML(item.otherTitle)}»${item.differingAssessment ? ' (оценки различаются)' : ''}.</li>`;
+                                }).join('')}</ul>
+                            </div>`;
+                        })()}
+                        ${(() => {
                             const review = this.board.reviewHypothesisSources(h.id, statements);
                             if (!review?.sources.length) return '<p class="hypothesis-help">Прикрепите показания, чтобы проверить происхождение свидетельств.</p>';
                             const grouped = review.sources.filter(item => item.origin === 'firsthand_claim').length;
