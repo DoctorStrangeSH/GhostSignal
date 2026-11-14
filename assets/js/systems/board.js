@@ -5,6 +5,8 @@ class InvestigationBoard {
         this.maxSlots = 6;
         this.evidenceOnBoard = []; // ID улик на доске
         this.hypotheses = [];
+        this.sourceInquiries = [];
+        this.nextInquiryId = 1;
         this.nextHypothesisId = 1;
         this.caseId = null;
         this._initDefaultSlots();
@@ -141,6 +143,8 @@ class InvestigationBoard {
         this._initDefaultSlots();
         this.evidenceOnBoard = [];
         this.hypotheses = [];
+        this.sourceInquiries = [];
+        this.nextInquiryId = 1;
         this.nextHypothesisId = 1;
         this.caseId = id;
         events.emit('board:updated', { action: 'case_switched', caseId: id });
@@ -230,6 +234,47 @@ class InvestigationBoard {
         return { sources, warnings };
     }
 
+    // A player-authored inquiry: provenance is a lead, not a truth verdict.
+    startSourceInquiry(hypothesisId, rumorId, statements = []) {
+        const hypothesis = this.hypotheses.find(h => h.id === hypothesisId && h.status === 'open');
+        const rumor = String(rumorId ?? '').trim().slice(0, 240);
+        if (!hypothesis || !rumor || this.sourceInquiries.some(i => i.hypothesisId === hypothesisId && i.rumorId === rumor)) return null;
+        const review = this.reviewHypothesisSources(hypothesisId, statements);
+        if (!review?.sources.some(s => s.linkedRumorIds.includes(rumor))) return null;
+        const inquiry = { id: 'inquiry-' + this.nextInquiryId++, hypothesisId, rumorId: rumor,
+            status: 'open', leads: [], history: [{ action: 'opened', rumorId: rumor }] };
+        this.sourceInquiries.push(inquiry);
+        events.emit('board:updated', { action: 'inquiry_opened', id: inquiry.id });
+        return inquiry.id;
+    }
+
+    // A lead must reference information actually discovered by the player.
+    addSourceInquiryLead(id, kind, sourceId, note, context = {}) {
+        const inquiry = this.sourceInquiries.find(i => i.id === id && i.status === 'open');
+        const source = String(sourceId ?? '').trim().slice(0, 240);
+        const explanation = String(note ?? '').trim().slice(0, 500);
+        if (!inquiry || !source || !explanation || !['statement', 'evidence'].includes(kind)) return false;
+        if (kind === 'statement' && !context.statements?.some(s => s.id === source && s.status !== 'superseded')) return false;
+        if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return false;
+        if (inquiry.leads.some(lead => lead.kind === kind && lead.sourceId === source)) return false;
+        const lead = { kind, sourceId: source, note: explanation };
+        inquiry.leads.push(lead);
+        inquiry.history.push({ action: 'lead_added', ...lead });
+        events.emit('board:updated', { action: 'inquiry_lead_added', id });
+        return true;
+    }
+
+    closeSourceInquiry(id, conclusion) {
+        const inquiry = this.sourceInquiries.find(i => i.id === id && i.status === 'open');
+        const note = String(conclusion ?? '').trim().slice(0, 500);
+        if (!inquiry || !inquiry.leads.length || !note) return false;
+        inquiry.status = 'closed';
+        inquiry.conclusion = note;
+        inquiry.history.push({ action: 'closed', note });
+        events.emit('board:updated', { action: 'inquiry_closed', id });
+        return true;
+    }
+
     // Сбросить доску
     reset() {
         const evidenceToRestore = [...this.evidenceOnBoard];
@@ -248,6 +293,8 @@ class InvestigationBoard {
             slots: this.slots.map(s => ({ id: s.id, evidenceId: s.evidenceId })),
             evidenceOnBoard: [...this.evidenceOnBoard],
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
+            sourceInquiries: this.sourceInquiries.map(i => ({ ...i, leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
+            nextInquiryId: this.nextInquiryId,
             nextHypothesisId: this.nextHypothesisId,
             caseId: this.caseId
         };
@@ -270,6 +317,17 @@ class InvestigationBoard {
                 links: Array.isArray(h.links) ? h.links.filter(l => l && ['evidence', 'statement', 'assumption'].includes(l.kind) && ['for', 'against', 'pending'].includes(l.stance) && typeof l.sourceId === 'string') : [],
                 history: Array.isArray(h.history) ? h.history.filter(v => v && typeof v.action === 'string') : []
             })) : [];
+            board.sourceInquiries = Array.isArray(json.sourceInquiries) ? json.sourceInquiries.filter(i =>
+                i && typeof i.id === 'string' && typeof i.hypothesisId === 'string' && typeof i.rumorId === 'string' &&
+                board.hypotheses.some(h => h.id === i.hypothesisId)).map(i => ({
+                id: i.id, hypothesisId: i.hypothesisId, rumorId: i.rumorId,
+                status: i.status === 'closed' ? 'closed' : 'open',
+                conclusion: typeof i.conclusion === 'string' ? i.conclusion : undefined,
+                leads: Array.isArray(i.leads) ? i.leads.filter(l => l && ['statement', 'evidence'].includes(l.kind) && typeof l.sourceId === 'string' && typeof l.note === 'string').map(l => ({ ...l })) : [],
+                history: Array.isArray(i.history) ? i.history.filter(h => h && typeof h.action === 'string').map(h => ({ ...h })) : []
+            })) : [];
+            board.nextInquiryId = Math.max(1, Number.isSafeInteger(json.nextInquiryId) ? json.nextInquiryId : 1,
+                ...board.sourceInquiries.map(i => Number(i.id.match(/^inquiry-(\d+)$/)?.[1] || 0) + 1));
             board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
                 ...board.hypotheses.map(h => Number(h.id.match(/^hyp-(\d+)$/)?.[1] || 0) + 1));
         }
