@@ -246,6 +246,59 @@ class InvestigationBoard {
         });
     }
 
+    // Scenario-authored route estimates are hypotheses about ordinary travel,
+    // not proof that a character took a particular route. Unknown segments
+    // are intentionally omitted, never interpreted as impossible travel.
+    reviewAlibiRoutes(routeEdges = [], knownLocations = []) {
+        const names = new Map((Array.isArray(knownLocations) ? knownLocations : [])
+            .filter(loc => loc && typeof loc.id === 'string').map(loc => [loc.id, loc.name || loc.id]));
+        const graph = new Map();
+        for (const edge of Array.isArray(routeEdges) ? routeEdges : []) {
+            if (!edge || !names.has(edge.from) || !names.has(edge.to) || edge.from === edge.to ||
+                !Number.isInteger(edge.minutes) || edge.minutes <= 0 || edge.minutes > 180) continue;
+            const add = (from, to) => {
+                if (!graph.has(from)) graph.set(from, []);
+                graph.get(from).push({ to, minutes: edge.minutes });
+            };
+            add(edge.from, edge.to);
+            if (edge.bidirectional === true) add(edge.to, edge.from);
+        }
+        const route = (from, to) => {
+            const best = new Map([[from, 0]]), paths = new Map([[from, [from]]]);
+            const pending = new Set([from]);
+            while (pending.size) {
+                const current = [...pending].reduce((a, b) => best.get(a) <= best.get(b) ? a : b);
+                pending.delete(current);
+                if (current === to) return { minutes: best.get(current), locations: paths.get(current) };
+                for (const edge of graph.get(current) || []) {
+                    const estimate = best.get(current) + edge.minutes;
+                    if (estimate >= (best.get(edge.to) ?? Infinity)) continue;
+                    best.set(edge.to, estimate);
+                    paths.set(edge.to, [...paths.get(current), edge.to]);
+                    pending.add(edge.to);
+                }
+            }
+            return null;
+        };
+        const findings = [];
+        for (let i = 0; i < this.alibiClaims.length; i++) {
+            for (let j = i + 1; j < this.alibiClaims.length; j++) {
+                const a = this.alibiClaims[i], b = this.alibiClaims[j];
+                if (a.subject.toLocaleLowerCase() !== b.subject.toLocaleLowerCase() ||
+                    !names.has(a.locationId) || !names.has(b.locationId) || a.locationId === b.locationId ||
+                    Math.max(a.startMinute, b.startMinute) <= Math.min(a.endMinute, b.endMinute)) continue;
+                const [earlier, later] = a.startMinute < b.startMinute ? [a, b] : [b, a];
+                const estimate = route(earlier.locationId, later.locationId);
+                const availableMinutes = later.startMinute - earlier.endMinute;
+                if (!estimate || availableMinutes >= estimate.minutes) continue;
+                findings.push({ ids: [earlier.id, later.id], subject: a.subject, status: 'route_time_tight',
+                    routeLocationIds: estimate.locations, estimatedMinutes: estimate.minutes, availableMinutes,
+                    reason: `Между ${names.get(earlier.locationId)} и ${names.get(later.locationId)} по известному маршруту оценка ${estimate.minutes} мин. (через ${estimate.locations.map(id => names.get(id)).join(' → ')}), а между версиями ${availableMinutes} мин. Проверьте точность времени и альтернативные пути: это не доказательство невозможности перемещения.` });
+            }
+        }
+        return findings;
+    }
+
     checkConclusions() {
         // Проверяем ключевые пары
         const pairs = [
