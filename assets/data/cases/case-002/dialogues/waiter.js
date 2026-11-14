@@ -442,7 +442,42 @@ const DIALOGUE_WAITER = {
                         tone: "cautious",
                         condition: "all:npc_action_received:joe-informs-thomas-mills-requires-documents&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_hears_mills_documents_required",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Что ты решил делать после задержки с защитой?",
+                        nextNode: "thomas_takes_temporary_leave",
+                        tone: "cautious",
+                        condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:temporary_leave&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_takes_temporary_leave",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Ты решил помочь Джо подготовить документы для Миллса?",
+                        nextNode: "thomas_prepares_supporting_documents",
+                        tone: "procedural",
+                        condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:document_help&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_prepares_supporting_documents",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_takes_temporary_leave: {
+                speaker: "npc",
+                text: "Я сам решил взять паузу в сменах. Пока не ясно, кто сможет защитить маму, мне трудно работать как раньше. Это не значит, что я исчезаю или отказываюсь от своих показаний: о том вечере я готов говорить без домыслов. Но сейчас не требуйте от меня ещё одной длинной смены и немедленного решения.",
+                mood: "exhausted",
+                innerThought: "Томас самостоятельно снижает рабочую нагрузку, но остаётся доступен для важных вопросов по расследованию.",
+                answers: [
+                    { text: "Понимаю. Не стану давить, твои действующие показания сохраняются.", nextNode: "end_waiter_guarded", tone: "calm" },
+                    { text: "Спасибо, что уточнил. Вернусь по делу позже.", nextNode: "greeting", tone: "reassuring" }
+                ]
+            },
+            thomas_prepares_supporting_documents: {
+                speaker: "npc",
+                text: "Я решил помочь Джо собрать документы: записи об угрозах и даты, которые сам могу подтвердить. Не стану придумывать детали ради быстрого решения. Миллс ещё не одобрил охрану, и мама не становится защищённой только потому, что мы подготовили бумаги. Но я могу сделать эту часть работы честно.",
+                mood: "determined",
+                innerThought: "Томас помогает подготовить подтверждаемые сведения, не создавая новых доказательств и не раскрывая адрес.",
+                answers: [
+                    { text: "Спасибо. Проверим каждую запись, прежде чем подавать запрос.", nextNode: "greeting", tone: "procedural" },
+                    { text: "Понимаю. Оставлю тебя заниматься документами.", nextNode: "end_waiter_guarded", tone: "calm" }
                 ]
             },
 

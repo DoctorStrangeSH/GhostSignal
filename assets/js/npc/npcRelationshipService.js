@@ -140,6 +140,7 @@ class NPCRelationshipService {
                     toNpcId: item.toNpcId,
                     interaction: item.interaction,
                     consultationPolicy: item.consultationPolicy === 'witness_protection' ? item.consultationPolicy : null,
+                    witnessDecisionPolicy: item.witnessDecisionPolicy === 'work_after_protection_delay' ? item.witnessDecisionPolicy : null,
                     investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
@@ -506,6 +507,17 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.consultationOutcome || null;
     }
 
+    // This is the witness's own response to an actual received warning.
+    // Snapshot the decision; later pressure changes must not rewrite the past.
+    getWitnessWorkDecision(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.fromNpcId === npcId
+        );
+        if (rule?.witnessDecisionPolicy !== 'work_after_protection_delay') return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.witnessWorkDecision || null;
+    }
+
     _applyInteraction(rule, now) {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
@@ -528,6 +540,13 @@ class NPCRelationshipService {
         if (rule.investigatesRumorId) state.rules[rule.id].investigationOutcome = this._investigateRumor(rule);
         if (rule.consultationPolicy === 'witness_protection' && !state.rules[rule.id].consultationOutcome) {
             state.rules[rule.id].consultationOutcome = before >= 65 ? 'procedure_guidance' : 'written_request_required';
+        }
+        if (rule.witnessDecisionPolicy === 'work_after_protection_delay' && !state.rules[rule.id].witnessWorkDecision) {
+            const pressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            const decision = pressure >= 50 ? 'temporary_leave' : 'document_help';
+            state.rules[rule.id].witnessWorkDecision = decision;
+            this.memoryService?.adjustCooperation(rule.fromNpcId, decision === 'temporary_leave' ? -6 : 3,
+                'npc_witness_decision:' + rule.id);
         }
         const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
             interactionCount: 0, lastInteractionAt: null, discoveredAt: null

@@ -2697,3 +2697,63 @@ test("Joe relays Mills's written-request outcome to Thomas, never the alternativ
         assert.equal(restored.hasReceivedInteraction("waiter", reportId), shouldNotify);
     }
 });
+
+test("Thomas independently chooses leave or document help after Mills's refusal", () => {
+    for (const [pressure, expected, node, cooperationDelta] of [
+        [80, "temporary_leave", "thomas_takes_temporary_leave", -6],
+        [10, "document_help", "thomas_prepares_supporting_documents", 3]
+    ]) {
+        const { engine, context, memory, inventory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        const caseData = vm.runInContext("CASE_002", context);
+        relations.setCase(caseData);
+        engine.setRelationshipService(relations);
+        const id = "thomas-decides-work-after-protection-delay";
+        assert.equal(relations.getWitnessWorkDecision("waiter", id), null);
+        memory.setRelationshipTrust("bartender", "sergeant", 55);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+
+        for (const minutes of [90, 60, 60, 60, 90]) {
+            gameTime.advance(minutes);
+            relations.processDueInteractions();
+        }
+        assert.equal(relations.hasReceivedInteraction("waiter", "joe-informs-thomas-mills-requires-documents"), true);
+        assert.equal(relations.getWitnessWorkDecision("waiter", id), null);
+        const cooperationBefore = memory.getMemory("waiter").cooperation;
+        memory.cases["case-002"].waiter.pressure = pressure;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.getWitnessWorkDecision("waiter", id), expected);
+        assert.equal(relations.getWitnessWorkDecision("bartender", id), null);
+        assert.equal(memory.getMemory("waiter").cooperation, cooperationBefore + cooperationDelta);
+        assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+        assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), false);
+
+        engine.startDialogue("dialogue-waiter");
+        const chosen = engine.getAvailableAnswers().find(a => a.nextNode === node);
+        assert.equal(chosen?.isAvailable, true);
+        const other = node === "thomas_takes_temporary_leave"
+            ? "thomas_prepares_supporting_documents" : "thomas_takes_temporary_leave";
+        assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === other), false);
+        engine.selectAnswer(chosen.index);
+        assert.match(engine.currentNode.text, expected === "temporary_leave" ? /паузу в сменах/ : /собрать документы/);
+        engine.reset();
+
+        memory.cases["case-002"].waiter.pressure = pressure === 80 ? 0 : 90;
+        assert.equal(relations.getWitnessWorkDecision("waiter", id), expected,
+            "Thomas's decision cannot be retroactively rewritten by pressure changes");
+        context.savedThomasWork = JSON.parse(JSON.stringify(relations.toJSON()));
+        const restored = vm.runInContext("new NPCRelationshipService(savedThomasWork)", context);
+        restored.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        restored.setCase(caseData);
+        assert.equal(restored.getWitnessWorkDecision("waiter", id), expected);
+        const count = relations.cases["case-002"].rules[id].occurrences;
+        gameTime.advance(180);
+        relations.processDueInteractions();
+        assert.equal(relations.cases["case-002"].rules[id].occurrences, count);
+    }
+});
