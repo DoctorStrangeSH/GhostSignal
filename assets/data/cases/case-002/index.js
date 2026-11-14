@@ -230,6 +230,7 @@ const CASE_002 = {
             },
             {
                 id: "joe-asks-mills-about-witness-protection", relationshipId: "bartender-sergeant",
+                consultationPolicy: "witness_protection",
                 fromNpcId: "bartender", toNpcId: "sergeant", interaction: "support",
                 goalId: "keep_in_touch_with_mills", goalProgress: 1,
                 channel: "message", initialDelayMinutes: 120, everyMinutes: 90,

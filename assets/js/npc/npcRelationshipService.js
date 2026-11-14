@@ -139,6 +139,7 @@ class NPCRelationshipService {
                     goalProgress: this._clamp(item.goalProgress, -10, 10, 1),
                     toNpcId: item.toNpcId,
                     interaction: item.interaction,
+                    consultationPolicy: item.consultationPolicy === 'witness_protection' ? item.consultationPolicy : null,
                     investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
@@ -490,6 +491,17 @@ class NPCRelationshipService {
         return null;
     }
 
+    // A consultation response is decided when contact occurs and persisted.
+    // Better rapport can yield procedural guidance, never an automatic protection order.
+    getProtectionConsultationOutcome(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.fromNpcId === npcId
+        );
+        if (rule?.consultationPolicy !== 'witness_protection') return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.consultationOutcome || null;
+    }
+
     _applyInteraction(rule, now) {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
@@ -510,6 +522,9 @@ class NPCRelationshipService {
 
         const state = this._ensureState();
         if (rule.investigatesRumorId) state.rules[rule.id].investigationOutcome = this._investigateRumor(rule);
+        if (rule.consultationPolicy === 'witness_protection' && !state.rules[rule.id].consultationOutcome) {
+            state.rules[rule.id].consultationOutcome = before >= 65 ? 'procedure_guidance' : 'written_request_required';
+        }
         const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
             interactionCount: 0, lastInteractionAt: null, discoveredAt: null
         });
