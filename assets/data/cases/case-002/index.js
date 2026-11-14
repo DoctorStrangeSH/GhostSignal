@@ -69,7 +69,7 @@ const CASE_002 = {
             { id: "bartender-to-journalist", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 40, minTrustToShare: 50, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: true },
             { id: "journalist-to-bartender", from: "journalist", to: "bartender", relationship: "source", label: "Источник в баре", trust: 55, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: false },
             { id: "eva-to-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 15, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
-            { id: "anna-to-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: false },
+            { id: "anna-to-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
             { id: "eva-protects-anna-from-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 30, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: false }
         ]
     },
@@ -436,6 +436,29 @@ const CASE_002 = {
                 trustDelta: 2, reciprocalTrustDelta: 2,
                 toCooperationDelta: 8,
                 summary: "Услышав тревогу Анны после допроса, Ева повторно позвонила сестре и попросила её не оставаться одной."
+            },
+            {
+                id: "eva-supports-anna-after-public-accusation", relationshipId: "sisters-anna-eva",
+                fromNpcId: "woman_in_red", toNpcId: "ex_wife", interaction: "support",
+                goalId: "protect_sister", goalProgress: 1,
+                channel: "phone", initialDelayMinutes: 30, everyMinutes: 60,
+                maxOccurrences: 1, retryMinutes: 15,
+                fromRumorId: "public-accusation-case-002-ex_wife",
+                fromRumorAgeMinutesAtLeast: 15,
+                trustDelta: 2, reciprocalTrustDelta: 2,
+                toCooperationDelta: 6,
+                summary: "После рассказа Анны о публичном обвинении Ева самостоятельно позвонила сестре, предложила поддержку и попросила не принимать поспешных решений."
+            },
+            {
+                id: "lora-checks-anna-public-accusation", relationshipId: "lora-eva-inquiry",
+                fromNpcId: "journalist", toNpcId: "woman_in_red", interaction: "support",
+                channel: "phone", initialDelayMinutes: 60, everyMinutes: 90,
+                maxOccurrences: 1, retryMinutes: 20,
+                fromRumorId: "public-accusation-case-002-ex_wife",
+                fromRumorAgeMinutesAtLeast: 20,
+                investigatesRumorId: "public-accusation-case-002-ex_wife",
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Услышав рассказ Евы о публичном обвинении Анны, Лора отдельно связалась с ней для проверки происхождения истории. Пересказ не считается независимым доказательством."
             },
             {
                 id: "lora-presses-joe", relationshipId: "joe-lora-source",

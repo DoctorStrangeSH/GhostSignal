@@ -27,6 +27,13 @@ const DIALOGUE_JOURNALIST = {
                         condition: "heard_rumor:public-accusation-case-002-ex_wife",
                         hiddenWhenUnavailable: true
                     },
+                    {
+                        text: "Что показала ваша независимая проверка обвинения Анны?",
+                        nextNode: "lora_checked_anna_accusation",
+                        tone: "calm",
+                        condition: "npc_investigation_outcome:lora-checks-anna-public-accusation:no_independent_evidence",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Расскажите подробнее о разговоре с Евой.", nextNode: "lora_eva_followup_unverified", tone: "direct" },
                     {
                         text: "Джо нашёл запись «И. Руденко, заявка 27-Б». Проверьте её независимо.",
@@ -61,6 +68,17 @@ const DIALOGUE_JOURNALIST = {
                 ]
             },
 
+            lora_checked_anna_accusation: {
+                speaker: "npc",
+                text: "Я ещё раз поговорила с Евой, но она знает подробности со слов Анны. Вторая беседа с тем же источником не делает историю независимой. Я проверяю само публичное заявление отдельно и не собираюсь превращать обвинение в заголовок о виновности Анны.",
+                mood: "focused",
+                innerThought: "Лора отделяет проверку происхождения заявления от доказательств по делу.",
+                answers: [
+                    { text: "Согласен. В публикацию должны попадать только подтверждённые факты.", nextNode: "investigation", tone: "calm" },
+                    { text: "Если найдёте первоисточник, сообщите мне.", nextNode: "investigation", tone: "direct" }
+                ]
+            },
+
             lora_heard_public_accusation_anna: {
                 speaker: "npc",
                 text: "Ева сообщила мне, что Анна услышала публичное обвинение в свой адрес. Я знаю об этом со слов сестры Анны — это не независимое доказательство виновности и не основание для публикации сенсации. Сначала проверю, что именно было сказано и кем подтверждено.",
@@ -83,6 +101,13 @@ const DIALOGUE_JOURNALIST = {
                         nextNode: "lora_heard_public_accusation_anna",
                         tone: "cautious",
                         condition: "heard_rumor:public-accusation-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Что показала ваша независимая проверка обвинения Анны?",
+                        nextNode: "lora_checked_anna_accusation",
+                        tone: "calm",
+                        condition: "npc_investigation_outcome:lora-checks-anna-public-accusation:no_independent_evidence",
                         hiddenWhenUnavailable: true
                     },
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
