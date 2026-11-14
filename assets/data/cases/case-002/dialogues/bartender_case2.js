@@ -270,7 +270,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "cautious",
                         condition: "all:npc_action_completed:joe-respects-thomas-extended-leave&not:has_visited_node:joe_thomas_extended_leave",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Как бар справляется без Томаса после продления отпуска?",
+                        nextNode: "joe_short_staffed_bar",
+                        tone: "calm",
+                        condition: "all:npc_action_completed:joe-reorganizes-bar-after-extended-leave&not:has_visited_node:joe_short_staffed_bar",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_short_staffed_bar: {
+                speaker: "npc",
+                text: "Пока Томас не выходит на смены, мне приходится самому закрывать часть его работы и перестраивать график. Я написал ему, что справимся без досрочного возвращения. Но если у вас вопросы по делу, давайте коротко: сегодня у меня меньше свободного времени. Его показания и право на отдых от этого не меняются.",
+                mood: "tired",
+                innerThought: "Недостаток рук ограничивает время Джо на разговоры; он не требует, чтобы свидетель вернулся раньше собственного решения.",
+                answers: [
+                    { text: "Понимаю, задам только необходимые вопросы.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не буду отвлекать от работы. До встречи.", nextNode: "end_bartender_guarded", tone: "reassuring" }
                 ]
             },
 
