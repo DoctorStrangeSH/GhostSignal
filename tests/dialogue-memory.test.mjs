@@ -1137,3 +1137,24 @@ test("Thomas's protection promise needs a real family confirmation, not just Kan
     engine.startDialogue("dialogue-waiter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "family_safety_confirmed"), false);
 });
+
+test("legacy pending Thomas protection promises migrate without losing testimony or rewards", () => {
+    const { memory, context } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Защитить семью",
+        fulfillment: { type: "insight_gained", insightId: "full_confession_kane" }
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    const snapshot = memory.toJSON();
+    context.savedLegacyThomas = snapshot;
+    const loaded = vm.runInContext("NPCMemoryService.fromJSON(savedLegacyThomas, 'case-002')", context);
+    const pending = loaded.getPromises("waiter")[0];
+    assert.equal(pending.fulfillment.insightId, "thomas_family_protected");
+    assert.equal(pending.status, "pending");
+    assert.equal(loaded.hasClaim("waiter", "waiter-kane-at-poisoning"), true);
+    assert.equal(loaded.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "full_confession_kane"
+    }).length, 0);
+});
