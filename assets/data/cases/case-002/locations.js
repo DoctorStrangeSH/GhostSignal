@@ -108,6 +108,19 @@ registerData('location', {
         defaultItems: [],
         unlockedByDefault: true
     },
+    telephone_exchange: {
+        id: "telephone_exchange",
+        name: "Городская телефонная станция",
+        type: "public",
+        description: "Небольшая телефонная станция с ручным коммутатором, журналами неисправностей и архивом служебных карточек.",
+        hours: { open: 7, close: 23 },
+        icon: "☎️",
+        mapPosition: { x: 39, y: 43 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["telephone_operator"],
+        defaultItems: ["public_telephone_booth"],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
