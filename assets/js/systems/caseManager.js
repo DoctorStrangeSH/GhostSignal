@@ -25,6 +25,10 @@ class CaseManager {
         this.completedEvents = [];
         this.visitedLocations = [];
         this.evidenceFound = 0;
+
+        // Exploration belongs to the active investigation. A new case must
+        // not inherit visited locations from a previous case's map.
+        this.locationManager?.visitedLocations?.clear?.();
         
         // Устанавливаем время начала дела
         if (caseData.startTime) {
