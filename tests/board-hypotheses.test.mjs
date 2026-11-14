@@ -393,3 +393,27 @@ test('alibi UI shows a persistent next step for an active route question and hid
     assert.match(ui._renderAlibiReconstruction(), /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
     assert.ok(first && second);
 });
+
+test('board investigation tool folders keep their expanded state after rerender and support keyboard-native details', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui._expandedTools = new Set(['hypotheses']);
+    assert.match(ui._renderTool('hypotheses', 'Гипотезы', 'content'), /<details[^>]+open>/);
+    assert.doesNotMatch(ui._renderTool('alibi', 'Алиби', 'content'), /<details[^>]+open>/);
+    assert.match(ui._renderTool('alibi', 'Алиби', 'content'), /<summary>Алиби<\/summary>/);
+    const handlers = {};
+    const tool = { open: true, dataset: { tool: 'alibi' },
+        addEventListener(event, fn) { handlers[event] = fn; } };
+    ui.container = { querySelectorAll(selector) { return selector === '.board-tool' ? [tool] : []; },
+        querySelector() { return null; } };
+    ui._bindEvents();
+    handlers.toggle();
+    assert.match(ui._renderTool('alibi', 'Алиби', 'content'), /<details[^>]+open>/);
+    tool.open = false;
+    handlers.toggle();
+    assert.doesNotMatch(ui._renderTool('alibi', 'Алиби', 'content'), /<details[^>]+open>/);
+    ui.render = () => {};
+    ui.setBoard({ hasPreparedRouteQuestion: () => true });
+    assert.match(ui._renderTool('alibi', 'Алиби', 'content'), /<details[^>]+open>/);
+});
