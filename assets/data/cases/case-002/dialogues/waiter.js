@@ -114,6 +114,8 @@ const DIALOGUE_WAITER = {
                         text: "Значит, раньше ты солгал мне и намеренно покрывал Кейна?",
                         nextNode: "unfounded_lie_accusation",
                         tone: "aggressive",
+                        condition: "not:has_accusation:thomas-lied-about-poisoning",
+                        hiddenWhenUnavailable: true,
                         cooperationDelta: -15,
                         accusation: { id: "thomas-lied-about-poisoning", text: "Детектив без доказательств обвинил Томаса в сознательной лжи после добровольного уточнения свидетельства." },
                         report: {
