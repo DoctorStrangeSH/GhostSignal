@@ -9,10 +9,15 @@ class DialogueEngine {
         this.memoryService = null;
         this.motivationService = null;
         this.relationshipService = null;
+        this.investigationBoard = null;
     }
 
     setMemoryService(service) {
         this.memoryService = service || null;
+    }
+
+    setInvestigationBoard(board) {
+        this.investigationBoard = board || null;
     }
 
     setMotivationService(service) {
@@ -414,6 +419,9 @@ class DialogueEngine {
         }
         
         const npcId = this.currentDialogue?.npcId;
+        if (conditionStr === 'route_question_prepared') {
+            return Boolean(npcId && this.investigationBoard?.hasPreparedRouteQuestion(npcId));
+        }
         const npc = npcId && typeof getNPCById === 'function' ? getNPCById(npcId) : null;
         const psychology = npcId
             ? this.memoryService?.getPsychologicalState(npcId, npc?.psychology)
