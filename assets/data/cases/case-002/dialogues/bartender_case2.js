@@ -259,6 +259,18 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 mood: "guarded",
                 innerThought: "Детектив торопится закрыть вопрос. Я не стану подстраивать память под его вывод.",
                 givesInsight: "joe_challenged_overstated_visitor_identity",
+                claim: {
+                    id: "joe-reports-lora-visitor-warning",
+                    topic: "visitor-identity-rumor-source",
+                    value: "lora-told-joe-about-detective-overclaim",
+                    summary: "Джо говорит, что Лора сообщила ему о поспешном выводе детектива; сам разговор Лоры с детективом Джо не слышал",
+                    sourceName: "Джо, бармен",
+                    location: "Бар «У Джо»",
+                    timeLabel: "После сообщения Лоры",
+                    circumstances: "Пересказ полученного сообщения, не независимое наблюдение",
+                    directObservation: false,
+                    referencesRumorIds: ["detective-overstated-visitor-identity"]
+                },
                 answers: [
                     {
                         text: "Вы правы. Я оставлю личность посетителя неподтверждённой.",
