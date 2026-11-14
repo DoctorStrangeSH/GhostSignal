@@ -49,6 +49,32 @@ test('legacy board saves load, and hypothesis history survives save/load', () =>
     assert.equal(save.hypotheses[0].title, 'Версия 1');
 });
 
+test('shared evidence and testimony are flagged across active hypotheses without verdicts', () => {
+    const { create, restore } = boardRuntime();
+    const board = create();
+    const first = board.addHypothesis('Первая версия');
+    const second = board.addHypothesis('Вторая версия');
+    const retired = board.addHypothesis('Отложенная версия');
+    board.linkHypothesis(first, 'evidence', 'photo', 'for');
+    board.linkHypothesis(first, 'statement', 'witness', 'pending');
+    board.linkHypothesis(first, 'assumption', 'одинаковое предположение', 'for');
+    board.linkHypothesis(second, 'evidence', 'photo', 'against');
+    board.linkHypothesis(second, 'statement', 'witness', 'pending');
+    board.linkHypothesis(second, 'assumption', 'одинаковое предположение', 'for');
+    board.linkHypothesis(retired, 'evidence', 'photo', 'for');
+    board.abandonHypothesis(retired);
+    const overlaps = JSON.parse(JSON.stringify(board.reviewHypothesisOverlaps(first)));
+    assert.equal(overlaps.length, 2);
+    assert.deepEqual(overlaps.map(item => [item.kind, item.otherTitle, item.differingAssessment]), [
+        ['evidence', 'Вторая версия', true], ['statement', 'Вторая версия', false]
+    ]);
+    assert.equal('verdict' in overlaps[0], false);
+    assert.equal(board.reviewHypothesisOverlaps(retired).length, 0);
+    assert.equal(board.reviewHypothesisOverlaps('missing').length, 0);
+    const loaded = restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(loaded.reviewHypothesisOverlaps(second).length, 2);
+});
+
 
 test('boards keep hypotheses for a resumed case but clear them when a new case starts', () => {
     const runtime = boardRuntime();
@@ -567,6 +593,30 @@ test('hypothesis UI separates supporting, opposing and unchecked player assessme
     assert.match(html, /class="stance-pending/);
     assert.match(html, /&lt;вопрос&gt;/);
     assert.match(html, /не подтверждает их автоматически/);
+});
+
+test('hypothesis UI cautions about reused sources and escapes other theory titles', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
+        getObjectById: id => ({ id, name: 'Улика ' + id }) });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.inventory = { evidence: ['photo'] };
+    ui.memoryService = { getStatements: () => [] };
+    ui._renderSourceInquiries = () => '';
+    const { create } = boardRuntime();
+    ui.board = create();
+    const first = ui.board.addHypothesis('Начальная версия');
+    const second = ui.board.addHypothesis('<чужая версия>');
+    ui.board.linkHypothesis(first, 'evidence', 'photo', 'for');
+    ui.board.linkHypothesis(second, 'evidence', 'photo', 'against');
+    const html = ui._renderHypotheses();
+    assert.match(html, /ОБЩИЕ ИСТОЧНИКИ ДЛЯ РАЗНЫХ ВЕРСИЙ/);
+    assert.match(html, /не является независимым подтверждением/);
+    assert.match(html, /оценки различаются/);
+    assert.match(html, /&lt;чужая версия&gt;/);
+    assert.doesNotMatch(html, /«<чужая версия>»/);
+    ui.board.abandonHypothesis(second);
+    assert.doesNotMatch(ui._renderHypotheses(), /ОБЩИЕ ИСТОЧНИКИ ДЛЯ РАЗНЫХ ВЕРСИЙ/);
 });
 
 test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
