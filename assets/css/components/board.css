@@ -126,6 +126,7 @@
 .checklist-followups li { line-height: 1.5; }
 .checklist-next-action.is-checked { border-color: rgba(212, 160, 23, 0.14); opacity: 0.78; }
 .checklist-next-action.is-available { border-color: var(--accent-amber); }
+.checklist-next-action.is-pending { border-color: rgba(212, 160, 23, 0.22); opacity: 0.85; }
 
 .board-slot {
     position: absolute;
