@@ -502,6 +502,10 @@ class DialogueEngine {
         if (consultationCondition) {
             return Boolean(npcId && this.relationshipService?.getProtectionConsultationOutcome?.(npcId, consultationCondition[1]) === consultationCondition[2].toLowerCase());
         }
+        const witnessWorkCondition = conditionStr.match(/^npc_witness_work_decision:([a-z0-9_:-]{1,64}):(temporary_leave|document_help)$/i);
+        if (witnessWorkCondition) {
+            return Boolean(npcId && this.relationshipService?.getWitnessWorkDecision?.(npcId, witnessWorkCondition[1]) === witnessWorkCondition[2].toLowerCase());
+        }
         if (conditionStr.startsWith('npc_action_received:')) {
             const ruleId = conditionStr.slice('npc_action_received:'.length);
             return Boolean(npcId && this.relationshipService?.hasReceivedInteraction?.(npcId, ruleId));
