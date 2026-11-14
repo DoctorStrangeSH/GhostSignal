@@ -119,7 +119,19 @@ class NavigationController {
         if (screen) {
             screen.classList.add('active');
             this.app.currentScreen = screenId;
+            if (screenId === 'screen-main-menu') this.syncContinueButton();
         }
+    }
+
+    syncContinueButton() {
+        const button = document.getElementById('btn-continue');
+        if (!button) return;
+        const progress = this.app.progress;
+        const resumable = Boolean(progress?.activeCase &&
+            this.app.caseManager?.currentCase?.id === progress.activeCase &&
+            this.app.caseManager.caseState === 'active');
+        if (resumable) button.classList.remove('hidden');
+        else button.classList.add('hidden');
     }
 
     switchTab(tabId) {
