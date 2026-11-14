@@ -151,6 +151,40 @@ class NPCMemoryService {
         return this.people?.[npcId]?.memories?.some(item => item.tags?.includes(tag)) || false;
     }
 
+    // Count behavioral patterns across distinct cases, not repeated dialogue clicks.
+    // A case with both care and pressure remains mixed rather than erasing the harm.
+    getLongTermBehaviorPattern(npcId) {
+        const positiveTags = new Set([
+            'player_reassured', 'player_respected_visitor_uncertainty',
+            'player_completed_cautious_identification',
+            'player_earned_partial_trust_with_verified_action',
+            'player_corrected_visitor_overclaim', 'player_retracted_visitor_overclaim'
+        ]);
+        const negativeTags = new Set([
+            'player_threatened', 'player_aggressive', 'player_endangered_witness',
+            'player_overstated_visitor_identity', 'player_doubled_down_on_visitor_overclaim'
+        ]);
+        const cases = new Map();
+        for (const memory of this.people?.[npcId]?.memories || []) {
+            if (!memory?.caseId || !Array.isArray(memory.tags)) continue;
+            const flags = cases.get(memory.caseId) || { positive: false, negative: false };
+            for (const tag of memory.tags) {
+                if (typeof tag !== 'string') continue;
+                if (positiveTags.has(tag) || tag.startsWith('promise_kept:')) flags.positive = true;
+                if (negativeTags.has(tag) || tag.startsWith('promise_broken:')) flags.negative = true;
+            }
+            cases.set(memory.caseId, flags);
+        }
+        const supportedCases = [...cases.values()].filter(flags => flags.positive && !flags.negative).length;
+        const pressuredCases = [...cases.values()].filter(flags => flags.negative).length;
+        return {
+            supportedCases,
+            pressuredCases,
+            consistentSupport: supportedCases >= 2 && pressuredCases === 0,
+            repeatedPressure: pressuredCases >= 2
+        };
+    }
+
     getLatestPromiseOutcome(npcId, promiseId) {
         if (!npcId || !promiseId) return null;
         const memories = this.people?.[npcId]?.memories;
