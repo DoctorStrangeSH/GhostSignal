@@ -353,6 +353,13 @@ const DIALOGUE_WAITER = {
                         }
                     },
                     {
+                        text: "Можешь ещё раз подробно восстановить всё, что происходило после смены?",
+                        nextNode: "thomas_declines_optional_followup",
+                        tone: "calm",
+                        condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:thomas_declines_optional_followup",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Я хочу вернуться к твоим прежним показаниям.",
                         nextNode: "testimony_reconsiders",
                         tone: "calm",
@@ -457,6 +464,17 @@ const DIALOGUE_WAITER = {
                         condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:document_help&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_prepares_supporting_documents",
                         hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_declines_optional_followup: {
+                speaker: "npc",
+                text: "Нет, детектив. Вы уже давили на меня в разных расследованиях, и я не готов снова часами отвечать на дополнительные вопросы. Если нужно уточнить конкретное наблюдение из того вечера, я отвечу по существу. Но подробный необязательный разговор пока отложим. Одного спокойного вопроса недостаточно, чтобы я снова доверился.",
+                mood: "guarded",
+                innerThought: "Томас помнит лично пережитое давление в разных делах. Он отказывается только от необязательной беседы: имеющиеся показания не отменяются, важные факты остаются доступными.",
+                answers: [
+                    { text: "Понимаю. Давай ограничимся тем, что ты видел сам.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Хорошо, не буду настаивать. Вернусь позже.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
             },
 
