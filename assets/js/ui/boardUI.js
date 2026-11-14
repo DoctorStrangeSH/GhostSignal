@@ -51,6 +51,7 @@ class BoardUI {
             </div>
 
             ${this._renderHypotheses()}
+            ${this._renderChronology()}
             ${this._renderTestimonyJournal()}
         `;
         
@@ -171,6 +172,7 @@ class BoardUI {
         });
 
         this._bindHypothesisEvents();
+        this._bindChronologyEvents();
         this._bindTestimonyEvents();
     }
 
@@ -178,6 +180,37 @@ class BoardUI {
         return String(value ?? '').replace(/[&<>"']/g, char => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[char]);
+    }
+
+    _renderChronology() {
+        const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const facts = this.board?.getEvidenceChronology(ids) || [];
+        const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+        return `<section class="testimony-journal" aria-labelledby="chronology-title">
+            <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
+            <h3 id="chronology-title">🕰️ ХРОНОЛОГИЯ УЛИК</h3></div><span class="testimony-count">${facts.length} отметок</span></div>
+            <p class="hypothesis-help">Показаны только обнаруженные документы с точными отметками. Запись о запросе не доказывает состоявшийся звонок или личность звонившего.</p>
+            ${facts.length ? `<ol>${facts.map(f => `<li><strong>${fmt(f.minute)}</strong> — ${this._escapeHTML(f.label)}
+                <small>(${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}). ${this._escapeHTML(f.caveat)}</small></li>`).join('')}</ol>` : '<p>Найдите документ с временными отметками, чтобы начать реконструкцию.</p>'}
+            ${facts.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
+                <select id="chronology-first" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <label for="chronology-second">Вторая отметка</label>
+                <select id="chronology-second" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <button id="chronology-compare" type="button" class="terminal-btn">СОПОСТАВИТЬ ВРЕМЯ</button><div id="chronology-result" aria-live="polite"></div></div>` : ''}
+        </section>`;
+    }
+
+    _bindChronologyEvents() {
+        this.container.querySelector('#chronology-compare')?.addEventListener('click', () => {
+            const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+            const comparison = this.board.compareChronologyFacts(
+                this.container.querySelector('#chronology-first')?.value,
+                this.container.querySelector('#chronology-second')?.value, ids);
+            const target = this.container.querySelector('#chronology-result');
+            if (target) target.textContent = comparison
+                ? `${comparison.minutesApart} мин. между отметками. ${comparison.warning}`
+                : 'Выберите две разные доступные отметки.';
+        });
     }
 
     _renderHypotheses() {
