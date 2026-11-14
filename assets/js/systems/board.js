@@ -4,6 +4,8 @@ class InvestigationBoard {
         this.connections = [];    // Связи между слотами
         this.maxSlots = 6;
         this.evidenceOnBoard = []; // ID улик на доске
+        this.hypotheses = [];
+        this.nextHypothesisId = 1;
         this._initDefaultSlots();
     }
 
@@ -127,6 +129,56 @@ class InvestigationBoard {
         return insights;
     }
 
+    // Игрок формулирует версии самостоятельно: привязки не доказывают их истинность.
+    addHypothesis(text) {
+        const title = String(text ?? '').trim().slice(0, 240);
+        if (!title) return null;
+        const entry = { id: 'hyp-' + this.nextHypothesisId++, title, status: 'open', links: [], history: [{ action: 'created', title }] };
+        this.hypotheses.push(entry);
+        events.emit('board:updated', { action: 'hypothesis_created', id: entry.id });
+        return entry.id;
+    }
+
+    reviseHypothesis(id, text) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        const title = String(text ?? '').trim().slice(0, 240);
+        if (!entry || !title || entry.status !== 'open' || entry.title === title) return false;
+        entry.history.push({ action: 'revised', previous: entry.title, title });
+        entry.title = title;
+        events.emit('board:updated', { action: 'hypothesis_revised', id });
+        return true;
+    }
+
+    linkHypothesis(id, kind, sourceId, stance) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry || entry.status !== 'open' || !['evidence', 'statement', 'assumption'].includes(kind) ||
+            !['for', 'against', 'pending'].includes(stance)) return false;
+        const source = String(sourceId ?? '').trim().slice(0, 240);
+        if (!source || entry.links.some(link => link.kind === kind && link.sourceId === source)) return false;
+        entry.links.push({ kind, sourceId: source, stance });
+        entry.history.push({ action: 'linked', kind, sourceId: source, stance });
+        events.emit('board:updated', { action: 'hypothesis_linked', id });
+        return true;
+    }
+
+    unlinkHypothesis(id, index) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry || entry.status !== 'open' || !Number.isInteger(index) || index < 0 || index >= entry.links.length) return false;
+        const [link] = entry.links.splice(index, 1);
+        entry.history.push({ action: 'unlinked', ...link });
+        events.emit('board:updated', { action: 'hypothesis_unlinked', id });
+        return true;
+    }
+
+    abandonHypothesis(id) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry || entry.status !== 'open') return false;
+        entry.status = 'abandoned';
+        entry.history.push({ action: 'abandoned' });
+        events.emit('board:updated', { action: 'hypothesis_abandoned', id });
+        return true;
+    }
+
     // Сбросить доску
     reset() {
         const evidenceToRestore = [...this.evidenceOnBoard];
@@ -157,7 +209,14 @@ class InvestigationBoard {
                     slot.evidenceId = savedSlot.evidenceId;
                 }
             });
-            board.evidenceOnBoard = json.evidenceOnBoard || [];
+            board.evidenceOnBoard = Array.isArray(json.evidenceOnBoard) ? json.evidenceOnBoard : [];
+            board.hypotheses = Array.isArray(json.hypotheses) ? json.hypotheses.filter(h => h && typeof h.id === 'string' && typeof h.title === 'string').map(h => ({
+                id: h.id, title: h.title, status: h.status === 'abandoned' ? 'abandoned' : 'open',
+                links: Array.isArray(h.links) ? h.links.filter(l => l && ['evidence', 'statement', 'assumption'].includes(l.kind) && ['for', 'against', 'pending'].includes(l.stance) && typeof l.sourceId === 'string') : [],
+                history: Array.isArray(h.history) ? h.history.filter(v => v && typeof v.action === 'string') : []
+            })) : [];
+            board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
+                ...board.hypotheses.map(h => Number(h.id.match(/^hyp-(\\d+)$/)?.[1] || 0) + 1));
         }
         return board;
     }
