@@ -144,6 +144,12 @@ class NPCMemoryService {
         return this.people?.[npcId]?.memories?.some(item => item.tags?.includes(tag)) || false;
     }
 
+    hasLongTermMemoryTagFromPriorCase(npcId, tag) {
+        if (!npcId || !tag || !this.currentCaseId) return false;
+        return this.people?.[npcId]?.memories?.some(item =>
+            item.caseId && item.caseId !== this.currentCaseId && item.tags?.includes(tag)) || false;
+    }
+
     _ensureNPC(npcId) {
         if (!npcId || !this.currentCaseId) return null;
         const caseMemory = this._ensureCase();
