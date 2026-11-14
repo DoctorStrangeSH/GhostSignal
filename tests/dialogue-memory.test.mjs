@@ -30,11 +30,12 @@ function createDialogueHarness() {
             },
             bartender: { name: "Джо", availableForCall: true },
             journalist: { name: "Лора", availableForCall: true },
-            labour_inspector: { name: "Илья Руденко", availableForCall: true },
+            labour_inspector: { name: "Илья Руденко", availableForCall: false },
+            tram_conductor: { name: "Павел Соколов", availableForCall: false },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
-        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true } })[id] || null; }
+        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
@@ -46,6 +47,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/bartender_case2.js",
         "assets/data/cases/case-002/dialogues/journalist.js",
         "assets/data/cases/case-002/dialogues/labour_inspector.js",
+        "assets/data/cases/case-002/dialogues/tram_conductor.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1421,4 +1423,45 @@ test("the inspector's denial cannot be obtained from the appointment record alon
     engine.startDialogue("dialogue-labour-inspector");
     assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "rudenko_checks_register"), false);
     assert.equal(inventory.hasInsight("rudenko_denies_visit"), false);
+});
+
+test("unknown visitor description unlocks an independent but non-identifying tram route lead", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    inventory.insights.push(
+        "joe_found_inspection_entry",
+        "inspection_cancellation_record",
+        "rudenko_denies_visit",
+        "rudenko_agreed_to_identification"
+    );
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const identify = engine.getAvailableAnswers().find(answer => answer.nextNode === "joe_identifies_different_visitor");
+    assert.equal(identify?.isAvailable, true);
+    engine.selectAnswer(identify.index);
+    const describe = engine.getAvailableAnswers().find(answer => answer.nextNode === "joe_describes_unknown_visitor");
+    assert.equal(describe?.isAvailable, true);
+    engine.selectAnswer(describe.index);
+    assert.equal(inventory.hasInsight("unknown_visitor_description"), true);
+    assert.match(engine.currentNode.text, /повязку/);
+    assert.match(engine.currentNode.text, /не.*опозн/);
+
+    engine.startDialogue("dialogue-tram-conductor");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_route_book"), true);
+    const checkRoute = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_route_book");
+    engine.selectAnswer(checkRoute.index);
+    assert.equal(inventory.hasInsight("tram_passenger_route_corroboration"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "tram_route_entry"), true);
+    assert.match(engine.currentNode.text, /не могу утверждать, что это тот самый человек/);
+
+    const cautious = engine.getAvailableAnswers().find(answer => answer.text.includes("Это независимая зацепка"));
+    assert.equal(cautious?.isAvailable, true);
+    engine.selectAnswer(cautious.index);
+    assert.equal(memory.hasLongTermMemoryTag("tram_conductor", "player_kept_route_lead_unconfirmed"), true);
+});
+
+test("tram conductor cannot offer a route match before receiving the witness description", () => {
+    const { engine, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-tram-conductor");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_route_book"), false);
+    assert.equal(inventory.hasInsight("tram_passenger_route_corroboration"), false);
 });
