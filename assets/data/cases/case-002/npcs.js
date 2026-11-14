@@ -148,6 +148,32 @@ registerData('npc', {
         canGiveInsights: ["waiter_saw_poisoning", "kane_threatened_witness", "waiter_confirms_theft"],
         specialConditions: []
     },
+    labour_inspector: {
+        id: "labour_inspector",
+        name: "Илья Руденко",
+        role: "Инспектор городской инспекции труда",
+        description: "Сдержанный муниципальный инспектор. Ведёт официальные проверки предприятий и хранит служебные записи о назначениях и отменах визитов.",
+        icon: "🧑‍💼",
+        mood: "professional",
+        psychology: {
+            opennessThreshold: 52, pressureThreshold: 72, calmPressureLimit: 18,
+            labels: { cooperative: "Готов предоставить документы", pressured: "Требует официальный запрос", overwhelmed: "Прекращает разговор", distrustful: "Ссылается на процедуру" }
+        },
+        schedule: {
+            awake: { start: 7, end: 21 },
+            atWork: { start: 8, end: 20 },
+            sleeps: { start: 21, end: 7 },
+            locations: { work: "labour_inspection_office", home: null },
+            daysOff: ["sunday"],
+            exceptions: []
+        },
+        availableForCall: true,
+        availableForChat: false,
+        dialogueId: "dialogue-labour-inspector",
+        canGiveEvidence: ["inspector_service_card"],
+        canGiveInsights: ["inspection_cancellation_record", "rudenko_denies_visit", "rudenko_identity_documents_verified", "rudenko_agreed_to_identification"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
