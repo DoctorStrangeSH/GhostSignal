@@ -142,11 +142,20 @@ class DeductionScreen {
         feedback.classList.remove('hidden');
 
         if (result.allCorrect && !result.proof.sufficient) {
+            const requirements = caseData.proofRequirements || {};
+            const missingLabels = result.proof.missingItems.map(
+                id => requirements.itemLabels?.[id] || 'Необходимая улика'
+            );
+            if (result.proof.missingCorroboration) {
+                missingLabels.push(requirements.corroborationLabel || 'Независимое подтверждение');
+            }
+            const missingList = missingLabels.map(label => `<li>${label}</li>`).join('');
             feedback.innerHTML = `
                 <div class="feedback feedback-error">
                     <h4>⚖️ ВЕРСИЯ ЕСТЬ — ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО</h4>
                     <p>Вы правильно связали подозреваемого, мотив и орудие. Однако эта версия пока не выдержит проверки.</p>
-                    <p style="margin-top: 8px;">${caseData.proofRequirements?.hint || 'Найдите независимые подтверждения версии.'}</p>
+                    <p style="margin-top: 8px;">Осталось подтвердить:</p>
+                    <ul>${missingList}</ul>
                 </div>
             `;
         } else if (result.allCorrect) {
