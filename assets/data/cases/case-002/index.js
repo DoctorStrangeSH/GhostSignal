@@ -69,7 +69,7 @@ const CASE_002 = {
             { id: "bartender-to-journalist", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 40, minTrustToShare: 50, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: true },
             { id: "journalist-to-bartender", from: "journalist", to: "bartender", relationship: "source", label: "Источник в баре", trust: 55, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: false },
             { id: "eva-to-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 15, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
-            { id: "anna-to-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: false },
+            { id: "anna-to-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
             { id: "eva-protects-anna-from-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 30, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false, canForward: false }
         ]
     },
