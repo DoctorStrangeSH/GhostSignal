@@ -1112,7 +1112,7 @@ test("Thomas's protection promise needs a real family confirmation, not just Kan
     });
     engine.startDialogue("dialogue-bartender-case2");
     const arrangement = () => engine.getAvailableAnswers().find(a => a.nextNode === "joe_safe_lodging_arranged");
-    assert.equal(arrangement()?.isAvailable, false, "Joe must have independently supported Thomas first");
+    assert.equal(arrangement(), undefined, "Joe must have independently supported Thomas first");
     joeHasHelped = true;
     assert.equal(arrangement()?.isAvailable, true);
     engine.selectAnswer(arrangement().index);
