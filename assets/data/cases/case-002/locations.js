@@ -82,6 +82,19 @@ registerData('location', {
         defaultItems: [],
         unlockedByDefault: true
     },
+    old_textile_mill: {
+        id: "old_textile_mill",
+        name: "Старая текстильная фабрика",
+        type: "public",
+        description: "Закрытый на ремонт фабричный корпус у старой текстильной улицы. У ворот стоит будка ночного сторожа.",
+        hours: { open: 6, close: 20 },
+        icon: "🏭",
+        mapPosition: { x: 24, y: 58 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["mill_watchman"],
+        defaultItems: ["mill_gate_notice"],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
