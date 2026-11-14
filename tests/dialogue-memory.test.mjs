@@ -1250,3 +1250,37 @@ test("Lora can check the visitor from her alternate opening after investigating 
     assert.equal(engine.currentNode.id, "lora_second_check_opening");
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "lora_checks_unknown_visitor")?.isAvailable, true);
 });
+
+test("Joe's opening tracks the shelter breach, relocation, and verified safety without trapping the dialogue", () => {
+    const { engine, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "greeting");
+
+    inventory.insights.push("thomas_family_address_exposed");
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "joe_after_leak_opening");
+    const relocate = engine.getAvailableAnswers().find(a => a.nextNode === "joe_emergency_relocation");
+    assert.equal(relocate?.isAvailable, true);
+    engine.selectAnswer(relocate.index);
+    assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "joe_after_relocation_opening");
+    const returnToCase = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+    assert.equal(returnToCase?.isAvailable, true);
+    engine.selectAnswer(returnToCase.index);
+    assert.equal(engine.currentNode.id, "greeting");
+
+    inventory.insights.push("thomas_family_protected");
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "joe_after_protection_verified_opening");
+    assert.match(engine.currentNode.text, /подтвердил/);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "greeting")?.isAvailable, true);
+});
+
+test("Joe does not imply a leak when the family was protected without one", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("thomas_family_protected");
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.currentNode.id, "greeting");
+});
