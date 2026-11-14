@@ -470,6 +470,9 @@ class DialogueEngine {
         if (conditionStr === 'long_term_pattern:repeated_pressure') {
             return Boolean(npcId && this.memoryService?.getLongTermBehaviorPattern(npcId)?.repeatedPressure);
         }
+        if (conditionStr === 'long_term_pattern:repeated_false_accusations') {
+            return Boolean(npcId && this.memoryService?.getLongTermBehaviorPattern(npcId)?.repeatedFalseAccusations);
+        }
         const valueAlignment = conditionStr.match(/^npc_value_alignment:(witness_safety|source_integrity):(upheld|breached|contested)$/);
         if (valueAlignment) {
             return Boolean(npcId && this.memoryService?.getNPCValueAlignment(npcId, valueAlignment[1]) === valueAlignment[2]);

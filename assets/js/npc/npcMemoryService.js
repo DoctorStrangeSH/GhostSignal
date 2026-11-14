@@ -206,11 +206,18 @@ class NPCMemoryService {
         }
         const supportedCases = [...cases.values()].filter(flags => flags.positive && !flags.negative).length;
         const pressuredCases = [...cases.values()].filter(flags => flags.negative).length;
+        // Only distinct investigations establish a pattern; one case may contain
+        // multiple mistaken claims, but it must not count as repeated misconduct.
+        const falseAccusationCases = new Set((this.people?.[npcId]?.memories || [])
+            .filter(item => item.caseId && item.tags?.includes('false_accusation'))
+            .map(item => item.caseId)).size;
         return {
             supportedCases,
             pressuredCases,
+            falseAccusationCases,
             consistentSupport: supportedCases >= 2 && pressuredCases === 0,
-            repeatedPressure: pressuredCases >= 2
+            repeatedPressure: pressuredCases >= 2,
+            repeatedFalseAccusations: falseAccusationCases >= 2
         };
     }
 
@@ -1046,16 +1053,21 @@ class NPCMemoryService {
         const priorHarm = priorMemoryTag && this.hasLongTermMemoryTagFromPriorCase(npcId, priorMemoryTag);
         if (!accusationHarm && !priorHarm) return false;
         memory.restitutions.push(restitutionId);
-        // A concrete repair helps, but cannot undo the original accusation.
-        memory.trust = Math.min(100, memory.trust + 4);
-        this._adjustCooperationMemory(memory, npcId, 5, 'verified_restitution:' + restitutionId);
+        // Recurring false accusations make a proven apology less persuasive.
+        // The first mistake can still be partly repaired; neither is erased.
+        const repeatedHarm = this.getLongTermBehaviorPattern(npcId).repeatedFalseAccusations;
+        const trustRepair = repeatedHarm ? 1 : 4;
+        const cooperationRepair = repeatedHarm ? 2 : 5;
+        memory.trust = Math.min(100, memory.trust + trustRepair);
+        this._adjustCooperationMemory(memory, npcId, cooperationRepair, 'verified_restitution:' + restitutionId);
         this._append(memory, { type: 'verified_restitution', restitutionId, accusationId: accusationId || null, priorMemoryTag });
         this._recordLongTermMemory(npcId, {
             type: 'verified_restitution',
             summary: accusationId?.startsWith('public-final-accusation:')
                 ? 'Детектив признал публичную ошибку и предоставил подтверждение другого виновного.'
                 : 'После прежнего давления детектив подтвердил реальную помощь близким свидетеля.',
-            sentiment: 'mixed', importance: 4, tags: ['verified_restitution'], trustDelta: 2
+            sentiment: 'mixed', importance: 4, tags: ['verified_restitution'],
+            trustDelta: repeatedHarm ? 0 : 2
         });
         return true;
     }
