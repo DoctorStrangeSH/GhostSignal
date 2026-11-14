@@ -291,7 +291,7 @@ class EventController {
             app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
             app.caseListUI?.setProgress(app.progress);
             app._updateMainMenu?.();
-            document.getElementById('btn-continue')?.classList.add('hidden');
+            if (typeof document !== 'undefined') document.getElementById('btn-continue')?.classList.add('hidden');
             if (app._quickSave) app._quickSave();
             else app._saveProgress?.();
         });
