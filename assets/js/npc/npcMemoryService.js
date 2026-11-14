@@ -24,6 +24,13 @@ class NPCMemoryService {
         if (this.currentCaseId) this._ensureCase(this.currentCaseId);
     }
 
+    // Case facts are replay-specific; personal memories and trust persist.
+    resetCase(caseId = this.currentCaseId) {
+        if (!caseId || typeof caseId !== 'string') return false;
+        delete this.cases[caseId];
+        return true;
+    }
+
     setCase(caseId) {
         if (!caseId || typeof caseId !== 'string') return false;
         this.currentCaseId = caseId;

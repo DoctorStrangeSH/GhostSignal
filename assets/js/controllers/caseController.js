@@ -16,6 +16,38 @@ class CaseController {
             app.caseManager.caseState === 'active');
     }
 
+    _clearInvestigationState() {
+        const app = this.app;
+        // Retain the same objects: UI and gameplay systems hold references to them.
+        if (app.inventory) {
+            app.inventory.items = [];
+            app.inventory.evidence = [];
+            app.inventory.insights = [];
+            app.inventory.currentWeight = 0;
+        }
+        if (app.notesManager) {
+            app.notesManager.collectedNotes = [];
+            app.notesManager.highlightedFragments = [];
+            app.notesManager.activeNote = null;
+        }
+        if (app.stakeoutSystem) {
+            app.stakeoutSystem.activeStakeouts = [];
+            app.stakeoutSystem.completedStakeouts = [];
+        }
+        if (app.interrogationSystem) {
+            app.interrogationSystem.activeNPC = null;
+            app.interrogationSystem.patience = 0;
+            app.interrogationSystem.questionsAsked = 0;
+            app.interrogationSystem.npcGone = {};
+            app.interrogationSystem.backupPaths = {};
+        }
+        if (app.evidenceChainSystem) {
+            app.evidenceChainSystem.chains = [];
+            app.evidenceChainSystem.completedChains = [];
+            app.evidenceChainSystem.currentCaseId = null;
+        }
+    }
+
     loadCase(caseId) {
         const app = this.app;
         if (!caseId || !app.progress || !app.caseManager) return false;
@@ -28,7 +60,10 @@ class CaseController {
 
         const canResume = this.canResume(caseId);
 
-        if (!canResume && !app.caseManager.loadCase(caseId)) return false;
+        if (!canResume) {
+            this._clearInvestigationState();
+            if (!app.caseManager.loadCase(caseId)) return false;
+        }
 
         app.navigateTo('screen-case-active');
 
