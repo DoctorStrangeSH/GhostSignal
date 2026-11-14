@@ -29,8 +29,8 @@ const DIALOGUE_WAITER = {
             { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
             { condition: "all:promise_status:thomas-family-protection:fulfilled&not:has_visited_node:promise_kept_opening", nodeId: "promise_kept_opening" },
             { condition: "all:promise_status:thomas-family-protection:broken&not:has_visited_node:promise_broken_opening", nodeId: "promise_broken_opening" },
-            { condition: "all:long_term_memory:promise_broken:thomas-family-protection&not:has_visited_node:past_broken_promise_opening", nodeId: "past_broken_promise_opening" },
-            { condition: "all:long_term_memory:promise_kept:thomas-family-protection&not:has_visited_node:past_kept_promise_opening", nodeId: "past_kept_promise_opening" },
+            { condition: "all:latest_promise_outcome:thomas-family-protection:broken&not:has_visited_node:past_broken_promise_opening", nodeId: "past_broken_promise_opening" },
+            { condition: "all:latest_promise_outcome:thomas-family-protection:kept&not:has_visited_node:past_kept_promise_opening", nodeId: "past_kept_promise_opening" },
             { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
@@ -365,7 +365,43 @@ const DIALOGUE_WAITER = {
                         tone: "calm",
                         condition: "all:cooperation_state:reluctant&has_claim:waiter-kane-at-poisoning-v2",
                         hiddenWhenUnavailable: true
-                    }                ]
+                    },
+                    {
+                        text: "Ты доверял мне раньше. Поможешь ещё раз сверить обстоятельства смены?",
+                        nextNode: "past_trust_help",
+                        tone: "reassuring",
+                        cooperationDelta: 8,
+                        condition: "all:latest_promise_outcome:thomas-family-protection:kept&not:has_visited_node:past_trust_help",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Я понимаю, что подвёл тебя. Могу попросить помочь проверить время событий?",
+                        nextNode: "past_trust_refusal",
+                        tone: "calm",
+                        cooperationDelta: -2,
+                        condition: "all:latest_promise_outcome:thomas-family-protection:broken&not:has_visited_node:past_trust_refusal",
+                        hiddenWhenUnavailable: true
+                    }
+                ]
+            },
+
+            past_trust_help: {
+                speaker: "npc",
+                text: "Я помогу сверить время, когда работал в баре. Но подтвердить смогу только то, что видел лично. Журнал смен и слова Джо лучше проверить отдельно.",
+                mood: "relieved",
+                answers: [
+                    { text: "Так и поступим. Начни с того, что видел.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Спасибо. Не буду торопить тебя.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            past_trust_refusal: {
+                speaker: "npc",
+                text: "Я уже доверился вашим обещаниям и пожалел. Тайно искать для вас сведения не буду. Если нужны документы — запросите их официально. О том, что видел сам, я могу рассказать.",
+                mood: "guarded",
+                answers: [
+                    { text: "Справедливо. Тогда начнём с твоих наблюдений.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Хорошо. Не стану давить.", nextNode: "end_waiter", tone: "neutral" }
+                ]
             },
 
             he_saw: {

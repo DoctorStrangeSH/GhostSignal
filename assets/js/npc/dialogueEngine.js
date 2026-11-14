@@ -444,6 +444,11 @@ class DialogueEngine {
             return Boolean(this.relationshipService?.isKnownRelationship(conditionStr.slice('relationship_known:'.length)));
         }
 
+        const latestPromiseOutcome = conditionStr.match(/^latest_promise_outcome:([a-z0-9_:-]{1,100}):(kept|broken)$/i);
+        if (latestPromiseOutcome) {
+            return Boolean(npcId && this.memoryService?.getLatestPromiseOutcome(npcId, latestPromiseOutcome[1]) ===
+                latestPromiseOutcome[2].toLowerCase());
+        }
         if (conditionStr.startsWith('prior_case_memory:')) {
             return Boolean(npcId && this.memoryService?.hasLongTermMemoryTagFromPriorCase(npcId,
                 conditionStr.slice('prior_case_memory:'.length)));

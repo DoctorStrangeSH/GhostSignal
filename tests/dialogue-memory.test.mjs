@@ -1967,3 +1967,47 @@ test("unrelated promise memories cannot trigger Thomas's family-specific opening
     assert.notEqual(engine.currentNode.id, "past_broken_promise_opening");
     assert.notEqual(engine.currentNode.id, "past_kept_promise_opening");
 });
+
+test("Thomas's latest promise outcome determines which assistance he offers", () => {
+    const { engine, memory } = createDialogueHarness();
+    const protection = {
+        id: "thomas-family-protection", text: "Я защищу твою семью.",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    };
+    memory.recordPromise("waiter", protection);
+    memory.settlePromisesForCase("case-002", "failed");
+    memory.resetCase("case-002");
+    memory.setCase("case-002");
+    assert.equal(memory.getLatestPromiseOutcome("waiter", protection.id), "broken");
+
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "past_broken_promise_opening");
+    const intro = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+    engine.selectAnswer(intro.index);
+    const refusal = engine.getAvailableAnswers().find(a => a.nextNode === "past_trust_refusal");
+    assert.equal(refusal?.isAvailable, true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "past_trust_help" && a.isAvailable), false);
+    engine.selectAnswer(refusal.index);
+    assert.equal(engine.currentNode.id, "past_trust_refusal");
+    assert.match(engine.currentNode.text, /официально/);
+
+    engine.reset();
+    memory.resetCase("case-002");
+    memory.setCase("case-002");
+    memory.recordPromise("waiter", protection);
+    memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "thomas_family_protected" });
+    memory.resetCase("case-002");
+    memory.setCase("case-002");
+    assert.equal(memory.getLatestPromiseOutcome("waiter", protection.id), "kept");
+
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "past_kept_promise_opening");
+    const next = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+    engine.selectAnswer(next.index);
+    const help = engine.getAvailableAnswers().find(a => a.nextNode === "past_trust_help");
+    assert.equal(help?.isAvailable, true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "past_trust_refusal" && a.isAvailable), false);
+    engine.selectAnswer(help.index);
+    assert.equal(engine.currentNode.id, "past_trust_help");
+    assert.match(engine.currentNode.text, /сверить время/);
+});
