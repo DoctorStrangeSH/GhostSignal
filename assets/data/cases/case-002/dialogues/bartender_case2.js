@@ -28,6 +28,14 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Томасу и его матери всё ещё угрожали. Можно организовать для них временное безопасное место?",
+                        nextNode: "joe_safe_lodging_arranged",
+                        tone: "calm",
+                        condition: "all:hasInsight:full_confession_kane&npc_action_completed:joe-reassures-thomas-after-threat&not:hasInsight:joe_arranged_safe_lodging",
+                        hiddenWhenUnavailable: true
+                    },
+
+                    {
                         text: "Вы успели поговорить с Томасом после того, что услышали?",
                         nextNode: "joe_helped_thomas",
                         tone: "calm",
@@ -74,6 +82,16 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 ]
             },
 
+            joe_safe_lodging_arranged: {
+                speaker: "npc",
+                text: "Томас рассказал мне про угрозы Кейна. После признания я договорился с родственниками за городом: они готовы временно принять его мать, не раскрывая адрес посторонним. Я передам Томасу контакты, но не стану говорить, что всё решено, пока он сам не подтвердит, что мать добралась.",
+                mood: "serious",
+                innerThought: "Джо организовал временное укрытие, но ещё не подтверждено, что семья им воспользовалась.",
+                givesInsight: "joe_arranged_safe_lodging",
+                answers: [
+                    { text: "Спасибо. Я уточню у Томаса, что мать действительно в безопасности.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
             joe_helped_thomas: {
                 speaker: "npc",
                 text: "Да. Я поговорил с Томасом после смены. Он был напуган, но теперь знает, что не останется один. Это не отменяет его показаний и не делает ваши обвинения правдой. Просто я не позволю оставить его без поддержки.",
