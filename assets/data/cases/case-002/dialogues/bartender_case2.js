@@ -256,7 +256,43 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "procedural",
                         condition: "all:npc_action_completed:joe-helps-thomas-prepare-documents&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_supports_thomas_documents",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Томас после отпуска решил вернуться к сменам?",
+                        nextNode: "joe_thomas_returned_to_work",
+                        tone: "calm",
+                        condition: "all:npc_action_completed:joe-welcomes-thomas-back-to-work&not:has_visited_node:joe_thomas_returned_to_work",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Почему Томас всё ещё не выходит на работу?",
+                        nextNode: "joe_thomas_extended_leave",
+                        tone: "cautious",
+                        condition: "all:npc_action_completed:joe-respects-thomas-extended-leave&not:has_visited_node:joe_thomas_extended_leave",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_thomas_returned_to_work: {
+                speaker: "npc",
+                text: "Томас сам написал мне, что готов снова выходить на смены. Я подтвердил, что жду его на работе. Это хорошая новость для бара, но она не доказывает, что опасность для его матери миновала. Её безопасность надо проверять отдельно.",
+                mood: "thoughtful",
+                innerThought: "Джо знает о возвращении из прямого сообщения Томаса; он не делает выводов о безопасности семьи.",
+                answers: [
+                    { text: "Понял. Не стану путать возвращение на работу с окончанием угроз.", nextNode: "greeting", tone: "procedural" },
+                    { text: "Спасибо за уточнение. До встречи.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
+            },
+
+            joe_thomas_extended_leave: {
+                speaker: "npc",
+                text: "Томас связался со мной и сам попросил ещё немного времени без смен. Я согласился. Причины у него серьёзные, но пересказывать его личные обстоятельства или называть адрес семьи не собираюсь. Официальную защиту это тоже не подтверждает.",
+                mood: "worried",
+                innerThought: "Джо уважает решение Томаса и не разглашает частные сведения.",
+                answers: [
+                    { text: "Понимаю. Его отсутствие не буду считать отказом от показаний.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо, что бережёте его доверие.", nextNode: "end_bartender_guarded", tone: "reassuring" }
                 ]
             },
 
