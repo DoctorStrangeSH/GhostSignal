@@ -97,6 +97,42 @@ test('legacy typed answer cannot bypass proof gate in case two', () => {
     assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
 });
 
+
+test('insufficient evidence reveals no correct suspect, motive or weapon to brute-force attempts', () => {
+    const h = createHarness(['bar_photo']);
+    const correct = h.screen._checkDeduction(h.second, 'business_rival', 'revenge', 'poison');
+    h.screen._showDeductionResult(correct, { hide() {} }, h.second);
+    const correctFeedback = h.feedback.innerHTML;
+    const wrong = h.screen._checkDeduction(h.second, 'ex_wife', 'jealousy', 'alcohol');
+    h.screen._showDeductionResult(wrong, { hide() {} }, h.second);
+    assert.equal(h.feedback.innerHTML, correctFeedback, 'same proof guidance regardless of the guessed culprit');
+    assert.doesNotMatch(h.feedback.innerHTML, /Вы правильно связали|Подозреваемый: ✅/);
+    assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
+});
+
+test('incorrect deduction with full evidence does not reveal individual answer fields', () => {
+    const h = createHarness(['prescription_copy', 'bar_photo'], ['hard_evidence_kane']);
+    const wrong = h.screen._checkDeduction(h.second, 'business_rival', 'jealousy', 'poison');
+    assert.equal(wrong.allCorrect, false);
+    h.screen._showDeductionResult(wrong, { hide() {} }, h.second);
+    assert.match(h.feedback.innerHTML, /ОБВИНЕНИЕ НЕ ПОДТВЕРЖДЕНО/);
+    assert.doesNotMatch(h.feedback.innerHTML, /Мотив:|Орудие:|Подозреваемый:/);
+    assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
+});
+
+test('legacy typed answers do not disclose correctness before proof is sufficient', () => {
+    const h = createHarness(['bar_photo']);
+    const manager = new h.manager(null, null, h.inventory);
+    manager.currentCase = h.second;
+    const correct = manager.checkFinalAnswer('виктор кейн');
+    const wrong = manager.checkFinalAnswer('анна');
+    assert.equal(correct.insufficientEvidence, true);
+    assert.equal(wrong.insufficientEvidence, true);
+    assert.equal(correct.theoryCorrect, undefined);
+    assert.equal(wrong.theoryCorrect, undefined);
+    assert.equal(correct.text, wrong.text);
+});
+
 test('case one remains compatible without evidence requirements', () => {
     const h = createHarness();
     const verdict = h.screen._checkDeduction(h.first, 'housekeeper', 'love', 'sedative');
