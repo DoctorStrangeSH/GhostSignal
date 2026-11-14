@@ -886,17 +886,18 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
     assert.equal(memory.hasRumor("journalist", rumorId), false);
     assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
 
-    advance(20);
+    // The autonomous rule's next scheduled check is later than rumor arrival.
+    advance(30);
     network.processDueDeliveries();
+    assert.equal(memory.hasRumor("journalist", rumorId), true);
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
+    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
+
+    advance(30);
     assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), true);
     assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
 
-    advance(10);
-    network.processDueDeliveries();
-    assert.equal(memory.hasRumor("journalist", rumorId), true);
-    assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
-
-    advance(50);
+    advance(60);
     assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), true);
     assert.equal(relationships.getInvestigationOutcome("journalist", loraRule), "no_independent_evidence");
     assert.equal(relationships.getEditorialDecision("journalist", loraRule), "withheld");
