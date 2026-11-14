@@ -324,13 +324,6 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm", cooperationDelta: 2 },
                     {
-                        text: "Джо не дал мне адрес укрытия. Назовёшь его сам?",
-                        nextNode: "thomas_keeps_family_location_private",
-                        tone: "direct",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:thomas_keeps_family_location_private",
-                        hiddenWhenUnavailable: true
-                    },
-                    {
                         text: "Если ты скрываешь информацию — это соучастие.",
                         nextNode: "threat",
                         tone: "aggressive",
@@ -427,6 +420,13 @@ const DIALOGUE_WAITER = {
                         nextNode: "thomas_conflicted_safety_values",
                         tone: "cautious",
                         condition: "all:npc_value_alignment:witness_safety:contested&not:has_visited_node:thomas_conflicted_safety_values",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо не дал мне адрес укрытия. Назовёшь его сам?",
+                        nextNode: "thomas_keeps_family_location_private",
+                        tone: "direct",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:thomas_keeps_family_location_private",
                         hiddenWhenUnavailable: true
                     }
                 ]
