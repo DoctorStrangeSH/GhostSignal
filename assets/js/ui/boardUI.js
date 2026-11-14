@@ -6,11 +6,13 @@ class BoardUI {
         this.memoryService = null;
         this.locationManager = null;
         this._draggedEvidence = null;
+        this._expandedTools = new Set(['hypotheses']);
         this._init();
     }
     
     setBoard(board) {
         this.board = board;
+        if (board?.hasPreparedRouteQuestion?.('business_rival')) this._expandedTools?.add('alibi');
         this.render();
     }
     
@@ -64,14 +66,22 @@ class BoardUI {
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
 
-            ${this._renderHypotheses()}
-            ${this._renderChronology()}
-            ${this._renderAlibiReconstruction()}
-            ${this._renderTestimonyJournal()}
+            <div class="board-tool-list" aria-label="Инструменты расследования">
+                ${this._renderTool('hypotheses', '🧩 Гипотезы', this._renderHypotheses())}
+                ${this._renderTool('chronology', '🕰️ Хронология улик', this._renderChronology())}
+                ${this._renderTool('alibi', '📍 Проверка алиби', this._renderAlibiReconstruction())}
+                ${this._renderTool('testimony', '📖 Показания свидетелей', this._renderTestimonyJournal())}
+            </div>
         `;
         
         this._bindEvents();
         setTimeout(() => this._drawConnections(), 100);
+    }
+
+    _renderTool(id, label, content) {
+        const expanded = this._expandedTools?.has(id);
+        return `<details class="board-tool" data-tool="${id}" ${expanded ? 'open' : ''}>
+            <summary>${label}</summary><div class="board-tool-content">${content}</div></details>`;
     }
     
     _renderSlots() {
@@ -112,6 +122,11 @@ class BoardUI {
     }
     
     _bindEvents() {
+        this.container.querySelectorAll('.board-tool').forEach(tool => tool.addEventListener('toggle', () => {
+            if (!this._expandedTools) this._expandedTools = new Set(['hypotheses']);
+            if (tool.open) this._expandedTools.add(tool.dataset.tool);
+            else this._expandedTools.delete(tool.dataset.tool);
+        }));
         // Drag & Drop из пула в слоты
         this.container.querySelectorAll('.evidence-pool-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
