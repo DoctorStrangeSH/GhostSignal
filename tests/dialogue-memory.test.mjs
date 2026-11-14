@@ -2215,6 +2215,10 @@ test("behavioral reputation counts distinct investigations instead of farmed dia
             text: "Спасибо, Джо.", tone: "reassuring"
         });
     }
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "verified-action", {
+        text: "Я сверил запись и исправил вывод.", tone: "calm",
+        memoryTags: ["player_completed_cautious_identification"], memoryImportance: 3
+    });
     memory.setCase("case-002");
     engine.startDialogue("dialogue-bartender-case2");
     assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 1);
@@ -3159,4 +3163,30 @@ test("Several source overclaims in one investigation never form a repeated-case 
     assert.equal(memory.getLongTermBehaviorPattern("journalist").sourceOverclaimCases, 1);
     assert.equal(engine._checkCondition("long_term_pattern:repeated_source_overclaim"), false);
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_repeated_source_overclaim"), false);
+});
+
+
+test("polite reassurance alone never becomes a cross-case pattern of reliable support", () => {
+    const { memory } = createDialogueHarness();
+    for (const caseId of ["case-001", "case-002"]) {
+        memory.setCase(caseId);
+        for (let i = 0; i < 4; i++) {
+            memory.recordAnswerSelected("bartender", "dialogue-bartender", "reassurance-" + i, {
+                text: "Не волнуйтесь, я всё понимаю.", tone: "reassuring"
+            });
+        }
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 0);
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").consistentSupport, false);
+
+    for (const caseId of ["case-001", "case-002"]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("bartender", "dialogue-bartender", "verified-action", {
+            text: "Я сверил запись и исправил вывод.", tone: "calm",
+            memoryImportance: 3,
+            memoryTags: ["player_completed_cautious_identification"]
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 2);
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").consistentSupport, true);
 });

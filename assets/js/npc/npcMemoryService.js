@@ -183,8 +183,10 @@ class NPCMemoryService {
     }
 
     getLongTermBehaviorPattern(npcId) {
+        // Courtesy is remembered, but it is not proof of sustained support.
+        // Support patterns require an observable choice or a fulfilled commitment.
         const positiveTags = new Set([
-            'player_reassured', 'player_respected_visitor_uncertainty',
+            'player_respected_visitor_uncertainty',
             'player_completed_cautious_identification',
             'player_earned_partial_trust_with_verified_action',
             'player_corrected_visitor_overclaim', 'player_retracted_visitor_overclaim'
