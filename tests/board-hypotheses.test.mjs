@@ -99,3 +99,31 @@ test('source audit flags one witness, shared rumor and revised records without a
     assert.equal('correct' in review, false);
     assert.equal(board.reviewHypothesisSources('unknown'), null);
 });
+
+test('rumor inquiry requires observed references, discovered leads and persists without a truth verdict', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-one');
+    const hypothesis = board.addHypothesis('Оба свидетеля повторяют один слух');
+    board.linkHypothesis(hypothesis, 'statement', 'claim-a', 'pending');
+    const statements = [{ id: 'claim-a', status: 'active', corroboratesRumorIds: ['rumor-one'] },
+        { id: 'old', status: 'superseded' }];
+    assert.equal(board.startSourceInquiry(hypothesis, 'unseen', statements), null);
+    const id = board.startSourceInquiry(hypothesis, 'rumor-one', statements);
+    assert.equal(id, 'inquiry-1');
+    assert.equal(board.startSourceInquiry(hypothesis, 'rumor-one', statements), null);
+    assert.equal(board.closeSourceInquiry(id, 'Это всего лишь пересказ'), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'old', 'Старая версия', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'evidence', 'unknown', 'Не найдена', { evidenceIds: [] }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Свидетель повторяет слух', { statements }), true);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Повтор', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'evidence', 'log', 'Запись не совпадает со временем', { evidenceIds: ['log'] }), true);
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.sourceInquiries[0].leads.length, 2);
+    assert.equal(restored.closeSourceInquiry(id, 'Источник всё ещё неизвестен'), true);
+    assert.equal(restored.addSourceInquiryLead(id, 'evidence', 'new', 'Поздно', { evidenceIds: ['new'] }), false);
+    assert.equal('verdict' in restored.sourceInquiries[0], false);
+    assert.equal(restored.setCase('case-two'), true);
+    assert.equal(restored.sourceInquiries.length, 0);
+    assert.equal(restored.nextInquiryId, 1);
+});
