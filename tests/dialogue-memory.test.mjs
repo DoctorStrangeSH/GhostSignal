@@ -2757,3 +2757,48 @@ test("Thomas independently chooses leave or document help after Mills's refusal"
         assert.equal(relations.cases["case-002"].rules[id].occurrences, count);
     }
 });
+
+
+test("Joe reacts only to the work decision Thomas actually sent him", () => {
+    for (const [pressure, expectedRule, otherRule, expectedCooperationDelta] of [
+        [80, "joe-supports-thomas-after-work-decision", "joe-helps-thomas-prepare-documents", 5],
+        [10, "joe-helps-thomas-prepare-documents", "joe-supports-thomas-after-work-decision", 2]
+    ]) {
+        const { context, memory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        const caseData = vm.runInContext("CASE_002", context);
+        relations.setCase(caseData);
+        const decisionId = "thomas-decides-work-after-protection-delay";
+        const joeLeaveId = "joe-supports-thomas-after-work-decision";
+        const joeDocsId = "joe-helps-thomas-prepare-documents";
+        memory.setRelationshipTrust("bartender", "sergeant", 55);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+        for (const minutes of [90, 60, 60, 60, 90, 90]) {
+            gameTime.advance(minutes);
+            relations.processDueInteractions();
+        }
+        memory.cases["case-002"].waiter.pressure = pressure;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.getWitnessWorkDecision("waiter", decisionId), pressure >= 50 ? "temporary_leave" : "document_help");
+        assert.equal(relations.hasReceivedInteraction("bartender", decisionId), true);
+        const cooperationBefore = memory.getMemory("waiter").cooperation;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        assert.equal(relations.hasCompletedInteraction("bartender", expectedRule), true);
+        assert.equal(relations.hasCompletedInteraction("bartender", otherRule), false);
+        assert.equal(memory.getMemory("waiter").cooperation, cooperationBefore + expectedCooperationDelta);
+        const saved = JSON.parse(JSON.stringify(relations.toJSON()));
+        const restored = vm.runInContext("new NPCRelationshipService(savedJoeReaction)", context);
+        context.savedJoeReaction = saved;
+        const reloaded = vm.runInContext("new NPCRelationshipService(savedJoeReaction)", context);
+        reloaded.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        reloaded.setCase(caseData);
+        assert.equal(reloaded.hasCompletedInteraction("bartender", expectedRule), true);
+        assert.equal(reloaded.hasCompletedInteraction("bartender", otherRule), false);
+    }
+});
