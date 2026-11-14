@@ -142,6 +142,7 @@ class NPCRelationshipService {
                     consultationPolicy: item.consultationPolicy === 'witness_protection' ? item.consultationPolicy : null,
                     witnessDecisionPolicy: item.witnessDecisionPolicy === 'work_after_protection_delay' ? item.witnessDecisionPolicy : null,
                     leaveReviewPolicy: item.leaveReviewPolicy === 'after_temporary_leave' ? item.leaveReviewPolicy : null,
+                    interviewDecisionPolicy: item.interviewDecisionPolicy === 'after_reputation_warning' ? item.interviewDecisionPolicy : null,
                     investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
@@ -532,6 +533,16 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.witnessWorkDecision || null;
     }
 
+    // The witness's choice is frozen when their response is sent, not recalculated on each visit.
+    getWitnessInterviewDecision(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.fromNpcId === npcId
+        );
+        if (rule?.interviewDecisionPolicy !== 'after_reputation_warning') return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.interviewDecision || null;
+    }
+
     // Saved once when Thomas reviews his leave; later changes in pressure cannot rewrite it.
     getWitnessLeaveReview(npcId, ruleId) {
         if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
@@ -571,6 +582,13 @@ class NPCRelationshipService {
             state.rules[rule.id].witnessWorkDecision = decision;
             this.memoryService?.adjustCooperation(rule.fromNpcId, decision === 'temporary_leave' ? -6 : 3,
                 'npc_witness_decision:' + rule.id);
+        }
+        if (rule.interviewDecisionPolicy === 'after_reputation_warning' && !state.rules[rule.id].interviewDecision) {
+            // Thomas alone decides, using his own experiences at the time of the reply.
+            const personalPattern = this.memoryService?.getLongTermBehaviorPattern(rule.fromNpcId);
+            const personalPressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            state.rules[rule.id].interviewDecision =
+                personalPattern?.repeatedPressure || personalPressure >= 40 ? 'request_joe_present' : 'private_with_boundaries';
         }
         if (rule.leaveReviewPolicy === 'after_temporary_leave' && !state.rules[rule.id].leaveReviewOutcome) {
             // Pressure represents Thomas's current willingness to return, never the detective's order.
