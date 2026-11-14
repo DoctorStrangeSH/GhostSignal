@@ -2265,3 +2265,61 @@ test("repeated pressure across cases remains visible even after polite words", (
     assert.match(engine.currentNode.text, /не в одном деле/);
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "retell")?.isAvailable, true);
 });
+
+test("Lora weighs careful evidence handling against a later overclaim", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordAnswerSelected("journalist", "dialogue-journalist", "checked-uncertainty", {
+        text: "Вывод пока предварительный.", tone: "calm",
+        memoryImportance: 3, memoryTags: ["player_respected_visitor_uncertainty"]
+    });
+    assert.equal(memory.getNPCValueAlignment("journalist", "source_integrity"), "upheld");
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_conflicted_accuracy_values"), false);
+    engine.reset();
+
+    memory.recordAnswerSelected("journalist", "dialogue-journalist", "overclaim", {
+        text: "Я установил личность.", tone: "defensive",
+        memoryImportance: 3, memoryTags: ["player_overstated_visitor_identity"]
+    });
+    assert.equal(memory.getNPCValueAlignment("journalist", "source_integrity"), "contested");
+    engine.startDialogue("dialogue-journalist");
+    const conflict = engine.getAvailableAnswers().find(a => a.nextNode === "lora_conflicted_accuracy_values");
+    assert.equal(conflict?.isAvailable, true);
+    engine.selectAnswer(conflict.index);
+    assert.match(engine.currentNode.text, /помню оба случая/i);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "investigation")?.isAvailable, true);
+    engine.reset();
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_conflicted_accuracy_values"), false);
+});
+
+test("Thomas distinguishes fulfilled and broken safety promises without instant forgiveness", () => {
+    const { engine, memory, context } = createDialogueHarness();
+    memory.setCase("case-001");
+    memory.recordAnswerSelected("waiter", "dialogue-waiter", "broken-promise", {
+        text: "Я подвёл тебя.", tone: "calm",
+        memoryImportance: 4, memoryTags: ["promise_broken:thomas-family-protection"]
+    });
+    memory.setCase("case-002");
+    assert.equal(memory.getNPCValueAlignment("waiter", "witness_safety"), "breached");
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_conflicted_safety_values"), false);
+    engine.reset();
+
+    memory.recordAnswerSelected("waiter", "dialogue-waiter", "kept-promise", {
+        text: "Я помог обеспечить безопасность.", tone: "calm",
+        memoryImportance: 4, memoryTags: ["promise_kept:thomas-family-protection"]
+    });
+    assert.equal(memory.getNPCValueAlignment("waiter", "witness_safety"), "contested");
+    engine.startDialogue("dialogue-waiter");
+    const conflict = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_conflicted_safety_values");
+    assert.equal(conflict?.isAvailable, true);
+    engine.selectAnswer(conflict.index);
+    assert.match(engine.currentNode.text, /Одно не отменяет другого/i);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw")?.isAvailable, true);
+
+    context.savedValues = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedValues, 'case-002')", context);
+    assert.equal(restored.getNPCValueAlignment("waiter", "witness_safety"), "contested");
+    assert.equal(restored.getNPCValueAlignment("bartender", "witness_safety"), "unseen");
+});
