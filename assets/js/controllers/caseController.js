@@ -75,6 +75,13 @@ class CaseController {
         if (caseNumber) caseNumber.textContent = caseId.replace('case-', '');
         if (caseTitle) caseTitle.textContent = caseData.title || '';
 
+        // CaseManager restores the evidence count, but no new item event fires
+        // on resume. Recompute the final button once the case UI is visible.
+        // Also hide a stale final button when a fresh investigation starts.
+        if (typeof app.caseManager.isReadyForFinal === 'function') {
+            events.emit('case:ready_for_final', app.caseManager.isReadyForFinal());
+        }
+
         app.progress.activeCase = caseId;
         // Persist the complete case snapshot immediately: selecting/continuing
         // a case must not depend on the next timed autosave.
