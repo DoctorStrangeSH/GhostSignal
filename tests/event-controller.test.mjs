@@ -310,6 +310,7 @@ test("failed cases close once, preserve settled NPC promises and cannot be resum
             caseFailed() { sequence.push("reputation"); },
             toJSON() { return { trust: 30 }; }
         },
+        _saveProgress() {},
         _quickSave() {
             sequence.push("save");
             assert.equal(this.progress.activeCase, null);
