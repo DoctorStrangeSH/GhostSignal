@@ -1051,7 +1051,10 @@ class NPCMemoryService {
         this._adjustCooperationMemory(memory, npcId, 5, 'verified_restitution:' + restitutionId);
         this._append(memory, { type: 'verified_restitution', restitutionId, accusationId: accusationId || null, priorMemoryTag });
         this._recordLongTermMemory(npcId, {
-            type: 'verified_restitution', summary: 'После прежнего давления детектив подтвердил реальную помощь близким свидетеля.',
+            type: 'verified_restitution',
+            summary: accusationId?.startsWith('public-final-accusation:')
+                ? 'Детектив признал публичную ошибку и предоставил подтверждение другого виновного.'
+                : 'После прежнего давления детектив подтвердил реальную помощь близким свидетеля.',
             sentiment: 'mixed', importance: 4, tags: ['verified_restitution'], trustDelta: 2
         });
         return true;
