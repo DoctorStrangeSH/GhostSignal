@@ -35,10 +35,11 @@ function createDialogueHarness() {
             mill_watchman: { name: "Степан Орлов", availableForCall: false },
             diner_owner: { name: "Элеонора Брукс", availableForCall: false },
             telephone_operator: { name: "Марта Вейл", availableForCall: false },
+            line_technician: { name: "Генри Кларк", availableForCall: false },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
-        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true }, diner_cash_slip: { id, name: "Кассовый чек закусочной", icon: "🧾", isEvidence: true }, public_telephone_booth: { id, name: "Уличная телефонная будка", icon: "☎️" }, telephone_exchange_slip: { id, name: "Карточка междугороднего запроса", icon: "📞", isEvidence: true } })[id] || null; }
+        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true }, diner_cash_slip: { id, name: "Кассовый чек закусочной", icon: "🧾", isEvidence: true }, public_telephone_booth: { id, name: "Уличная телефонная будка", icon: "☎️" }, telephone_exchange_slip: { id, name: "Карточка междугороднего запроса", icon: "📞", isEvidence: true }, booth_t17_maintenance_ticket: { id, name: "Наряд на ремонт будки Т-17", icon: "🛠️", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
@@ -54,6 +55,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/mill_watchman.js",
         "assets/data/cases/case-002/dialogues/diner_owner.js",
         "assets/data/cases/case-002/dialogues/telephone_operator.js",
+        "assets/data/cases/case-002/dialogues/line_technician.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1583,4 +1585,39 @@ test("telephone exchange rejects attributing an unassigned request to the diner 
     engine.selectAnswer(overclaim.index);
     assert.match(engine.currentNode.text, /нет имени, номера аппарата/);
     assert.equal(memory.hasLongTermMemoryTag("telephone_operator", "player_overstated_telephone_match"), true);
+});
+
+test("telephone technician narrows the fault to booth T-17 without identifying the source of the district request", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    engine.startDialogue("dialogue-line-technician");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_booth_ticket"), false);
+
+    inventory.addInsight("telephone_time_calibrated");
+    engine.startDialogue("dialogue-line-technician");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_booth_ticket");
+    assert.equal(check?.isAvailable, true);
+    engine.selectAnswer(check.index);
+
+    assert.equal(inventory.hasInsight("booth_t17_fault_window"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "booth_t17_maintenance_ticket"), true);
+    assert.match(engine.currentNode.text, /другого аппарата/);
+
+    const cautious = engine.getAvailableAnswers().find(answer => answer.nextNode === "record_scope");
+    assert.equal(cautious?.isAvailable, true);
+    engine.selectAnswer(cautious.index);
+    assert.equal(inventory.hasInsight("booth_t17_not_confirmed_source"), true);
+    assert.equal(memory.hasLongTermMemoryTag("line_technician", "player_kept_phone_fault_scope"), true);
+});
+
+test("technician rejects claiming the whole district line was down based on one booth ticket", () => {
+    const { engine, inventory, memory } = createDialogueHarness();
+    inventory.addInsight("telephone_time_calibrated");
+    engine.startDialogue("dialogue-line-technician");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_booth_ticket");
+    engine.selectAnswer(check.index);
+    const overclaim = engine.getAvailableAnswers().find(answer => answer.nextNode === "overstates_fault");
+    assert.equal(overclaim?.isAvailable, true);
+    engine.selectAnswer(overclaim.index);
+    assert.match(engine.currentNode.text, /все аппараты района/);
+    assert.equal(memory.hasLongTermMemoryTag("line_technician", "player_overstated_phone_fault"), true);
 });
