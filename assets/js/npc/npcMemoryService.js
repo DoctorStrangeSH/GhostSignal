@@ -361,6 +361,9 @@ class NPCMemoryService {
             circumstances: claim.circumstances || null,
             deception: claim.deception ? this._clone(claim.deception) : null,
             directObservation: claim.directObservation === true,
+            referencesRumorIds: Array.isArray(claim.referencesRumorIds)
+                ? [...new Set(claim.referencesRumorIds.filter(id => typeof id === 'string' && id.trim()))]
+                : [],
             corroboratesRumorIds: Array.isArray(claim.corroboratesRumorIds)
                 ? [...new Set(claim.corroboratesRumorIds.filter(id => typeof id === 'string' && id.trim()))]
                 : [],
