@@ -150,6 +150,7 @@
 .board-slot:hover {
     border-color: var(--accent-amber);
 }
+.board-slot:focus-visible { outline: 2px solid var(--accent-amber-glow); outline-offset: 3px; }
 
 .board-slot.slot-filled {
     border-color: var(--accent-amber);
@@ -207,6 +208,13 @@
     border-color: var(--accent-amber);
     background: rgba(212, 160, 23, 0.04);
 }
+.evidence-pool-item.is-selected, .evidence-pool-item[aria-pressed="true"] {
+    border-color: var(--accent-amber-glow);
+    background: rgba(212, 160, 23, 0.14);
+    box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.25);
+}
+.evidence-pool-item:focus-visible { outline: 2px solid var(--accent-amber-glow); outline-offset: 2px; }
+.board-selection-help { font-size: 11px; color: var(--text-secondary); margin: 5px 0 10px; line-height: 1.5; }
 
 /* ============ ЖУРНАЛ ПОКАЗАНИЙ ============ */
 .testimony-journal {
