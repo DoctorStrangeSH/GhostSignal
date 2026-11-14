@@ -2799,3 +2799,29 @@ test("Joe reacts only to the work decision Thomas actually sent him", () => {
         assert.equal(reloaded.hasCompletedInteraction("bartender", otherRule), false);
     }
 });
+
+test("Joe's work-decision follow-up shows only the completed branch and cannot be replayed", () => {
+    for (const [completedAction, expectedNode, hiddenAction] of [
+        ["joe-supports-thomas-after-work-decision", "joe_supports_thomas_leave", "joe-helps-thomas-prepare-documents"],
+        ["joe-helps-thomas-prepare-documents", "joe_supports_thomas_documents", "joe-supports-thomas-after-work-decision"]
+    ]) {
+        const { engine } = createDialogueHarness();
+        engine.setRelationshipService({
+            hasCompletedInteraction(npcId, actionId) {
+                return npcId === "bartender" && actionId === completedAction;
+            },
+            toJSON() { return {}; }
+        });
+        engine.startDialogue("dialogue-bartender-case2");
+        const available = engine.getAvailableAnswers();
+        const decisionAnswer = available.find(item => item.nextNode === expectedNode);
+        assert.equal(decisionAnswer?.isAvailable, true);
+        assert.equal(available.some(item => item.condition?.includes(hiddenAction)), false);
+        assert.equal(engine.selectAnswer(decisionAnswer.index).id, expectedNode);
+        assert.match(engine.currentNode.text, /Томас сам решил/);
+        assert.match(engine.currentNode.text, /защит/);
+        const back = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
+        assert.equal(engine.selectAnswer(back.index).id, "greeting");
+        assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === expectedNode), false);
+    }
+});
