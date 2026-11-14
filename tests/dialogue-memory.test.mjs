@@ -183,10 +183,10 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
     const { engine, memory } = createDialogueHarness();
     engine.startDialogue("dialogue-bartender-case2");
     assert.equal(engine.getAvailableAnswers().some(answer =>
-        answer.condition === "long_term_memory:player_threatened" && answer.isAvailable
+        answer.condition === "prior_case_memory:player_threatened" && answer.isAvailable
     ), false);
     assert.equal(engine.getAvailableAnswers().some(answer =>
-        answer.condition === "long_term_memory:player_reassured" && answer.isAvailable
+        answer.condition === "prior_case_memory:player_reassured" && answer.isAvailable
     ), false);
 
     engine.reset();
@@ -202,7 +202,7 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
 
     engine.startDialogue("dialogue-bartender-case2");
     const remembered = engine.getAvailableAnswers().find(answer =>
-        answer.condition === "long_term_memory:player_threatened"
+        answer.condition === "prior_case_memory:player_threatened"
     );
     assert.equal(remembered?.isAvailable, true);
     assert.equal(engine.selectAnswer(remembered.index).id, "remembers_threat");
@@ -219,6 +219,25 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
     assert.equal(engine._checkCondition("npc_goal_completed:maintain_bar_community"), true);
     assert.equal(engine._checkCondition("npc_goal_completed:missing_goal"), false);
     assert.equal(engine._checkCondition("familiarity_at_least:2"), true);
+});
+
+test('Joe does not mistake a threat from the current case for an earlier investigation', () => {
+    const { engine, memory, context } = createDialogueHarness();
+    memory.recordAnswerSelected('bartender', 'dialogue-bartender-case2', 'current-threat', {
+        text: 'Не спорьте со мной.', tone: 'threatening', memoryTags: ['player_threatened'], memoryImportance: 4
+    });
+    assert.equal(memory.hasLongTermMemoryTag('bartender', 'player_threatened'), true);
+    assert.equal(memory.hasLongTermMemoryTagFromPriorCase('bartender', 'player_threatened'), false);
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.equal(engine.getAvailableAnswers().some(answer =>
+        answer.condition === 'prior_case_memory:player_threatened' && answer.isAvailable), false);
+    const snapshot = JSON.parse(JSON.stringify(memory.toJSON()));
+    context.savedMemory = snapshot;
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    assert.equal(restored.hasLongTermMemoryTagFromPriorCase('bartender', 'player_threatened'), false);
+    restored.setCase('case-001');
+    assert.equal(restored.hasLongTermMemoryTagFromPriorCase('bartender', 'player_threatened'), true,
+        'memory belongs to another case once switching cases');
 });
 
 test("DialogueEngine lets accumulated distrust change Joe's returning behavior", () => {
@@ -256,7 +275,7 @@ test("DialogueEngine gives Joe a warmer greeting when the detective earned his t
 
     engine.startDialogue("dialogue-bartender-case2");
     const remembered = engine.getAvailableAnswers().find(answer =>
-        answer.condition === "long_term_memory:player_reassured"
+        answer.condition === "prior_case_memory:player_reassured"
     );
     assert.equal(remembered?.isAvailable, true);
     assert.equal(engine.selectAnswer(remembered.index).id, "remembers_kindness");
