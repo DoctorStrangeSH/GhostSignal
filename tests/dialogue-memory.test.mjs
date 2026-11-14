@@ -1878,3 +1878,40 @@ test("technician rejects claiming the whole district line was down based on one 
     assert.match(engine.currentNode.text, /все аппараты района/);
     assert.equal(memory.hasLongTermMemoryTag("line_technician", "player_overstated_phone_fault"), true);
 });
+
+test("Thomas remembers a fulfilled promise in his next conversation", () => {
+    const { engine, memory } = createDialogueHarness();
+    const promise = {
+        id: "thomas-family-protection", text: "Я обеспечу безопасность твоей семьи.",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    };
+    assert.equal(memory.recordPromise("waiter", promise).recorded, true);
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine._checkCondition("promise_status:thomas-family-protection:pending"), true);
+    engine.reset();
+
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "thomas_family_protected"
+    }).length, 1);
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "promise_kept_opening");
+    assert.match(engine.currentNode.text, /в безопасности/);
+    assert.equal(engine._checkCondition("promise_status:thomas-family-protection:fulfilled"), true);
+    assert.equal(engine._checkCondition("promise_status:thomas-family-protection:broken"), false);
+    engine.reset();
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.notEqual(engine.currentNode.id, "promise_kept_opening");
+});
+
+test("Thomas remembers a broken promise after a failed investigation", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Я обеспечу безопасность твоей семьи.",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    });
+    assert.equal(memory.settlePromisesForCase("case-002", "failed").length, 1);
+    assert.equal(engine.startDialogue("dialogue-waiter"), true);
+    assert.equal(engine.currentNode.id, "promise_broken_opening");
+    assert.match(engine.currentNode.text, /обещали/);
+    assert.equal(engine._checkCondition("promise_status:thomas-family-protection:broken"), true);
+});

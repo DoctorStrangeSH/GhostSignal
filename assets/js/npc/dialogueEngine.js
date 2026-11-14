@@ -525,6 +525,15 @@ class DialogueEngine {
             // A statement previously recorded during the investigation is case knowledge.
             return Boolean(this.memoryService?.hasClaim(caseClaim[1], caseClaim[2]));
         }
+        // Promise consequences are local to the person being questioned.
+        // A completed case must not make an unrelated witness's promise visible.
+        const promiseStatus = conditionStr.match(/^promise_status:([a-z0-9_:-]{1,100}):(pending|fulfilled|broken)$/i);
+        if (promiseStatus) {
+            if (!npcId) return false;
+            return this.memoryService?.getPromises(npcId)
+                ?.some(promise => promise.id === promiseStatus[1] &&
+                    promise.status === promiseStatus[2].toLowerCase()) || false;
+        }
         if (conditionStr.startsWith('has_claim:')) {
             return Boolean(npcId && this.memoryService?.hasClaim(npcId, conditionStr.slice('has_claim:'.length)));
         }
