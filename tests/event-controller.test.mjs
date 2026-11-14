@@ -424,11 +424,19 @@ test("a false public accusation harms Anna once and survives a memory reload", (
         correctDeduction: { suspect: "business_rival" },
         finalQuestion: { acceptableAnswers: [] }
     };
+    const published = [];
     const app = {
         progress: {},
         inventory: { proofReady: false },
         caseManager: { currentCase: caseData },
         npcMemoryService: memory,
+        npcSocialNetwork: {
+            publishPublicAccusation(npcId, id) {
+                published.push({ npcId, id });
+                return { published: true, queued: 1 };
+            },
+            toJSON() { return { pending: ["public-accusation"] }; }
+        },
         _saveProgress() {}
     };
     new context.TestEventController(app, eventBus).bind();
@@ -454,6 +462,9 @@ test("a false public accusation harms Anna once and survives a memory reload", (
     eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
     assert.equal(memory.getTrust("ex_wife"), after, "repeating the declaration cannot stack penalties");
     assert.equal(memory.getAccusations("ex_wife").length, 1);
+    assert.equal(published.length, 1, "only the verified and first accusation seeds a rumor");
+    assert.equal(published[0].npcId, "ex_wife");
+    assert.deepEqual(app.progress.npcSocialData, { pending: ["public-accusation"] });
     const restored = new context.TestMemoryService(stored, "case-002");
     assert.equal(restored.getAccusationStatus("ex_wife", "public-final-accusation:case-002:ex_wife"), "false");
     assert.equal(restored.getTrust("ex_wife"), after);
