@@ -167,6 +167,7 @@ class NPCRelationshipService {
                         fromRumorId: typeof conditions.fromRumorId === 'string' && /^[a-z0-9_:-]{1,100}$/i.test(conditions.fromRumorId) ? conditions.fromRumorId : null,
                         fromRumorStatus: ['unverified', 'corroborated', 'disputed'].includes(conditions.fromRumorStatus) ? conditions.fromRumorStatus : null,
                         fromRumorConfidenceAtLeast: this._optionalClamp(conditions.fromRumorConfidenceAtLeast, 0, 100),
+                        fromRumorAgeMinutesAtLeast: this._optionalClamp(conditions.fromRumorAgeMinutesAtLeast, 0, 10080),
                         requiresActionId: typeof conditions.requiresActionId === 'string' ? conditions.requiresActionId : null,
                         requiresInvestigationOutcome: ['corroborated', 'disputed', 'no_independent_evidence'].includes(conditions.requiresInvestigationOutcome) ? conditions.requiresInvestigationOutcome : null,
                         requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080),
@@ -385,6 +386,9 @@ class NPCRelationshipService {
             if (!rumor) return false;
             if (conditions.fromRumorStatus && rumor.status !== conditions.fromRumorStatus) return false;
             if (conditions.fromRumorConfidenceAtLeast !== null && rumor.confidence < conditions.fromRumorConfidenceAtLeast) return false;
+            if (conditions.fromRumorAgeMinutesAtLeast !== null &&
+                (!Number.isFinite(rumor.receivedAtGameMinute) ||
+                    this._now() - rumor.receivedAtGameMinute < conditions.fromRumorAgeMinutesAtLeast)) return false;
         }
         if (conditions.requiresActionId) {
             const prerequisite = this.caseConfig.autonomousInteractions.find(item =>
