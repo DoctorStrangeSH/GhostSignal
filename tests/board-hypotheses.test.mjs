@@ -267,3 +267,43 @@ test('investigation access requirements are advisory and never become proof that
     const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(restored.reviewAlibiAccessRestrictions(locations).length, 1);
 });
+
+test('authored travel routes respect direction, visited stops and uncertain timing', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const locations = [{ id: 'bar', name: 'Бар' }, { id: 'alley', name: 'Переулок' },
+        { id: 'booth', name: 'Будка' }, { id: 'depot', name: 'Депо' }];
+    const edges = [
+        { from: 'bar', to: 'alley', minutes: 6, bidirectional: true },
+        { from: 'alley', to: 'booth', minutes: 13, bidirectional: true },
+        { from: 'booth', to: 'depot', minutes: 8 }
+    ];
+    const ctx = { statements: [{ id: 'w', status: 'active' }], locations };
+    const claim = (locationId, from, to, subject = 'Кейн') => board.addAlibiClaim({
+        subject, location: locationId, locationId, startMinute: from, endMinute: to,
+        precision: 'approximate', kind: 'statement', sourceId: 'w'
+    }, ctx);
+    assert.ok(claim('bar', 1320, 1325));
+    assert.ok(claim('booth', 1335, 1340));
+    const [finding] = board.reviewAlibiRoutes(edges, locations);
+    assert.equal(finding.status, 'route_time_tight');
+    assert.equal(finding.estimatedMinutes, 19);
+    assert.equal(finding.availableMinutes, 10);
+    assert.deepEqual(Array.from(finding.routeLocationIds), ['bar', 'alley', 'booth']);
+    assert.match(finding.reason, /не доказательство невозможности/);
+    assert.equal(board.reviewAlibiRoutes(edges, [locations[0], locations[2]]).length, 0,
+        'undiscovered intermediate stops cannot appear in the route');
+    assert.equal(board.reviewAlibiRoutes([], locations).length, 0, 'unmapped routes are unknown, not impossible');
+    assert.ok(claim('depot', 1350, 1355));
+    assert.equal(board.reviewAlibiRoutes(edges, locations).length, 2);
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.reviewAlibiRoutes(edges, locations).length, 2);
+    const directed = runtime.create();
+    const directedCtx = { statements: [{ id: 'w', status: 'active' }], locations };
+    assert.ok(directed.addAlibiClaim({ subject: 'Джо', location: 'Будка', locationId: 'booth',
+        startMinute: 1000, endMinute: 1005, precision: 'exact', kind: 'statement', sourceId: 'w' }, directedCtx));
+    assert.ok(directed.addAlibiClaim({ subject: 'Джо', location: 'Бар', locationId: 'bar',
+        startMinute: 1010, endMinute: 1015, precision: 'exact', kind: 'statement', sourceId: 'w' }, directedCtx));
+    assert.equal(directed.reviewAlibiRoutes([{ from: 'bar', to: 'booth', minutes: 30 }], locations).length, 0,
+        'directed edge must not imply travel in the opposite direction');
+});
