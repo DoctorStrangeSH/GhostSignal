@@ -141,6 +141,7 @@ class NPCRelationshipService {
                     interaction: item.interaction,
                     consultationPolicy: item.consultationPolicy === 'witness_protection' ? item.consultationPolicy : null,
                     witnessDecisionPolicy: item.witnessDecisionPolicy === 'work_after_protection_delay' ? item.witnessDecisionPolicy : null,
+                    leaveReviewPolicy: item.leaveReviewPolicy === 'after_temporary_leave' ? item.leaveReviewPolicy : null,
                     investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
@@ -408,6 +409,8 @@ class NPCRelationshipService {
             if (conditions.requiresActionAgeMinutes !== null &&
                 (!Number.isFinite(prior.lastTriggeredAt) ||
                     this._now() - prior.lastTriggeredAt < conditions.requiresActionAgeMinutes)) return false;
+            if (conditions.requiresWitnessWorkDecision &&
+                prior.witnessWorkDecision !== conditions.requiresWitnessWorkDecision) return false;
         }
         if (conditions.requiresReceivedActionId) {
             // A character may act on a message addressed to them, not on private actions of others.
@@ -521,6 +524,16 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.witnessWorkDecision || null;
     }
 
+    // Saved once when Thomas reviews his leave; later changes in pressure cannot rewrite it.
+    getWitnessLeaveReview(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.fromNpcId === npcId
+        );
+        if (rule?.leaveReviewPolicy !== 'after_temporary_leave') return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.leaveReviewOutcome || null;
+    }
+
     _applyInteraction(rule, now) {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);
@@ -550,6 +563,11 @@ class NPCRelationshipService {
             state.rules[rule.id].witnessWorkDecision = decision;
             this.memoryService?.adjustCooperation(rule.fromNpcId, decision === 'temporary_leave' ? -6 : 3,
                 'npc_witness_decision:' + rule.id);
+        }
+        if (rule.leaveReviewPolicy === 'after_temporary_leave' && !state.rules[rule.id].leaveReviewOutcome) {
+            // Pressure represents Thomas's current willingness to return, never the detective's order.
+            const pressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            state.rules[rule.id].leaveReviewOutcome = pressure < 50 ? 'return_to_work' : 'extend_leave';
         }
         const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
             interactionCount: 0, lastInteractionAt: null, discoveredAt: null
