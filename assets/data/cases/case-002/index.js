@@ -219,6 +219,16 @@ const CASE_002 = {
                 summary: "После признания детектива в утечке Джо самостоятельно предупредил Томаса: прежнее укрытие нельзя считать безопасным."
             },
             {
+                id: "thomas-asks-joe-for-shelter-contingency", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "waiter", toNpcId: "bartender", interaction: "support",
+                channel: "message", initialDelayMinutes: 75, everyMinutes: 60,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "joe-alerts-thomas-after-shelter-leak",
+                requiresReceivedActionAgeMinutes: 30,
+                trustDelta: 1, reciprocalTrustDelta: 0,
+                summary: "После предупреждения Джо Томас сам попросил помочь проверить запасной план безопасности для матери. Это ещё не подтверждение переезда."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
