@@ -478,3 +478,32 @@ test('board checklist hides case guidance before a case is selected and escapes 
     assert.match(html, /&lt;img onerror=bad&gt;/);
     assert.doesNotMatch(html, /<script>|<img/);
 });
+
+test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const statements = [{ npcId: 'waiter', status: 'active' }];
+    const noDocument = board.getInvestigationChecklist({ statements });
+    assert.equal(noDocument.nextActions.length, 0);
+    const notInterviewed = board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'] });
+    assert.equal(notInterviewed.nextActions.length, 0);
+    const discovered = board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'], statements });
+    assert.equal(discovered.nextActions.length, 1);
+    assert.equal(discovered.nextActions[0].id, 'thomas-telephone');
+    assert.equal(discovered.nextActions[0].status, 'available');
+    const asked = board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'], statements,
+        thomasTelephoneQuestionAsked: true });
+    assert.equal(asked.nextActions[0].status, 'checked');
+    assert.match(asked.nextActions[0].text, /не видел звонившего/);
+    const ctx = { statements: [{ id: 'w' }] };
+    const one = board.addAlibiClaim({ subject: 'Кейн', location: 'Бар', startMinute: 1300, endMinute: 1305,
+        precision: 'exact', kind: 'statement', sourceId: 'w' }, ctx);
+    const two = board.addAlibiClaim({ subject: 'Кейн', location: 'Будка', startMinute: 1310, endMinute: 1315,
+        precision: 'exact', kind: 'statement', sourceId: 'w' }, ctx);
+    assert.ok(board.prepareRouteQuestion({ status: 'route_time_tight', ids: [one, two] }, 'business_rival'));
+    const together = board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'], statements });
+    assert.deepEqual(Array.from(together.nextActions, lead => lead.id), ['kane-route', 'thomas-telephone']);
+    board.setCase('case-001');
+    assert.equal(board.getInvestigationChecklist({ evidenceIds: ['telephone_exchange_slip'], statements }).nextActions.length, 0);
+});
