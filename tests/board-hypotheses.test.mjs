@@ -162,3 +162,33 @@ test('document chronology uses discovered evidence only and does not infer an al
     assert.equal('culprit' in comparison, false);
     assert.equal('contradiction' in comparison, false);
 });
+
+test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const source = { statements: [{ id: 'joe', status: 'active' }], evidenceIds: ['telephone_log'] };
+    const a = { subject: 'Кейн', location: 'Бар', startMinute: 1320, endMinute: 1350,
+        precision: 'approximate', kind: 'statement', sourceId: 'joe' };
+    assert.equal(board.addAlibiClaim({ ...a, sourceId: 'missing' }, source), null);
+    assert.equal(board.addAlibiClaim({ ...a, startMinute: 1400, endMinute: 1300 }, source), null);
+    assert.equal(board.addAlibiClaim({ ...a, startMinute: -1 }, source), null);
+    const first = board.addAlibiClaim(a, source);
+    assert.equal(first, 'alibi-1');
+    assert.equal(board.addAlibiClaim(a, source), null);
+    const second = board.addAlibiClaim({ ...a, location: 'Переулок', startMinute: 1340, endMinute: 1360,
+        precision: 'exact', kind: 'evidence', sourceId: 'telephone_log' }, source);
+    assert.equal(second, 'alibi-2');
+    const [warning] = board.reviewAlibiClaims();
+    assert.equal(warning.status, 'needs_verification');
+    assert.match(warning.reason, /приблизительные/);
+    assert.equal('lie' in warning, false);
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.alibiClaims.length, 2);
+    assert.equal(restored.nextAlibiId, 3);
+    assert.equal(restored.removeAlibiClaim(first), true);
+    assert.equal(restored.reviewAlibiClaims().length, 0);
+    assert.equal(restored.setCase('case-001'), true);
+    assert.equal(restored.alibiClaims.length, 0);
+    assert.equal(restored.nextAlibiId, 1);
+});
