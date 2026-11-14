@@ -12,7 +12,7 @@ class BoardUI {
     
     setBoard(board) {
         this.board = board;
-        if (board?.hasPreparedRouteQuestion?.('business_rival')) this._expandedTools?.add('alibi');
+        if (board?.hasPreparedRouteQuestion?.('business_rival') || board?.hasDiscussedRouteQuestion?.('business_rival')) this._expandedTools?.add('alibi');
         this.render();
     }
     
@@ -278,10 +278,12 @@ class BoardUI {
             ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
         ];
         const questionReady = this.board?.caseId === 'case-002' && this.board?.hasPreparedRouteQuestion('business_rival');
+        const questionDiscussed = this.board?.caseId === 'case-002' && this.board?.hasDiscussedRouteQuestion?.('business_rival');
         return `<section class="testimony-journal" aria-labelledby="alibi-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
             <p class="hypothesis-help">Это ваша реконструкция по найденным источникам, а не подтверждённый маршрут NPC. Указывайте время, место и степень точности из показания или документа. Интервалы через полночь пока нужно разбивать на две записи.</p>
             ${questionReady ? `<div class="alibi-followup-ready" role="status"><strong>ВОПРОС КЕЙНУ ПОДГОТОВЛЕН</strong><p>Вернитесь к Виктору Кейну и начните разговор заново. Вариант о маршруте появится в допросе. Подготовка вопроса не подтверждает его вину.</p><button type="button" class="terminal-btn btn-sm route-question-cancel">ОТМЕНИТЬ ВОПРОС</button></div>` : ''}
+            ${questionDiscussed ? `<div class="alibi-followup-ready"><strong>ВОПРОС КЕЙНУ ЗАДАН</strong><p>Кейн оспорил предположение о маршруте. Найдите независимые подтверждения отдельных переходов; его ответ не доказывает ни вину, ни невиновность.</p></div>` : ''}
             <form id="alibi-form" class="hypothesis-form">
                 <input class="terminal-input" name="subject" maxlength="100" required placeholder="Персонаж (одно имя для разных записей)" aria-label="Персонаж">
                 <input class="terminal-input" name="location" maxlength="120" required placeholder="Предполагаемое место" aria-label="Место">
@@ -299,7 +301,7 @@ class BoardUI {
             ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}${
                 w.status === 'route_time_tight' && this.board?.caseId === 'case-002' &&
                 ['кейн', 'виктор кейн'].includes(w.subject.trim().toLocaleLowerCase()) &&
-                !this.board.hasPreparedRouteQuestion('business_rival')
+                !this.board.hasPreparedRouteQuestion('business_rival') && !this.board.hasDiscussedRouteQuestion?.('business_rival')
                     ? ` <button type="button" class="terminal-btn btn-sm route-question-prepare" data-claim-a="${this._escapeHTML(w.ids[0])}" data-claim-b="${this._escapeHTML(w.ids[1])}">ПОДГОТОВИТЬ ВОПРОС КЕЙНУ</button>` : ''}</li>`).join('')}</ul></div>` : ''}
         </section>`;
     }
