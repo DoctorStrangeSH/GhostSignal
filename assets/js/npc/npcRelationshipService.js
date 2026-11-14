@@ -170,6 +170,8 @@ class NPCRelationshipService {
                         requiresActionId: typeof conditions.requiresActionId === 'string' ? conditions.requiresActionId : null,
                         requiresInvestigationOutcome: ['corroborated', 'disputed', 'no_independent_evidence'].includes(conditions.requiresInvestigationOutcome) ? conditions.requiresInvestigationOutcome : null,
                         requiresActionAgeMinutes: this._optionalClamp(conditions.requiresActionAgeMinutes, 0, 10080),
+                        requiresReceivedActionId: typeof conditions.requiresReceivedActionId === 'string' ? conditions.requiresReceivedActionId : null,
+                        requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
                         fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
                         fromDialogueNodeId: typeof conditions.fromDialogueNodeId === 'string' ? conditions.fromDialogueNodeId : null
                     },
@@ -395,6 +397,17 @@ class NPCRelationshipService {
             if (conditions.requiresActionAgeMinutes !== null &&
                 (!Number.isFinite(prior.lastTriggeredAt) ||
                     this._now() - prior.lastTriggeredAt < conditions.requiresActionAgeMinutes)) return false;
+        }
+        if (conditions.requiresReceivedActionId) {
+            // A character may act on a message addressed to them, not on private actions of others.
+            const received = this.caseConfig.autonomousInteractions.find(item =>
+                item.id === conditions.requiresReceivedActionId && item.toNpcId === rule.fromNpcId && item.id !== rule.id
+            );
+            const prior = received ? this.cases[this.currentCaseId]?.rules?.[received.id] : null;
+            if (!prior || !Number.isInteger(prior.occurrences) || prior.occurrences < 1) return false;
+            if (conditions.requiresReceivedActionAgeMinutes !== null &&
+                (!Number.isFinite(prior.lastTriggeredAt) ||
+                    this._now() - prior.lastTriggeredAt < conditions.requiresReceivedActionAgeMinutes)) return false;
         }
         if (conditions.goalId) {
             const goal = this.worldGoals?.[conditions.goalNpcId]?.[conditions.goalId];
