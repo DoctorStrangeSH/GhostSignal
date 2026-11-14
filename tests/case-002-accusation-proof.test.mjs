@@ -91,7 +91,7 @@ test('legacy typed answer cannot bypass proof gate in case two', () => {
     manager.caseState = 'active';
     const weak = manager.checkFinalAnswer('виктор кейн');
     assert.equal(weak.isCorrect, false);
-    assert.equal(weak.theoryCorrect, true);
+    assert.equal(weak.theoryCorrect, undefined);
     assert.equal(weak.insufficientEvidence, true);
     assert.equal(manager.caseState, 'active');
     assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
