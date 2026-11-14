@@ -233,15 +233,33 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "Вы успели узнать у сержанта Миллса, как организовать защиту свидетеля?",
                         nextNode: "joe_checked_protection_procedure",
                         tone: "procedural",
-                        condition: "all:npc_action_completed:joe-asks-mills-about-witness-protection&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_checked_protection_procedure",
+                        condition: "all:npc_protection_consultation:joe-asks-mills-about-witness-protection:written_request_required&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_checked_protection_procedure",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Миллс ответил на ваш запрос о защите свидетеля?",
+                        nextNode: "joe_received_mills_guidance",
+                        tone: "procedural",
+                        condition: "all:npc_protection_consultation:joe-asks-mills-about-witness-protection:procedure_guidance&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_received_mills_guidance",
                         hiddenWhenUnavailable: true
                     }
                 ]
             },
 
+            joe_received_mills_guidance: {
+                speaker: "npc",
+                text: "Миллс объяснил, какие документы и подтверждения угрозы нужны для официальной защиты. Он согласился подсказать порядок подачи, потому что знает меня давно. Но это только консультация: сотрудников для охраны не выделяли, адрес я не раскрывал, а Томас ещё должен подтвердить безопасность матери.",
+                mood: "thoughtful",
+                innerThought: "Джо получил процессуальную консультацию благодаря доверительному контакту. Она не является одобрением охраны или доказательством эвакуации.",
+                answers: [
+                    { text: "Подготовим подтверждённые материалы для официального запроса.", nextNode: "greeting", tone: "procedural" },
+                    { text: "Сначала уточню у Томаса, что происходит с его матерью.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
+            },
+
             joe_checked_protection_procedure: {
                 speaker: "npc",
-                text: "Я сам связался с сержантом Миллсом и спросил, как официально оформляют защиту свидетеля. Не называл ни адреса, ни местонахождения матери Томаса. Теперь мы знаем, к кому обращаться за процедурой, но это ещё не согласованная охрана и тем более не подтверждение переезда. Сначала нужны реальные меры и ответ самого Томаса.",
+                text: "Я сам связался с Миллсом. Он сказал, что без письменного запроса и оснований не может даже начать согласование защиты. Я не называл адрес и местонахождение матери Томаса. Придётся оформить материалы официально, а не считать наш разговор распоряжением об охране. И переезд ещё никто не подтвердил.",
                 mood: "thoughtful",
                 innerThought: "Обращение Джо подтверждено его собственным действием, но формальная процедура не равна обеспеченной безопасности.",
                 answers: [
