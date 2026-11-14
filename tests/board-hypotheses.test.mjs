@@ -325,6 +325,14 @@ test('route follow-up requires a real pair of alibi claims and survives only its
     assert.equal(board.hasPreparedRouteQuestion('business_rival'), true);
     const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(restored.hasPreparedRouteQuestion('business_rival'), true);
+    const discussed = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(discussed.markRouteQuestionDiscussed('business_rival'), true);
+    assert.equal(discussed.markRouteQuestionDiscussed('business_rival'), false);
+    assert.equal(discussed.hasPreparedRouteQuestion('business_rival'), false);
+    assert.equal(discussed.hasDiscussedRouteQuestion('business_rival'), true);
+    const discussedRestored = runtime.restore(JSON.parse(JSON.stringify(discussed.toJSON())));
+    assert.equal(discussedRestored.hasDiscussedRouteQuestion('business_rival'), true);
+    assert.match(discussedRestored.getInvestigationChecklist().nextAction, /уже задан/);
     const cancelled = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(cancelled.cancelRouteQuestion('business_rival'), true);
     assert.equal(cancelled.cancelRouteQuestion('business_rival'), false);
@@ -391,6 +399,11 @@ test('alibi UI shows a persistent next step for an active route question and hid
     assert.doesNotMatch(ready, /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
     assert.equal(restored.cancelRouteQuestion('business_rival'), true);
     assert.match(ui._renderAlibiReconstruction(), /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
+    assert.ok(restored.prepareRouteQuestion(findings[0], 'business_rival'));
+    assert.equal(restored.markRouteQuestionDiscussed('business_rival'), true);
+    const afterInterview = ui._renderAlibiReconstruction();
+    assert.match(afterInterview, /ВОПРОС КЕЙНУ ЗАДАН/);
+    assert.doesNotMatch(afterInterview, /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
     assert.ok(first && second);
 });
 
