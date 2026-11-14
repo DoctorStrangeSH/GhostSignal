@@ -297,6 +297,28 @@ const CASE_002 = {
                 summary: "Спустя сутки после начала временного отсутствия Томас сам пересмотрел решение о работе и сообщил Джо о дальнейших планах."
             },
             {
+                id: "joe-welcomes-thomas-back-to-work", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 90, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-reviews-temporary-leave",
+                requiresReceivedActionAgeMinutes: 30,
+                requiresLeaveReviewOutcome: "return_to_work",
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "После самостоятельного решения Томаса вернуться Джо подтвердил, что ждёт его на следующей смене. Угрозу семье это не устраняет."
+            },
+            {
+                id: "joe-respects-thomas-extended-leave", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 90, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-reviews-temporary-leave",
+                requiresReceivedActionAgeMinutes: 30,
+                requiresLeaveReviewOutcome: "extend_leave",
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Джо принял решение Томаса продлить отсутствие и не стал требовать возвращения на смену. Безопасность семьи всё ещё нужно проверить."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
