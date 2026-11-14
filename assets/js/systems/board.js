@@ -315,6 +315,14 @@ class InvestigationBoard {
             q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
     }
 
+    cancelRouteQuestion(npcId) {
+        const before = this.routeQuestions.length;
+        this.routeQuestions = this.routeQuestions.filter(q => !(q.npcId === npcId && q.caseId === this.caseId));
+        if (this.routeQuestions.length === before) return false;
+        events.emit('board:updated', { action: 'route_question_cancelled', npcId });
+        return true;
+    }
+
     checkConclusions() {
         // Проверяем ключевые пары
         const pairs = [
