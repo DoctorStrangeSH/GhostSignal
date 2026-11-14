@@ -182,7 +182,8 @@ const CASE_002 = {
             { id: "sisters-anna-eva", fromNpcId: "ex_wife", toNpcId: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, reciprocal: true },
             { id: "joe-lora-source", fromNpcId: "bartender", toNpcId: "journalist", relationship: "source", label: "Источник и журналистка", trust: 65, reciprocal: true },
             { id: "kane-sergeant-procedure", fromNpcId: "business_rival", toNpcId: "sergeant", relationship: "official_record", label: "Протокол допроса", trust: 40, reciprocal: false },
-            { id: "lora-eva-inquiry", fromNpcId: "journalist", toNpcId: "woman_in_red", relationship: "investigative_contact", label: "Контакт по расследованию", trust: 40, reciprocal: false }
+            { id: "lora-eva-inquiry", fromNpcId: "journalist", toNpcId: "woman_in_red", relationship: "investigative_contact", label: "Контакт по расследованию", trust: 40, reciprocal: false },
+            { id: "lora-thomas-verification", fromNpcId: "journalist", toNpcId: "waiter", relationship: "independent_interview", label: "Независимая проверка сообщения", trust: 45, reciprocal: false }
         ],
         autonomousInteractions: [
             {
@@ -228,6 +229,16 @@ const CASE_002 = {
                 requiresActionAgeMinutes: 60,
                 trustDelta: 0, reciprocalTrustDelta: 0,
                 summary: "Не найдя независимого подтверждения у Джо, Лора позвонила Еве и уточнила, была ли та свидетелем угроз Томасу."
+            },
+            {
+                id: "lora-checks-thomas-accusation", relationshipId: "lora-thomas-verification",
+                fromNpcId: "journalist", toNpcId: "waiter", interaction: "support",
+                channel: "phone", initialDelayMinutes: 120, everyMinutes: 90, retryMinutes: 20,
+                maxOccurrences: 1, fromRumorId: "detective-accused-thomas-after-correction",
+                fromRumorConfidenceAtLeast: 50,
+                investigatesRumorId: "detective-accused-thomas-after-correction",
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Лора отдельно связалась с Томасом после рассказа Джо об обвинении. Без прямых подтверждений она не публикует версию как факт."
             },
             {
                 id: "joe-checks-thomas", relationshipId: "joe-thomas-colleagues",
