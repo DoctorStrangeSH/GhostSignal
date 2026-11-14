@@ -195,7 +195,9 @@ class InvestigationBoard {
     toJSON() {
         return {
             slots: this.slots.map(s => ({ id: s.id, evidenceId: s.evidenceId })),
-            evidenceOnBoard: [...this.evidenceOnBoard]
+            evidenceOnBoard: [...this.evidenceOnBoard],
+            hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
+            nextHypothesisId: this.nextHypothesisId
         };
     }
 
