@@ -28,6 +28,21 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Я неосторожно сказал Кейну, что мать Томаса укрывают родственники Джо. Что теперь делать?",
+                        nextNode: "joe_address_compromised",
+                        tone: "direct",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Адрес мог стать известен Кейну. Можно перевезти мать Томаса ещё раз?",
+                        nextNode: "joe_emergency_relocation",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&not:hasInsight:joe_relocated_family_after_leak",
+                        hiddenWhenUnavailable: true
+                    },
+
+                    {
                         text: "Томасу и его матери всё ещё угрожали. Можно организовать для них временное безопасное место?",
                         nextNode: "joe_safe_lodging_arranged",
                         tone: "calm",
@@ -82,6 +97,26 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 ]
             },
 
+            joe_address_compromised: {
+                speaker: "npc",
+                text: "Вы сказали это Кейну? Тогда прежний адрес нельзя считать безопасным. Я не назову его снова даже вам. Нужно срочно предупредить Томаса и договориться о другом месте. Сейчас нельзя утверждать, что его мать защищена.",
+                mood: "angry",
+                innerThought: "Это подтверждённое раскрытие схемы укрытия, а не слух. Нельзя использовать первоначальную договорённость как гарантию безопасности.",
+                givesInsight: "thomas_family_address_exposed",
+                answers: [
+                    { text: "Исправлю ошибку. Договоримся о новом укрытии.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
+            joe_emergency_relocation: {
+                speaker: "npc",
+                text: "Я связался с другим человеком, никак не связанным с первым адресом. Он готов принять мать Томаса без лишних вопросов. Передам контакты только Томасу. Сначала пусть доберутся, затем проверяйте у него.",
+                mood: "serious",
+                innerThought: "После утечки появился другой план, но сама договорённость не доказывает успешный переезд.",
+                givesInsight: "joe_relocated_family_after_leak",
+                answers: [
+                    { text: "Хорошо. Подтвержу прибытие у Томаса лично.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
             joe_safe_lodging_arranged: {
                 speaker: "npc",
                 text: "Томас рассказал мне про угрозы Кейна. После признания я договорился с родственниками за городом: они готовы временно принять его мать, не раскрывая адрес посторонним. Я передам Томасу контакты, но не стану говорить, что всё решено, пока он сам не подтвердит, что мать добралась.",
