@@ -480,6 +480,16 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.investigationOutcome || null;
     }
 
+    // Editorial decisions require an actually completed independent check.
+    // Corroboration permits review, never automatic publication.
+    getEditorialDecision(npcId, ruleId) {
+        if (npcId !== 'journalist') return null;
+        const outcome = this.getInvestigationOutcome(npcId, ruleId);
+        if (outcome === 'corroborated') return 'review_required';
+        if (outcome === 'disputed' || outcome === 'no_independent_evidence') return 'withheld';
+        return null;
+    }
+
     _applyInteraction(rule, now) {
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const after = this._clamp(before + rule.trustDelta, 0, 100, before);

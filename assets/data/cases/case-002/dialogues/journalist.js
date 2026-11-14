@@ -148,7 +148,41 @@ const DIALOGUE_JOURNALIST = {
                         tone: "cautious",
                         condition: "all:npc_value_alignment:source_integrity:contested&not:has_visited_node:lora_conflicted_accuracy_values",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Что редакция решила после вашей независимой проверки истории Томаса?",
+                        nextNode: "lora_withholds_unverified_story",
+                        tone: "direct",
+                        condition: "all:npc_editorial_decision:lora-questions-joe-about-threat:withheld&not:has_visited_node:lora_withholds_unverified_story",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Проверка дала подтверждение. Статья уже готова?",
+                        nextNode: "lora_requires_editorial_review",
+                        tone: "cautious",
+                        condition: "all:npc_editorial_decision:lora-questions-joe-about-threat:review_required&not:has_visited_node:lora_requires_editorial_review",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            lora_withholds_unverified_story: {
+                speaker: "npc",
+                text: "Я завершила проверку разговора с Джо. Независимого подтверждения обвинению не получила, поэтому решила придержать материал. Даже если редактор требует сенсацию, я не стану печатать пересказ как установленный факт. Это моё решение, не ваше распоряжение.",
+                mood: "determined",
+                answers: [
+                    { text: "Правильно. Продолжим искать независимые источники.", nextNode: "investigation", tone: "calm" },
+                    { text: "Спасибо. Вернусь с проверяемыми материалами.", nextNode: "end_journalist", tone: "calm" }
+                ]
+            },
+
+            lora_requires_editorial_review: {
+                speaker: "npc",
+                text: "Проверка дала независимое подтверждение отдельной части истории, но это ещё не готовая публикация. Я должна проверить формулировки, защитить источники и получить решение редактора. Ничего не выйдет в печать автоматически лишь потому, что появился новый свидетель.",
+                mood: "focused",
+                answers: [
+                    { text: "Согласен. Отделим подтверждённую часть от остального.", nextNode: "investigation", tone: "calm" },
+                    { text: "Понимаю. До встречи.", nextNode: "end_journalist", tone: "calm" }
                 ]
             },
 
