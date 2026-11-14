@@ -167,7 +167,7 @@ registerData('npc', {
             daysOff: ["sunday"],
             exceptions: []
         },
-        availableForCall: true,
+        availableForCall: false,
         availableForChat: false,
         dialogueId: "dialogue-labour-inspector",
         canGiveEvidence: ["inspector_service_card"],
