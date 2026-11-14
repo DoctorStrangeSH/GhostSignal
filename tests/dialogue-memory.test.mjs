@@ -2933,3 +2933,53 @@ test("Joe reports the leave review Thomas actually sent, without revealing priva
         assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === nodeId), false);
     }
 });
+
+test("Joe reorganizes understaffed bar only after Thomas extends his leave", () => {
+    for (const [reviewPressure, shouldReorganize] of [[85, true], [10, false]]) {
+        const { engine, context, memory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        relations.setCase(vm.runInContext("CASE_002", context));
+        engine.setRelationshipService(relations);
+        memory.setRelationshipTrust("bartender", "sergeant", 55);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+        for (const minutes of [90, 60, 60, 60, 90]) {
+            gameTime.advance(minutes);
+            relations.processDueInteractions();
+        }
+        memory.cases["case-002"].waiter.pressure = 80;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        memory.cases["case-002"].waiter.pressure = reviewPressure;
+        gameTime.advance(1440);
+        relations.processDueInteractions();
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        const action = "joe-reorganizes-bar-after-extended-leave";
+        assert.equal(relations.hasCompletedInteraction("bartender", action), false);
+        const cooperationBefore = memory.getMemory("bartender").cooperation;
+        gameTime.advance(720);
+        relations.processDueInteractions();
+        assert.equal(relations.hasCompletedInteraction("bartender", action), shouldReorganize);
+        assert.equal(memory.getMemory("bartender").cooperation, cooperationBefore + (shouldReorganize ? -4 : 0));
+        engine.startDialogue("dialogue-bartender-case2");
+        const available = engine.getAvailableAnswers();
+        const answer = available.find(item => item.nextNode === "joe_short_staffed_bar");
+        assert.equal(Boolean(answer?.isAvailable), shouldReorganize);
+        if (shouldReorganize) {
+            assert.equal(engine.selectAnswer(answer.index).id, "joe_short_staffed_bar");
+            assert.match(engine.currentNode.text, /меньше свободного времени/);
+            const back = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
+            assert.equal(engine.selectAnswer(back.index).id, "greeting");
+            assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === "joe_short_staffed_bar"), false);
+        }
+        context.savedJoeStaffing = JSON.parse(JSON.stringify(relations.toJSON()));
+        const reloaded = vm.runInContext("new NPCRelationshipService(savedJoeStaffing)", context);
+        reloaded.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        reloaded.setCase(vm.runInContext("CASE_002", context));
+        assert.equal(reloaded.hasCompletedInteraction("bartender", action), shouldReorganize);
+    }
+});
