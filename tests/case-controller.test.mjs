@@ -153,3 +153,48 @@ test("Continue is available only for a matching active case", () => {
     app.progress.activeCase = null;
     assert.equal(controller.canResume(), false, "missing active case cannot be resumed");
 });
+
+test("new playthrough clears run-only systems without replacing shared objects", () => {
+    const { controller, app } = createHarness();
+    const inventory = { items: ["old-key"], evidence: ["old-key"], insights: ["old-theory"], currentWeight: 3 };
+    const notes = { collectedNotes: ["old-note"], highlightedFragments: ["old"], activeNote: "old-note" };
+    const stakeout = { activeStakeouts: ["old"], completedStakeouts: ["old"] };
+    const interrogation = { activeNPC: "waiter", patience: 4, questionsAsked: 3, npcGone: { waiter: true }, backupPaths: { clue: true } };
+    const chains = { chains: ["old"], completedChains: ["old"], currentCaseId: "case-001" };
+    Object.assign(app, {
+        inventory, notesManager: notes, stakeoutSystem: stakeout,
+        interrogationSystem: interrogation, evidenceChainSystem: chains
+    });
+
+    assert.equal(controller.loadCase("case-001"), true);
+    assert.equal(app.inventory, inventory);
+    assert.deepEqual(inventory.items, []);
+    assert.deepEqual(inventory.evidence, []);
+    assert.deepEqual(inventory.insights, []);
+    assert.equal(inventory.currentWeight, 0);
+    assert.deepEqual(notes.collectedNotes, []);
+    assert.deepEqual(notes.highlightedFragments, []);
+    assert.equal(notes.activeNote, null);
+    assert.deepEqual(stakeout.activeStakeouts, []);
+    assert.deepEqual(stakeout.completedStakeouts, []);
+    assert.deepEqual(interrogation.npcGone, {});
+    assert.deepEqual(interrogation.backupPaths, {});
+    assert.deepEqual(chains.completedChains, []);
+    assert.equal(chains.currentCaseId, null);
+});
+
+test("resuming a live investigation preserves inventory, notes and interrogation", () => {
+    const { controller, app } = createHarness();
+    app.progress.activeCase = "case-001";
+    app.caseManager.currentCase = { id: "case-001" };
+    app.caseManager.caseState = "active";
+    const inventory = { items: ["case-key"], evidence: ["case-key"], insights: [], currentWeight: 2 };
+    app.inventory = inventory;
+    app.notesManager = { collectedNotes: ["case-note"] };
+    app.interrogationSystem = { npcGone: { waiter: true } };
+
+    assert.equal(controller.loadCase("case-001"), true);
+    assert.deepEqual(inventory.items, ["case-key"]);
+    assert.deepEqual(app.notesManager.collectedNotes, ["case-note"]);
+    assert.equal(app.interrogationSystem.npcGone.waiter, true);
+});
