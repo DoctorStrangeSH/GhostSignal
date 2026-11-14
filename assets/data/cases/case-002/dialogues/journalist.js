@@ -141,7 +141,24 @@ const DIALOGUE_JOURNALIST = {
                         tone: "direct",
                         condition: "all:long_term_memory:player_overstated_visitor_identity&not:has_visited_node:lora_source_boundary",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Лора, вы видели и мою осторожность, и поспешные выводы. Что это меняет?",
+                        nextNode: "lora_conflicted_accuracy_values",
+                        tone: "cautious",
+                        condition: "all:npc_value_alignment:source_integrity:contested&not:has_visited_node:lora_conflicted_accuracy_values",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            lora_conflicted_accuracy_values: {
+                speaker: "npc",
+                text: "Я помню оба случая. Вы однажды признали, что график ещё не доказывает личность посетителя, а позже всё равно назвали её установленной. Именно поэтому я продолжу сверять ваши выводы с источниками. Приносите документы — проверим вместе. Имена людей, говоривших со мной конфиденциально, я не раскрою.",
+                mood: "guarded",
+                answers: [
+                    { text: "Согласен. Давайте вернёмся к проверяемым документам.", nextNode: "investigation", tone: "calm" },
+                    { text: "Понимаю ваши сомнения. До встречи.", nextNode: "end_journalist", tone: "calm" }
                 ]
             },
 
