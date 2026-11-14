@@ -671,3 +671,16 @@ PR #1 оставить открытым, `main` не менять и не сли
 - PR #1 открыт; main не менялась и не должна сливаться без явного разрешения владельца.
 
 Следующий шаг: добавить к алиби проверку доступности конкретной локации в указанное время (часы работы и подтверждённые ограничения доступа), не считая закрытую дверь абсолютным доказательством отсутствия человека. После этого проектировать явный граф переходов/маршрутов для конкретных локаций; не использовать расстояния между mapPosition как реальные маршруты и не выводить путь из прямой линии на карте. Затем проверить доску в браузере вручную, включая сохранение/загрузку, мобильную ширину и реальные сценарии дела №2.
+
+
+## 2026-11-14: advisory access restrictions in alibi review
+
+- `InvestigationBoard.reviewAlibiAccessRestrictions(knownLocations)` reads only locations supplied by the UI from the detective's visited-location set.
+- If a visited location declares `requiresItem`, the alibi review adds `investigator_access_gate`: the detective needs a special authorization to inspect it. The message explicitly states that this is a player/investigation access rule, not proof that an NPC could not be there or enter another way.
+- The finding is advisory only. It does not invalidate alibi claims, generate evidence, accuse anyone, or disclose requirements for undiscovered locations.
+- `BoardUI` includes these findings beside opening-hours and travel-time warnings.
+- Regression coverage: known vs undiscovered locations, special access requirement, explicit non-proof wording, and save/load persistence in `tests/board-hypotheses.test.mjs`.
+- Code commits: `0a1eecc` (logic), `095aa6d` (UI), `c626dd6` (test). CI for the latest code commit must be checked before treating this stage as verified.
+- PR #1 remains open; do not merge or modify `main` without the owner's explicit instruction.
+
+Next: implement an explicit, case-authored route graph (edges with travel minutes and access notes), not distances inferred from map coordinates. Route checks must be scoped to known/visited places and should explain assumptions; keep opening hours, investigator authorization, physical access, and actual NPC presence as separate concepts. Then add a case-002 route graph grounded in its narrative and test route reachability, travel-time budget, unavailable/undiscovered paths, and legacy-save behavior.
