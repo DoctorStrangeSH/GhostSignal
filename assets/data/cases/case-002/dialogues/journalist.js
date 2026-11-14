@@ -110,7 +110,42 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Два документа согласуются, но ни один не доказывает напрямую личность человека, которого видел Джо.",
                 givesInsight: "visitor_likely_inspector",
                 answers: [
-                    { text: "Отмечу объяснение как вероятное, а не как доказанную невиновность.", nextNode: "investigation", tone: "calm" }
+                    {
+                        text: "Отмечу объяснение как вероятное, а не как доказанную невиновность.",
+                        nextNode: "investigation",
+                        tone: "calm",
+                        trustDelta: 1,
+                        memorySummary: "Детектив согласился сохранить служебную версию посетителя как вероятную, но не доказанную.",
+                        memoryTags: ["player_respected_visitor_uncertainty"],
+                        memoryImportance: 2
+                    },
+                    {
+                        text: "Значит, личность установлена. Это точно был инспектор.",
+                        nextNode: "lora_rejects_certain_visitor_identity",
+                        tone: "defensive",
+                        trustDelta: -3,
+                        memorySummary: "Детектив объявил личность посетителя установленной, хотя документы подтверждают только назначенный визит.",
+                        memoryTags: ["player_overstated_visitor_identity"],
+                        memoryImportance: 3,
+                        report: {
+                            id: "detective-overstated-visitor-identity",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "bartender",
+                            sourceName: "Лора",
+                            text: "Детектив объявил личность неизвестного посетителя установленной, хотя совпадение записи и графика подтверждает только назначенный визит, а не личность человека у стойки."
+                        }
+                    }
+                ]
+            },
+            lora_rejects_certain_visitor_identity: {
+                speaker: "npc",
+                text: "Нет, детектив. Вы сейчас сделали вывод сильнее, чем позволяют документы. График подтверждает назначенный визит Руденко, но не доказывает, что именно он стоял у стойки. Я сообщу Джо, что вы решили считать вопрос закрытым, хотя он ещё открыт. Не заставляйте свидетеля подтверждать то, чего он не видел.",
+                mood: "disappointed",
+                innerThought: "Я не позволю превратить совпадение документов в ложную уверенность. Джо должен знать, что детектив сделал такой вывод.",
+                answers: [
+                    { text: "Вы правы. Я поспешил с выводом.", nextNode: "investigation", tone: "reassuring" },
+                    { text: "Я сам решаю, когда расследование закончено.", nextNode: "investigation", tone: "defensive" }
                 ]
             },
             lora_checks_unknown_visitor: {
