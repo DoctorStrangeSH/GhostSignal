@@ -921,6 +921,32 @@ test('Thomas telephone lead follows a real dialogue and remains checked after re
     assert.equal(checklist(reloadedMemory, reloadedBoard).nextActions.length, 0);
 });
 
+test('verified family safety partly repairs trust after a false accusation, only once and across saves', () => {
+    const { engine, memory, inventory, context } = createDialogueHarness();
+    memory.recordAccusation('waiter', { id: 'thomas-lied-about-poisoning', text: 'Томас солгал.' });
+    memory.resolveAccusation('waiter', 'thomas-lied-about-poisoning', 'false', 'Отозвано после проверки.');
+    engine.startDialogue('dialogue-waiter');
+    const node = engine.currentDialogue.tree.nodes.family_safety_confirmed;
+    const before = memory.getMemory('waiter').trust;
+    const beforeCooperation = memory.getMemory('waiter').cooperation;
+    engine._processNodeEffects({ ...node, givesInsight: null });
+    assert.equal(memory.getMemory('waiter').trust, before, 'no restitution before verified safety');
+    inventory.addInsight('thomas_family_protected');
+    engine._processNodeEffects(node);
+    assert.equal(memory.getMemory('waiter').trust, before + 4);
+    assert.equal(memory.getMemory('waiter').cooperation, beforeCooperation + 5);
+    assert.equal(memory.getAccusationStatus('waiter', 'thomas-lied-about-poisoning'), 'false');
+    engine._processNodeEffects(node);
+    assert.equal(memory.getMemory('waiter').trust, before + 4, 'repeat must never farm trust');
+
+    context.savedMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedMemory, 'case-002')", context);
+    engine.setMemoryService(restored);
+    engine._processNodeEffects(node);
+    assert.equal(restored.getMemory('waiter').trust, before + 4);
+    assert.equal(restored.getAccusationStatus('waiter', 'thomas-lied-about-poisoning'), 'false');
+});
+
 test("Kane revises only his alibi when confronted with Thomas, keeping a full confession gated", () => {
     const { engine, inventory, memory, context } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning");
