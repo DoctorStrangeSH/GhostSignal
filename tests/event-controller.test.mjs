@@ -71,6 +71,45 @@ test("EventController registers app event handlers once and disposes subscriptio
     assert.equal(controller.bound, false);
 });
 
+test("cloud sync captures a fresh snapshot and skips failed or unauthenticated saves", () => {
+    const timers = [];
+    const synced = [];
+    const progress = { activeCase: "case-002", npcMemoryData: { version: 0 } };
+    let loggedIn = false;
+    let canSave = true;
+    let saves = 0;
+    const app = {
+        progress,
+        authManager: { isUserLoggedIn: () => loggedIn },
+        syncManager: { saveEverywhere(snapshot) { synced.push(structuredClone(snapshot)); } },
+        _quickSave() {
+            saves++;
+            if (!canSave) return false;
+            progress.npcMemoryData = { version: saves };
+            return true;
+        }
+    };
+    const EventController = loadEventController({
+        setInterval(callback, delay) { timers.push({ callback, delay }); return timers.length; },
+        clearInterval() {}
+    });
+    new EventController(app, createEventBus()).bind();
+    const sync = timers.find(timer => timer.delay === 30000).callback;
+
+    sync();
+    assert.equal(saves, 0);
+    assert.equal(synced.length, 0);
+
+    loggedIn = true;
+    sync();
+    assert.equal(synced.length, 1);
+    assert.deepEqual(synced[0].npcMemoryData, { version: 1 });
+
+    canSave = false;
+    sync();
+    assert.equal(synced.length, 1);
+});
+
 test("EventController persists NPC memory without auto-revealing contradictions", () => {
     const eventBus = createEventBus();
     let saves = 0;

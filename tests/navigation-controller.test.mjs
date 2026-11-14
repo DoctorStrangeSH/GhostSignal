@@ -87,6 +87,39 @@ test("NavigationController switches tabs and renders the investigation board on 
     assert.equal(renders, 1);
 });
 
+test("hint button snapshots reputation and clue state immediately", () => {
+    const listeners = new Map();
+    let snapshots = 0;
+    let reputation = 0;
+    let hints = 0;
+    const document = {
+        getElementById(id) {
+            return id === "btn-hint" ? { addEventListener(name, handler) { listeners.set(name, handler); } } : null;
+        },
+        querySelectorAll() { return []; }
+    };
+    const emitted = [];
+    const NavigationController = loadNavigationController({
+        document,
+        events: { emit(name, data) { emitted.push({ name, data }); } }
+    });
+    const app = {
+        caseManager: { currentCase: { finalQuestion: { hint: "Inspect the letter" } } },
+        reputationSystem: { usedHint() { reputation++; } },
+        progressTracker: { useHint() { hints++; }, toJSON() { return { hints }; } },
+        progress: {},
+        _quickSave() { snapshots++; }
+    };
+    new NavigationController(app).bindNavigation();
+    listeners.get("click")();
+
+    assert.equal(reputation, 1);
+    assert.equal(hints, 1);
+    assert.deepEqual(app.progress.trackerData, { hints: 1 });
+    assert.equal(snapshots, 1);
+    assert.equal(emitted[0].name, "modal:show");
+});
+
 test("NavigationController preserves main-menu keyboard shortcuts", () => {
     const listeners = new Map();
     const clicks = [];
