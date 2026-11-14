@@ -2825,3 +2825,67 @@ test("Joe's work-decision follow-up shows only the completed branch and cannot b
         assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === expectedNode), false);
     }
 });
+
+test("Thomas reviews temporary leave once after a day and preserves his own decision", () => {
+    for (const [newPressure, expected] of [
+        [20, "return_to_work"],
+        [85, "extend_leave"]
+    ]) {
+        const { context, memory, gameTime, socialNetwork } = createDialogueHarness();
+        vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+        vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+        const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+        const relations = vm.runInContext("new NPCRelationshipService()", context);
+        relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        relations.setCase(vm.runInContext("CASE_002", context));
+        memory.setRelationshipTrust("bartender", "sergeant", 55);
+        memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+        for (const minutes of [90, 60, 60, 60, 90]) {
+            gameTime.advance(minutes);
+            relations.processDueInteractions();
+        }
+        memory.cases["case-002"].waiter.pressure = 80;
+        gameTime.advance(90);
+        relations.processDueInteractions();
+        const original = "thomas-decides-work-after-protection-delay";
+        const review = "thomas-reviews-temporary-leave";
+        assert.equal(relations.getWitnessWorkDecision("waiter", original), "temporary_leave");
+        assert.equal(relations.hasCompletedInteraction("waiter", review), false);
+        memory.cases["case-002"].waiter.pressure = newPressure;
+        gameTime.advance(1440);
+        relations.processDueInteractions();
+        assert.equal(relations.getWitnessLeaveReview("waiter", review), expected);
+        memory.cases["case-002"].waiter.pressure = expected === "return_to_work" ? 90 : 0;
+        gameTime.advance(300);
+        relations.processDueInteractions();
+        assert.equal(relations.getWitnessLeaveReview("waiter", review), expected);
+        context.savedLeaveReview = JSON.parse(JSON.stringify(relations.toJSON()));
+        const reloaded = vm.runInContext("new NPCRelationshipService(savedLeaveReview)", context);
+        reloaded.setDependencies(memory, npcManager, gameTime, socialNetwork);
+        reloaded.setCase(vm.runInContext("CASE_002", context));
+        assert.equal(reloaded.getWitnessLeaveReview("waiter", review), expected);
+    }
+});
+
+test("Thomas does not review temporary leave when he chose document help", () => {
+    const { context, memory, gameTime, socialNetwork } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+    const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    relations.setCase(vm.runInContext("CASE_002", context));
+    memory.setRelationshipTrust("bartender", "sergeant", 55);
+    memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+    for (const minutes of [90, 60, 60, 60, 90]) {
+        gameTime.advance(minutes);
+        relations.processDueInteractions();
+    }
+    memory.cases["case-002"].waiter.pressure = 10;
+    gameTime.advance(90);
+    relations.processDueInteractions();
+    assert.equal(relations.getWitnessWorkDecision("waiter", "thomas-decides-work-after-protection-delay"), "document_help");
+    gameTime.advance(2500);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("waiter", "thomas-reviews-temporary-leave"), false);
+});

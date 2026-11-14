@@ -285,6 +285,18 @@ const CASE_002 = {
                 summary: "Получив от Томаса подтверждение, что тот готов помочь с документами, Джо предложил сверить даты и записи, не подсказывая содержание показаний."
             },
             {
+                id: "thomas-reviews-temporary-leave", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "waiter", toNpcId: "bartender", interaction: "support",
+                leaveReviewPolicy: "after_temporary_leave",
+                channel: "message", initialDelayMinutes: 1440, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresActionId: "thomas-decides-work-after-protection-delay",
+                requiresActionAgeMinutes: 1440,
+                requiresWitnessWorkDecision: "temporary_leave",
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Спустя сутки после начала временного отсутствия Томас сам пересмотрел решение о работе и сообщил Джо о дальнейших планах."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",

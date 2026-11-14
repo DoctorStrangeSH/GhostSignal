@@ -77,11 +77,19 @@ class NPCManager {
                     'waiter', 'thomas-decides-work-after-protection-delay'
                 ) === 'temporary_leave';
             if (atWork && onTemporaryLeave) {
-                const home = schedule.locations?.home || null;
-                return {
-                    available: Boolean(home), reason: 'temporary_leave', location: home,
-                    message: home ? `${npc.name} временно не выходит на смены` : `${npc.name} временно недоступен на работе`
-                };
+                const leaveReview = this.relationshipService?.getWitnessLeaveReview?.(
+                    'waiter', 'thomas-reviews-temporary-leave'
+                );
+                if (leaveReview !== 'return_to_work') {
+                    const home = schedule.locations?.home || null;
+                    const extended = leaveReview === 'extend_leave';
+                    return {
+                        available: Boolean(home), reason: extended ? 'extended_leave' : 'temporary_leave', location: home,
+                        message: home
+                            ? (extended ? `${npc.name} решил продлить отсутствие на сменах` : `${npc.name} временно не выходит на смены`)
+                            : `${npc.name} временно недоступен на работе`
+                    };
+                }
             }
             const location = atWork ? schedule.locations.work : schedule.locations.home;
             return {
