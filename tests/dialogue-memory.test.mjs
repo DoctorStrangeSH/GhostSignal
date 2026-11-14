@@ -1158,3 +1158,57 @@ test("legacy pending Thomas protection promises migrate without losing testimony
         type: "insight_gained", insightId: "full_confession_kane"
     }).length, 0);
 });
+
+test("leaking Thomas's first shelter blocks safety confirmation until a different relocation is verified", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection", text: "Обеспечить безопасность семьи",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+    });
+    memory.recordClaim("waiter", {
+        id: "waiter-kane-at-poisoning", topic: "kane-presence-during-poisoning", value: "saw-poisoning"
+    });
+    inventory.insights.push("full_confession_kane");
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat";
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-bartender-case2");
+    const arrange = engine.getAvailableAnswers().find(a => a.nextNode === "joe_safe_lodging_arranged");
+    assert.equal(arrange?.isAvailable, true);
+    engine.selectAnswer(arrange.index);
+    assert.equal(inventory.hasInsight("joe_arranged_safe_lodging"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const leak = engine.getAvailableAnswers().find(a => a.nextNode === "joe_address_compromised");
+    assert.equal(leak?.isAvailable, true);
+    engine.selectAnswer(leak.index);
+    assert.equal(inventory.hasInsight("thomas_family_address_exposed"), true);
+
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "family_safety_confirmed"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "family_safety_reconfirmed"), false);
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "full_confession_kane"
+    }).length, 0);
+    assert.equal(memory.getPromises("waiter")[0].status, "pending");
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const relocate = engine.getAvailableAnswers().find(a => a.nextNode === "joe_emergency_relocation");
+    assert.equal(relocate?.isAvailable, true);
+    engine.selectAnswer(relocate.index);
+    assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), true);
+    engine.startDialogue("dialogue-waiter");
+    const confirm = engine.getAvailableAnswers().find(a => a.nextNode === "family_safety_reconfirmed");
+    assert.equal(confirm?.isAvailable, true);
+    engine.selectAnswer(confirm.index);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), true);
+    assert.equal(memory.resolvePromisesForEvent({
+        type: "insight_gained", insightId: "thomas_family_protected"
+    }).length, 1);
+    assert.equal(memory.getPromises("waiter")[0].status, "fulfilled");
+    assert.equal(inventory.hasInsight("thomas_family_address_exposed"), true,
+        "recovery does not erase the recorded breach");
+});
