@@ -926,3 +926,93 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
     assert.equal(relationships.toJSON().cases[caseData.id].rules[evaRule].occurrences, 1);
     assert.equal(relationships.toJSON().cases[caseData.id].rules[loraRule].occurrences, 1);
 });
+
+test("repeated pressure personally experienced by an NPC triggers one delayed warning to a colleague", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "colleague-warning", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "support",
+            channel: "message", initialDelayMinutes: 90, everyMinutes: 90,
+            maxOccurrences: 1, fromLongTermPattern: "repeated_pressure",
+            summary: "Алекс предупредил Бориса."
+        }]
+    };
+    const { memory, relationships, advance, context, caseData, clock } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    memory.setCase("old-investigation");
+    memory.recordAnswerSelected("a", "dialogue-a", "threat-1", { text: "Отвечай.", tone: "threatening" });
+    memory.setCase(caseData.id);
+    memory.recordAnswerSelected("a", "dialogue-a", "threat-2", { text: "Отвечай.", tone: "threatening" });
+    assert.equal(memory.getLongTermBehaviorPattern("a").repeatedPressure, true);
+    advance(89);
+    assert.equal(relationships.hasCompletedInteraction("a", "colleague-warning"), false);
+    advance(1);
+    assert.equal(relationships.hasCompletedInteraction("a", "colleague-warning"), true);
+    assert.equal(relationships.hasReceivedInteraction("b", "colleague-warning"), true);
+    assert.equal(relationships.hasReceivedInteraction("a", "colleague-warning"), false);
+    context.savedWarningState = relationships.toJSON();
+    context.savedWarningMemory = memory;
+    context.savedWarningClock = clock;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedWarningState, savedWarningMemory, npcManager, savedWarningClock)",
+        context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.hasCompletedInteraction("a", "colleague-warning"), true);
+    advance(180);
+    assert.equal(relationships.toJSON().cases[caseData.id].rules["colleague-warning"].occurrences, 1);
+});
+
+test("autonomous warning cannot use another NPC's memories or repeated threats in one case", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [{
+            id: "colleague-warning", relationshipId: "a-b",
+            fromNpcId: "a", toNpcId: "b", interaction: "support",
+            channel: "message", initialDelayMinutes: 30, everyMinutes: 30,
+            maxOccurrences: 1, fromLongTermPattern: "repeated_pressure"
+        }]
+    };
+    const { memory, relationships, advance, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    for (const caseId of ["old-investigation", caseData.id]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("b", "dialogue-b", "threat-to-b", {
+            text: "Отвечай.", tone: "threatening"
+        });
+    }
+    for (let i = 0; i < 4; i++) {
+        memory.recordAnswerSelected("a", "dialogue-a", "same-case-" + i, {
+            text: "Отвечай.", tone: "threatening"
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("a").pressuredCases, 1);
+    assert.equal(memory.getLongTermBehaviorPattern("b").pressuredCases, 2);
+    advance(180);
+    assert.equal(relationships.hasCompletedInteraction("a", "colleague-warning"), false);
+    assert.equal(relationships.hasReceivedInteraction("b", "colleague-warning"), false);
+});
+
+test("case two gives Joe a delayed private warning based only on his own repeated pressure", () => {
+    const caseContext = vm.createContext({});
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8") +
+        "\n;globalThis.loadedCase = CASE_002;", caseContext
+    );
+    const { memory, relationships, advance } = createHarness({ caseData: caseContext.loadedCase });
+    const id = "joe-warns-thomas-after-repeated-pressure";
+    advance(90);
+    assert.equal(relationships.hasCompletedInteraction("bartender", id), false);
+    for (const caseId of ["case-001", "case-002"]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", "pressure-" + caseId, {
+            text: "Подпиши показания.", tone: "threatening"
+        });
+    }
+    advance(90);
+    assert.equal(relationships.hasCompletedInteraction("bartender", id), true);
+    assert.equal(relationships.hasReceivedInteraction("waiter", id), true);
+});

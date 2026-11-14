@@ -179,6 +179,8 @@ class NPCRelationshipService {
                         requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
                         requiresWitnessWorkDecision: ['temporary_leave', 'document_help'].includes(conditions.requiresWitnessWorkDecision) ? conditions.requiresWitnessWorkDecision : null,
                         requiresLeaveReviewOutcome: ['return_to_work', 'extend_leave'].includes(conditions.requiresLeaveReviewOutcome) ? conditions.requiresLeaveReviewOutcome : null,
+                        // Reputation checks use only the acting NPC's own long-term memories.
+                        fromLongTermPattern: ['repeated_pressure'].includes(conditions.fromLongTermPattern) ? conditions.fromLongTermPattern : null,
                         fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
                         fromDialogueNodeId: typeof conditions.fromDialogueNodeId === 'string' ? conditions.fromDialogueNodeId : null
                     },
@@ -380,6 +382,8 @@ class NPCRelationshipService {
         if (conditions.fromPressureBelow !== null && fromPressure >= conditions.fromPressureBelow) return false;
         if (conditions.toPressureAtLeast !== null && toPressure < conditions.toPressureAtLeast) return false;
         if (conditions.toPressureBelow !== null && toPressure >= conditions.toPressureBelow) return false;
+        if (conditions.fromLongTermPattern &&
+            this.memoryService?.getLongTermBehaviorPattern(rule.fromNpcId)?.[conditions.fromLongTermPattern === 'repeated_pressure' ? 'repeatedPressure' : ''] !== true) return false;
         if (conditions.fromDialogueId && conditions.fromDialogueNodeId) {
             const witnessed = this.memoryService?.getMemory(rule.fromNpcId)?.dialogueHistory?.some(item =>
                 item.type === 'node' && item.dialogueId === conditions.fromDialogueId &&
