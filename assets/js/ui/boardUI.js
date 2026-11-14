@@ -90,14 +90,17 @@ class BoardUI {
         const checklist = this.board?.getInvestigationChecklist({
             visitedLocationIds: this._knownAlibiLocations().map(loc => loc.id),
             evidenceIds: [...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])],
-            statements: this.memoryService?.getStatements?.() || []
+            statements: this.memoryService?.getStatements?.() || [],
+            thomasTelephoneQuestionAsked: this.memoryService?.hasVisitedNode?.('waiter', 'dialogue-waiter', 'telephone_record_scope') || false
         });
         if (!checklist) return '';
         return `<div class="investigation-checklist">
             <p class="hypothesis-help">Это ориентиры по уже открытым сведениям, а не список правильных ответов или обязательных действий для финала дела.</p>
             <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
             <ul class="checklist-tasks">${checklist.tasks.map(task => `<li class="${task.done ? 'is-complete' : 'is-pending'}"><span aria-hidden="true">${task.done ? '✓' : '○'}</span> ${this._escapeHTML(task.text)}</li>`).join('')}</ul>
-            ${checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
+            ${(checklist.nextActions || []).length ? `<div class="checklist-followups"><strong>ОТКРЫТЫЕ ЗАЦЕПКИ</strong><ul>${checklist.nextActions.map(lead =>
+                `<li class="checklist-next-action ${lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`).join('')}</ul></div>`
+                : checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
         </div>`;
     }
     
