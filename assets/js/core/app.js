@@ -168,7 +168,7 @@ class App {
         this.difficultySystem = new DifficultySystem();
         this.interrogationSystem = InterrogationSystem.fromJSON(this.progress.interrogationData);
         this.alternateEndings = new AlternateEndings();
-        this.deductionScreen = new DeductionScreen();
+        this.deductionScreen = new DeductionScreen(this.inventory);
 
         this.authManager = new AuthManager();
         this.cloudStorage = new CloudStorage(this.authManager);
