@@ -164,21 +164,37 @@ class InvestigationBoard {
         return true;
     }
 
-    reviewAlibiClaims() {
-        const overlaps = [];
+    // Travel duration is supplied by the active game's travel rule. This is
+    // a minimum time-budget check, not a geographic route calculation.
+    reviewAlibiClaims(minimumTravelMinutes = null) {
+        const findings = [];
+        const travelMinutes = Number.isInteger(minimumTravelMinutes) && minimumTravelMinutes >= 0
+            ? minimumTravelMinutes : null;
         for (let i = 0; i < this.alibiClaims.length; i++) {
             for (let j = i + 1; j < this.alibiClaims.length; j++) {
                 const a = this.alibiClaims[i], b = this.alibiClaims[j];
                 if (a.subject.toLocaleLowerCase() !== b.subject.toLocaleLowerCase() ||
-                    a.location.toLocaleLowerCase() === b.location.toLocaleLowerCase() ||
-                    Math.max(a.startMinute, b.startMinute) > Math.min(a.endMinute, b.endMinute)) continue;
-                overlaps.push({ ids: [a.id, b.id], subject: a.subject, status: 'needs_verification',
-                    reason: a.precision === 'approximate' || b.precision === 'approximate'
-                        ? 'Пересекаются приблизительные интервалы; уточните время и возможность перемещения.'
-                        : 'В одно время указаны разные места; проверьте точность источников и возможность перемещения.' });
+                    a.location.toLocaleLowerCase() === b.location.toLocaleLowerCase()) continue;
+                const overlap = Math.max(a.startMinute, b.startMinute) <= Math.min(a.endMinute, b.endMinute);
+                if (overlap) {
+                    findings.push({ ids: [a.id, b.id], subject: a.subject, status: 'needs_verification',
+                        reason: a.precision === 'approximate' || b.precision === 'approximate'
+                            ? 'Пересекаются приблизительные интервалы; уточните время и возможность перемещения.'
+                            : 'В одно время указаны разные места; проверьте точность источников и возможность перемещения.' });
+                    continue;
+                }
+                if (travelMinutes === null) continue;
+                const [earlier, later] = a.startMinute <= b.startMinute ? [a, b] : [b, a];
+                const gapMinutes = later.startMinute - earlier.endMinute;
+                if (gapMinutes >= travelMinutes) continue;
+                findings.push({ ids: [earlier.id, later.id], subject: a.subject, status: 'travel_time_tight',
+                    gapMinutes, minimumTravelMinutes: travelMinutes,
+                    reason: earlier.precision === 'approximate' || later.precision === 'approximate'
+                        ? `Между приблизительными интервалами ${gapMinutes} мин., а обычный переход в игре занимает ${travelMinutes} мин. Уточните часы и источники.`
+                        : `Между точными интервалами ${gapMinutes} мин., а обычный переход в игре занимает ${travelMinutes} мин. Проверьте время и возможность особого маршрута.` });
             }
         }
-        return overlaps;
+        return findings;
     }
 
     checkConclusions() {
