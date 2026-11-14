@@ -454,9 +454,11 @@ const CASE_002 = {
                 channel: "message",
                 initialDelayMinutes: 300, everyMinutes: 360, maxOccurrences: 1,
                 minTrust: 50, fromPressureBelow: 65,
+                requiresReceivedActionId: "joe-reorganizes-bar-after-extended-leave",
+                requiresReceivedActionAgeMinutes: 60,
                 trustDelta: 1, reciprocalTrustDelta: 1,
                 toCooperationDelta: 5,
-                summary: "Лора написала Джо и уточнила, не нужна ли ему помощь."
+                summary: "Заметив, что Джо пришлось перестроить работу бара из-за длительного отсутствия Томаса, Лора написала ему и предложила помощь с передачей сообщений и поиском контактов. Она не берёт на себя работу бармена и не давит на Томаса с возвращением."
             }
         ]
     },
