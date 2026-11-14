@@ -362,8 +362,10 @@ test("CaseManager uses the evidence threshold declared by each case", () => {
     const CaseManager = loadClass("assets/js/systems/caseManager.js", "CaseManager", { events });
     const manager = new CaseManager({}, {}, {});
     manager.currentCase = {
+        finalQuestion: { title: "Обвинение" },
         events: [{ id: "final-ready", trigger: "evidence_count:4", type: "notification", message: "Готово" }]
     };
+    manager.caseState = "active";
 
     manager.evidenceFound = 3;
     manager._checkEvidenceCount();
