@@ -206,6 +206,14 @@ class NPCMemoryService {
         }
         const supportedCases = [...cases.values()].filter(flags => flags.positive && !flags.negative).length;
         const pressuredCases = [...cases.values()].filter(flags => flags.negative).length;
+        // Source ethics are personal knowledge: this NPC remembers how the
+        // detective handled claims made directly in their conversations.
+        const sourceCareCases = new Set((this.people?.[npcId]?.memories || [])
+            .filter(item => item.caseId && item.tags?.includes('player_respected_visitor_uncertainty'))
+            .map(item => item.caseId)).size;
+        const sourceOverclaimCases = new Set((this.people?.[npcId]?.memories || [])
+            .filter(item => item.caseId && item.tags?.includes('player_overstated_visitor_identity'))
+            .map(item => item.caseId)).size;
         // Only distinct investigations establish a pattern; one case may contain
         // multiple mistaken claims, but it must not count as repeated misconduct.
         const falseAccusationCases = new Set((this.people?.[npcId]?.memories || [])
@@ -214,6 +222,10 @@ class NPCMemoryService {
         return {
             supportedCases,
             pressuredCases,
+            sourceCareCases,
+            sourceOverclaimCases,
+            consistentSourceIntegrity: sourceCareCases >= 2 && sourceOverclaimCases === 0,
+            repeatedSourceOverclaim: sourceOverclaimCases >= 2,
             falseAccusationCases,
             consistentSupport: supportedCases >= 2 && pressuredCases === 0,
             repeatedPressure: pressuredCases >= 2,

@@ -3101,3 +3101,62 @@ test("Anna confronts a repeated false accuser only after distinct-case misconduc
     assert.match(engine.currentNode.text, /другом деле/);
     assert.equal(memory.recordVerifiedRestitution("ex_wife", "unverified", "unknown"), false);
 });
+
+
+test("Lora recognizes consistent source care only across separate investigations", () => {
+    const { engine, memory, context } = createDialogueHarness();
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine._checkCondition("long_term_pattern:consistent_source_integrity"), false);
+    engine.reset();
+    for (const [caseId, id] of [["case-001", "prior"], ["case-002", "current"]]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("journalist", "dialogue-journalist", id, {
+            text: "Это пока не установлено.", tone: "calm", memoryImportance: 3,
+            memoryTags: ["player_respected_visitor_uncertainty"]
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("journalist").sourceCareCases, 2);
+    assert.equal(memory.getLongTermBehaviorPattern("journalist").consistentSourceIntegrity, true);
+    engine.startDialogue("dialogue-journalist");
+    const answer = engine.getAvailableAnswers().find(a => a.nextNode === "lora_consistent_source_integrity");
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "lora_consistent_source_integrity");
+    assert.match(engine.currentNode.text, /имена.*конфиденциально/i);
+
+    context.savedJournalistMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedJournalistMemory, 'case-002')", context);
+    assert.equal(restored.getLongTermBehaviorPattern("journalist").consistentSourceIntegrity, true);
+});
+
+test("Lora rejects repeated source overclaims without blocking document review", () => {
+    const { engine, memory } = createDialogueHarness();
+    for (const [caseId, id] of [["case-001", "prior"], ["case-002", "current"]]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("journalist", "dialogue-journalist", id, {
+            text: "Личность установлена.", tone: "defensive", memoryImportance: 3,
+            memoryTags: ["player_overstated_visitor_identity"]
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("journalist").sourceOverclaimCases, 2);
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine._checkCondition("long_term_pattern:repeated_source_overclaim"), true);
+    const answer = engine.getAvailableAnswers().find(a => a.nextNode === "lora_repeated_source_overclaim");
+    assert.equal(answer?.isAvailable, true);
+    assert.equal(engine.selectAnswer(answer.index).id, "lora_repeated_source_overclaim");
+    assert.match(engine.currentNode.text, /нескольких наших расследованиях/i);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "investigation" && a.isAvailable), true);
+});
+
+test("Several source overclaims in one investigation never form a repeated-case pattern", () => {
+    const { engine, memory } = createDialogueHarness();
+    for (let i = 0; i < 3; i++) {
+        memory.recordAnswerSelected("journalist", "dialogue-journalist", "claim-" + i, {
+            text: "Подтверждаю личность.", tone: "defensive", memoryImportance: 3,
+            memoryTags: ["player_overstated_visitor_identity"]
+        });
+    }
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(memory.getLongTermBehaviorPattern("journalist").sourceOverclaimCases, 1);
+    assert.equal(engine._checkCondition("long_term_pattern:repeated_source_overclaim"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_repeated_source_overclaim"), false);
+});
