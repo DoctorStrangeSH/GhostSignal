@@ -197,6 +197,39 @@ class InvestigationBoard {
         return true;
     }
 
+    // Advisory source audit; it never scores the correctness of a hypothesis.
+    reviewHypothesisSources(id, statements = []) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry) return null;
+        const byId = new Map((Array.isArray(statements) ? statements : [])
+            .filter(item => item && typeof item.id === 'string').map(item => [item.id, item]));
+        const sources = entry.links.filter(link => link.kind === 'statement').map(link => {
+            const claim = byId.get(link.sourceId);
+            return {
+                id: link.sourceId,
+                npcId: claim?.npcId || null,
+                topic: claim?.topic || null,
+                status: !claim ? 'missing' : claim.status === 'superseded' ? 'superseded' : 'active',
+                origin: !claim ? 'unknown' : claim.directObservation === true ? 'firsthand_claim' : 'unverified',
+                linkedRumorIds: claim ? [...new Set([...(claim.corroboratesRumorIds || []), ...(claim.refutesRumorIds || [])])] : []
+            };
+        });
+        const warnings = [];
+        for (const source of sources) {
+            if (source.status === 'missing') warnings.push({ type: 'missing', ids: [source.id] });
+            if (source.status === 'superseded') warnings.push({ type: 'superseded', ids: [source.id] });
+        }
+        for (let i = 0; i < sources.length; i++) {
+            for (let j = i + 1; j < sources.length; j++) {
+                const a = sources[i], b = sources[j];
+                if (a.npcId && a.npcId === b.npcId) warnings.push({ type: 'same_witness', ids: [a.id, b.id] });
+                const sharedRumors = a.linkedRumorIds.filter(rumor => b.linkedRumorIds.includes(rumor));
+                if (sharedRumors.length) warnings.push({ type: 'shared_rumor_reference', ids: [a.id, b.id], rumorIds: sharedRumors });
+            }
+        }
+        return { sources, warnings };
+    }
+
     // Сбросить доску
     reset() {
         const evidenceToRestore = [...this.evidenceOnBoard];
