@@ -122,8 +122,12 @@
 
 .checklist-followups { margin-top: 14px; }
 .checklist-followups > strong { color: var(--accent-amber-glow); }
+.checklist-count { display: inline-block; padding: 2px 7px; margin-left: 5px; border-radius: 999px; background: rgba(212, 160, 23, 0.15); font-size: 11px; }
 .checklist-followups ul { list-style: none; padding: 0; margin: 0; }
 .checklist-followups li { line-height: 1.5; }
+.checklist-completed > summary { cursor: pointer; color: var(--text-secondary); padding: 9px 0; }
+.checklist-completed > summary:focus-visible { outline: 2px solid var(--accent-amber); outline-offset: 3px; }
+.checklist-empty { color: var(--text-dim); font-size: 12px; margin-top: 14px; }
 .checklist-next-action.is-checked { border-color: rgba(212, 160, 23, 0.14); opacity: 0.78; }
 .checklist-next-action.is-available { border-color: var(--accent-amber); }
 .checklist-next-action.is-pending { border-color: rgba(212, 160, 23, 0.22); opacity: 0.85; }
