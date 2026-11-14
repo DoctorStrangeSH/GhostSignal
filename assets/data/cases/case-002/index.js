@@ -21,6 +21,7 @@ const CASE_002 = {
         "pharmacy",
         "newspaper_office",
         "labour_inspection_office",
+        "tram_depot",
         "bank"
     ],
     
