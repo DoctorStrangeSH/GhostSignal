@@ -551,6 +551,45 @@ test('board UI prioritizes active leads and collapses completed leads without re
     assert.equal((html.match(/checklist-next-action/g) || []).length, 3);
 });
 
+test('board checklist offers navigation only for the player’s open source inquiries', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.locationManager = { activeCaseData: { id: 'case-002' }, visitedLocations: new Set() };
+    ui.inventory = { evidence: [] };
+    ui._knownAlibiLocations = () => [];
+    ui.board = { evidenceOnBoard: [], sourceInquiries: [{ id: 'inquiry-1', status: 'open', hypothesisId: 'hyp-1' }],
+        getInvestigationChecklist: () => ({ completed: 0, tasks: [], nextActions: [
+            { id: 'inquiry-1', status: 'available', text: 'Версия <важная>' },
+            { id: 'inquiry-2', status: 'available', text: 'Чужая задача' },
+            { id: 'inquiry-3', status: 'checked', text: 'Завершено' }
+        ] }) };
+    const html = ui._renderInvestigationChecklist();
+    assert.equal((html.match(/checklist-open-inquiry/g) || []).length, 1);
+    assert.match(html, /data-inquiry="inquiry-1"/);
+    assert.match(html, /&lt;важная&gt;/);
+});
+
+test('inquiry jump opens the hypothesis and moves keyboard focus without navigating other cases', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    let focused = 0, scrolled = 0;
+    const entry = { dataset: { hypothesisId: 'hyp-1' }, focus: () => focused++, scrollIntoView: () => scrolled++ };
+    const tool = { open: false, querySelectorAll: () => [entry] };
+    ui.container = { querySelector: selector => selector.includes('hypotheses') ? tool : null };
+    ui._expandedTools = new Set();
+    ui.board = { sourceInquiries: [{ id: 'inquiry-1', hypothesisId: 'hyp-1', status: 'open' }],
+        hypotheses: [{ id: 'hyp-1' }] };
+    assert.equal(ui._focusSourceInquiry('inquiry-1'), true);
+    assert.equal(tool.open, true);
+    assert.equal(focused, 1);
+    assert.equal(scrolled, 1);
+    assert.equal(ui._expandedTools.has('hypotheses'), true);
+    assert.equal(ui._focusSourceInquiry('other-case'), false);
+    assert.equal(focused, 1);
+});
+
 test('board UI supports select-and-place without dragging and rejects unavailable evidence', () => {
     const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
     vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);

@@ -122,7 +122,11 @@ class BoardUI {
         const leads = Array.isArray(checklist.nextActions) ? checklist.nextActions : [];
         const activeLeads = leads.filter(lead => lead.status !== 'checked');
         const checkedLeads = leads.filter(lead => lead.status === 'checked');
-        const renderLead = lead => `<li class="checklist-next-action ${lead.status === 'pending' ? 'is-pending' : lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'pending' ? '○' : lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}</li>`;
+        const renderLead = lead => {
+            const inquiry = lead.status !== 'checked' && this.board?.sourceInquiries?.find(item =>
+                item.id === lead.id && item.status === 'open');
+            return `<li class="checklist-next-action ${lead.status === 'pending' ? 'is-pending' : lead.status === 'checked' ? 'is-checked' : 'is-available'}"><span aria-hidden="true">${lead.status === 'pending' ? '○' : lead.status === 'checked' ? '✓' : '→'}</span> ${this._escapeHTML(lead.text)}${inquiry ? ` <button type="button" class="terminal-btn btn-sm checklist-open-inquiry" data-inquiry="${this._escapeHTML(inquiry.id)}">К ПРОВЕРКЕ</button>` : ''}</li>`;
+        };
         return `<div class="investigation-checklist">
             <p class="hypothesis-help">Это ориентиры по уже открытым сведениям, а не список правильных ответов или обязательных действий для финала дела.</p>
             <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
@@ -178,6 +182,8 @@ class BoardUI {
             if (tool.open) this._expandedTools.add(tool.dataset.tool);
             else this._expandedTools.delete(tool.dataset.tool);
         }));
+        this.container.querySelectorAll('.checklist-open-inquiry').forEach(button => button.addEventListener('click', () =>
+            this._focusSourceInquiry(button.dataset.inquiry)));
         // Drag & Drop из пула в слоты
         this.container.querySelectorAll('.evidence-pool-item').forEach(item => {
             item.addEventListener('click', () => this._selectEvidence(item.dataset.evidenceId));
@@ -266,6 +272,20 @@ class BoardUI {
         this._bindChronologyEvents();
         this._bindAlibiEvents();
         this._bindTestimonyEvents();
+    }
+
+    _focusSourceInquiry(inquiryId) {
+        const inquiry = this.board?.sourceInquiries?.find(item => item.id === inquiryId && item.status === 'open');
+        if (!inquiry || !this.board?.hypotheses?.some(item => item.id === inquiry.hypothesisId)) return false;
+        const tool = this.container?.querySelector('.board-tool[data-tool="hypotheses"]');
+        const entry = [...(tool?.querySelectorAll('[data-hypothesis-id]') || [])]
+            .find(item => item.dataset.hypothesisId === inquiry.hypothesisId);
+        if (!tool || !entry) return false;
+        tool.open = true;
+        this._expandedTools?.add('hypotheses');
+        entry.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+        entry.focus?.({ preventScroll: true });
+        return true;
     }
 
     _selectEvidence(evidenceId) {
@@ -433,7 +453,7 @@ class BoardUI {
                     <button type="submit" class="terminal-btn">ДОБАВИТЬ ВЕРСИЮ</button>
                 </form>
                 ${hypotheses.map(h => `
-                    <article class="testimony-entry hypothesis-entry">
+                    <article class="testimony-entry hypothesis-entry" data-hypothesis-id="${this._escapeHTML(h.id)}" tabindex="-1">
                         <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
                             <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
                         <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">
