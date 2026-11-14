@@ -417,3 +417,51 @@ test('board investigation tool folders keep their expanded state after rerender 
     ui.setBoard({ hasPreparedRouteQuestion: () => true });
     assert.match(ui._renderTool('alibi', 'Алиби', 'content'), /<details[^>]+open>/);
 });
+
+test('investigation checklist only reflects observed places, discovered evidence, recorded witnesses and player versions', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const empty = board.getInvestigationChecklist();
+    assert.equal(empty.completed, 0);
+    assert.equal(empty.tasks.length, 4);
+    assert.equal(empty.nextAction, null);
+    assert.equal(board.getInvestigationChecklist({ visitedLocationIds: ['bar', 'booth'], evidenceIds: ['receipt'],
+        statements: [{ npcId: 'joe', status: 'active' }, { npcId: 'joe', status: 'active' }] }).completed, 2,
+    'two statements by one person must not count as two witnesses');
+    const observed = board.getInvestigationChecklist({ visitedLocationIds: ['bar', 'booth'], evidenceIds: ['receipt'],
+        statements: [{ npcId: 'joe', status: 'active' }, { npcId: 'thomas', status: 'superseded' },
+            { npcId: 'thomas', status: 'active' }] });
+    assert.equal(observed.completed, 3);
+    assert.equal(board.addHypothesis('Проверить время выхода'), 'hyp-1');
+    assert.equal(board.getInvestigationChecklist().tasks.find(t => t.id === 'hypothesis').done, true);
+    assert.ok(board.addAlibiClaim({ subject: 'Кейн', location: 'Бар', startMinute: 1320, endMinute: 1325,
+        precision: 'approximate', kind: 'statement', sourceId: 'w' }, { statements: [{ id: 'w' }] }));
+    const partial = board.getInvestigationChecklist();
+    assert.equal(partial.tasks.find(t => t.id === 'alibi').done, false);
+    assert.equal(partial.nextAction, null);
+    assert.ok(board.addAlibiClaim({ subject: 'Кейн', location: 'Будка', startMinute: 1330, endMinute: 1335,
+        precision: 'approximate', kind: 'statement', sourceId: 'w' }, { statements: [{ id: 'w' }] }));
+    assert.equal(board.getInvestigationChecklist().tasks.find(t => t.id === 'alibi').done, true);
+    assert.ok(board.prepareRouteQuestion({ status: 'route_time_tight', ids: ['alibi-1', 'alibi-2'] }, 'business_rival'));
+    assert.match(board.getInvestigationChecklist().nextAction, /вернитесь к нему/);
+    assert.match(runtime.restore(JSON.parse(JSON.stringify(board.toJSON()))).getInvestigationChecklist().nextAction, /вернитесь к нему/);
+    assert.equal(board.cancelRouteQuestion('business_rival'), true);
+    assert.equal(board.getInvestigationChecklist().nextAction, null);
+});
+
+test('board checklist hides case guidance before a case is selected and escapes visible task text', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.locationManager = { activeCaseData: null };
+    assert.match(ui._renderInvestigationChecklist(), /Выберите расследование/);
+    ui.locationManager = { activeCaseData: { id: 'case-002' }, visitedLocations: new Set() };
+    ui.board = { evidenceOnBoard: [], getInvestigationChecklist: () => ({ completed: 0,
+        tasks: [{ text: '<script>bad</script>', done: false }], nextAction: '<img onerror=bad>' }) };
+    ui.inventory = { evidence: [] };
+    const html = ui._renderInvestigationChecklist();
+    assert.match(html, /&lt;script&gt;/);
+    assert.match(html, /&lt;img onerror=bad&gt;/);
+    assert.doesNotMatch(html, /<script>|<img/);
+});
