@@ -73,6 +73,19 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         hiddenWhenUnavailable: true
                     },
                     {
+                        text: "Лора сказала, что я объявил личность посетителя установленной. Что вы об этом думаете?",
+                        nextNode: "joe_challenges_visitor_overclaim",
+                        tone: "cautious",
+                        condition: "all:heard_rumor:detective-overstated-visitor-identity&not:hasInsight:joe_challenged_overstated_visitor_identity",
+                        hiddenWhenUnavailable: true,
+                        revealSocialEvents: {
+                            reportId: "detective-overstated-visitor-identity",
+                            eventTypes: ["delivered"],
+                            fromNpcId: "journalist",
+                            toNpcId: "bartender"
+                        }
+                    },
+                    {
                         text: "После переезда матери Томаса никто не интересовался её местонахождением?",
                         nextNode: "joe_reports_unknown_visitor",
                         tone: "calm",
@@ -179,6 +192,34 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 givesInsight: "unknown_visitor_asked_about_thomas",
                 answers: [
                     { text: "Проверю, кто это был, прежде чем делать выводы.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
+            joe_challenges_visitor_overclaim: {
+                speaker: "npc",
+                text: "Лора написала мне. Вы решили, что незнакомец точно был инспектором, потому что в журнале есть похожая запись, а в графике — назначенный визит. Но я не могу подтвердить, что это был один и тот же человек. Я видел посетителя, а не его документы. Не просите меня превратить совпадение в показание. И не объявляйте семью Томаса вне опасности только потому, что одна версия выглядит правдоподобно.",
+                mood: "guarded",
+                innerThought: "Детектив торопится закрыть вопрос. Я не стану подстраивать память под его вывод.",
+                givesInsight: "joe_challenged_overstated_visitor_identity",
+                answers: [
+                    {
+                        text: "Вы правы. Я оставлю личность посетителя неподтверждённой.",
+                        nextNode: "greeting",
+                        tone: "reassuring",
+                        trustDelta: 2,
+                        memorySummary: "Детектив принял возражение Джо и отказался выдавать вероятную версию за установленную личность.",
+                        memoryTags: ["player_corrected_visitor_overclaim"],
+                        memoryImportance: 2
+                    },
+                    {
+                        text: "Мне достаточно совпадения. Не усложняйте расследование.",
+                        nextNode: "greeting",
+                        tone: "defensive",
+                        trustDelta: -3,
+                        cooperationDelta: -3,
+                        memorySummary: "Детектив настоял на неподтверждённой идентификации посетителя вопреки осторожности Джо.",
+                        memoryTags: ["player_doubled_down_on_visitor_overclaim"],
+                        memoryImportance: 3
+                    }
                 ]
             },
             joe_address_compromised: {
