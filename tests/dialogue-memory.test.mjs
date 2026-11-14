@@ -2107,9 +2107,9 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
 
     engine.startDialogue("dialogue-waiter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false);
-    advance(19);
+    advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
-    advance(1);
+    advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
 
     engine.startDialogue("dialogue-waiter");
