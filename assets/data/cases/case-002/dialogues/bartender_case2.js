@@ -19,7 +19,35 @@ const DIALOGUE_BARTENDER_CASE2 = {
 
     tree: {
         start: "greeting",
+        entryRules: [
+            { condition: "hasInsight:joe_relocated_family_after_leak", nodeId: "joe_after_relocation_opening" },
+            { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" }
+        ],
         nodes: {
+            joe_after_leak_opening: {
+                speaker: "npc",
+                text: "Детектив, после того как Кейн услышал о первом укрытии, я больше не могу относиться к вопросам безопасности как к пустой формальности. Прежде всего нужно убедиться, что мать Томаса переедет.",
+                mood: "angry",
+                answers: [
+                    {
+                        text: "Давайте немедленно организуем другое место, о котором Кейн не знает.",
+                        nextNode: "joe_emergency_relocation",
+                        tone: "calm",
+                        condition: "not:hasInsight:joe_relocated_family_after_leak"
+                    },
+                    { text: "У меня есть и другие вопросы по делу.", nextNode: "greeting", tone: "calm" },
+                    { text: "Понимаю. Я вернусь позже.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
+            },
+            joe_after_relocation_opening: {
+                speaker: "npc",
+                text: "Я организовал другое место, но после утечки первого адреса не стану говорить, что всё завершено. Томас должен сам подтвердить, что мать добралась. И я помню, как нам пришлось менять планы из-за вашей ошибки.",
+                mood: "guarded",
+                answers: [
+                    { text: "Сначала уточню у Томаса, что переезд состоялся.", nextNode: "end_bartender_guarded", tone: "calm" },
+                    { text: "Есть ещё вопросы о расследовании.", nextNode: "greeting", tone: "direct" }
+                ]
+            },
             greeting: {
                 speaker: "npc",
                 text: "Снова вы, детектив. После того, что случилось... я думал закрыть бар. Но жизнь продолжается. Что я могу для вас сделать?",
@@ -133,7 +161,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 innerThought: "Это подтверждённое раскрытие схемы укрытия, а не слух. Нельзя использовать первоначальную договорённость как гарантию безопасности.",
                 givesInsight: "thomas_family_address_exposed",
                 answers: [
-                    { text: "Исправлю ошибку. Договоримся о новом укрытии.", nextNode: "end_bartender2", tone: "calm" }
+                    { text: "Исправлю ошибку. Договоримся о новом укрытии.", nextNode: "end_bartender_guarded", tone: "calm" }
                 ]
             },
             joe_emergency_relocation: {
@@ -143,7 +171,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 innerThought: "После утечки появился другой план, но сама договорённость не доказывает успешный переезд.",
                 givesInsight: "joe_relocated_family_after_leak",
                 answers: [
-                    { text: "Хорошо. Подтвержу прибытие у Томаса лично.", nextNode: "end_bartender2", tone: "calm" }
+                    { text: "Хорошо. Подтвержу прибытие у Томаса лично.", nextNode: "end_bartender_guarded", tone: "calm" }
                 ]
             },
             joe_safe_lodging_arranged: {
@@ -358,6 +386,12 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 ]
             },
 
+            end_bartender_guarded: {
+                speaker: "npc",
+                text: "Сначала убедитесь, что Томас и его мать защищены. Я продолжу помогать им, но доверие придётся заслужить заново.",
+                mood: "guarded",
+                endDialogue: true
+            },
             end_bartender2: {
                 speaker: "npc",
                 text: "Спасибо, детектив. Что не осудили меня сразу. Я знаю — я поступил плохо. Но я всё исправлю. Обещаю.",
