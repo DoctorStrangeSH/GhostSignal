@@ -213,3 +213,30 @@ test("continue button stays hidden for a finished or mismatched case", () => {
     navigation.syncContinueButton();
     assert.equal(continueButton.classList.contains("hidden"), true);
 });
+
+test("Continue click never starts a completed investigation", () => {
+    let continueClick;
+    const document = {
+        getElementById(id) {
+            return id === "btn-continue" ? {
+                addEventListener(type, listener) { if (type === "click") continueClick = listener; }
+            } : null;
+        },
+        querySelectorAll() { return []; }
+    };
+    const NavigationController = loadNavigationController({ document });
+    const loaded = [];
+    const app = {
+        progress: { activeCase: "case-001" },
+        caseController: { canResume: () => false },
+        loadCase(id) { loaded.push(id); }
+    };
+    new NavigationController(app).bindNavigation();
+    assert.equal(typeof continueClick, "function");
+    continueClick();
+    assert.deepEqual(loaded, []);
+
+    app.caseController.canResume = () => true;
+    continueClick();
+    assert.deepEqual(loaded, ["case-001"]);
+});
