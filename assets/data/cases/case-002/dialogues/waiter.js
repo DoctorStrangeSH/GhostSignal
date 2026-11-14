@@ -283,13 +283,6 @@ const DIALOGUE_WAITER = {
                     },
                     { text: "Посмотри на фотографию: давай уточним, что именно ты видел.", nextNode: "protection_revision", tone: "calm", condition: "hasItem:bar_photo" },
                     {
-                        text: "Можешь ещё раз подробно восстановить всё, что происходило после смены?",
-                        nextNode: "thomas_declines_optional_followup",
-                        tone: "calm",
-                        condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:thomas_declines_optional_followup",
-                        hiddenWhenUnavailable: true
-                    },
-                    {
                         text: "Я хочу вернуться к твоим прежним показаниям.",
                         nextNode: "testimony_reconsiders",
                         tone: "calm",
@@ -358,6 +351,13 @@ const DIALOGUE_WAITER = {
                             sourceName: "Томас",
                             text: "Детектив обвинил меня в соучастии с Кейном, хотя я был напуган и не помогал ему.",
                         }
+                    },
+                    {
+                        text: "Можешь ещё раз подробно восстановить всё, что происходило после смены?",
+                        nextNode: "thomas_declines_optional_followup",
+                        tone: "calm",
+                        condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:thomas_declines_optional_followup",
+                        hiddenWhenUnavailable: true
                     },
                     {
                         text: "Я хочу вернуться к твоим прежним показаниям.",
