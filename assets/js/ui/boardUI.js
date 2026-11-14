@@ -30,7 +30,11 @@ class BoardUI {
     }
 
     _knownAlibiLocations() {
-        return [...(this.locationManager?.visitedLocations || [])].map(id => getLocationById(id)).filter(Boolean);
+        const active = this.locationManager?.activeCaseData;
+        if (!active?.id) return [];
+        const allowed = new Set([...(active.locations || []), active.startLocation]);
+        return [...(this.locationManager?.visitedLocations || [])].map(id => getLocationById(id))
+            .filter(loc => loc && (allowed.has(loc.id) || allowed.has(loc.parentLocation)));
     }
     
     _init() {
