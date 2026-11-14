@@ -215,7 +215,7 @@ class InvestigationBoard {
                 topic: claim?.topic || null,
                 status: !claim ? 'missing' : claim.status === 'superseded' ? 'superseded' : 'active',
                 origin: !claim ? 'unknown' : claim.directObservation === true ? 'firsthand_claim' : 'unverified',
-                linkedRumorIds: claim ? [...new Set([...(Array.isArray(claim.corroboratesRumorIds) ? claim.corroboratesRumorIds : []), ...(Array.isArray(claim.refutesRumorIds) ? claim.refutesRumorIds : [])])] : []
+                linkedRumorIds: claim ? [...new Set([...(Array.isArray(claim.referencesRumorIds) ? claim.referencesRumorIds : []), ...(Array.isArray(claim.corroboratesRumorIds) ? claim.corroboratesRumorIds : []), ...(Array.isArray(claim.refutesRumorIds) ? claim.refutesRumorIds : [])])] : []
             };
         });
         const warnings = [];
