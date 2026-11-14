@@ -47,6 +47,9 @@ class EventController {
 
         on('case:started', (data) => {
             app.progress.activeCase = app.caseManager.currentCase?.id;
+            app.investigationBoard?.setCase(data.caseData.id);
+            app.progress.boardData = app.investigationBoard?.toJSON();
+            app.boardUI?.render();
             app.npcMemoryService?.setCase(data.caseData.id);
             app.npcMotivationService?.setMemoryService(app.npcMemoryService);
             app.npcMotivationService?.setCase(data.caseData);
