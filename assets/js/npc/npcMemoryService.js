@@ -167,6 +167,7 @@ class NPCMemoryService {
                 liesExposed: [],
                 relationshipTrusts: {},
                 accusations: [],
+                restitutions: [],
                 lastInteraction: null
             };
         }
@@ -201,6 +202,7 @@ class NPCMemoryService {
             ? memory.relationshipTrusts
             : {};
         memory.accusations = Array.isArray(memory.accusations) ? memory.accusations : [];
+        memory.restitutions = Array.isArray(memory.restitutions) ? memory.restitutions : [];
         for (const accusation of memory.accusations) {
             if (!['pending', 'false', 'retracted', 'substantiated'].includes(accusation.status)) accusation.status = 'pending';
             accusation.basisEvidenceIds = Array.isArray(accusation.basisEvidenceIds) ? accusation.basisEvidenceIds : [];
@@ -950,6 +952,23 @@ class NPCMemoryService {
         return Array.isArray(accusations)
             ? (accusations.find(item => item.id === accusationId)?.status || null)
             : null;
+    }
+
+    recordVerifiedRestitution(npcId, restitutionId, accusationId) {
+        if (typeof restitutionId !== 'string' || !restitutionId || !accusationId) return false;
+        const memory = this._ensureNPC(npcId);
+        if (!memory || memory.restitutions.includes(restitutionId) ||
+            !memory.accusations.some(item => item.id === accusationId && item.status === 'false')) return false;
+        memory.restitutions.push(restitutionId);
+        // A concrete repair helps, but cannot undo the original accusation.
+        memory.trust = Math.min(100, memory.trust + 4);
+        this._adjustCooperationMemory(memory, npcId, 5, 'verified_restitution:' + restitutionId);
+        this._append(memory, { type: 'verified_restitution', restitutionId, accusationId });
+        this._recordLongTermMemory(npcId, {
+            type: 'verified_restitution', summary: 'После ошибочного обвинения детектив выполнил реальное обещание помощи.',
+            sentiment: 'mixed', importance: 4, tags: ['verified_restitution'], trustDelta: 2
+        });
+        return true;
     }
 
     resolveAccusation(npcId, accusationId, outcome, reason = '') {
