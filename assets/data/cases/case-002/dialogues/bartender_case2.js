@@ -200,7 +200,41 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "reassuring",
                         condition: "all:long_term_memory:player_doubled_down_on_visitor_overclaim&not:long_term_memory:player_retracted_visitor_overclaim&not:has_visited_node:joe_offer_visitor_repair",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо, мы уже не раз проверяли факты без давления. Можете помочь сверить записи ещё раз?",
+                        nextNode: "joe_recognizes_consistent_care",
+                        tone: "calm",
+                        condition: "all:long_term_pattern:consistent_support&long_term_trust_at_least:50&not:has_visited_node:joe_recognizes_consistent_care",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Я понимаю, что неоднократно давил на вас. Можем начать с проверяемых фактов?",
+                        nextNode: "joe_remembers_repeated_pressure",
+                        tone: "calm",
+                        condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:joe_remembers_repeated_pressure",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_recognizes_consistent_care: {
+                speaker: "npc",
+                text: "Вы не впервые возвращаетесь к фактам и стараетесь не превращать догадки в обвинения. Я это помню по разным расследованиям. Могу сверить собственные записи смены, но чужие личные сведения и неподтверждённые имена не передам. Доверие помогает говорить, а не заменяет документы.",
+                mood: "thoughtful",
+                answers: [
+                    { text: "Так и поступим. Сначала проверяемые записи.", nextNode: "retell", tone: "calm", cooperationDelta: 4 },
+                    { text: "Спасибо. Вернусь с официальным запросом.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
+
+            joe_remembers_repeated_pressure: {
+                speaker: "npc",
+                text: "Вы давили на меня не один раз и не в одном деле. Одной спокойной фразой это не исправить. Я отвечу на вопросы о том, что видел лично, но не стану подтверждать удобные вам версии или раскрывать сведения о сотрудниках.",
+                mood: "guarded",
+                answers: [
+                    { text: "Понимаю. Буду проверять факты без давления.", nextNode: "retell", tone: "calm" },
+                    { text: "Вернусь позже.", nextNode: "end_bartender_guarded", tone: "calm" }
                 ]
             },
 
