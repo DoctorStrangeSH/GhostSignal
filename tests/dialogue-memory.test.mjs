@@ -3111,7 +3111,7 @@ test("Lora recognizes consistent source care only across separate investigations
     for (const [caseId, id] of [["case-001", "prior"], ["case-002", "current"]]) {
         memory.setCase(caseId);
         memory.recordAnswerSelected("journalist", "dialogue-journalist", id, {
-            text: "Это пока не установлено.", tone: "calm",
+            text: "Это пока не установлено.", tone: "calm", memoryImportance: 3,
             memoryTags: ["player_respected_visitor_uncertainty"]
         });
     }
@@ -3133,7 +3133,7 @@ test("Lora rejects repeated source overclaims without blocking document review",
     for (const [caseId, id] of [["case-001", "prior"], ["case-002", "current"]]) {
         memory.setCase(caseId);
         memory.recordAnswerSelected("journalist", "dialogue-journalist", id, {
-            text: "Личность установлена.", tone: "defensive",
+            text: "Личность установлена.", tone: "defensive", memoryImportance: 3,
             memoryTags: ["player_overstated_visitor_identity"]
         });
     }
@@ -3151,7 +3151,7 @@ test("Several source overclaims in one investigation never form a repeated-case 
     const { engine, memory } = createDialogueHarness();
     for (let i = 0; i < 3; i++) {
         memory.recordAnswerSelected("journalist", "dialogue-journalist", "claim-" + i, {
-            text: "Подтверждаю личность.", tone: "defensive",
+            text: "Подтверждаю личность.", tone: "defensive", memoryImportance: 3,
             memoryTags: ["player_overstated_visitor_identity"]
         });
     }
