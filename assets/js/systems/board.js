@@ -137,10 +137,12 @@ class InvestigationBoard {
     }
 
     // Проверить, сделаны ли правильные выводы
-    addAlibiClaim({ subject, location, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
+    addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);
         const where = String(location ?? '').trim().slice(0, 120);
         const source = String(sourceId ?? '').trim().slice(0, 240);
+        const linkedLocation = locationId ? context.locations?.find(loc => loc.id === locationId) : null;
+        if (locationId && !linkedLocation) return null;
         if (!who || !where || !source || !Number.isInteger(startMinute) || !Number.isInteger(endMinute) ||
             startMinute < 0 || endMinute >= 1440 || startMinute > endMinute ||
             !['exact', 'approximate'].includes(precision)) return null;
@@ -148,9 +150,10 @@ class InvestigationBoard {
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return null;
         if (!['statement', 'evidence'].includes(kind) || this.alibiClaims.some(c =>
             c.subject === who && c.location === where && c.startMinute === startMinute &&
-            c.endMinute === endMinute && c.kind === kind && c.sourceId === source)) return null;
+            c.endMinute === endMinute && c.kind === kind && c.sourceId === source &&
+            (c.locationId || null) === (linkedLocation?.id || null))) return null;
         const entry = { id: 'alibi-' + this.nextAlibiId++, subject: who, location: where,
-            startMinute, endMinute, precision, kind, sourceId: source };
+            locationId: linkedLocation?.id || null, startMinute, endMinute, precision, kind, sourceId: source };
         this.alibiClaims.push(entry);
         events.emit('board:updated', { action: 'alibi_claim_added', id: entry.id });
         return entry.id;
@@ -193,6 +196,35 @@ class InvestigationBoard {
                         ? `Между приблизительными интервалами ${gapMinutes} мин., а обычный переход в игре занимает ${travelMinutes} мин. Уточните часы и источники.`
                         : `Между точными интервалами ${gapMinutes} мин., а обычный переход в игре занимает ${travelMinutes} мин. Проверьте время и возможность особого маршрута.` });
             }
+        }
+        return findings;
+    }
+
+    // Opening hours describe normal public access, not whether somebody could
+    // physically enter a place after closing. Only caller-supplied, visited
+    // locations are reviewed; undiscovered locations cannot leak into findings.
+    reviewAlibiLocationHours(knownLocations = []) {
+        const locations = new Map(knownLocations.filter(loc => loc && typeof loc.id === 'string').map(loc => [loc.id, loc]));
+        const findings = [];
+        for (const claim of this.alibiClaims) {
+            const loc = locations.get(claim.locationId);
+            const open = loc?.hours?.open, close = loc?.hours?.close;
+            if (!Number.isInteger(open) || !Number.isInteger(close) || open < 0 || open > 24 ||
+                close < 0 || close > 24 || open === close || (open === 0 && close === 24)) continue;
+            const within = minute => {
+                const hour = minute / 60;
+                return open < close ? hour >= open && hour < close : hour >= open || hour < close;
+            };
+            // Check the entire interval, including a closed period between
+            // two otherwise open endpoints of an overnight schedule.
+            let outside = false;
+            for (let minute = claim.startMinute; minute < Math.max(claim.startMinute + 1, claim.endMinute); minute += 1) {
+                if (!within(minute)) { outside = true; break; }
+            }
+            if (!outside) continue;
+            findings.push({ ids: [claim.id], subject: claim.subject, locationId: loc.id,
+                status: 'outside_public_hours',
+                reason: `Для «${loc.name || claim.location}» обычные часы работы ${String(open).padStart(2, '0')}:00–${String(close).padStart(2, '0')}:00. Указанный интервал выходит за них; проверьте доступ после закрытия и достоверность источника. Это не доказательство отсутствия.` });
         }
         return findings;
     }
@@ -425,7 +457,8 @@ class InvestigationBoard {
                 ['exact', 'approximate'].includes(c.precision) && Number.isInteger(c.startMinute) &&
                 Number.isInteger(c.endMinute) && c.startMinute >= 0 && c.endMinute < 1440 &&
                 c.startMinute <= c.endMinute).map(c => ({ id: c.id, subject: c.subject.slice(0, 100),
-                location: c.location.slice(0, 120), sourceId: c.sourceId.slice(0, 240), kind: c.kind,
+                location: c.location.slice(0, 120), locationId: typeof c.locationId === 'string' ? c.locationId.slice(0, 120) : null,
+                sourceId: c.sourceId.slice(0, 240), kind: c.kind,
                 precision: c.precision, startMinute: c.startMinute, endMinute: c.endMinute })) : [];
             board.nextAlibiId = Math.max(1, Number.isSafeInteger(json.nextAlibiId) ? json.nextAlibiId : 1,
                 ...board.alibiClaims.map(c => Number(c.id.match(/^alibi-(\d+)$/)?.[1] || 0) + 1));
