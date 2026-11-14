@@ -167,6 +167,33 @@ class EventController {
             app._saveProgress();
         });
 
+        // A private deduction is not an accusation. Only the explicit public
+        // declaration can affect NPC memory, and one declaration is counted once.
+        on('deduction:public_accusation', ({ caseId, suspectId } = {}) => {
+            const currentCase = app.caseManager?.currentCase;
+            if (!currentCase || currentCase.id !== caseId || !app.npcMemoryService ||
+                !currentCase.deductionSuspects?.some(person => person.id === suspectId) ||
+                typeof assessAccusationEvidence !== 'function' ||
+                !assessAccusationEvidence(currentCase, app.inventory).sufficient) return;
+
+            const correctSuspect = currentCase.correctDeduction?.suspect || currentCase.finalQuestion?.correctAnswer;
+            // The judgement of a *false* accusation belongs to the story state,
+            // never to the deduction UI (which must not reveal the right suspect).
+            if (suspectId === correctSuspect ||
+                currentCase.finalQuestion?.acceptableAnswers?.includes(suspectId)) return;
+
+            const accusationId = 'public-final-accusation:' + caseId + ':' + suspectId;
+            const recorded = app.npcMemoryService.recordAccusation(suspectId, {
+                id: accusationId,
+                text: 'Детектив публично назвал этого человека виновным, не подтвердив обвинение.'
+            });
+            if (!recorded?.recorded) return;
+            app.npcMemoryService.resolveAccusation(
+                suspectId, accusationId, 'false', 'Публичное обвинение противоречит установленным обстоятельствам дела.'
+            );
+            events.emit('npc:memory_changed', { reason: 'public_false_accusation', npcId: suspectId });
+        });
+
         on('npc:call', (id) => {
             const npc = getNPCById(id);
             const avail = app.npcManager?.isNPCAvailable(id);
