@@ -224,7 +224,7 @@ class BoardUI {
         ];
         const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
         const claims = this.board?.alibiClaims || [];
-        const warnings = this.board?.reviewAlibiClaims() || [];
+        const warnings = this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || [];
         return `<section class="testimony-journal" aria-labelledby="alibi-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
             <p class="hypothesis-help">Это ваша реконструкция по найденным источникам, а не подтверждённый маршрут NPC. Указывайте время, место и степень точности из показания или документа. Интервалы через полночь пока нужно разбивать на две записи.</p>
