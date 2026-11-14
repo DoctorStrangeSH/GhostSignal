@@ -544,6 +544,31 @@ test('board layout reports occupied neighbors without calling them confirmed evi
     assert.match(ui._renderLayoutStatus(), /Соседних пар: 0/);
 });
 
+test('hypothesis UI separates supporting, opposing and unchecked player assessments', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
+        getObjectById: id => ({ id, name: id }) });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.inventory = { evidence: [] };
+    ui.memoryService = { getStatements: () => [] };
+    ui._renderSourceInquiries = () => '';
+    ui.board = { evidenceOnBoard: [], hypotheses: [{ id: 'hyp-1', title: 'Версия', status: 'open', history: [],
+        links: [
+            { kind: 'assumption', sourceId: 'А', stance: 'for' },
+            { kind: 'assumption', sourceId: 'Б', stance: 'against' },
+            { kind: 'assumption', sourceId: '<вопрос>', stance: 'pending' }
+        ] }], reviewHypothesisSources: () => ({ sources: [], warnings: [] }) };
+    const html = ui._renderHypotheses();
+    assert.match(html, /1 за/);
+    assert.match(html, /1 против/);
+    assert.match(html, /1 проверить/);
+    assert.match(html, /class="stance-for/);
+    assert.match(html, /class="stance-against/);
+    assert.match(html, /class="stance-pending/);
+    assert.match(html, /&lt;вопрос&gt;/);
+    assert.match(html, /не подтверждает их автоматически/);
+});
+
 test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
