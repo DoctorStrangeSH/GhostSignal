@@ -74,6 +74,13 @@ const DIALOGUE_WAITER = {
                 mood: "guarded",
                 answers: [
                     {
+                        text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
+                        nextNode: "family_safety_confirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Вернёмся к твоим действующим показаниям, без предположений.",
                         nextNode: "revised_testimony_opening",
                         tone: "calm",
@@ -93,6 +100,13 @@ const DIALOGUE_WAITER = {
                 text: "Я уже объяснил, что после угрозы сказал больше, чем могу подтвердить. Я помню Кейна у столика, но не стану утверждать, будто видел сам момент отравления.",
                 mood: "guarded",
                 answers: [
+                    {
+                        text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
+                        nextNode: "family_safety_confirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Почему ты изменил показания после нашего разговора?", nextNode: "revision_under_pressure_reason", tone: "calm" },
                     { text: "Я учту уточнение. Спасибо, Томас.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
@@ -102,6 +116,13 @@ const DIALOGUE_WAITER = {
                 text: "Детектив, я уже уточнил показания после фотографии. Я видел Кейна рядом со столиком, но не видел, как порошок попал в стакан. Я не стану снова говорить, будто видел больше.",
                 mood: "guarded",
                 answers: [
+                    {
+                        text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
+                        nextNode: "family_safety_confirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        hiddenWhenUnavailable: true
+                    },
                     {
                         text: "Если тебе трудно говорить после нашего прошлого разговора, давай уточним показания.",
                         nextNode: "testimony_reconsiders",
@@ -164,6 +185,13 @@ const DIALOGUE_WAITER = {
                 text: "Я уже дал показания о Кейне, детектив. Мне страшно, но я готов уточнить то, что помню, если это поможет установить правду.",
                 mood: "nervous",
                 answers: [
+                    {
+                        text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
+                        nextNode: "family_safety_confirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Посмотри на фотографию: давай уточним, что именно ты видел.", nextNode: "protection_revision", tone: "calm", condition: "hasItem:bar_photo" },
                     {
                         text: "Я хочу вернуться к твоим прежним показаниям.",
@@ -180,6 +208,13 @@ const DIALOGUE_WAITER = {
                 text: "Джо поговорил со мной после смены. Я по-прежнему боюсь Кейна, но теперь хотя бы знаю, что не останусь один. Что вы хотели уточнить, детектив?",
                 mood: "cautious",
                 answers: [
+                    {
+                        text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
+                        nextNode: "family_safety_confirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Расскажи только то, что сам видел.", nextNode: "he_saw", tone: "calm", cooperationDelta: 3 },
                     { text: "Пока вопросов нет.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
@@ -276,7 +311,7 @@ const DIALOGUE_WAITER = {
                             id: "thomas-family-protection",
                             text: "Обеспечить безопасность семьи Томаса и лишить Кейна возможности угрожать им",
                             caseId: "case-002",
-                            fulfillment: { type: "insight_gained", insightId: "full_confession_kane" },
+                            fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" },
                             fulfilledTrustDelta: 6,
                             brokenTrustDelta: -8
                         }
@@ -430,6 +465,16 @@ const DIALOGUE_WAITER = {
                 ]
             },
 
+            family_safety_confirmed: {
+                speaker: "npc",
+                text: "Да. Я сам проводил маму в место, которое нашёл Джо, и только что говорил с ней. Кейн не знает адреса, а Джо договорился, кто будет проверять её состояние. Теперь я могу сказать, что она в безопасности. Спасибо, что вы не ограничились признанием Кейна.",
+                mood: "relieved",
+                innerThought: "Это подтверждение фактической защиты со слов члена семьи, а не вывод из признания подозреваемого.",
+                givesInsight: "thomas_family_protected",
+                answers: [
+                    { text: "Хорошо. Продолжим расследование без риска для твоей семьи.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                ]
+            },
             end_waiter_guarded: {
                 speaker: "npc",
                 text: "Я уже сказал всё, что могу подтвердить. Надеюсь, теперь мои слова запишут точно.",
