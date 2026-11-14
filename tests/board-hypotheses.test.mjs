@@ -501,6 +501,31 @@ test('board UI prioritizes active leads and collapses completed leads without re
     assert.equal((html.match(/checklist-next-action/g) || []).length, 3);
 });
 
+test('board UI supports select-and-place without dragging and rejects unavailable evidence', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    const states = [];
+    const item = { dataset: { evidenceId: 'letter' }, classList: { toggle(name, value) { states.push([name, value]); } },
+        setAttribute(name, value) { states.push([name, value]); } };
+    const help = { textContent: '' };
+    ui.container = { querySelectorAll: selector => selector === '.evidence-pool-item' ? [item] : [],
+        querySelector: selector => selector === '#board-selection-help' ? help : null };
+    ui.inventory = { evidence: ['letter'] };
+    let placed = null;
+    ui.board = { getAvailableEvidence: ids => ids, placeEvidence(evidence, slot) { placed = [evidence, slot]; return true; } };
+    ui._selectEvidence('missing');
+    assert.equal(ui._selectedEvidenceId, undefined);
+    ui._selectEvidence('letter');
+    assert.equal(ui._selectedEvidenceId, 'letter');
+    assert.match(help.textContent, /Улика выбрана/);
+    assert.equal(ui._placeSelectedEvidence('slot-1'), true);
+    assert.deepEqual(placed, ['letter', 'slot-1']);
+    assert.equal(ui._selectedEvidenceId, null);
+    assert.equal(ui._placeSelectedEvidence('slot-2'), false);
+    assert.ok(states.some(([key, value]) => key === 'aria-pressed' && value === 'true'));
+});
+
 test('checklist keeps Kane and Thomas leads separate and never reveals the telephone lead before discovery', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
