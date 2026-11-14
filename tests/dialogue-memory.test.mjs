@@ -92,7 +92,8 @@ function createDialogueHarness() {
                 edges: [
                     { from: "waiter", to: "bartender", relationship: "coworkers", trust: 80, channel: "in_person", delayMinutes: 15, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: true },
                     { from: "bartender", to: "waiter", relationship: "coworkers", trust: 80, channel: "in_person", delayMinutes: 20, minTrustToShare: 35, shareTypes: ["detective_behavior"], canForward: false },
-                    { from: "bartender", to: "journalist", relationship: "source", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true }
+                    { from: "bartender", to: "journalist", relationship: "source", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true },
+                    { from: "journalist", to: "bartender", relationship: "source", trust: 55, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: false }
                 ]
             }
         });
@@ -1320,4 +1321,55 @@ test("Lora can corroborate the visitor record from her contextual Eva follow-up"
     engine.startDialogue("dialogue-journalist");
     assert.equal(engine.currentNode.id, "lora_second_check_opening");
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule")?.isAvailable, true);
+});
+
+test("overstating the visitor's identity is challenged by Joe after Lora reports the detective's conclusion", () => {
+    const { engine, memory, inventory, advance } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+
+    engine.startDialogue("dialogue-journalist");
+    const verify = engine.getAvailableAnswers().find(answer => answer.nextNode === "lora_verifies_inspection_schedule");
+    assert.equal(verify?.isAvailable, true);
+    engine.selectAnswer(verify.index);
+    assert.equal(inventory.hasInsight("visitor_likely_inspector"), true);
+
+    const overclaim = engine.getAvailableAnswers().find(answer => answer.nextNode === "lora_rejects_certain_visitor_identity");
+    assert.equal(overclaim?.isAvailable, true);
+    engine.selectAnswer(overclaim.index);
+    assert.equal(memory.hasLongTermMemoryTag("journalist", "player_overstated_visitor_identity"), true);
+    assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), false);
+
+    advance(30);
+    assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const challenge = engine.getAvailableAnswers().find(answer => answer.nextNode === "joe_challenges_visitor_overclaim");
+    assert.equal(challenge?.isAvailable, true);
+    engine.selectAnswer(challenge.index);
+    assert.equal(engine.currentNode.id, "joe_challenges_visitor_overclaim");
+    assert.equal(inventory.hasInsight("joe_challenged_overstated_visitor_identity"), true);
+
+    const correction = engine.getAvailableAnswers().find(answer => answer.text.includes("оставлю личность посетителя неподтверждённой"));
+    assert.equal(correction?.isAvailable, true);
+    engine.selectAnswer(correction.index);
+    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_corrected_visitor_overclaim"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "joe_challenges_visitor_overclaim"), false);
+});
+
+test("a cautious visitor assessment does not create a rumor or damage the journalist relationship", () => {
+    const { engine, memory, inventory, advance } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+
+    engine.startDialogue("dialogue-journalist");
+    const verify = engine.getAvailableAnswers().find(answer => answer.nextNode === "lora_verifies_inspection_schedule");
+    engine.selectAnswer(verify.index);
+    const cautious = engine.getAvailableAnswers().find(answer => answer.text.includes("Отмечу объяснение как вероятное"));
+    assert.equal(cautious?.isAvailable, true);
+    engine.selectAnswer(cautious.index);
+
+    assert.equal(memory.hasLongTermMemoryTag("journalist", "player_respected_visitor_uncertainty"), true);
+    advance(60);
+    assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), false);
 });
