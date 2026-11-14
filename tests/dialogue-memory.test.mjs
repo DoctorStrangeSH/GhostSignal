@@ -3030,3 +3030,48 @@ test("Lora offers Joe practical help only after she can know the bar is understa
     context.restoredLoraHelp.setCase(vm.runInContext("CASE_002", context));
     assert.equal(context.restoredLoraHelp.hasCompletedInteraction("journalist", loraHelpId), true);
 });
+
+test("Anna accepts an apology without instant forgiveness; independent proof repairs only part of the harm", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    const accusationId = "public-final-accusation:case-002:ex_wife";
+    const restitutionId = "anna-public-accusation-repaired-with-kane-confession";
+    const originalTrust = memory.getTrust("ex_wife");
+
+    engine.startDialogue("dialogue-ex-wife");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "anna_public_apology"), false);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "anna_public_restitution"), false);
+
+    memory.recordAccusation("ex_wife", { id: accusationId, text: "Детектив публично обвинил Анну." });
+    memory.resolveAccusation("ex_wife", accusationId, "false");
+    const harmedTrust = memory.getTrust("ex_wife");
+    assert.ok(harmedTrust < originalTrust);
+
+    engine.startDialogue("dialogue-ex-wife");
+    let answers = engine.getAvailableAnswers();
+    assert.ok(answers.some(answer => answer.nextNode === "anna_public_apology" && answer.isAvailable));
+    assert.equal(answers.some(answer => answer.nextNode === "anna_public_restitution"), false);
+    engine.selectAnswer(answers.find(answer => answer.nextNode === "anna_public_apology").index);
+    assert.equal(memory.getAccusationStatus("ex_wife", accusationId), "false");
+    assert.equal(memory.getMemory("ex_wife").restitutions.length, 0);
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "anna_public_restitution"), false);
+
+    inventory.addInsight("full_confession_kane");
+    answers = engine.getAvailableAnswers();
+    const proof = answers.find(answer => answer.nextNode === "anna_public_restitution");
+    assert.ok(proof?.isAvailable);
+    engine.selectAnswer(proof.index);
+    const repairedTrust = memory.getTrust("ex_wife");
+    assert.ok(repairedTrust > harmedTrust, "proof-backed repair improves rapport");
+    assert.ok(repairedTrust < originalTrust, "the false public accusation retains a cost");
+    assert.deepEqual(Array.from(memory.getMemory("ex_wife").restitutions), [restitutionId]);
+    assert.equal(memory.getAccusationStatus("ex_wife", accusationId), "false");
+
+    const snapshot = memory.toJSON();
+    assert.equal(memory.recordVerifiedRestitution("ex_wife", restitutionId, accusationId), false,
+        "replaying the repair cannot accumulate trust");
+    assert.equal(memory.getTrust("ex_wife"), repairedTrust);
+    const restored = memory.constructor.fromJSON(snapshot, "case-002");
+    assert.deepEqual(Array.from(restored.getMemory("ex_wife").restitutions), [restitutionId]);
+    assert.equal(restored.getAccusationStatus("ex_wife", accusationId), "false");
+    assert.equal(restored.getTrust("ex_wife"), repairedTrust);
+});
