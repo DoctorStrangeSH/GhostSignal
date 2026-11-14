@@ -75,6 +75,43 @@ registerData('object', {
         icon: "📸", takeable: true, isEvidence: true, weight: 0,
         interactions: { examine: { text: "Кейн поднимает небольшой предмет через салфетку и убирает его в карман. Сам предмет на кадре неразличим, но время совпадает с рассказами Евы и официанта. Это подтверждение их показаний, а не самостоятельное доказательство содержимого пузырька.", timeCost: 5, givesInsight: "kane_caught" } }
     },
+    inspection_register: {
+        id: "inspection_register", name: "Журнал городской инспекции", type: "static_object",
+        description: "Прошитый журнал с регистрационными номерами, назначенными проверками и заверенными отметками об отмене.",
+        icon: "📚", takeable: false,
+        interactions: {
+            examine: {
+                text: "В заверенной выписке по заявке 27-Б указано: инспектор Илья Руденко назначен на проверку бара «У Джо». Ниже стоит отметка об отмене в 15:40 из-за несчастного случая на текстильной фабрике. В графе замены — прочерк. Это первичная служебная запись: визит был назначен, затем отменён; фактического посещения она не подтверждает.",
+                timeCost: 10,
+                givesInsight: "inspection_cancellation_record",
+                spawnsItem: "inspection_cancellation_copy"
+            }
+        }
+    },
+    inspection_cancellation_copy: {
+        id: "inspection_cancellation_copy", name: "Заверенная выписка об отмене заявки 27-Б", type: "evidence",
+        description: "Официальная копия журнала городской инспекции. Назначение Ильи Руденко отменено в 15:40; замена не назначена.",
+        icon: "📄", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Номер заявки 27-Б, дата, подпись дежурного регистратора и штамп отдела совпадают с записью в журнале. Документ подтверждает отмену визита Руденко, но не устанавливает, кто позднее пришёл в бар под видом инспектора.",
+                timeCost: 5,
+                givesInsight: "inspection_cancellation_record"
+            }
+        }
+    },
+    inspector_service_card: {
+        id: "inspector_service_card", name: "Служебное удостоверение Ильи Руденко", type: "evidence",
+        description: "Действующее удостоверение инспектора ИТ-0417 с фотографией и подписью отдела кадров.",
+        icon: "🪪", takeable: true, isEvidence: true, weight: 0,
+        interactions: {
+            examine: {
+                text: "Фотография, номер ИТ-0417 и подпись отдела кадров подтверждают, что предъявитель — Илья Руденко. Удостоверение не доказывает, что он был в баре в ночь происшествия.",
+                timeCost: 5,
+                givesInsight: "rudenko_identity_documents_verified"
+            }
+        }
+    },
     rival_desk: {
         id: "rival_desk", name: "Стол Кейна", type: "container",
         description: "Массивный дубовый стол. В ящике — папка с судебным иском «Блэквуд против Кейна».",
