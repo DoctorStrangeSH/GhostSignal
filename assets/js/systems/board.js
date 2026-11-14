@@ -315,6 +315,28 @@ class InvestigationBoard {
             q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
     }
 
+    // A spoiler-free checklist derived exclusively from player-visible state.
+    // It is guidance, not authored case completion logic or evidence discovery.
+    getInvestigationChecklist({ visitedLocationIds = [], evidenceIds = [], statements = [] } = {}) {
+        const visited = new Set(Array.isArray(visitedLocationIds) ? visitedLocationIds : []);
+        const evidence = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
+        const witnesses = new Set((Array.isArray(statements) ? statements : [])
+            .filter(s => s && s.status !== 'superseded' && typeof s.npcId === 'string').map(s => s.npcId));
+        const tasks = [
+            { id: 'locations', text: 'Осмотреть хотя бы два доступных места', done: visited.size >= 2 },
+            { id: 'evidence', text: 'Собрать первую улику или документ', done: evidence.size > 0 },
+            { id: 'witnesses', text: 'Записать показания двух разных свидетелей', done: witnesses.size >= 2 },
+            { id: 'hypothesis', text: 'Сформулировать рабочую гипотезу', done: this.hypotheses.length > 0 }
+        ];
+        if (this.alibiClaims.length > 0) {
+            tasks.push({ id: 'alibi', text: 'Сопоставить две версии местонахождения', done: this.alibiClaims.length >= 2 });
+        }
+        const nextAction = this.hasPreparedRouteQuestion('business_rival')
+            ? 'Подготовлен вопрос Кейну: вернитесь к нему и начните новый разговор. Это ещё не доказательство вины.'
+            : null;
+        return { tasks, nextAction, completed: tasks.filter(t => t.done).length };
+    }
+
     cancelRouteQuestion(npcId) {
         const before = this.routeQuestions.length;
         this.routeQuestions = this.routeQuestions.filter(q => !(q.npcId === npcId && q.caseId === this.caseId));
