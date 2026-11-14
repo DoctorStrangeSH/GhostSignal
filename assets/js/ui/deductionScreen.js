@@ -70,12 +70,13 @@ class DeductionScreen {
                     </select>
                 </div>
 
+                <p class="deduction-hint">Это частная проверка гипотезы. Она не влияет на отношения с персонажами.</p>
                 <div id="deduction-feedback" class="hidden" style="margin-top: 16px;"></div>
             </div>
         `;
 
         modalFooter.innerHTML = `
-            <button id="btn-deduction-submit" class="terminal-btn">🔍 ПРЕДЪЯВИТЬ</button>
+            <button id="btn-deduction-submit" class="terminal-btn">🔍 ПРОВЕРИТЬ ВЕРСИЮ</button>
             <button class="terminal-btn" data-bs-dismiss="modal">ОТМЕНА</button>
         `;
 
@@ -131,6 +132,7 @@ class DeductionScreen {
             suspectCorrect,
             motiveCorrect,
             weaponCorrect,
+            suspect,
             correct
         };
     }
@@ -178,8 +180,23 @@ class DeductionScreen {
                 <div class="feedback feedback-error">
                     <h4>❌ ОБВИНЕНИЕ НЕ ПОДТВЕРЖДЕНО</h4>
                     <p>Ваша реконструкция событий содержит ошибку. Сопоставьте мотив, обстоятельства и независимые доказательства, затем попробуйте снова.</p>
+                    <p>Проверка версии остаётся частной. Если решите выступить с публичным обвинением, это может повлиять на доверие свидетелей.</p>
+                    <button id="btn-deduction-public" class="terminal-btn" type="button">⚖️ ОБЪЯВИТЬ ОБВИНЕНИЕ ПУБЛИЧНО</button>
                 </div>
             `;
+            document.getElementById('btn-deduction-public')?.addEventListener('click', (event) => {
+                event.currentTarget.disabled = true;
+                events.emit('deduction:public_accusation', {
+                    caseId: caseData.id,
+                    suspectId: result.suspect
+                });
+                feedback.innerHTML = `
+                    <div class="feedback feedback-warning">
+                        <h4>⚖️ ОБВИНЕНИЕ ОБЪЯВЛЕНО</h4>
+                        <p>Ваше заявление стало публичным. Люди запомнят, кого вы назвали подозреваемым.</p>
+                    </div>
+                `;
+            }, { once: true });
         }
     }
 }
