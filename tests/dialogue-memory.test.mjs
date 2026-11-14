@@ -852,6 +852,27 @@ test('Joe hears Lora’s cautious conclusion only after her independent follow-u
     assert.doesNotMatch(engine.currentNode.text, /доказано|установлено, что.*лож/i);
 });
 
+test('Thomas mentions Joe’s delayed support only after receiving it, and not on every visit', () => {
+    const { engine } = createDialogueHarness();
+    let supported = false;
+    engine.setRelationshipService({
+        hasReceivedInteraction(npcId, id) {
+            return supported && npcId === 'waiter' && id === 'joe-reassures-thomas-after-lora-update';
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'joe_after_lora_support_opening');
+    engine.reset();
+    supported = true;
+    engine.startDialogue('dialogue-waiter');
+    assert.equal(engine.currentNode.id, 'joe_after_lora_support_opening');
+    assert.match(engine.currentNode.text, /не нашла независимых доказательств/);
+    engine.reset();
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'joe_after_lora_support_opening');
+});
+
 test('Kane answers an explicitly prepared route question without confessing or adding an insight', () => {
     const { engine, inventory } = createDialogueHarness();
     let prepared = false;
