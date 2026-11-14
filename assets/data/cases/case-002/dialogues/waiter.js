@@ -407,7 +407,32 @@ const DIALOGUE_WAITER = {
                             fromNpcId: "bartender",
                             toNpcId: "waiter"
                         }
+                    },
+                    {
+                        text: "Я проверил отменённый визит Руденко и провёл опознание с Джо. Можем сверить результаты?",
+                        nextNode: "thomas_acknowledges_verified_followup",
+                        tone: "procedural",
+                        condition: "all:has_visited_node:thomas_hears_visitor_correction&heard_rumor:joe-reports-detective-visitor-correction&hasInsight:rudenko_denies_visit&hasInsight:joe_rules_out_rudenko&not:has_visited_node:thomas_acknowledges_verified_followup",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_acknowledges_verified_followup: {
+                speaker: "npc",
+                text: "Вы действительно сходили к Руденко, проверили запись об отмене визита и попросили Джо опознать посетителя. Это уже действия, а не обещания. Я готов спокойнее обсуждать собственные показания. Но помню ваш прежний уверенный вывод: Руденко исключён, а кто приходил вместо него, мы всё ещё не знаем. И за безопасность семьи я по-прежнему переживаю.",
+                mood: "cautiously_relieved",
+                answers: [
+                    {
+                        text: "Согласен. Отделим проверенное от неизвестного и вернёмся к твоим наблюдениям.",
+                        nextNode: "he_saw",
+                        tone: "reassuring",
+                        cooperationDelta: 3,
+                        memorySummary: "После официальной проверки и очного опознания Томас согласился осторожнее доверять детективу, сохраняя память о его прежнем ошибочном выводе.",
+                        memoryTags: ["player_earned_partial_trust_with_verified_action"],
+                        memoryImportance: 3
+                    },
+                    { text: "Понимаю. Не буду требовать доверия сразу.", nextNode: "end_waiter", tone: "calm" }
                 ]
             },
 

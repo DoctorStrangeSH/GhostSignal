@@ -2171,4 +2171,38 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
     engine.reset();
     engine.startDialogue("dialogue-waiter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_visitor_correction"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_acknowledges_verified_followup"), false,
+        "an apology alone does not restore trust");
+
+    inventory.insights.push("inspection_cancellation_record");
+    engine.startDialogue("dialogue-labour-inspector");
+    const officialCheck = engine.getAvailableAnswers().find(a => a.nextNode === "rudenko_checks_register");
+    assert.equal(officialCheck?.isAvailable, true);
+    engine.selectAnswer(officialCheck.index);
+    assert.equal(inventory.hasInsight("rudenko_denies_visit"), true);
+    const identification = engine.getAvailableAnswers().find(a => a.nextNode === "rudenko_agrees_to_identification");
+    engine.selectAnswer(identification.index);
+    assert.equal(inventory.hasInsight("rudenko_agreed_to_identification"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const witnessCheck = engine.getAvailableAnswers().find(a => a.nextNode === "joe_identifies_different_visitor");
+    assert.equal(witnessCheck?.isAvailable, true);
+    engine.selectAnswer(witnessCheck.index);
+    assert.equal(inventory.hasInsight("joe_rules_out_rudenko"), true);
+    const cautiousRecord = engine.getAvailableAnswers().find(a => a.text.includes("Личность неизвестного оставим открытым"));
+    engine.selectAnswer(cautiousRecord.index);
+
+    engine.startDialogue("dialogue-waiter");
+    const earned = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_acknowledges_verified_followup");
+    assert.equal(earned?.isAvailable, true);
+    engine.selectAnswer(earned.index);
+    assert.match(engine.currentNode.text, /это уже действия, а не обещания/i);
+    assert.match(engine.currentNode.text, /помню ваш прежний уверенный вывод/i);
+    engine.selectAnswer(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw").index);
+    assert.equal(memory.hasLongTermMemoryTag("waiter", "player_earned_partial_trust_with_verified_action"), true);
+    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_doubled_down_on_visitor_overclaim"), true,
+        "independent verification must not delete the old mistake");
+    engine.reset();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_acknowledges_verified_followup"), false);
 });
