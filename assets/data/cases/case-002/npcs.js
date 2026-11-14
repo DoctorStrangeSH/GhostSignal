@@ -200,6 +200,32 @@ registerData('npc', {
         canGiveInsights: ["tram_passenger_route_corroboration"],
         specialConditions: []
     },
+    mill_watchman: {
+        id: "mill_watchman",
+        name: "Степан Орлов",
+        role: "Ночной сторож старой текстильной фабрики",
+        description: "Немногословный сторож. Отвечает за ворота, пломбы и журнал ночных смен; не берётся судить о том, чего сам не видел.",
+        icon: "🧓",
+        mood: "wary",
+        psychology: {
+            opennessThreshold: 50, pressureThreshold: 60, calmPressureLimit: 15,
+            labels: { cooperative: "Готов сверить журнал", pressured: "Отвечает сухо", overwhelmed: "Прекращает разговор", distrustful: "Ссылается на управляющего" }
+        },
+        schedule: {
+            awake: { start: 18, end: 7 },
+            atWork: { start: 20, end: 6 },
+            sleeps: { start: 7, end: 18 },
+            locations: { work: "old_textile_mill", home: null },
+            daysOff: [],
+            exceptions: []
+        },
+        availableForCall: false,
+        availableForChat: false,
+        dialogueId: "dialogue-mill-watchman",
+        canGiveEvidence: ["mill_shift_extract"],
+        canGiveInsights: ["mill_gate_seal_intact", "mill_no_registered_visitors"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
