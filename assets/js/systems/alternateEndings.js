@@ -33,10 +33,8 @@ class AlternateEndings {
         if (!selected && partial) selected = partial;
         if (!selected) selected = configured.find(ending => ending.condition === 'default') || this._getDefaultEnding(caseData);
 
-        return this._applySocialConsequences(
-            selected,
-            socialContext?.npcMemoryService?.getCaseSocialSummary?.(caseData?.id)
-        );
+        const summary = socialContext?.npcMemoryService?.getCaseSocialSummary?.(caseData?.id);
+        return this._applySocialConsequences(selected, summary);
     }
 
     _applySocialConsequences(ending, summary) {
@@ -54,9 +52,22 @@ class AlternateEndings {
             if (npc.accusations.false > 0 && rules.falseAccusation) paragraphs.push(rules.falseAccusation);
             if (npc.accusations.pending > 0 && rules.pendingAccusation) paragraphs.push(rules.pendingAccusation);
         }
-        if (!paragraphs.length) return ending;
+        const compromised = Object.values(summary.npcs).some(npc =>
+            (npc?.promises?.broken || 0) > 0 ||
+            (npc?.accusations?.false || 0) > 0 ||
+            (npc?.accusations?.pending || 0) > 0
+        );
+        const isPerfect = ending.condition && ending.condition !== 'default' &&
+            !ending.condition.startsWith('evidence_count_');
+        if (!paragraphs.length && !(compromised && isPerfect)) return ending;
         return {
             ...ending,
+            // Correct deduction and ethical conduct are separate judgments.
+            // A confession may solve the crime without making the detective flawless.
+            ...(compromised && isPerfect ? {
+                title: '⚖️ РАСКРЫТО С ПОСЛЕДСТВИЯМИ',
+                outcomeQuality: 'compromised'
+            } : {}),
             text: [ending.text || '', ...paragraphs].filter(Boolean).join('\n\n'),
             socialConsequencesApplied: paragraphs.length
         };
