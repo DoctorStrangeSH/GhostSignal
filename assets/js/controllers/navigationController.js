@@ -15,7 +15,7 @@ class NavigationController {
             app.caseListUI?.render();
         });
         document.getElementById('btn-continue')?.addEventListener('click', () => {
-            if (app.progress.activeCase) app.loadCase(app.progress.activeCase);
+            if (app.caseController?.canResume()) app.loadCase(app.progress.activeCase);
         });
         document.getElementById('btn-stats')?.addEventListener('click', () => {
             app.statsScreen.setTracker(app.progressTracker);
