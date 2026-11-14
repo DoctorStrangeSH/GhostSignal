@@ -894,7 +894,11 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
     assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
 
     advance(30);
-    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), true);
+    assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), true,
+        JSON.stringify({ state: relationships.toJSON().cases[caseData.id].rules[evaRule],
+            rule: relationships.caseConfig.autonomousInteractions.find(item => item.id === evaRule),
+            rumor: memory.getRumors("woman_in_red").find(item => item.id === rumorId),
+            now: relationships._now() }));
     assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
 
     advance(60);
