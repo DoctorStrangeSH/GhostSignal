@@ -437,6 +437,20 @@ const DIALOGUE_WAITER = {
                         hiddenWhenUnavailable: true
                     },
                     {
+                        text: "Томас, ты решил, на каких условиях говорить после письма Джо?",
+                        nextNode: "thomas_requests_joe_at_interview",
+                        tone: "calm",
+                        condition: "all:npc_witness_interview_decision:thomas-chooses-interview-boundaries-after-joe-warning:request_joe_present&not:has_visited_node:thomas_requests_joe_at_interview",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Томас, ты решил, на каких условиях говорить после письма Джо?",
+                        nextNode: "thomas_prefers_private_interview",
+                        tone: "calm",
+                        condition: "all:npc_witness_interview_decision:thomas-chooses-interview-boundaries-after-joe-warning:private_with_boundaries&not:has_visited_node:thomas_prefers_private_interview",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Джо прислал тебе предупреждение о моих разговорах с ним?",
                         nextNode: "thomas_hears_joe_reputation_warning",
                         tone: "cautious",
@@ -471,6 +485,27 @@ const DIALOGUE_WAITER = {
                         condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:document_help&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_prepares_supporting_documents",
                         hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_requests_joe_at_interview: {
+                speaker: "npc",
+                text: "Я обдумал письмо Джо и свои прежние разговоры с вами. В следующем дополнительном интервью я хочу, чтобы Джо присутствовал. Это моё решение, не его требование. Пока мы не договорились о времени, я могу уточнять только собственные наблюдения. Адрес мамы и личные сведения сотрудников не относятся к этим показаниям.",
+                mood: "guarded",
+                innerThought: "Томас сам попросил присутствия Джо, но встреча ещё не назначена; никаких новых фактов о деле или защищённости семьи это не доказывает.",
+                answers: [
+                    { text: "Уважаю твоё решение. Не стану проводить необязательное интервью без договорённости.", nextNode: "end_waiter_guarded", tone: "calm" },
+                    { text: "Тогда уточним лишь то, что ты видел лично.", nextNode: "he_saw", tone: "procedural" }
+                ]
+            },
+            thomas_prefers_private_interview: {
+                speaker: "npc",
+                text: "Я прочитал предупреждение Джо. Спасибо ему, но хочу сам решать, когда и что рассказывать. Можем беседовать без посредника, если вы спрашиваете только о том, что я видел. Личных сведений коллег и адреса семьи не будет. Если снова почувствую давление, прекращу необязательную часть разговора.",
+                mood: "cautious",
+                innerThought: "Томас не игнорирует предупреждение: он устанавливает собственные границы и не подтверждает чужие слухи как факты.",
+                answers: [
+                    { text: "Согласен. Начнём с подтверждённых наблюдений.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Спасибо, Томас. Продолжим позже.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
             },
 
