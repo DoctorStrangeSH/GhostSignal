@@ -63,6 +63,7 @@ const DIALOGUE_RIVAL_FULL = {
                 text: "Мы уже выяснили, что я выходил в коридор и возвращался. Я исправил своё алиби. Но возвращение в зал не означает признание в отравлении. Какие у вас новые факты?",
                 mood: "guarded",
                 answers: [
+                    { text: "Я сопоставил время ваших перемещений с известными переходами. Каким маршрутом вы шли?", nextNode: "route_question_response", tone: "direct", condition: "route_question_prepared" },
                     { text: "Давайте сопоставим ваши слова с остальными свидетельствами.", nextNode: "why", tone: "direct" },
                     { text: "Пока вопросов больше нет.", nextNode: "interview_paused", tone: "calm" }
                 ]
@@ -85,6 +86,7 @@ const DIALOGUE_RIVAL_FULL = {
                 },
                 answers: [
                     { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "hasInsight:waiter_saw_poisoning" },
+                    { text: "Я восстановил возможный маршрут и заметил нехватку времени. Как вы перемещались?", nextNode: "route_question_response", tone: "direct", condition: "route_question_prepared" },
                     { text: "Расскажите, зачем вы это сделали.", nextNode: "why", tone: "calm" },
                     {
                         text: "Вы подали возражение на предыдущий допрос?",
@@ -93,6 +95,16 @@ const DIALOGUE_RIVAL_FULL = {
                         condition: "npc_action_completed:kane-files-objection"
                     },
                     { text: "Вы пытались убить человека. И подставили невиновную.", nextNode: "accusation", tone: "aggressive" }
+                ]
+            },
+
+            route_question_response: {
+                speaker: "npc",
+                text: "Вы сложили минуты на бумаге, детектив. Но это ещё не мой маршрут. Я не стану подтверждать чужую догадку. Назовите точные свидетельства о каждом переходе — тогда мы сможем обсудить время.",
+                mood: "guarded",
+                innerThought: "Кейн не подтверждает маршрут. Нужны отдельные свидетельства о точках пути и времени, а не только расчёт.",
+                answers: [
+                    { text: "Проверю каждый участок и вернусь к этому вопросу.", nextNode: "interview_paused", tone: "calm" }
                 ]
             },
 
