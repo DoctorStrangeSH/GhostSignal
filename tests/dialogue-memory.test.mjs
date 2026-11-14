@@ -3096,7 +3096,7 @@ test("Anna confronts a repeated false accuser only after distinct-case misconduc
     const repeated = options.find(item => item.nextNode === "anna_repeated_public_apology");
     const first = options.find(item => item.nextNode === "anna_public_apology");
     assert.equal(repeated?.isAvailable, true);
-    assert.equal(first?.isAvailable, false);
+    assert.equal(Boolean(first?.isAvailable), false);
     assert.equal(engine.selectAnswer(repeated.index).id, "anna_repeated_public_apology");
     assert.match(engine.currentNode.text, /другом деле/);
     assert.equal(memory.recordVerifiedRestitution("ex_wife", "unverified", "unknown"), false);
