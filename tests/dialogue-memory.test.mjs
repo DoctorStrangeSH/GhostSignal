@@ -1284,3 +1284,40 @@ test("Joe does not imply a leak when the family was protected without one", () =
     engine.startDialogue("dialogue-bartender-case2");
     assert.equal(engine.currentNode.id, "greeting");
 });
+
+test("the anonymous visitor lead gains corroboration from a second record without becoming a proven Kane threat", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("thomas_family_protected", "unknown_visitor_asked_about_thomas", "unknown_visitor_unverified");
+    engine.startDialogue("dialogue-bartender-case2");
+    const log = engine.getAvailableAnswers().find(a => a.nextNode === "joe_finds_visitor_log");
+    assert.equal(log?.isAvailable, true);
+    engine.selectAnswer(log.index);
+    assert.equal(inventory.hasInsight("joe_found_inspection_entry"), true);
+    assert.equal(inventory.hasInsight("visitor_likely_inspector"), false);
+
+    engine.startDialogue("dialogue-journalist");
+    const check = engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule");
+    assert.equal(check?.isAvailable, true);
+    engine.selectAnswer(check.index);
+    assert.match(engine.currentNode.text, /наиболее вероятно/);
+    assert.match(engine.currentNode.text, /без прямого опознания/);
+    assert.equal(inventory.hasInsight("visitor_likely_inspector"), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), true);
+    assert.equal(inventory.hasInsight("thomas_family_address_exposed"), false);
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_verifies_inspection_schedule"), false);
+});
+
+test("Lora can corroborate the visitor record from her contextual Eva follow-up", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+    engine.setRelationshipService({
+        getInvestigationOutcome(npcId, ruleId) {
+            return npcId === "journalist" && ruleId === "lora-interviews-eva-about-threat"
+                ? "no_independent_evidence" : null;
+        }, toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.currentNode.id, "lora_second_check_opening");
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule")?.isAvailable, true);
+});
