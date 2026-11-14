@@ -369,6 +369,19 @@ class InvestigationBoard {
                         ? 'Лора провела отдельный разговор с Томасом. Вернитесь к ней, чтобы узнать, что удалось проверить.'
                         : 'Лора узнала о спорном обвинении Томаса и планирует проверить рассказ. Не считайте пересказ доказанным фактом.' });
         }
+        for (const inquiry of this.sourceInquiries) {
+            const hypothesis = this.hypotheses.find(item => item.id === inquiry.hypothesisId);
+            if (!hypothesis || !['open', 'closed'].includes(inquiry.status)) continue;
+            const title = hypothesis.title;
+            nextActions.push(inquiry.status === 'closed'
+                ? { id: inquiry.id, status: 'checked',
+                    text: `Проверка источника для версии «${title}» завершена. Вывод записан как оценка детектива, не как установленный факт.` }
+                : inquiry.leads.length
+                    ? { id: inquiry.id, status: 'available',
+                        text: `В версии «${title}» появились материалы для проверки источника. Сверьте их и запишите осторожный вывод на доске.` }
+                    : { id: inquiry.id, status: 'pending',
+                        text: `Для версии «${title}» начата проверка происхождения слуха. Найдите доступное показание или улику и добавьте в проверку.` });
+        }
         return { tasks, nextActions, nextAction: nextActions[0]?.text || null,
             completed: tasks.filter(t => t.done).length };
     }
