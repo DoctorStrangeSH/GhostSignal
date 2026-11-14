@@ -31,6 +31,18 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "Я неосторожно сказал Кейну, что мать Томаса укрывают родственники Джо. Что теперь делать?",
                         nextNode: "joe_address_compromised",
                         tone: "direct",
+                        trustDelta: -8,
+                        cooperationDelta: -10,
+                        memoryImportance: 4,
+                        memoryTags: ["player_endangered_witness"],
+                        report: {
+                            id: "detective-exposed-thomas-shelter",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
+                            sourceName: "Джо",
+                            text: "Детектив сообщил Кейну сведения об укрытии семьи Томаса. Пришлось искать другое безопасное место."
+                        },
                         condition: "all:hasInsight:joe_arranged_safe_lodging&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
                         hiddenWhenUnavailable: true
                     },
