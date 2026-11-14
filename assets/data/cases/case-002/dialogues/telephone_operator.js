@@ -25,7 +25,7 @@ const DIALOGUE_TELEPHONE_OPERATOR = {
                         text: "В закусочной вспомнили посетителя около десяти. Мы проверяем возможный звонок с текстильной улицы.",
                         nextNode: "checks_service_register",
                         tone: "procedural",
-                        condition: "hasInsight:diner_possible_matching_customer",
+                        condition: "all:hasInsight:diner_possible_matching_customer&hasInsight:textile_street_phone_line",
                         hiddenWhenUnavailable: true
                     },
                     { text: "Мне нужно уточнить порядок хранения записей.", nextNode: "record_policy", tone: "calm" },
