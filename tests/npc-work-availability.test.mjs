@@ -8,7 +8,7 @@ import vm from "node:vm";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const npcScript = readFileSync(resolve(root, "assets/js/npc/npcManager.js"), "utf8");
 
-function createManager({ caseId = "case-002", decision = null, hour = 10 } = {}) {
+function createManager({ caseId = "case-002", decision = null, review = null, hour = 10 } = {}) {
     const waiter = {
         id: "waiter",
         name: "Томас",
@@ -38,6 +38,7 @@ function createManager({ caseId = "case-002", decision = null, hour = 10 } = {})
             assert.equal(ruleId, "thomas-decides-work-after-protection-delay");
             return decision;
         },
+        getWitnessLeaveReview() { return review; },
         getKnownRelationshipsForNPC() { return []; }
     });
     return { manager, clock, context };
@@ -80,4 +81,24 @@ test("Restoring NPCManager keeps temporary leave when the relationship state is 
     });
     assert.equal(restored.isNPCAvailable("waiter").reason, "temporary_leave");
     assert.equal(restored.getNPCsAtLocation("bar_joe").length, 0);
+});
+
+test("Thomas returns to his shift only after his own review allows it", () => {
+    const returned = createManager({ decision: "temporary_leave", review: "return_to_work" });
+    assert.equal(returned.manager.isNPCAvailable("waiter").reason, "at_work");
+    assert.equal(returned.manager.getNPCsAtLocation("bar_joe").length, 1);
+    const extended = createManager({ decision: "temporary_leave", review: "extend_leave" });
+    assert.equal(extended.manager.isNPCAvailable("waiter").reason, "extended_leave");
+    assert.equal(extended.manager.getNPCsAtLocation("bar_joe").length, 0);
+    assert.equal(extended.manager.getNPCsAtLocation("thomas_home").length, 1);
+    const restored = extended.manager.toJSON();
+    extended.context.savedManagerState = JSON.parse(JSON.stringify(restored));
+    extended.context.savedClock = extended.clock;
+    const reloaded = vm.runInContext("NPCManager.fromJSON(savedManagerState, savedClock, null, 'case-002')", extended.context);
+    reloaded.setRelationshipService({
+        getWitnessWorkDecision() { return "temporary_leave"; },
+        getWitnessLeaveReview() { return "extend_leave"; },
+        getKnownRelationshipsForNPC() { return []; }
+    });
+    assert.equal(reloaded.isNPCAvailable("waiter").reason, "extended_leave");
 });
