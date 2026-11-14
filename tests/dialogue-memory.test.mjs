@@ -2459,3 +2459,63 @@ test("Joe warns Thomas autonomously only after personally hearing the shelter le
     restored.setCase(caseData);
     assert.equal(restored.hasReceivedInteraction("waiter", id), true);
 });
+
+test("Thomas requests a contingency on his own after Joe's warning, without fabricating safety", () => {
+    const { engine, context, memory, inventory, gameTime, socialNetwork } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+    const npcManager = { isNPCAvailable() { return { available: true, location: "bar_joe" }; } };
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    const caseData = vm.runInContext("CASE_002", context);
+    relations.setCase(caseData);
+    engine.setRelationshipService(relations);
+    const warningId = "joe-alerts-thomas-after-shelter-leak";
+    const requestId = "thomas-asks-joe-for-shelter-contingency";
+
+    gameTime.advance(90);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("waiter", requestId), false,
+        "Thomas cannot react to a warning he never received");
+
+    memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasReceivedInteraction("waiter", warningId), true);
+    assert.equal(relations.hasCompletedInteraction("waiter", requestId), false,
+        "the request needs its own delay after the warning");
+
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasCompletedInteraction("waiter", requestId), true);
+    assert.equal(relations.hasReceivedInteraction("bartender", requestId), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false);
+    assert.equal(inventory.hasInsight("joe_relocated_family_after_leak"), false);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const response = engine.getAvailableAnswers().find(a => a.nextNode === "joe_received_thomas_contingency_request");
+    assert.equal(response?.isAvailable, true);
+    engine.selectAnswer(response.index);
+    assert.match(engine.currentNode.text, /Томас сам написал/);
+    assert.match(engine.currentNode.text, /только обсуждаем варианты/);
+    engine.reset();
+
+    inventory.addInsight("thomas_family_protected");
+    engine.startDialogue("dialogue-bartender-case2");
+    const greeting = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+    assert.equal(greeting?.isAvailable, true);
+    engine.selectAnswer(greeting.index);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_received_thomas_contingency_request"), false,
+        "old contingency should not appear after family safety is confirmed");
+    engine.reset();
+
+    const count = relations.cases["case-002"].rules[requestId].occurrences;
+    gameTime.advance(240);
+    relations.processDueInteractions();
+    assert.equal(relations.cases["case-002"].rules[requestId].occurrences, count);
+    context.savedThomasContingency = JSON.parse(JSON.stringify(relations.toJSON()));
+    const restored = vm.runInContext("new NPCRelationshipService(savedThomasContingency)", context);
+    restored.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    restored.setCase(caseData);
+    assert.equal(restored.hasCompletedInteraction("waiter", requestId), true);
+});
