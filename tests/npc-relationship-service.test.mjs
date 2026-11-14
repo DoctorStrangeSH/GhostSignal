@@ -902,8 +902,10 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
 
     const snapshot = relationships.toJSON();
     context.savedRelationshipState = snapshot;
+    context.savedMemory = memory;
+    context.savedNetwork = network;
     const restored = vm.runInContext(
-        "NPCRelationshipService.fromJSON(savedRelationshipState, memory, npcManager, clock, network)",
+        "NPCRelationshipService.fromJSON(savedRelationshipState, savedMemory, npcManager, clock, savedNetwork)",
         context
     );
     restored.setCase(caseData);
