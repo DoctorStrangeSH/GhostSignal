@@ -37,7 +37,8 @@ const CASE_002 = {
         "pharmacist",
         "waiter",
         "journalist",
-        "labour_inspector"
+        "labour_inspector",
+        "tram_conductor"
     ],
 
     // === СОЦИАЛЬНАЯ СЕТЬ NPC ===
