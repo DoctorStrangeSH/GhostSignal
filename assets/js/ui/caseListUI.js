@@ -2,11 +2,13 @@ class CaseListUI {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.progress = null;
+        this.canResume = null;
         this._init();
     }
     
-    setProgress(progress) {
+    setProgress(progress, canResume = null) {
         this.progress = progress;
+        if (typeof canResume === 'function') this.canResume = canResume;
         this.render();
     }
     
