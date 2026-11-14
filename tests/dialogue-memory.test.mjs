@@ -2206,3 +2206,62 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
     engine.startDialogue("dialogue-waiter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_acknowledges_verified_followup"), false);
 });
+
+test("behavioral reputation counts distinct investigations instead of farmed dialogue answers", () => {
+    const { engine, memory, context } = createDialogueHarness();
+    memory.setCase("case-001");
+    for (let i = 0; i < 12; i++) {
+        memory.recordAnswerSelected("bartender", "dialogue-bartender", "reassurance-" + i, {
+            text: "Спасибо, Джо.", tone: "reassuring"
+        });
+    }
+    memory.setCase("case-002");
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 1);
+    assert.equal(engine._checkCondition("long_term_pattern:consistent_support"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_recognizes_consistent_care"), false);
+
+    memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", "official-check", {
+        text: "Проверим документы.", tone: "calm",
+        memoryTags: ["player_completed_cautious_identification"], memoryImportance: 3
+    });
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 2);
+    assert.equal(engine._checkCondition("long_term_pattern:consistent_support"), true);
+    const help = engine.getAvailableAnswers().find(a => a.nextNode === "joe_recognizes_consistent_care");
+    assert.equal(help?.isAvailable, true);
+    engine.selectAnswer(help.index);
+    assert.match(engine.currentNode.text, /по разным расследованиям/);
+    engine.reset();
+    engine.startDialogue("dialogue-bartender-case2");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_recognizes_consistent_care"), false);
+
+    context.savedPattern = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedPattern, 'case-002')", context);
+    assert.equal(restored.getLongTermBehaviorPattern("bartender").consistentSupport, true);
+    restored.resetCase("case-002");
+    assert.equal(restored.getLongTermBehaviorPattern("bartender").consistentSupport, true);
+});
+
+test("repeated pressure across cases remains visible even after polite words", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase("case-001");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender", "threat-1", {
+        text: "Делайте как сказано.", tone: "threatening"
+    });
+    memory.setCase("case-002");
+    memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", "threat-2", {
+        text: "Я добьюсь своего.", tone: "threatening"
+    });
+    memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", "apology", {
+        text: "Простите.", tone: "reassuring"
+    });
+    const pattern = memory.getLongTermBehaviorPattern("bartender");
+    assert.equal(pattern.pressuredCases, 2);
+    assert.equal(pattern.consistentSupport, false);
+    engine.startDialogue("dialogue-bartender-case2");
+    const caution = engine.getAvailableAnswers().find(a => a.nextNode === "joe_remembers_repeated_pressure");
+    assert.equal(caution?.isAvailable, true);
+    engine.selectAnswer(caution.index);
+    assert.match(engine.currentNode.text, /не в одном деле/);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "retell")?.isAvailable, true);
+});
