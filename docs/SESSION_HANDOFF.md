@@ -680,7 +680,7 @@ PR #1 оставить открытым, `main` не менять и не сли
 - The finding is advisory only. It does not invalidate alibi claims, generate evidence, accuse anyone, or disclose requirements for undiscovered locations.
 - `BoardUI` includes these findings beside opening-hours and travel-time warnings.
 - Regression coverage: known vs undiscovered locations, special access requirement, explicit non-proof wording, and save/load persistence in `tests/board-hypotheses.test.mjs`.
-- Code commits: `0a1eecc` (logic), `095aa6d` (UI), `c626dd6` (test). CI for the latest code commit must be checked before treating this stage as verified.
+- Code commits: `0a1eecc` (logic), `095aa6d` (UI), `c626dd6` (test). Latest code HEAD `c626dd670d97b24d04ac0904641555a781a958eb` passed GitHub Actions Quality checks: syntax, game-data validation, **192/192 unit tests**, 0 failures ([run 43570870734](https://github.com/DoctorStrangeSH/GhostSignal/actions/runs/43570870734)).
 - PR #1 remains open; do not merge or modify `main` without the owner's explicit instruction.
 
 Next: implement an explicit, case-authored route graph (edges with travel minutes and access notes), not distances inferred from map coordinates. Route checks must be scoped to known/visited places and should explain assumptions; keep opening hours, investigator authorization, physical access, and actual NPC presence as separate concepts. Then add a case-002 route graph grounded in its narrative and test route reachability, travel-time budget, unavailable/undiscovered paths, and legacy-save behavior.
