@@ -6,6 +6,7 @@ class InvestigationBoard {
         this.evidenceOnBoard = []; // ID улик на доске
         this.hypotheses = [];
         this.nextHypothesisId = 1;
+        this.caseId = null;
         this._initDefaultSlots();
     }
 
@@ -129,6 +130,23 @@ class InvestigationBoard {
         return insights;
     }
 
+    // An investigation board belongs to one case, not the entire campaign.
+    setCase(caseId, adoptLegacy = false) {
+        const id = typeof caseId === 'string' && caseId ? caseId : null;
+        if (this.caseId === id) return false;
+        if (adoptLegacy && this.caseId === null) {
+            this.caseId = id;
+            return false;
+        }
+        this._initDefaultSlots();
+        this.evidenceOnBoard = [];
+        this.hypotheses = [];
+        this.nextHypothesisId = 1;
+        this.caseId = id;
+        events.emit('board:updated', { action: 'case_switched', caseId: id });
+        return true;
+    }
+
     // Игрок формулирует версии самостоятельно: привязки не доказывают их истинность.
     addHypothesis(text) {
         const title = String(text ?? '').trim().slice(0, 240);
@@ -197,7 +215,8 @@ class InvestigationBoard {
             slots: this.slots.map(s => ({ id: s.id, evidenceId: s.evidenceId })),
             evidenceOnBoard: [...this.evidenceOnBoard],
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
-            nextHypothesisId: this.nextHypothesisId
+            nextHypothesisId: this.nextHypothesisId,
+            caseId: this.caseId
         };
     }
 
@@ -212,6 +231,7 @@ class InvestigationBoard {
                 }
             });
             board.evidenceOnBoard = Array.isArray(json.evidenceOnBoard) ? json.evidenceOnBoard : [];
+            board.caseId = typeof json.caseId === 'string' ? json.caseId : null;
             board.hypotheses = Array.isArray(json.hypotheses) ? json.hypotheses.filter(h => h && typeof h.id === 'string' && typeof h.title === 'string').map(h => ({
                 id: h.id, title: h.title, status: h.status === 'abandoned' ? 'abandoned' : 'open',
                 links: Array.isArray(h.links) ? h.links.filter(l => l && ['evidence', 'statement', 'assumption'].includes(l.kind) && ['for', 'against', 'pending'].includes(l.stance) && typeof l.sourceId === 'string') : [],
