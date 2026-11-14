@@ -3032,7 +3032,7 @@ test("Lora offers Joe practical help only after she can know the bar is understa
 });
 
 test("Anna accepts an apology without instant forgiveness; independent proof repairs only part of the harm", () => {
-    const { engine, memory, inventory } = createDialogueHarness();
+    const { engine, memory, inventory, socialNetwork } = createDialogueHarness();
     const accusationId = "public-final-accusation:case-002:ex_wife";
     const restitutionId = "anna-public-accusation-repaired-with-kane-confession";
     const originalTrust = memory.getTrust("ex_wife");
@@ -3065,6 +3065,9 @@ test("Anna accepts an apology without instant forgiveness; independent proof rep
     assert.ok(repairedTrust < originalTrust, "the false public accusation retains a cost");
     assert.deepEqual(Array.from(memory.getMemory("ex_wife").restitutions), [restitutionId]);
     assert.equal(memory.getAccusationStatus("ex_wife", accusationId), "false");
+    assert.equal(socialNetwork.getEventLog(20).filter(item =>
+        item.type === "reported" && item.reportId === "verified-restitution-case-002-ex_wife").length, 1,
+        "real dialogue action, not an apology alone, publishes the correction");
 
     const snapshot = memory.toJSON();
     assert.equal(memory.recordVerifiedRestitution("ex_wife", restitutionId, accusationId), false,

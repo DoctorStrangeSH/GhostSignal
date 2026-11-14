@@ -21,6 +21,13 @@ const DIALOGUE_JOURNALIST = {
                 mood: "focused",
                 answers: [
                     {
+                        text: "Ева сообщила вам, что я исправил ошибку перед Анной?",
+                        nextNode: "lora_heard_verified_restitution_anna",
+                        tone: "cautious",
+                        condition: "heard_rumor:verified-restitution-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Ева рассказала вам об обвинении Анны?",
                         nextNode: "lora_heard_public_accusation_anna",
                         tone: "cautious",
@@ -68,6 +75,17 @@ const DIALOGUE_JOURNALIST = {
                 ]
             },
 
+            lora_heard_verified_restitution_anna: {
+                speaker: "npc",
+                text: "Ева передала мне слова Анны: вы извинились и показали ей признание Кейна. Это заслуживает проверки, но ни Анна, ни Ева не заменяют сам документ. Я не стану писать, что вы полностью оправдали себя, пока не изучу первоисточник.",
+                mood: "focused",
+                innerThought: "Лора сохраняет происхождение сообщения: Анна → Ева → Лора. Исправление поступка — не доказательство само по себе.",
+                answers: [
+                    { text: "Согласен, проверяйте источник самостоятельно.", nextNode: "investigation", tone: "calm" },
+                    { text: "Не прошу публиковать непроверенное.", nextNode: "investigation", tone: "reassuring" }
+                ]
+            },
+
             lora_checked_anna_accusation: {
                 speaker: "npc",
                 text: "Я ещё раз поговорила с Евой, но она знает подробности со слов Анны. Вторая беседа с тем же источником не делает историю независимой. Я проверяю само публичное заявление отдельно и не собираюсь превращать обвинение в заголовок о виновности Анны.",
@@ -96,6 +114,13 @@ const DIALOGUE_JOURNALIST = {
                 mood: "sharp",
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
+                    {
+                        text: "Ева сообщила вам, что я исправил ошибку перед Анной?",
+                        nextNode: "lora_heard_verified_restitution_anna",
+                        tone: "cautious",
+                        condition: "heard_rumor:verified-restitution-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
                     {
                         text: "Ева рассказала вам об обвинении Анны?",
                         nextNode: "lora_heard_public_accusation_anna",
