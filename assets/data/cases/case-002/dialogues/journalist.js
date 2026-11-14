@@ -36,7 +36,21 @@ const DIALOGUE_JOURNALIST = {
                         condition: "all:hasInsight:unknown_visitor_asked_about_thomas&not:hasInsight:unknown_visitor_unverified",
                         hiddenWhenUnavailable: true
                     },
-                    { text: "Давайте вернёмся к документам о Кейне.", nextNode: "investigation", tone: "calm" }
+                    { text: "Давайте вернёмся к документам о Кейне.", nextNode: "investigation", tone: "calm" },
+                    {
+                        text: "Лора, вы доверяете моей осторожности? Есть ли риск для ваших источников?",
+                        nextNode: "lora_private_warning",
+                        tone: "cautious",
+                        condition: "all:long_term_memory:player_respected_visitor_uncertainty&not:has_visited_node:lora_private_warning",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Почему вы больше не называете источники поимённо?",
+                        nextNode: "lora_source_boundary",
+                        tone: "direct",
+                        condition: "all:long_term_memory:player_overstated_visitor_identity&not:has_visited_node:lora_source_boundary",
+                        hiddenWhenUnavailable: true
+                    }
                 ]
             },
 
@@ -112,6 +126,20 @@ const DIALOGUE_JOURNALIST = {
                         nextNode: "lora_checked_accusation",
                         tone: "direct",
                         condition: "npc_investigation_outcome:lora-checks-thomas-accusation:no_independent_evidence",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Лора, вы доверяете моей осторожности? Есть ли риск для ваших источников?",
+                        nextNode: "lora_private_warning",
+                        tone: "cautious",
+                        condition: "all:long_term_memory:player_respected_visitor_uncertainty&not:has_visited_node:lora_private_warning",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Почему вы больше не называете источники поимённо?",
+                        nextNode: "lora_source_boundary",
+                        tone: "direct",
+                        condition: "all:long_term_memory:player_overstated_visitor_identity&not:has_visited_node:lora_source_boundary",
                         hiddenWhenUnavailable: true
                     }
                 ]
@@ -250,6 +278,26 @@ const DIALOGUE_JOURNALIST = {
                 innerThought: "Она в курсе дела. Может быть полезна.",
                 answers: [
                     { text: "Тогда расскажите, что вы знаете о Кейне.", nextNode: "investigation" }
+                ]
+            },
+
+            lora_private_warning: {
+                speaker: "npc",
+                text: "Да. После того как вы не стали называть посетителя виновным без подтверждения, мне проще говорить откровенно. Редактору уже намекали, что публикация о Кейне ударит по газете. Если начнёте публично перечислять моих собеседников, они могут пострадать. Это предупреждение о риске, не новая улика против Кейна.",
+                mood: "concerned",
+                answers: [
+                    { text: "Не стану раскрывать источники без их согласия. Вернёмся к проверяемым документам.", nextNode: "investigation", tone: "reassuring", trustDelta: 2 },
+                    { text: "Понял. Пока не будем делать публичных выводов.", nextNode: "end_journalist", tone: "calm" }
+                ]
+            },
+
+            lora_source_boundary: {
+                speaker: "npc",
+                text: "Вы уже однажды назвали личность посетителя установленной, когда документы доказывали лишь назначенный визит. После этого я не передам вам имена людей, которые говорили со мной конфиденциально. Копии материалов по Кейну мы всё ещё можем обсудить — их происхождение можно проверить отдельно.",
+                mood: "guarded",
+                answers: [
+                    { text: "Согласен. Покажите документы, а источников не будем подвергать опасности.", nextNode: "investigation", tone: "calm" },
+                    { text: "Хорошо, вернусь позже.", nextNode: "end_journalist", tone: "calm" }
                 ]
             },
 

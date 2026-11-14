@@ -2038,3 +2038,44 @@ test("Joe offers bounded one-time help only after a reassuring previous case", (
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "joe_earned_help" && a.isAvailable), false,
         "Joe should not repeat the special offer once it was used");
 });
+
+test("Lora privately warns a careful detective but never presents pressure as proof", () => {
+    const { engine, memory } = createDialogueHarness();
+    assert.equal(engine.startDialogue("dialogue-journalist"), true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_private_warning"), false);
+    engine.reset();
+
+    memory.recordAnswerSelected("journalist", "dialogue-journalist", "lora_verifies_inspection_schedule", {
+        text: "Отмечу объяснение как вероятное.",
+        tone: "calm",
+        memoryTags: ["player_respected_visitor_uncertainty"],
+        memoryImportance: 2
+    });
+    assert.equal(engine.startDialogue("dialogue-journalist"), true);
+    const warning = engine.getAvailableAnswers().find(a => a.nextNode === "lora_private_warning");
+    assert.equal(warning?.isAvailable, true);
+    assert.equal(engine.selectAnswer(warning.index).id, "lora_private_warning");
+    assert.match(engine.currentNode.text, /не новая улика/i);
+    engine.reset();
+    assert.equal(engine.startDialogue("dialogue-journalist"), true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_private_warning"), false);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "investigation")?.isAvailable, true);
+});
+
+test("Lora protects confidential sources after an overconfident accusation without blocking evidence", () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.recordAnswerSelected("journalist", "dialogue-journalist", "lora_verifies_inspection_schedule", {
+        text: "Это точно был инспектор.",
+        tone: "defensive",
+        memoryTags: ["player_overstated_visitor_identity"],
+        memoryImportance: 3
+    });
+    assert.equal(engine.startDialogue("dialogue-journalist"), true);
+    const boundary = engine.getAvailableAnswers().find(a => a.nextNode === "lora_source_boundary");
+    assert.equal(boundary?.isAvailable, true);
+    assert.equal(engine.selectAnswer(boundary.index).id, "lora_source_boundary");
+    assert.match(engine.currentNode.text, /копии материалов по Кейну/i);
+    const documents = engine.getAvailableAnswers().find(a => a.nextNode === "investigation");
+    assert.equal(documents?.isAvailable, true);
+    assert.equal(engine.selectAnswer(documents.index).id, "investigation");
+});
