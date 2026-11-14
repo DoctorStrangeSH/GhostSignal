@@ -305,14 +305,28 @@ class InvestigationBoard {
             typeof npcId !== 'string' || !/^[a-z0-9_:-]{1,64}$/i.test(npcId) ||
             !finding.ids.every(id => this.alibiClaims.some(c => c.id === id)) ||
             this.routeQuestions.some(q => q.npcId === npcId && q.ids.join('|') === finding.ids.join('|'))) return false;
-        this.routeQuestions.push({ npcId, ids: [...finding.ids], caseId: this.caseId });
+        this.routeQuestions.push({ npcId, ids: [...finding.ids], caseId: this.caseId, discussed: false });
         events.emit('board:updated', { action: 'route_question_prepared', npcId });
         return true;
     }
 
     hasPreparedRouteQuestion(npcId) {
         return this.routeQuestions.some(q => q.npcId === npcId && q.caseId === this.caseId &&
-            q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
+            !q.discussed && q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
+    }
+
+    hasDiscussedRouteQuestion(npcId) {
+        return this.routeQuestions.some(q => q.npcId === npcId && q.caseId === this.caseId &&
+            q.discussed === true && q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
+    }
+
+    markRouteQuestionDiscussed(npcId) {
+        const question = this.routeQuestions.find(q => q.npcId === npcId && q.caseId === this.caseId &&
+            !q.discussed && q.ids.every(id => this.alibiClaims.some(c => c.id === id)));
+        if (!question) return false;
+        question.discussed = true;
+        events.emit('board:updated', { action: 'route_question_discussed', npcId });
+        return true;
     }
 
     // A spoiler-free checklist derived exclusively from player-visible state.
@@ -331,7 +345,9 @@ class InvestigationBoard {
         if (this.alibiClaims.length > 0) {
             tasks.push({ id: 'alibi', text: 'Сопоставить две версии местонахождения', done: this.alibiClaims.length >= 2 });
         }
-        const nextAction = this.hasPreparedRouteQuestion('business_rival')
+        const nextAction = this.hasDiscussedRouteQuestion('business_rival')
+            ? 'Вопрос Кейну о маршруте уже задан. Его ответ не подтверждает маршрут: ищите независимые свидетельства о времени и местах.'
+            : this.hasPreparedRouteQuestion('business_rival')
             ? 'Подготовлен вопрос Кейну: вернитесь к нему и начните новый разговор. Это ещё не доказательство вины.'
             : null;
         return { tasks, nextAction, completed: tasks.filter(t => t.done).length };
@@ -582,7 +598,7 @@ class InvestigationBoard {
                 q && typeof q.npcId === 'string' && Array.isArray(q.ids) && q.ids.length === 2 &&
                 q.ids.every(id => typeof id === 'string' && board.alibiClaims.some(c => c.id === id)) &&
                 typeof q.caseId === 'string' && q.caseId === board.caseId).map(q =>
-                ({ npcId: q.npcId.slice(0, 64), ids: [...q.ids], caseId: q.caseId })) : [];
+                ({ npcId: q.npcId.slice(0, 64), ids: [...q.ids], caseId: q.caseId, discussed: q.discussed === true })) : [];
             board.nextAlibiId = Math.max(1, Number.isSafeInteger(json.nextAlibiId) ? json.nextAlibiId : 1,
                 ...board.alibiClaims.map(c => Number(c.id.match(/^alibi-(\d+)$/)?.[1] || 0) + 1));
             board.nextHypothesisId = Math.max(1, Number.isSafeInteger(json.nextHypothesisId) ? json.nextHypothesisId : 1,
