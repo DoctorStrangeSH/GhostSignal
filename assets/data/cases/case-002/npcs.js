@@ -252,6 +252,32 @@ registerData('npc', {
         canGiveInsights: ["diner_possible_matching_customer", "diner_time_unverified"],
         specialConditions: []
     },
+    telephone_operator: {
+        id: "telephone_operator",
+        name: "Марта Вейл",
+        role: "Оператор городской телефонной станции",
+        description: "Опытная операторша ручного коммутатора. Точно различает обычные местные соединения и служебные междугородние запросы; не раскрывает личные сведения без основания.",
+        icon: "👩‍💻",
+        mood: "professional",
+        psychology: {
+            opennessThreshold: 56, pressureThreshold: 64, calmPressureLimit: 12,
+            labels: { cooperative: "Готова проверить архив", pressured: "Ссылается на регламент", overwhelmed: "Прекращает разговор", distrustful: "Отказывает в доступе" }
+        },
+        schedule: {
+            awake: { start: 7, end: 23 },
+            atWork: { start: 7, end: 23 },
+            sleeps: { start: 23, end: 7 },
+            locations: { work: "telephone_exchange", home: null },
+            daysOff: [],
+            exceptions: []
+        },
+        availableForCall: false,
+        availableForChat: false,
+        dialogueId: "dialogue-telephone-operator",
+        canGiveEvidence: ["telephone_exchange_slip"],
+        canGiveInsights: ["telephone_exchange_request_record", "telephone_time_calibrated"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
