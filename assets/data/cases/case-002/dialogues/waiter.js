@@ -324,6 +324,13 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Томас, ты видел что-то в тот вечер. Расскажи мне.", nextNode: "he_saw", tone: "calm", cooperationDelta: 2 },
                     {
+                        text: "Джо не дал мне адрес укрытия. Назовёшь его сам?",
+                        nextNode: "thomas_keeps_family_location_private",
+                        tone: "direct",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:thomas_keeps_family_location_private",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Если ты скрываешь информацию — это соучастие.",
                         nextNode: "threat",
                         tone: "aggressive",
@@ -422,6 +429,17 @@ const DIALOGUE_WAITER = {
                         condition: "all:npc_value_alignment:witness_safety:contested&not:has_visited_node:thomas_conflicted_safety_values",
                         hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_keeps_family_location_private: {
+                speaker: "npc",
+                text: "Нет. Я могу подтвердить только то, что знаю сам: добрался ли я до мамы и говорил ли с ней. Адрес я не назову. Даже если вы помогли нам раньше, решение о личных сведениях семьи остаётся за нами. Давайте отделим вопрос нашей безопасности от того, что я видел в баре.",
+                mood: "guarded",
+                innerThought: "Отказ раскрывать адрес не отменяет показаний и не служит подтверждением состоявшегося переезда.",
+                answers: [
+                    { text: "Согласен. Проверим безопасность без разглашения адреса.", nextNode: "greeting", tone: "reassuring", memoryImportance: 2, memoryTags: ["player_respected_family_privacy"] },
+                    { text: "Тогда расскажи только о том, что видел в баре.", nextNode: "he_saw", tone: "calm" }
                 ]
             },
 
