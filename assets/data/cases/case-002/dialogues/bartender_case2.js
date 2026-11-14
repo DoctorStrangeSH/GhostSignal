@@ -228,7 +228,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "cautious",
                         condition: "all:npc_action_received:thomas-asks-joe-for-shelter-contingency&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_received_thomas_contingency_request",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Вы успели узнать у сержанта Миллса, как организовать защиту свидетеля?",
+                        nextNode: "joe_checked_protection_procedure",
+                        tone: "procedural",
+                        condition: "all:npc_action_completed:joe-asks-mills-about-witness-protection&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_checked_protection_procedure",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_checked_protection_procedure: {
+                speaker: "npc",
+                text: "Я сам связался с сержантом Миллсом и спросил, как официально оформляют защиту свидетеля. Не называл ни адреса, ни местонахождения матери Томаса. Теперь мы знаем, к кому обращаться за процедурой, но это ещё не согласованная охрана и тем более не подтверждение переезда. Сначала нужны реальные меры и ответ самого Томаса.",
+                mood: "thoughtful",
+                innerThought: "Обращение Джо подтверждено его собственным действием, но формальная процедура не равна обеспеченной безопасности.",
+                answers: [
+                    { text: "Верно. Проверим исполнение, прежде чем говорить о безопасности.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо за инициативу. Я свяжусь с Томасом.", nextNode: "end_bartender_guarded", tone: "reassuring" }
                 ]
             },
 
