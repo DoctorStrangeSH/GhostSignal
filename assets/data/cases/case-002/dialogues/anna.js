@@ -22,9 +22,16 @@ const DIALOGUE_ANNA = {
                 answers: [
                     {
                         text: "Анна, я должен извиниться за публичное обвинение.",
+                        nextNode: "anna_repeated_public_apology",
+                        tone: "reassuring",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&long_term_pattern:repeated_false_accusations&not:has_visited_node:anna_repeated_public_apology",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Анна, я должен извиниться за публичное обвинение.",
                         nextNode: "anna_public_apology",
                         tone: "reassuring",
-                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:has_visited_node:anna_public_apology",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:long_term_pattern:repeated_false_accusations&not:has_visited_node:anna_public_apology",
                         hiddenWhenUnavailable: true
                     },
                     {
@@ -47,9 +54,16 @@ const DIALOGUE_ANNA = {
                 answers: [
                     {
                         text: "Анна, я должен извиниться за публичное обвинение.",
+                        nextNode: "anna_repeated_public_apology",
+                        tone: "reassuring",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&long_term_pattern:repeated_false_accusations&not:has_visited_node:anna_repeated_public_apology",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Анна, я должен извиниться за публичное обвинение.",
                         nextNode: "anna_public_apology",
                         tone: "reassuring",
-                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:has_visited_node:anna_public_apology",
+                        condition: "all:accusation_status:public-final-accusation:case-002:ex_wife:false&not:long_term_pattern:repeated_false_accusations&not:has_visited_node:anna_public_apology",
                         hiddenWhenUnavailable: true
                     },
                     {
@@ -79,6 +93,23 @@ const DIALOGUE_ANNA = {
                     { text: "Вы правы. Я проверю факты и вернусь с подтверждением.", nextNode: "was_there", tone: "reassuring" },
                     {
                         text: "У меня есть признание Кейна. Вот подтверждение.",
+                        nextNode: "anna_public_restitution",
+                        tone: "calm",
+                        condition: "hasInsight:full_confession_kane",
+                        hiddenWhenUnavailable: true
+                    }
+                ]
+            },
+
+            anna_repeated_public_apology: {
+                speaker: "npc",
+                text: "Вы уже обвиняли меня без доказательств в другом деле, детектив. Теперь это повторилось при свидетелях. Я выслушаю проверяемые факты, но ваших обещаний мне недостаточно — и доверие не возвращается за один разговор.",
+                mood: "guarded",
+                innerThought: "Анна помнит отдельные расследования: повторная ошибка требует большего, чем очередное извинение.",
+                answers: [
+                    { text: "Понимаю. Я вернусь с подтверждёнными фактами.", nextNode: "was_there", tone: "calm" },
+                    {
+                        text: "Вот признание Кейна. Я исправляю публичное обвинение.",
                         nextNode: "anna_public_restitution",
                         tone: "calm",
                         condition: "hasInsight:full_confession_kane",
