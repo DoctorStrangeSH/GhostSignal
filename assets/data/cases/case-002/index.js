@@ -263,6 +263,28 @@ const CASE_002 = {
                 summary: "После задержки официальной защиты Томас самостоятельно решил, как поступить с работой и подготовкой документов; это не отменяет прежних показаний."
             },
             {
+                id: "joe-supports-thomas-after-work-decision", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 60, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-decides-work-after-protection-delay",
+                requiresReceivedActionAgeMinutes: 30,
+                requiresWitnessWorkDecision: "temporary_leave",
+                trustDelta: 2, reciprocalTrustDelta: 1, toCooperationDelta: 5,
+                summary: "Узнав, что Томас взял паузу в сменах, Джо подтвердил, что сохранит за ним место и не будет требовать немедленного возвращения."
+            },
+            {
+                id: "joe-helps-thomas-prepare-documents", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 60, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-decides-work-after-protection-delay",
+                requiresReceivedActionAgeMinutes: 30,
+                requiresWitnessWorkDecision: "document_help",
+                trustDelta: 2, reciprocalTrustDelta: 1, toCooperationDelta: 2,
+                summary: "Получив от Томаса подтверждение, что тот готов помочь с документами, Джо предложил сверить даты и записи, не подсказывая содержание показаний."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
