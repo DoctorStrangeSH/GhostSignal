@@ -299,7 +299,12 @@ class EventController {
         });
 
         this.intervals.push(setInterval(() => app._quickSave(), 10000));
-        this.intervals.push(setInterval(() => { if (app.authManager?.isUserLoggedIn() && app.progress) app.syncManager?.saveEverywhere(app.progress); }, 30000));
+        this.intervals.push(setInterval(() => {
+            if (!app.authManager?.isUserLoggedIn() || !app.progress || !app.syncManager) return;
+            // A cloud sync must capture the latest NPC, board and dialogue state,
+            // not the snapshot from the previous ten-second local autosave.
+            if (app._quickSave()) app.syncManager.saveEverywhere(app.progress);
+        }, 30000));
     }
 
     dispose() {
