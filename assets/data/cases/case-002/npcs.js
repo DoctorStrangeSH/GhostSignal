@@ -174,6 +174,32 @@ registerData('npc', {
         canGiveInsights: ["inspection_cancellation_record", "rudenko_denies_visit", "rudenko_identity_documents_verified", "rudenko_agreed_to_identification"],
         specialConditions: []
     },
+    tram_conductor: {
+        id: "tram_conductor",
+        name: "Павел Соколов",
+        role: "Кондуктор ночного трамвая №4",
+        description: "Наблюдательный, но осторожный кондуктор. Помнит необычных пассажиров и ведёт аккуратные путевые записи.",
+        icon: "🧑‍✈️",
+        mood: "wary",
+        psychology: {
+            opennessThreshold: 48, pressureThreshold: 58, calmPressureLimit: 14,
+            labels: { cooperative: "Готов сверить записи", pressured: "Не любит допросы", overwhelmed: "Прекращает разговор", distrustful: "Отвечает уклончиво" }
+        },
+        schedule: {
+            awake: { start: 14, end: 6 },
+            atWork: { start: 18, end: 2 },
+            sleeps: { start: 6, end: 14 },
+            locations: { work: "tram_depot", home: null },
+            daysOff: ["monday"],
+            exceptions: []
+        },
+        availableForCall: false,
+        availableForChat: false,
+        dialogueId: "dialogue-tram-conductor",
+        canGiveEvidence: ["tram_route_entry"],
+        canGiveInsights: ["tram_passenger_route_corroboration"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
