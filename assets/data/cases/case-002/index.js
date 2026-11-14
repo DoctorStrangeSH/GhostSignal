@@ -209,6 +209,15 @@ const CASE_002 = {
                 summary: "Узнав об угрозах детектива, Джо поддержал Томаса и предложил ему помощь."
             },
             {
+                id: "joe-warns-thomas-after-repeated-pressure", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                goalId: "protect_staff", goalProgress: 1,
+                channel: "message", initialDelayMinutes: 90, everyMinutes: 90,
+                maxOccurrences: 1, fromLongTermPattern: "repeated_pressure",
+                trustDelta: 1, reciprocalTrustDelta: 0,
+                summary: "После повторного давления детектива в разных расследованиях Джо сам предупредил Томаса, что будет присутствовать при дополнительных беседах и не станет раскрывать чужие личные сведения."
+            },
+            {
                 id: "joe-alerts-thomas-after-shelter-leak", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
                 goalId: "protect_staff", goalProgress: 1,
