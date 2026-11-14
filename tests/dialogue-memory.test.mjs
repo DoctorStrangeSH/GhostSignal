@@ -2724,7 +2724,7 @@ test("Thomas independently chooses leave or document help after Mills's refusal"
         assert.equal(relations.hasReceivedInteraction("waiter", "joe-informs-thomas-mills-requires-documents"), true);
         assert.equal(relations.getWitnessWorkDecision("waiter", id), null);
         const cooperationBefore = memory.getMemory("waiter").cooperation;
-        memory.getMemory("waiter").pressure = pressure;
+        memory.cases["case-002"].waiter.pressure = pressure;
         gameTime.advance(90);
         relations.processDueInteractions();
         assert.equal(relations.getWitnessWorkDecision("waiter", id), expected);
@@ -2743,7 +2743,7 @@ test("Thomas independently chooses leave or document help after Mills's refusal"
         assert.match(engine.currentNode.text, expected === "temporary_leave" ? /паузу в сменах/ : /собрать документы/);
         engine.reset();
 
-        memory.getMemory("waiter").pressure = pressure === 80 ? 0 : 90;
+        memory.cases["case-002"].waiter.pressure = pressure === 80 ? 0 : 90;
         assert.equal(relations.getWitnessWorkDecision("waiter", id), expected,
             "Thomas's decision cannot be retroactively rewritten by pressure changes");
         context.savedThomasWork = JSON.parse(JSON.stringify(relations.toJSON()));
