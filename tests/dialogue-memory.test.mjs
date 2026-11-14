@@ -3190,3 +3190,44 @@ test("polite reassurance alone never becomes a cross-case pattern of reliable su
     assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 2);
     assert.equal(memory.getLongTermBehaviorPattern("bartender").consistentSupport, true);
 });
+
+test("Thomas declines optional follow-up after personally experiencing pressure in separate cases", () => {
+    const { engine, memory, context } = createDialogueHarness();
+    for (const [caseId, id] of [["case-001", "prior-threat"], ["case-002", "current-threat"]]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("waiter", "dialogue-waiter", id, {
+            text: "Отвечай немедленно.", tone: "threatening"
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("waiter").pressuredCases, 2);
+    engine.startDialogue("dialogue-waiter");
+    const refusal = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_declines_optional_followup");
+    assert.equal(refusal?.isAvailable, true);
+    assert.equal(engine.selectAnswer(refusal.index).id, "thomas_declines_optional_followup");
+    assert.match(engine.currentNode.text, /не готов снова часами/);
+    const factualAnswer = engine.getAvailableAnswers().find(a => a.nextNode === "he_saw");
+    assert.equal(factualAnswer?.isAvailable, true, "testimony remains available after declining optional conversation");
+    assert.equal(engine.selectAnswer(factualAnswer.index).id, "he_saw");
+    engine.reset();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_declines_optional_followup"), false,
+        "the same refusal is not replayed on every visit");
+
+    context.savedWaiterPattern = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext("NPCMemoryService.fromJSON(savedWaiterPattern, 'case-002')", context);
+    assert.equal(restored.getLongTermBehaviorPattern("waiter").repeatedPressure, true);
+});
+
+test("Thomas does not generalize several threats within one investigation into cross-case pressure", () => {
+    const { engine, memory } = createDialogueHarness();
+    for (let i = 0; i < 3; i++) {
+        memory.recordAnswerSelected("waiter", "dialogue-waiter", "same-case-threat-" + i, {
+            text: "Ты обязан отвечать.", tone: "aggressive"
+        });
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("waiter").pressuredCases, 1);
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine._checkCondition("long_term_pattern:repeated_pressure"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_declines_optional_followup"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "he_saw" && a.isAvailable), true);
+});
