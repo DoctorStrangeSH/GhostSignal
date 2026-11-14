@@ -546,6 +546,10 @@ class DialogueEngine {
             const rumorId = conditionStr.slice('heard_rumor:'.length);
             return Boolean(npcId && this.memoryService?.hasRumor(npcId, rumorId));
         }
+        const accusationStatusCondition = conditionStr.match(/^accusation_status:([a-z0-9_:-]{1,100}):(pending|false|retracted|substantiated)$/i);
+        if (accusationStatusCondition) {
+            return Boolean(npcId && this.memoryService?.getAccusationStatus(npcId, accusationStatusCondition[1]) === accusationStatusCondition[2]);
+        }
         if (conditionStr.startsWith('has_accusation:')) {
             const accusationId = conditionStr.slice('has_accusation:'.length);
             return Boolean(npcId && this.memoryService?.hasAccusation(npcId, accusationId));
