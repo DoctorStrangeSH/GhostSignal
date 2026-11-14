@@ -130,7 +130,8 @@ class NavigationController {
         const resumable = Boolean(progress?.activeCase &&
             this.app.caseManager?.currentCase?.id === progress.activeCase &&
             this.app.caseManager.caseState === 'active');
-        button.classList.toggle('hidden', !resumable);
+        if (resumable) button.classList.remove('hidden');
+        else button.classList.add('hidden');
     }
 
     switchTab(tabId) {
