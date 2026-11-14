@@ -226,6 +226,32 @@ registerData('npc', {
         canGiveInsights: ["mill_gate_seal_intact", "mill_no_registered_visitors"],
         specialConditions: []
     },
+    diner_owner: {
+        id: "diner_owner",
+        name: "Элеонора Брукс",
+        role: "Хозяйка ночной закусочной",
+        description: "Практичная и наблюдательная хозяйка круглосуточной закусочной. Помнит постоянных клиентов, но осторожно относится к полиции и не любит, когда её предположения выдают за факты.",
+        icon: "👩‍🍳",
+        mood: "guarded",
+        psychology: {
+            opennessThreshold: 54, pressureThreshold: 62, calmPressureLimit: 14,
+            labels: { cooperative: "Готова вспомнить детали", pressured: "Отвечает настороженно", overwhelmed: "Прекращает разговор", distrustful: "Не желает вмешиваться" }
+        },
+        schedule: {
+            awake: { start: 0, end: 24 },
+            atWork: { start: 0, end: 24 },
+            sleeps: null,
+            locations: { work: "night_diner", home: null },
+            daysOff: [],
+            exceptions: []
+        },
+        availableForCall: false,
+        availableForChat: false,
+        dialogueId: "dialogue-diner-owner",
+        canGiveEvidence: ["diner_cash_slip"],
+        canGiveInsights: ["diner_possible_matching_customer", "diner_time_unverified"],
+        specialConditions: []
+    },
     journalist: {
         id: "journalist",
         name: "Лора Лейн",
