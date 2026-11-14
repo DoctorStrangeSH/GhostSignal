@@ -911,6 +911,13 @@ class NPCMemoryService {
         return this.cases[this.currentCaseId]?.[npcId]?.accusations?.some(item => item.id === accusationId) || false;
     }
 
+    getAccusationStatus(npcId, accusationId) {
+        const accusations = this.cases[this.currentCaseId]?.[npcId]?.accusations;
+        return Array.isArray(accusations)
+            ? (accusations.find(item => item.id === accusationId)?.status || null)
+            : null;
+    }
+
     resolveAccusation(npcId, accusationId, outcome, reason = '') {
         if (!['false', 'retracted', 'substantiated'].includes(outcome)) return { resolved: false, reason: 'invalid_outcome' };
         const memory = this._ensureNPC(npcId);
