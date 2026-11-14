@@ -120,6 +120,13 @@
     border-radius: var(--radius-md);
 }
 
+.checklist-followups { margin-top: 14px; }
+.checklist-followups > strong { color: var(--accent-amber-glow); }
+.checklist-followups ul { list-style: none; padding: 0; margin: 0; }
+.checklist-followups li { line-height: 1.5; }
+.checklist-next-action.is-checked { border-color: rgba(212, 160, 23, 0.14); opacity: 0.78; }
+.checklist-next-action.is-available { border-color: var(--accent-amber); }
+
 .board-slot {
     position: absolute;
     transform: translate(-50%, -50%);
