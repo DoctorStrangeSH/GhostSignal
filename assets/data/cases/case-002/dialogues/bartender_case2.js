@@ -20,10 +20,20 @@ const DIALOGUE_BARTENDER_CASE2 = {
     tree: {
         start: "greeting",
         entryRules: [
+            { condition: "hasInsight:thomas_family_protected", nodeId: "joe_after_protection_verified_opening" },
             { condition: "hasInsight:joe_relocated_family_after_leak", nodeId: "joe_after_relocation_opening" },
             { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" }
         ],
         nodes: {
+            joe_after_protection_verified_opening: {
+                speaker: "npc",
+                text: "Томас подтвердил, что мать добралась до безопасного места. Хорошо, что теперь она под присмотром. Но я помню и прежнюю утечку. Если у вас новые сведения, говорите осторожно — без имён и адресов посторонним.",
+                mood: "guarded",
+                answers: [
+                    { text: "Спасибо за помощь. Вернёмся к другим вопросам дела.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не стану подвергать их риску. До встречи.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
+            },
             joe_after_leak_opening: {
                 speaker: "npc",
                 text: "Детектив, после того как Кейн услышал о первом укрытии, я больше не могу относиться к вопросам безопасности как к пустой формальности. Прежде всего нужно убедиться, что мать Томаса переедет.",
