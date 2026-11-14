@@ -242,7 +242,43 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         tone: "procedural",
                         condition: "all:npc_protection_consultation:joe-asks-mills-about-witness-protection:procedure_guidance&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_received_mills_guidance",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Как вы поддержали Томаса, когда он решил временно уйти с работы?",
+                        nextNode: "joe_supports_thomas_leave",
+                        tone: "reassuring",
+                        condition: "all:npc_action_completed:joe-supports-thomas-after-work-decision&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_supports_thomas_leave",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Что вы ответили Томасу, когда он попросил помочь с документами?",
+                        nextNode: "joe_supports_thomas_documents",
+                        tone: "procedural",
+                        condition: "all:npc_action_completed:joe-helps-thomas-prepare-documents&not:hasInsight:thomas_family_protected&not:has_visited_node:joe_supports_thomas_documents",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            joe_supports_thomas_leave: {
+                speaker: "npc",
+                text: "Томас сам решил временно отойти от смен. Я сказал, что подстрахую его здесь, пока он разбирается с угрозами семье. Это его решение, не ваше распоряжение. И нет — ни охрану, ни безопасность матери нам пока не подтвердили.",
+                mood: "worried",
+                innerThought: "Джо поддержал решение коллеги, но не подменяет поддержку подтверждением защиты.",
+                answers: [
+                    { text: "Понимаю. Не буду считать отпуск решением вопроса безопасности.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо, что не оставили его одного.", nextNode: "end_bartender_guarded", tone: "reassuring" }
+                ]
+            },
+
+            joe_supports_thomas_documents: {
+                speaker: "npc",
+                text: "Томас сам решил остаться на сменах и разобраться с бумагами. Я предложил помочь собрать то, что нужно для обращения к Миллсу. Но заявление ещё не означает, что защиту согласовали, и мы не вправе обещать семье безопасность заранее.",
+                mood: "thoughtful",
+                innerThought: "Джо помогает с процедурой после самостоятельного выбора Томаса; официального решения о защите пока нет.",
+                answers: [
+                    { text: "Хорошо. Отделим подготовку документов от решения о защите.", nextNode: "greeting", tone: "procedural" },
+                    { text: "Спасибо. Уточню дальнейшие шаги у Томаса.", nextNode: "end_bartender_guarded", tone: "calm" }
                 ]
             },
 
