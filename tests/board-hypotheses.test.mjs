@@ -242,3 +242,28 @@ test('linked, visited locations warn about opening hours without treating closur
     delete legacy.alibiClaims[0].locationId;
     assert.equal(runtime.restore(legacy).alibiClaims[0].locationId, null);
 });
+
+test('investigation access requirements are advisory and never become proof that an NPC could not enter', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const locations = [
+        { id: 'private_house', name: 'Частный дом', requiresItem: 'search_warrant', hours: { open: 8, close: 20 } },
+        { id: 'public_square', name: 'Площадь', hours: { open: 0, close: 24 } }
+    ];
+    const context = { statements: [{ id: 'witness', status: 'active' }], locations };
+    const add = (locationId, location) => board.addAlibiClaim({
+        subject: 'Анна', location, locationId, startMinute: 600, endMinute: 610,
+        precision: 'exact', kind: 'statement', sourceId: 'witness'
+    }, context);
+    assert.ok(add('private_house', 'Частный дом'));
+    assert.ok(add('public_square', 'Площадь'));
+    const [finding] = board.reviewAlibiAccessRestrictions(locations);
+    assert.equal(finding.status, 'investigator_access_gate');
+    assert.equal(finding.requirement, 'search_warrant');
+    assert.match(finding.reason, /не доказывает/);
+    assert.equal(board.reviewAlibiAccessRestrictions([locations[1]]).length, 0,
+        'undiscovered locations must not reveal access requirements');
+    assert.equal(board.reviewAlibiAccessRestrictions([]).length, 0);
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.reviewAlibiAccessRestrictions(locations).length, 1);
+});
