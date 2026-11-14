@@ -169,3 +169,47 @@ test("NavigationController keeps quick-save shortcut delegated to App", () => {
     assert.equal(prevented, true);
     assert.equal(saves, 1);
 });
+
+test("continue button appears on menu return after opening a case", () => {
+    const continueButton = { classList: classList(["hidden"]) };
+    const menu = { id: "screen-main-menu", classList: classList() };
+    const cases = { id: "screen-cases", classList: classList(["active"]) };
+    const document = {
+        querySelectorAll(selector) { return selector === ".screen" ? [menu, cases] : []; },
+        getElementById(id) {
+            return id === "btn-continue" ? continueButton :
+                [menu, cases].find(screen => screen.id === id) || null;
+        }
+    };
+    const app = {
+        progress: { activeCase: "case-001" },
+        caseManager: { currentCase: { id: "case-001" }, caseState: "active" },
+        currentScreen: "screen-cases"
+    };
+    const navigation = new (loadNavigationController({ document }))(app);
+    navigation.navigateTo("screen-main-menu");
+
+    assert.equal(continueButton.classList.contains("hidden"), false);
+    assert.equal(app.currentScreen, "screen-main-menu");
+
+    app.progress.activeCase = null;
+    navigation.navigateTo("screen-main-menu");
+    assert.equal(continueButton.classList.contains("hidden"), true);
+});
+
+test("continue button stays hidden for a finished or mismatched case", () => {
+    const continueButton = { classList: classList() };
+    const document = { getElementById() { return continueButton; } };
+    const app = {
+        progress: { activeCase: "case-002" },
+        caseManager: { currentCase: { id: "case-001" }, caseState: "active" }
+    };
+    const navigation = new (loadNavigationController({ document }))(app);
+
+    navigation.syncContinueButton();
+    assert.equal(continueButton.classList.contains("hidden"), true);
+    app.caseManager.currentCase.id = "case-002";
+    app.caseManager.caseState = "solved";
+    navigation.syncContinueButton();
+    assert.equal(continueButton.classList.contains("hidden"), true);
+});
