@@ -329,6 +329,48 @@ class NPCSocialNetwork {
         return { published: true, queued };
     }
 
+    // A correction travels only after Anna actually receives the verified
+    // restitution dialogue. An apology or an inventory insight alone cannot
+    // create this report, and the chain still follows ordinary social links.
+    publishVerifiedRestitution(npcId, restitutionId, accusationId, sourceEvent) {
+        const expectedAccusation = 'public-final-accusation:' + this.currentCaseId + ':' + npcId;
+        const expectedRestitution = 'anna-public-accusation-repaired-with-kane-confession';
+        if (!this.caseConfig || this.currentCaseId !== 'case-002' || npcId !== 'ex_wife' ||
+            accusationId !== expectedAccusation || restitutionId !== expectedRestitution ||
+            sourceEvent?.dialogueId !== 'dialogue-ex-wife' ||
+            sourceEvent?.nodeId !== 'anna_public_restitution' ||
+            this.memoryService?.getAccusationStatus(npcId, accusationId) !== 'false' ||
+            !this.memoryService?.getMemory(npcId)?.restitutions?.includes(restitutionId) ||
+            !this.memoryService?.hasVisitedNode(npcId, sourceEvent.dialogueId, sourceEvent.nodeId)) {
+            return { published: false, reason: 'unverified_restitution' };
+        }
+        const state = this._ensureState();
+        const reportId = 'verified-restitution-' + this.currentCaseId + '-' + npcId;
+        if (state.publishedIds.includes(reportId)) return { published: false, reason: 'already_published' };
+        const report = {
+            id: reportId, kind: 'detective_behavior', targetNpcId: 'detective',
+            sourceName: this._name(npcId),
+            text: this._name(npcId) + ' сообщила, что детектив признал публичную ошибку ' +
+                'и предъявил ей подтверждение со стороны Кейна. Подлинность документов ещё следует проверить независимо.'
+        };
+        const source = {
+            dialogueId: sourceEvent.dialogueId,
+            nodeId: sourceEvent.nodeId,
+            answerText: 'Разговор об исправлении публичного обвинения',
+            tone: 'reassuring'
+        };
+        state.publishedIds.push(reportId);
+        this._recordEvent('reported', {
+            fromNpcId: npcId, reportId, reportKind: report.kind,
+            summary: report.text, reason: 'verified_restitution_dialogue'
+        });
+        const queued = this._queueOutgoing(npcId, report, source, {
+            originalSourceNpcId: npcId, originalSourceName: this._name(npcId),
+            path: [npcId], hops: 0
+        });
+        return { published: true, queued };
+    }
+
     _canDeliver(delivery) {
         if (!this.npcManager?.isNPCAvailable) return false;
         const sender = this.npcManager.isNPCAvailable(delivery.fromNpcId);
