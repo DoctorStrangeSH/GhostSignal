@@ -59,7 +59,7 @@ function createHarness() {
                 { id: "joe-press", from: "bartender", to: "journalist", relationship: "source", label: "Источник в баре", trust: 65, channel: "message", delayMinutes: 30, minTrustToShare: 50, shareTypes: ["detective_behavior"], canForward: true },
                 { id: "eva-press", from: "woman_in_red", to: "journalist", relationship: "protective", label: "Защищает сестру", trust: 70, channel: "message", delayMinutes: 20, minTrustToShare: 30, shareTypes: ["detective_behavior"], protectsNpcIds: [], withholdIfTargetProtected: false },
                 { id: "eva-anna", from: "woman_in_red", to: "ex_wife", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true },
-                { id: "anna-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"] }
+                { id: "anna-eva", from: "ex_wife", to: "woman_in_red", relationship: "siblings", label: "Сёстры", trust: 95, channel: "phone", delayMinutes: 10, minTrustToShare: 20, shareTypes: ["detective_behavior"], canForward: true }
             ]
         }
     };
@@ -355,4 +355,53 @@ test("forwarded rumors cannot be independently confirmed or refuted by their ori
     });
     assert.equal(memory.corroborateRumor("journalist", "social-test-report", "woman_in_red", "eva-saw-threat").corroborated, true);
     assert.equal(memory.getRumors("journalist")[0].status, "corroborated");
+});
+
+test("a recorded public accusation moves Anna → Eva → Lora with delays and verifiable provenance", () => {
+    const { memory, network, advance } = createHarness();
+    const accusationId = "public-final-accusation:case-002:ex_wife";
+    const rumorId = "public-accusation-case-002-ex_wife";
+    const unrecorded = network.publishPublicAccusation("ex_wife", accusationId);
+    assert.equal(unrecorded.published, false, "cannot start with a fabricated accusation");
+
+    memory.recordAccusation("ex_wife", { id: accusationId, text: "Детектив публично обвинил Анну." });
+    assert.equal(network.publishPublicAccusation("ex_wife", accusationId).published, false, "pending accusation is not yet verified");
+    memory.resolveAccusation("ex_wife", accusationId, "false", "Wrong suspect");
+
+    const published = network.publishPublicAccusation("ex_wife", accusationId);
+    assert.equal(published.published, true);
+    assert.equal(published.queued, 1);
+    assert.equal(network.publishPublicAccusation("ex_wife", accusationId).published, false, "same event is only published once");
+    assert.equal(memory.hasRumor("woman_in_red", rumorId), false);
+    advance(9);
+    assert.equal(memory.hasRumor("woman_in_red", rumorId), false);
+    advance(1);
+    const eva = memory.getRumors("woman_in_red").find(item => item.id === rumorId);
+    assert.equal(eva.originalSourceNpcId, "ex_wife");
+    assert.equal(eva.reportedBy, "ex_wife");
+    assert.equal(eva.sourceDialogueId, "public_accusation");
+    assert.equal(eva.sourceNodeId, accusationId);
+    assert.equal(eva.transmissionPath.join(">"), "ex_wife>woman_in_red");
+    assert.equal(memory.hasRumor("journalist", rumorId), false);
+
+    advance(19);
+    assert.equal(memory.hasRumor("journalist", rumorId), false);
+    advance(1);
+    const lora = memory.getRumors("journalist").find(item => item.id === rumorId);
+    assert.ok(lora, "Lora heard from Eva's existing protective channel");
+    assert.equal(lora.reportedBy, "woman_in_red");
+    assert.equal(lora.originalSourceNpcId, "ex_wife");
+    assert.equal(lora.transmissionPath.join(">"), "ex_wife>woman_in_red>journalist");
+    assert.equal(lora.hops, 2);
+    assert.match(lora.text, /оспаривается/);
+});
+
+test("private deductions cannot be injected into the rumor network", () => {
+    const { memory, network } = createHarness();
+    const id = "public-final-accusation:case-002:ex_wife";
+    memory.recordAccusation("ex_wife", { id, text: "An unverified accusation" });
+    const blocked = network.publishPublicAccusation("ex_wife", id);
+    assert.equal(blocked.published, false);
+    assert.equal(network.getPendingDeliveries().length, 0);
+    assert.equal(network.publishPublicAccusation("ex_wife", "unrelated-id").published, false);
 });

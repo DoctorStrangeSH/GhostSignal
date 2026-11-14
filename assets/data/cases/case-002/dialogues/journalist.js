@@ -20,6 +20,13 @@ const DIALOGUE_JOURNALIST = {
                 text: "Детектив, я уже связалась с Джо и Евой. Ни один разговор пока не дал независимого подтверждения истории об угрозах Томасу. Я продолжу проверять факты, но публиковать неподтверждённое не стану.",
                 mood: "focused",
                 answers: [
+                    {
+                        text: "Ева рассказала вам об обвинении Анны?",
+                        nextNode: "lora_heard_public_accusation_anna",
+                        tone: "cautious",
+                        condition: "heard_rumor:public-accusation-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Расскажите подробнее о разговоре с Евой.", nextNode: "lora_eva_followup_unverified", tone: "direct" },
                     {
                         text: "Джо нашёл запись «И. Руденко, заявка 27-Б». Проверьте её независимо.",
@@ -54,12 +61,30 @@ const DIALOGUE_JOURNALIST = {
                 ]
             },
 
+            lora_heard_public_accusation_anna: {
+                speaker: "npc",
+                text: "Ева сообщила мне, что Анна услышала публичное обвинение в свой адрес. Я знаю об этом со слов сестры Анны — это не независимое доказательство виновности и не основание для публикации сенсации. Сначала проверю, что именно было сказано и кем подтверждено.",
+                mood: "focused",
+                innerThought: "Лора сохраняет цепочку источников: Анна → Ева → Лора. Пресса не превращает пересказ в факт виновности.",
+                answers: [
+                    { text: "Справедливо. Отделим само заявление от доказательств по делу.", nextNode: "investigation", tone: "calm" },
+                    { text: "Продолжайте независимую проверку.", nextNode: "investigation", tone: "direct" }
+                ]
+            },
+
             greeting: {
                 speaker: "npc",
                 text: "Детектив! Какая честь. Сами зашли в нашу скромную редакцию. Дайте угадаю — вам нужна информация о Кейне?",
                 mood: "sharp",
                 innerThought: "Она догадлива. И явно что-то знает.",
                 answers: [
+                    {
+                        text: "Ева рассказала вам об обвинении Анны?",
+                        nextNode: "lora_heard_public_accusation_anna",
+                        tone: "cautious",
+                        condition: "heard_rumor:public-accusation-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Вы следили за Кейном. Что вы раскопали?", nextNode: "investigation", tone: "direct" },
                     {
                         text: "Джо нашёл запись «И. Руденко, заявка 27-Б». Проверьте её независимо.",

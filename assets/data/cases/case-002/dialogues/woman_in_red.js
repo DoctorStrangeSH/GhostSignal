@@ -18,6 +18,13 @@ const DIALOGUE_WOMAN_IN_RED = {
                 mood: "mysterious",
                 innerThought: "Она ждала меня. Это настораживает.",
                 answers: [
+                    {
+                        text: "Анна рассказала вам о моём публичном обвинении?",
+                        nextNode: "eva_heard_public_accusation",
+                        tone: "cautious",
+                        condition: "heard_rumor:public-accusation-case-002-ex_wife",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Кто вы такая?", nextNode: "identity" },
                     {
                         text: "Вы связывались с Анной после нашего разговора?",
@@ -26,6 +33,17 @@ const DIALOGUE_WOMAN_IN_RED = {
                         condition: "npc_action_completed:eva-protects-anna-after-pressure"
                     },
                     { text: "Вы были здесь в ночь отравления.", nextNode: "that_night" }
+                ]
+            },
+
+            eva_heard_public_accusation: {
+                speaker: "npc",
+                text: "Анна позвонила мне. Она сказала, что вы назвали её виновной перед другими людьми. Вы вправе проверять любую версию, но публичное обвинение — не догадка на бумаге. Я не позволю делать из сестры удобного подозреваемого.",
+                mood: "protective",
+                innerThought: "Ева пересказывает слова Анны, а не свидетельствует о самом обвинении. Её рассказ нужно отделять от первоисточника.",
+                answers: [
+                    { text: "Я понимаю, почему вы её защищаете. Давайте опираться только на проверенные факты.", nextNode: "that_night", tone: "reassuring", cooperationDelta: 2 },
+                    { text: "Мне всё ещё нужны ваши собственные наблюдения.", nextNode: "that_night", tone: "direct" }
                 ]
             },
 
