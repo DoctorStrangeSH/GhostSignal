@@ -26,7 +26,7 @@ const DIALOGUE_LABOUR_INSPECTOR = {
                         text: "У Джо есть запись о человеке, представившемся инспектором по заявке 27-Б. Покажите официальный журнал.",
                         nextNode: "rudenko_checks_register",
                         tone: "direct",
-                        condition: "hasInsight:joe_found_inspection_entry",
+                        condition: "all:hasInsight:joe_found_inspection_entry&hasInsight:inspection_cancellation_record",
                         hiddenWhenUnavailable: true
                     },
                     {
@@ -43,7 +43,7 @@ const DIALOGUE_LABOUR_INSPECTOR = {
                 text: "Вот заверенная выписка из журнала. Заявка 27-Б действительно была назначена мне на тот вечер. Но в 15:40 её отменили: на текстильной фабрике произошёл несчастный случай, и меня направили туда. В графе замены стоит прочерк. Я не посещал бар Джо и никого не направлял вместо себя.",
                 mood: "serious",
                 innerThought: "Это официальная запись о назначении и отмене. Она объясняет отсутствие инспекции, но сама по себе не устанавливает личность человека, которого видел бармен.",
-                givesInsight: "inspection_cancellation_record",
+                givesInsight: "rudenko_denies_visit",
                 answers: [
                     {
                         text: "Покажите удостоверение. Я хочу сверить фотографию и номер.",
