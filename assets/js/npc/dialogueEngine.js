@@ -494,6 +494,10 @@ class DialogueEngine {
         if (investigationCondition) {
             return Boolean(npcId && this.relationshipService?.getInvestigationOutcome?.(npcId, investigationCondition[1]) === investigationCondition[2].toLowerCase());
         }
+        const editorialDecision = conditionStr.match(/^npc_editorial_decision:([a-z0-9_:-]{1,64}):(withheld|review_required)$/i);
+        if (editorialDecision) {
+            return Boolean(npcId && this.relationshipService?.getEditorialDecision?.(npcId, editorialDecision[1]) === editorialDecision[2].toLowerCase());
+        }
         if (conditionStr.startsWith('npc_action_received:')) {
             const ruleId = conditionStr.slice('npc_action_received:'.length);
             return Boolean(npcId && this.relationshipService?.hasReceivedInteraction?.(npcId, ruleId));
