@@ -53,7 +53,7 @@ class NavigationController {
             app.reputationSystem?.usedHint();
             app.progressTracker?.useHint();
             app.progress.trackerData = app.progressTracker?.toJSON();
-            storage.saveProgress(app.progress);
+            app._quickSave();
         });
         document.getElementById('btn-final-answer')?.addEventListener('click', () => {
             if (app.caseManager?.currentCase) app.deductionScreen.show(app.caseManager.currentCase);
