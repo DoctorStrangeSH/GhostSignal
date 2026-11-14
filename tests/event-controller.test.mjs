@@ -284,3 +284,56 @@ test("EventController forwards readiness events to the app-facing UI state", () 
     assert.equal(area.classList.values.has("hidden"), true);
     controller.dispose();
 });
+
+test("failed cases close once, preserve settled NPC promises and cannot be resumed", () => {
+    const bus = createEventBus();
+    const sequence = [];
+    const continueButton = { classList: { add(name) { sequence.push("hide:" + name); } } };
+    const app = {
+        progress: { activeCase: "case-002", solvedCases: ["case-001"], failedCases: [] },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Poisoning" }, caseState: "active",
+            toJSON() { return { currentCaseId: "case-002", caseState: this.caseState }; }
+        },
+        npcMemoryService: {
+            settlePromisesForCase(id, outcome) {
+                sequence.push("settle:" + id + ":" + outcome);
+                return [{ npcId: "waiter", status: "broken" }];
+            },
+            toJSON() { return { promise: "broken" }; }
+        },
+        progressTracker: {
+            caseFailed() { sequence.push("stats"); },
+            toJSON() { return { failed: 1 }; }
+        },
+        reputationSystem: {
+            caseFailed() { sequence.push("reputation"); },
+            toJSON() { return { trust: 30 }; }
+        },
+        _saveProgress() {},
+        _quickSave() {
+            sequence.push("save");
+            assert.equal(this.progress.activeCase, null);
+            assert.equal(this.progress.caseData.caseState, "failed");
+            assert.deepEqual(this.progress.npcMemoryData, { promise: "broken" });
+            return true;
+        },
+        _updateMainMenu() {}
+    };
+    const Controller = loadEventController({
+        document: { getElementById(id) { return id === "btn-continue" ? continueButton : null; } },
+        setInterval() { return 1; }, clearInterval() {}
+    });
+    new Controller(app, bus).bind();
+    bus.emit("case:failed", { caseId: "case-002" });
+    bus.emit("case:failed", { caseId: "case-002" });
+
+    assert.equal(app.caseManager.caseState, "failed");
+    assert.equal(app.progress.activeCase, null);
+    assert.deepEqual([...app.progress.failedCases], ["case-002"]);
+    assert.deepEqual(app.progress.solvedCases, ["case-001"]);
+    assert.deepEqual(app.progress.trackerData, { failed: 1 });
+    assert.deepEqual(sequence, [
+        "settle:case-002:failed", "stats", "reputation", "hide:hidden", "save"
+    ]);
+});
