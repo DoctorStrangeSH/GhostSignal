@@ -140,3 +140,25 @@ test('hearsay can initiate a source inquiry without being labelled firsthand evi
     assert.equal(review.sources[0].linkedRumorIds[0], 'detective-overstated-visitor-identity');
     assert.ok(board.startSourceInquiry(hypothesis, 'detective-overstated-visitor-identity', claims));
 });
+
+test('document chronology uses discovered evidence only and does not infer an alibi or caller identity', () => {
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id => ({
+        isEvidence: id !== 'decoration', timelineFacts: id === 'exchange' ? [
+            { id: 'request', minute: 1338, label: 'Request received', scope: 'district', caveat: 'Caller unknown' }
+        ] : id === 'ticket' ? [
+            { id: 'failed', minute: 1325, label: 'Test failed', scope: 'booth' },
+            { id: 'bad', minute: 1500, label: 'Invalid time', scope: 'booth' }
+        ] : []
+    }) });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    assert.equal(board.getEvidenceChronology(['exchange']).length, 1);
+    assert.equal(board.compareChronologyFacts('failed', 'request', ['exchange']), null);
+    const records = board.getEvidenceChronology(['exchange', 'ticket', 'ticket', 'decoration']);
+    assert.deepEqual(Array.from(records, item => item.id), ['failed', 'request']);
+    const comparison = board.compareChronologyFacts('failed', 'request', ['exchange', 'ticket']);
+    assert.equal(comparison.minutesApart, 13);
+    assert.equal(comparison.sameScope, false);
+    assert.equal('culprit' in comparison, false);
+    assert.equal('contradiction' in comparison, false);
+});
