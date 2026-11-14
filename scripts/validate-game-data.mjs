@@ -208,6 +208,11 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         if (node.givesInsight) insightSources.add(node.givesInsight);
         if (node.claim?.id) authoredNpcClaims.add(dialogue.npcId + ":" + node.claim.id);
         if (node.claim?.topic) authoredNpcClaimTopics.add(dialogue.npcId + ":" + node.claim.topic);
+        if (node.claim?.referencesRumorIds !== undefined &&
+            (!Array.isArray(node.claim.referencesRumorIds) || !node.claim.referencesRumorIds.length ||
+            node.claim.referencesRumorIds.some(id => typeof id !== 'string' || !/^[a-z0-9_:-]{1,80}$/i.test(id)))) {
+            errors.push("Dialogue " + id + "/" + nodeId + " has invalid rumor source references.");
+        }
         if (node.claim?.revisesClaimId) {
             const source = Object.values(nodes).find(other => other?.claim?.id === node.claim.revisesClaimId);
             if (!source || source.claim.topic !== node.claim.topic || source.claim.id === node.claim.id) {
