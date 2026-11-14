@@ -331,7 +331,8 @@ class InvestigationBoard {
 
     // A spoiler-free checklist derived exclusively from player-visible state.
     // It is guidance, not authored case completion logic or evidence discovery.
-    getInvestigationChecklist({ visitedLocationIds = [], evidenceIds = [], statements = [] } = {}) {
+    getInvestigationChecklist({ visitedLocationIds = [], evidenceIds = [], statements = [],
+        thomasTelephoneQuestionAsked = false } = {}) {
         const visited = new Set(Array.isArray(visitedLocationIds) ? visitedLocationIds : []);
         const evidence = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
         const witnesses = new Set((Array.isArray(statements) ? statements : [])
@@ -345,12 +346,19 @@ class InvestigationBoard {
         if (this.alibiClaims.length > 0) {
             tasks.push({ id: 'alibi', text: 'Сопоставить две версии местонахождения', done: this.alibiClaims.length >= 2 });
         }
-        const nextAction = this.hasDiscussedRouteQuestion('business_rival')
-            ? 'Вопрос Кейну о маршруте уже задан. Его ответ не подтверждает маршрут: ищите независимые свидетельства о времени и местах.'
-            : this.hasPreparedRouteQuestion('business_rival')
-            ? 'Подготовлен вопрос Кейну: вернитесь к нему и начните новый разговор. Это ещё не доказательство вины.'
-            : null;
-        return { tasks, nextAction, completed: tasks.filter(t => t.done).length };
+        const nextActions = [];
+        if (this.hasPreparedRouteQuestion('business_rival')) nextActions.push({ id: 'kane-route', status: 'available',
+            text: 'Подготовлен вопрос Кейну: вернитесь к нему и начните новый разговор. Это ещё не доказательство вины.' });
+        else if (this.hasDiscussedRouteQuestion('business_rival')) nextActions.push({ id: 'kane-route', status: 'checked',
+            text: 'Вопрос Кейну о маршруте уже задан. Его ответ не подтверждает маршрут: ищите независимые свидетельства о времени и местах.' });
+        const thomasSpoke = witnesses.has('waiter');
+        if (this.caseId === 'case-002' && evidence.has('telephone_exchange_slip') && thomasSpoke) {
+            nextActions.push(thomasTelephoneQuestionAsked
+                ? { id: 'thomas-telephone', status: 'checked', text: 'Томаса уже спросили о телефонном запросе. Он не видел звонившего; нужен независимый источник.' }
+                : { id: 'thomas-telephone', status: 'available', text: 'Найдена карточка телефонной станции: вернитесь к Томасу и уточните, видел ли он звонившего.' });
+        }
+        return { tasks, nextActions, nextAction: nextActions[0]?.text || null,
+            completed: tasks.filter(t => t.done).length };
     }
 
     cancelRouteQuestion(npcId) {
