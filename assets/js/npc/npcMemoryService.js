@@ -170,6 +170,15 @@ class NPCMemoryService {
         memory.liesExposed = Array.isArray(memory.liesExposed) ? memory.liesExposed : [];
         memory.promises = Array.isArray(memory.promises) ? memory.promises : [];
         for (const promise of memory.promises) {
+            // Legacy saves incorrectly treated Kane's confession as proof of family safety.
+            // Pending promises can be migrated safely without rewriting past rewards.
+            if (this.currentCaseId === 'case-002' && npcId === 'waiter' &&
+                promise.id === 'thomas-family-protection' &&
+                promise.fulfillment?.type === 'insight_gained' &&
+                promise.fulfillment.insightId === 'full_confession_kane' &&
+                promise.status === 'pending') {
+                promise.fulfillment.insightId = 'thomas_family_protected';
+            }
             if (!Number.isFinite(promise.fulfilledCooperationDelta)) promise.fulfilledCooperationDelta = 10;
             if (!Number.isFinite(promise.brokenCooperationDelta)) promise.brokenCooperationDelta = -18;
         }
