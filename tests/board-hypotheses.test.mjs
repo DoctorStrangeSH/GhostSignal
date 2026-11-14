@@ -325,6 +325,11 @@ test('route follow-up requires a real pair of alibi claims and survives only its
     assert.equal(board.hasPreparedRouteQuestion('business_rival'), true);
     const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(restored.hasPreparedRouteQuestion('business_rival'), true);
+    const cancelled = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(cancelled.cancelRouteQuestion('business_rival'), true);
+    assert.equal(cancelled.cancelRouteQuestion('business_rival'), false);
+    assert.equal(cancelled.hasPreparedRouteQuestion('business_rival'), false);
+    assert.equal(cancelled.alibiClaims.length, 2, 'cancelling a question must not delete underlying statements');
     assert.equal(restored.removeAlibiClaim(first), true);
     assert.equal(restored.hasPreparedRouteQuestion('business_rival'), false);
     restored.setCase('case-001');
@@ -352,4 +357,39 @@ test('alibi UI only offers visited locations from the current case, including it
     assert.deepEqual(Array.from(ui._knownAlibiLocations(), loc => loc.id), ['bar_joe', 'telephone_exchange']);
     ui.locationManager.activeCaseData = null;
     assert.equal(ui._knownAlibiLocations().length, 0);
+});
+
+test('alibi UI shows a persistent next step for an active route question and hides it after cancellation', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-002');
+    const locations = [{ id: 'bar', name: 'Бар' }, { id: 'booth', name: 'Будка' }];
+    const ctx = { statements: [{ id: 'w', status: 'active' }], locations };
+    const add = (id, startMinute) => board.addAlibiClaim({ subject: 'Кейн', location: id,
+        locationId: id, startMinute, endMinute: startMinute + 5,
+        precision: 'exact', kind: 'statement', sourceId: 'w' }, ctx);
+    const first = add('bar', 1300), second = add('booth', 1310);
+    const findings = board.reviewAlibiRoutes([{ from: 'bar', to: 'booth', minutes: 20 }], locations);
+    assert.equal(findings.length, 1);
+    const context = vm.createContext({ CONFIG: { time: { costs: { travel: 20 } } },
+        getObjectById: () => null, getLocationById: id => locations.find(l => l.id === id),
+        document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.board = board;
+    ui.inventory = { evidence: [] };
+    ui.memoryService = { getStatements: () => [{ id: 'w', status: 'active', sourceName: 'Свидетель' }] };
+    ui.locationManager = { visitedLocations: new Set(['bar', 'booth']),
+        activeCaseData: { id: 'case-002', locations: ['bar', 'booth'], alibiRoutes: [{ from: 'bar', to: 'booth', minutes: 20 }] } };
+    assert.match(ui._renderAlibiReconstruction(), /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
+    assert.ok(board.prepareRouteQuestion(findings[0], 'business_rival'));
+    const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    ui.board = restored;
+    const ready = ui._renderAlibiReconstruction();
+    assert.match(ready, /ВОПРОС КЕЙНУ ПОДГОТОВЛЕН/);
+    assert.match(ready, /начните разговор заново/);
+    assert.doesNotMatch(ready, /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
+    assert.equal(restored.cancelRouteQuestion('business_rival'), true);
+    assert.match(ui._renderAlibiReconstruction(), /ПОДГОТОВИТЬ ВОПРОС КЕЙНУ/);
+    assert.ok(first && second);
 });
