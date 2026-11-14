@@ -56,6 +56,19 @@ registerData('location', {
         defaultItems: ["rival_desk", "contract_folder", "family_photo"],
         unlockedByDefault: true
     },
+    labour_inspection_office: {
+        id: "labour_inspection_office",
+        name: "Городская инспекция труда",
+        type: "public",
+        description: "Муниципальное учреждение с архивом проверок, журналом назначений и приёмной инспекторов.",
+        hours: { open: 8, close: 20 },
+        icon: "🏛️",
+        mapPosition: { x: 62, y: 38 },
+        scenes: { day: null, night: null },
+        npcsPresent: ["labour_inspector"],
+        defaultItems: ["inspection_register"],
+        unlockedByDefault: true
+    },
     bank: {
         id: "bank",
         name: "Первый городской банк",
