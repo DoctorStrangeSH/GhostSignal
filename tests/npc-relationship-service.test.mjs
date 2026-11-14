@@ -1045,7 +1045,7 @@ test("a witness independently chooses escorted interview after personally repeat
     assert.equal(relationships.hasCompletedInteraction("b", "witness-reply"), false);
     advance(30);
     assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "request_joe_present");
-    memory.adjustPressure("b", -100);
+    memory.getMemory("b").pressure = 0;
     assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "request_joe_present",
         "later changes cannot rewrite an already sent decision");
     context.savedInterview = relationships.toJSON();
