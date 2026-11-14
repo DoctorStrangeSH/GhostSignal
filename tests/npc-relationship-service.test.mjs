@@ -889,7 +889,10 @@ test("case two: Eva supports Anna and Lora checks the accusation only after rece
     // The autonomous rule's next scheduled check is later than rumor arrival.
     advance(30);
     network.processDueDeliveries();
-    assert.equal(memory.hasRumor("journalist", rumorId), true);
+    assert.equal(memory.hasRumor("journalist", rumorId), true,
+        JSON.stringify({ pending: network.getPendingDeliveries(),
+            withheld: network.getWithheldReports(), now: relationships._now(),
+            events: network.getEventLog(10) }));
     assert.equal(relationships.hasCompletedInteraction("woman_in_red", evaRule), false);
     assert.equal(relationships.hasCompletedInteraction("journalist", loraRule), false);
 
