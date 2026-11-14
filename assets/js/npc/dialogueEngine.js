@@ -34,6 +34,9 @@ class DialogueEngine {
 
     _recordNodeMemory(node) {
         const npcId = this.currentDialogue?.npcId;
+        if (node?.id === 'route_question_response' && npcId === 'business_rival') {
+            this.investigationBoard?.markRouteQuestionDiscussed?.(npcId);
+        }
         if (!npcId || !this.memoryService || !node) return;
         this.memoryService.recordNodeVisited(npcId, this.currentDialogue.id, node);
         if (Array.isArray(node.revealRelationships) && node.revealRelationships.length) {
