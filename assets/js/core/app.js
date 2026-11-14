@@ -179,7 +179,7 @@ class App {
         this.locationIntro = new LocationIntro();
         this.ambientSounds = new AmbientSounds();
 
-        if (storage.hasSave() && this.progress.activeCase) {
+        if (storage.hasSave() && this.caseController.canResume()) {
             document.getElementById('btn-continue').classList.remove('hidden');
         }
 
