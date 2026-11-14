@@ -319,6 +319,17 @@ const CASE_002 = {
                 summary: "Джо принял решение Томаса продлить отсутствие и не стал требовать возвращения на смену. Безопасность семьи всё ещё нужно проверить."
             },
             {
+                id: "joe-reorganizes-bar-after-extended-leave", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "message", initialDelayMinutes: 1440, everyMinutes: 90,
+                maxOccurrences: 1,
+                requiresReceivedActionId: "thomas-reviews-temporary-leave",
+                requiresReceivedActionAgeMinutes: 720,
+                requiresLeaveReviewOutcome: "extend_leave",
+                trustDelta: 0, reciprocalTrustDelta: 0, fromCooperationDelta: -4,
+                summary: "После ещё нескольких смен без Томаса Джо перестроил работу бара и предупредил коллегу, что не требует досрочного возвращения. У него стало меньше времени для бесед с детективом."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",
