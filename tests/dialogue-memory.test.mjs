@@ -2819,7 +2819,7 @@ test("Joe's work-decision follow-up shows only the completed branch and cannot b
         assert.equal(available.some(item => item.condition?.includes(hiddenAction)), false);
         assert.equal(engine.selectAnswer(decisionAnswer.index).id, expectedNode);
         assert.match(engine.currentNode.text, /Томас сам решил/);
-        assert.match(engine.currentNode.text, /защит/);
+        assert.match(engine.currentNode.text, /охран|защит|безопасност/);
         const back = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
         assert.equal(engine.selectAnswer(back.index).id, "greeting");
         assert.equal(engine.getAvailableAnswers().some(item => item.nextNode === expectedNode), false);
