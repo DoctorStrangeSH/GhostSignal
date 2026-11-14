@@ -48,3 +48,30 @@ test('legacy board saves load, and hypothesis history survives save/load', () =>
     loaded.hypotheses[0].title = 'Изменено';
     assert.equal(save.hypotheses[0].title, 'Версия 1');
 });
+
+
+test('boards keep hypotheses for a resumed case but clear them when a new case starts', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    board.setCase('case-001');
+    board.addHypothesis('Версия по первому делу');
+    board.placeEvidence('telephone_log', 'slot-1');
+    const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(loaded.caseId, 'case-001');
+    assert.equal(loaded.setCase('case-001'), false);
+    assert.equal(loaded.hypotheses.length, 1);
+    assert.equal(loaded.setCase('case-002'), true);
+    assert.equal(loaded.hypotheses.length, 0);
+    assert.equal(loaded.slots[0].evidenceId, null);
+    assert.equal(loaded.evidenceOnBoard.length, 0);
+    assert.equal(loaded.addHypothesis('Версия второго дела'), 'hyp-1');
+});
+
+test('legacy save adopts current case without losing existing evidence or hypotheses', () => {
+    const runtime = boardRuntime();
+    const board = runtime.restore({ slots: [{ id: 'slot-1', evidenceId: 'note' }], evidenceOnBoard: ['note'] });
+    board.addHypothesis('Неопределённая версия');
+    assert.equal(board.setCase('case-001', true), false);
+    assert.equal(board.hypotheses.length, 1);
+    assert.equal(board.toJSON().caseId, 'case-001');
+});
