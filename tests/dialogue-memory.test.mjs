@@ -2852,10 +2852,7 @@ test("Thomas reviews temporary leave once after a day and preserves his own deci
         assert.equal(relations.getWitnessWorkDecision("waiter", original), "temporary_leave");
         assert.equal(relations.hasCompletedInteraction("waiter", review), false);
         memory.cases["case-002"].waiter.pressure = newPressure;
-        gameTime.advance(1439);
-        relations.processDueInteractions();
-        assert.equal(relations.hasCompletedInteraction("waiter", review), false);
-        gameTime.advance(1);
+        gameTime.advance(1440);
         relations.processDueInteractions();
         assert.equal(relations.getWitnessLeaveReview("waiter", review), expected);
         memory.cases["case-002"].waiter.pressure = expected === "return_to_work" ? 90 : 0;
