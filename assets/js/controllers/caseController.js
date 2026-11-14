@@ -9,6 +9,13 @@ class CaseController {
         this.caseLookup = caseLookup;
     }
 
+    canResume(caseId = this.app.progress?.activeCase) {
+        const app = this.app;
+        return Boolean(caseId && app.progress?.activeCase === caseId &&
+            app.caseManager?.currentCase?.id === caseId &&
+            app.caseManager.caseState === 'active');
+    }
+
     loadCase(caseId) {
         const app = this.app;
         if (!caseId || !app.progress || !app.caseManager) return false;
@@ -19,9 +26,7 @@ class CaseController {
             return false;
         }
 
-        const canResume = app.progress.activeCase === caseId &&
-            app.caseManager.currentCase?.id === caseId &&
-            app.caseManager.caseState === 'active';
+        const canResume = this.canResume(caseId);
 
         if (!canResume && !app.caseManager.loadCase(caseId)) return false;
 
