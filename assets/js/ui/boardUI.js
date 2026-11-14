@@ -50,6 +50,7 @@ class BoardUI {
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
 
+            ${this._renderHypotheses()}
             ${this._renderTestimonyJournal()}
         `;
         
@@ -169,6 +170,7 @@ class BoardUI {
             if (this.board) this.board.reset();
         });
 
+        this._bindHypothesisEvents();
         this._bindTestimonyEvents();
     }
 
@@ -176,6 +178,92 @@ class BoardUI {
         return String(value ?? '').replace(/[&<>"']/g, char => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[char]);
+    }
+
+    _renderHypotheses() {
+        const hypotheses = this.board?.hypotheses || [];
+        const evidenceIds = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+        const evidenceOptions = evidenceIds.map(id => {
+            const obj = getObjectById(id);
+            return obj ? '<option value="evidence:' + this._escapeHTML(id) + '">' + this._escapeHTML(obj.name || id) + '</option>' : '';
+        }).join('');
+        const statements = this.memoryService?.getStatements?.() || [];
+        const statementOptions = statements.map(item =>
+            '<option value="statement:' + this._escapeHTML(item.id) + '">' +
+            this._escapeHTML((item.sourceName || item.npcId) + ' — ' + (item.summary || item.value) + (item.status === 'superseded' ? ' (архив)' : '')) +
+            '</option>'
+        ).join('');
+        const sourceOptions = evidenceOptions + statementOptions;
+        const names = { for: 'Поддерживает', against: 'Противоречит', pending: 'Требует проверки' };
+        const labels = { evidence: 'Улика', statement: 'Показание', assumption: 'Допущение' };
+        return `
+            <section class="testimony-journal hypothesis-journal" aria-labelledby="hypothesis-title">
+                <div class="testimony-journal-header"><div>
+                    <span class="testimony-journal-kicker">РАБОЧИЕ ВЕРСИИ ДЕТЕКТИВА</span>
+                    <h3 id="hypothesis-title">🧩 ГИПОТЕЗЫ</h3>
+                </div><span class="testimony-count">${hypotheses.length} версий</span></div>
+                <p class="hypothesis-help">Записи отражают ваши предположения. Игра не подтверждает их автоматически.</p>
+                <form id="hypothesis-create-form" class="hypothesis-form">
+                    <label for="hypothesis-new-text">Новая версия событий</label>
+                    <textarea id="hypothesis-new-text" class="terminal-input" maxlength="240" rows="2" required placeholder="Что, по-вашему, произошло?"></textarea>
+                    <button type="submit" class="terminal-btn">ДОБАВИТЬ ВЕРСИЮ</button>
+                </form>
+                ${hypotheses.map(h => `
+                    <article class="testimony-entry hypothesis-entry">
+                        <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
+                            <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
+                        <ul class="hypothesis-links">
+                            ${h.links.map((link, index) => {
+                                const object = link.kind === 'evidence' ? getObjectById(link.sourceId) : null;
+                                const statement = link.kind === 'statement' ? statements.find(s => s.id === link.sourceId) : null;
+                                const title = object?.name || (statement ? (statement.sourceName || statement.npcId) + ': ' + (statement.summary || statement.value) : link.sourceId);
+                                return `<li><span>${this._escapeHTML(names[link.stance] || link.stance)} · ${this._escapeHTML(labels[link.kind] || link.kind)}: ${this._escapeHTML(title)}</span>
+                                  ${h.status === 'open' ? `<button type="button" class="terminal-btn btn-sm hypothesis-unlink" data-id="${this._escapeHTML(h.id)}" data-index="${index}" aria-label="Убрать связь">✕</button>` : ''}</li>`;
+                            }).join('') || '<li>Пока нет подтверждений или возражений.</li>'}
+                        </ul>
+                        ${h.status === 'open' ? `
+                            <form class="hypothesis-link-form hypothesis-form" data-id="${this._escapeHTML(h.id)}">
+                                <select class="terminal-input hypothesis-source" aria-label="Источник"><option value="">Выберите улику или показание</option>${sourceOptions}<option value="assumption:">Собственное допущение</option></select>
+                                <input class="terminal-input hypothesis-assumption" maxlength="240" placeholder="Текст допущения" aria-label="Допущение">
+                                <select class="terminal-input hypothesis-stance" aria-label="Оценка"><option value="for">Поддерживает</option><option value="against">Противоречит</option><option value="pending">Требует проверки</option></select>
+                                <button class="terminal-btn btn-sm" type="submit">ПРИКРЕПИТЬ</button>
+                            </form>
+                            <button type="button" class="terminal-btn btn-sm hypothesis-revise" data-id="${this._escapeHTML(h.id)}">ИЗМЕНИТЬ ТЕКСТ</button>
+                            <button type="button" class="terminal-btn btn-sm hypothesis-abandon" data-id="${this._escapeHTML(h.id)}">ОТКЛОНИТЬ ВЕРСИЮ</button>
+                        ` : ''}
+                        <details><summary>История изменений (${h.history.length})</summary><ol>${h.history.map(v => `<li>${this._escapeHTML(v.action)}${v.title ? ': ' + this._escapeHTML(v.title) : ''}${v.previous ? ' (было: ' + this._escapeHTML(v.previous) + ')' : ''}${v.sourceId ? ' — ' + this._escapeHTML(v.sourceId) : ''}</li>`).join('')}</ol></details>
+                    </article>
+                `).join('')}
+            </section>
+        `;
+    }
+
+    _bindHypothesisEvents() {
+        this.container.querySelector('#hypothesis-create-form')?.addEventListener('submit', e => {
+            e.preventDefault();
+            this.board?.addHypothesis(this.container.querySelector('#hypothesis-new-text')?.value);
+        });
+        this.container.querySelectorAll('.hypothesis-link-form').forEach(form => form.addEventListener('submit', e => {
+            e.preventDefault();
+            const selection = form.querySelector('.hypothesis-source')?.value || '';
+            const separator = selection.indexOf(':');
+            const kind = separator >= 0 ? selection.slice(0, separator) : '';
+            const sourceId = kind === 'assumption' ? form.querySelector('.hypothesis-assumption')?.value : selection.slice(separator + 1);
+            if (!this.board?.linkHypothesis(form.dataset.id, kind, sourceId, form.querySelector('.hypothesis-stance')?.value)) {
+                events.emit('notification:show', { message: 'Выберите источник или напишите допущение. Повторная связь не добавлена.', type: 'warning', duration: 3000 });
+            }
+        }));
+        this.container.querySelectorAll('.hypothesis-unlink').forEach(button => button.addEventListener('click', () =>
+            this.board?.unlinkHypothesis(button.dataset.id, Number(button.dataset.index))));
+        this.container.querySelectorAll('.hypothesis-abandon').forEach(button => button.addEventListener('click', () => {
+            if (confirm('Отклонить версию? История останется в журнале.')) this.board?.abandonHypothesis(button.dataset.id);
+        }));
+        this.container.querySelectorAll('.hypothesis-revise').forEach(button => button.addEventListener('click', () => {
+            const current = this.board?.hypotheses.find(h => h.id === button.dataset.id);
+            if (!current) return;
+            const next = prompt('Уточните вашу версию:', current.title);
+            if (next !== null) this.board.reviseHypothesis(current.id, next);
+        }));
     }
 
     _renderTestimonyJournal() {
