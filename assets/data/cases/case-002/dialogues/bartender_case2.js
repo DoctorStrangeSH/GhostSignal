@@ -22,9 +22,21 @@ const DIALOGUE_BARTENDER_CASE2 = {
         entryRules: [
             { condition: "all:hasInsight:thomas_family_protected&hasInsight:thomas_family_address_exposed", nodeId: "joe_after_protection_verified_opening" },
             { condition: "hasInsight:joe_relocated_family_after_leak", nodeId: "joe_after_relocation_opening" },
-            { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" }
+            { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" },
+            { condition: "all:long_term_pattern:repeated_pressure&not:has_visited_node:joe_remembers_repeated_pressure", nodeId: "joe_remembers_repeated_pressure" }
         ],
         nodes: {
+            joe_remembers_repeated_pressure: {
+                speaker: "npc",
+                text: "Детектив, я разговаривал с вами не в одном деле. И не раз видел, как разговор превращался в давление. Я не собираюсь спорить о прошлом, но теперь буду просить подтверждения и не стану торопить Томаса ради удобной версии. Если хотите моей помощи, говорите со мной прямо — без угроз.",
+                mood: "guarded",
+                innerThought: "Джо связывает только собственные разговоры с детективом. Чужие истории он не принимает за личный опыт.",
+                answers: [
+                    { text: "Вы правы. Я должен заслужить возможность работать с вами спокойно.", nextNode: "greeting", tone: "reassuring", memoryImportance: 3, memoryTags: ["player_acknowledged_past_pressure"] },
+                    { text: "Я пришёл за фактами, а не за вашим одобрением.", nextNode: "greeting", tone: "direct" },
+                    { text: "Тогда на сегодня закончим.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
+            },
             joe_after_protection_verified_opening: {
                 verifiedRestitution: { id: 'joe-confirmed-thomas-family-safety',
                     priorMemoryTag: 'player_threatened', requiresInsight: 'thomas_family_protected' },
