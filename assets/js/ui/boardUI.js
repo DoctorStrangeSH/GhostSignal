@@ -6,7 +6,7 @@ class BoardUI {
         this.memoryService = null;
         this.locationManager = null;
         this._draggedEvidence = null;
-        this._expandedTools = new Set(['hypotheses']);
+        this._expandedTools = new Set(['checklist', 'hypotheses']);
         this._init();
     }
     
@@ -67,6 +67,7 @@ class BoardUI {
             </div>
 
             <div class="board-tool-list" aria-label="Инструменты расследования">
+                ${this._renderTool('checklist', '📌 Следственные задачи', this._renderInvestigationChecklist())}
                 ${this._renderTool('hypotheses', '🧩 Гипотезы', this._renderHypotheses())}
                 ${this._renderTool('chronology', '🕰️ Хронология улик', this._renderChronology())}
                 ${this._renderTool('alibi', '📍 Проверка алиби', this._renderAlibiReconstruction())}
@@ -82,6 +83,22 @@ class BoardUI {
         const expanded = this._expandedTools?.has(id);
         return `<details class="board-tool" data-tool="${id}" ${expanded ? 'open' : ''}>
             <summary>${label}</summary><div class="board-tool-content">${content}</div></details>`;
+    }
+
+    _renderInvestigationChecklist() {
+        if (!this.locationManager?.activeCaseData?.id) return '<p class="hypothesis-help">Выберите расследование, чтобы увидеть рабочие задачи.</p>';
+        const checklist = this.board?.getInvestigationChecklist({
+            visitedLocationIds: this._knownAlibiLocations().map(loc => loc.id),
+            evidenceIds: [...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])],
+            statements: this.memoryService?.getStatements?.() || []
+        });
+        if (!checklist) return '';
+        return `<div class="investigation-checklist">
+            <p class="hypothesis-help">Это ориентиры по уже открытым сведениям, а не список правильных ответов или обязательных действий для финала дела.</p>
+            <p class="checklist-progress">Проверено ${checklist.completed} из ${checklist.tasks.length}</p>
+            <ul class="checklist-tasks">${checklist.tasks.map(task => `<li class="${task.done ? 'is-complete' : 'is-pending'}"><span aria-hidden="true">${task.done ? '✓' : '○'}</span> ${this._escapeHTML(task.text)}</li>`).join('')}</ul>
+            ${checklist.nextAction ? `<p class="checklist-next-action">${this._escapeHTML(checklist.nextAction)}</p>` : ''}
+        </div>`;
     }
     
     _renderSlots() {
