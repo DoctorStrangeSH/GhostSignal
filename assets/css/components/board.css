@@ -255,3 +255,8 @@
 .hypothesis-entry > .terminal-btn { margin: 4px 6px 4px 0; }
 
 .hypothesis-links .hypothesis-source-caution { border-left: 2px solid var(--accent-red-bright); padding-left: 6px; color: var(--accent-amber); }
+
+.hypothesis-source-review { margin: 10px 0; padding: 9px; border: 1px solid rgba(212,160,23,.22); background: rgba(212,160,23,.035); overflow-wrap: anywhere; }
+.hypothesis-source-review strong { color: var(--accent-amber); font-size: 9px; letter-spacing: 1px; }
+.hypothesis-source-review p, .hypothesis-source-review li, .hypothesis-source-review small { margin: 6px 0; color: var(--text-secondary); font-size: 10px; line-height: 1.45; }
+.hypothesis-source-review ul { padding-left: 17px; margin-bottom: 0; }
