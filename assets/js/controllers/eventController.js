@@ -191,6 +191,10 @@ class EventController {
             app.npcMemoryService.resolveAccusation(
                 suspectId, accusationId, 'false', 'Публичное обвинение противоречит установленным обстоятельствам дела.'
             );
+            const published = app.npcSocialNetwork?.publishPublicAccusation(suspectId, accusationId);
+            if (published?.published) {
+                events.emit('npc:social_network_changed', { reason: 'public_accusation', npcId: suspectId });
+            }
             events.emit('npc:memory_changed', { reason: 'public_false_accusation', npcId: suspectId });
         });
 
