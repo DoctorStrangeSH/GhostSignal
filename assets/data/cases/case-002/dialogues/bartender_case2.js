@@ -20,7 +20,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
     tree: {
         start: "greeting",
         entryRules: [
-            { condition: "hasInsight:thomas_family_protected", nodeId: "joe_after_protection_verified_opening" },
+            { condition: "all:hasInsight:thomas_family_protected&hasInsight:thomas_family_address_exposed", nodeId: "joe_after_protection_verified_opening" },
             { condition: "hasInsight:joe_relocated_family_after_leak", nodeId: "joe_after_relocation_opening" },
             { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" }
         ],
