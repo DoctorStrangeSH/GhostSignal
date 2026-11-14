@@ -1184,7 +1184,9 @@ test("leaking Thomas's first shelter blocks safety confirmation until a differen
     engine.startDialogue("dialogue-bartender-case2");
     const leak = engine.getAvailableAnswers().find(a => a.nextNode === "joe_address_compromised");
     assert.equal(leak?.isAvailable, true);
+    const joeTrustBeforeLeak = memory.getTrust("bartender");
     engine.selectAnswer(leak.index);
+    assert.ok(memory.getTrust("bartender") < joeTrustBeforeLeak);
     assert.equal(inventory.hasInsight("thomas_family_address_exposed"), true);
 
     engine.startDialogue("dialogue-waiter");
