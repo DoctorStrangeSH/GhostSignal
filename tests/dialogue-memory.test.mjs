@@ -32,10 +32,11 @@ function createDialogueHarness() {
             journalist: { name: "Лора", availableForCall: true },
             labour_inspector: { name: "Илья Руденко", availableForCall: false },
             tram_conductor: { name: "Павел Соколов", availableForCall: false },
+            mill_watchman: { name: "Степан Орлов", availableForCall: false },
             ex_wife: { name: "Анна", availableForCall: true },
             woman_in_red: { name: "Ева", availableForCall: false }
         })[id] || null; },
-        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true } })[id] || null; }
+        getObjectById(id) { return ({ bar_photo: { id, name: "Фотография из бара", icon: "📸", isEvidence: true }, poison_vial: { id, name: "Пузырёк с ядом", isEvidence: true }, tram_route_entry: { id, name: "Выписка из путевого листа трамвая №4", icon: "🎟️", isEvidence: true }, mill_shift_extract: { id, name: "Выписка из журнала ночной смены", icon: "📋", isEvidence: true } })[id] || null; }
     });
 
     for (const path of [
@@ -48,6 +49,7 @@ function createDialogueHarness() {
         "assets/data/cases/case-002/dialogues/journalist.js",
         "assets/data/cases/case-002/dialogues/labour_inspector.js",
         "assets/data/cases/case-002/dialogues/tram_conductor.js",
+        "assets/data/cases/case-002/dialogues/mill_watchman.js",
         "assets/data/cases/case-002/dialogues/anna.js",
         "assets/data/cases/case-002/dialogues/woman_in_red.js",
         "assets/data/cases/case-002/dialogues/rival.js"
@@ -1464,4 +1466,38 @@ test("tram conductor cannot offer a route match before receiving the witness des
     engine.startDialogue("dialogue-tram-conductor");
     assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_route_book"), false);
     assert.equal(inventory.hasInsight("tram_passenger_route_corroboration"), false);
+});
+
+test("mill watchman provides a limited gate-log result without identifying the unknown visitor", () => {
+    const { engine, inventory, memory, emitted } = createDialogueHarness();
+    engine.startDialogue("dialogue-mill-watchman");
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.nextNode === "checks_shift_log"), false);
+
+    inventory.addInsight("tram_passenger_route_corroboration");
+    engine.startDialogue("dialogue-mill-watchman");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_shift_log");
+    assert.equal(check?.isAvailable, true);
+    engine.selectAnswer(check.index);
+
+    assert.equal(inventory.hasInsight("mill_gate_seal_intact"), true);
+    assert.equal(emitted.some(event => event.name === "evidence:from_dialogue" && event.payload.evidenceId === "mill_shift_extract"), true);
+    assert.match(engine.currentNode.text, /не могу сказать, куда человек пошёл/);
+
+    const cautious = engine.getAvailableAnswers().find(answer => answer.nextNode === "records_limits");
+    assert.equal(cautious?.isAvailable, true);
+    engine.selectAnswer(cautious.index);
+    assert.equal(inventory.hasInsight("mill_no_registered_visitors"), true);
+    assert.equal(memory.hasLongTermMemoryTag("mill_watchman", "player_respected_record_scope"), true);
+});
+
+test("mill gate ledger does not prove the unknown visitor was absent from the entire district", () => {
+    const { engine, inventory } = createDialogueHarness();
+    inventory.addInsight("tram_passenger_route_corroboration");
+    engine.startDialogue("dialogue-mill-watchman");
+    const check = engine.getAvailableAnswers().find(answer => answer.nextNode === "checks_shift_log");
+    engine.selectAnswer(check.index);
+    const overclaim = engine.getAvailableAnswers().find(answer => answer.nextNode === "overstates_factory_record");
+    assert.equal(overclaim?.isAvailable, true);
+    engine.selectAnswer(overclaim.index);
+    assert.match(engine.currentNode.text, /не за весь район/);
 });
