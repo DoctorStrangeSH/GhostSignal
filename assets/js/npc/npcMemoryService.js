@@ -1084,7 +1084,7 @@ class NPCMemoryService {
                 this._append(memory, { type: 'promise_fulfilled', promiseId: promise.id, trustDelta: delta });
                 this._recordLongTermMemory(npcId, {
                     type: 'promise_kept', summary: promise.text, sentiment: 'positive', importance: 4,
-                    tags: ['promise_kept'], trustDelta: Math.max(0, delta) * 0.5
+                    tags: ['promise_kept', 'promise_kept:' + promise.id], trustDelta: Math.max(0, delta) * 0.5
                 });
                 changes.push({ npcId, promiseId: promise.id, status: promise.status, trust: memory.trust });
             }
@@ -1131,7 +1131,8 @@ class NPCMemoryService {
                     summary: promise.text,
                     sentiment: fulfilledByOutcome ? 'positive' : 'negative',
                     importance: 5,
-                    tags: [fulfilledByOutcome ? 'promise_kept' : 'promise_broken'],
+                    tags: [fulfilledByOutcome ? 'promise_kept' : 'promise_broken',
+                        (fulfilledByOutcome ? 'promise_kept:' : 'promise_broken:') + promise.id],
                     trustDelta: fulfilledByOutcome ? Math.max(0, delta) * 0.5 : Math.min(0, delta) * 0.65
                 });
                 changes.push({ npcId, promiseId: promise.id, status, trust: memory.trust });
