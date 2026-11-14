@@ -2079,3 +2079,50 @@ test("Lora protects confidential sources after an overconfident accusation witho
     assert.equal(documents?.isAvailable, true);
     assert.equal(engine.selectAnswer(documents.index).id, "investigation");
 });
+
+test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed delivery", () => {
+    const { engine, memory, inventory, advance } = createDialogueHarness();
+    inventory.insights.push("joe_found_inspection_entry");
+    engine.startDialogue("dialogue-journalist");
+    const verify = engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule");
+    engine.selectAnswer(verify.index);
+    const overclaim = engine.getAvailableAnswers().find(a => a.nextNode === "lora_rejects_certain_visitor_identity");
+    engine.selectAnswer(overclaim.index);
+
+    assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), false);
+    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
+    advance(30);
+    assert.equal(memory.hasRumor("bartender", "detective-overstated-visitor-identity"), true);
+
+    engine.startDialogue("dialogue-bartender-case2");
+    const challenge = engine.getAvailableAnswers().find(a => a.nextNode === "joe_challenges_visitor_overclaim");
+    assert.equal(challenge?.isAvailable, true);
+    engine.selectAnswer(challenge.index);
+    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false,
+        "listening to Joe alone must not create the warning");
+    const insist = engine.getAvailableAnswers().find(a => a.text.includes("Мне достаточно совпадения"));
+    assert.equal(insist?.isAvailable, true);
+    engine.selectAnswer(insist.index);
+    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
+
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false);
+    advance(10);
+    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
+    advance(10);
+    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
+
+    engine.startDialogue("dialogue-waiter");
+    const caution = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_joe_visitor_caution");
+    assert.equal(caution?.isAvailable, true);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw")?.isAvailable, true,
+        "main witness testimony must remain accessible");
+    engine.selectAnswer(caution.index);
+    assert.match(engine.currentNode.text, /не присутствовал.*разговоре/i);
+    assert.match(engine.currentNode.text, /не могу подтвердить.*лично/i);
+
+    engine.reset();
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false,
+        "Thomas must not repeat the special reaction after it was heard");
+});

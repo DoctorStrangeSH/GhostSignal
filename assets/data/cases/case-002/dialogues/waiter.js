@@ -381,7 +381,30 @@ const DIALOGUE_WAITER = {
                         cooperationDelta: -2,
                         condition: "all:latest_promise_outcome:thomas-family-protection:broken&not:has_visited_node:past_trust_refusal",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо передал тебе предупреждение о моём выводе насчёт посетителя?",
+                        nextNode: "thomas_hears_joe_visitor_caution",
+                        tone: "cautious",
+                        condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&not:has_visited_node:thomas_hears_joe_visitor_caution",
+                        hiddenWhenUnavailable: true,
+                        revealSocialEvents: {
+                            reportId: "joe-warns-thomas-of-visitor-overclaim",
+                            eventTypes: ["delivered"],
+                            fromNpcId: "bartender",
+                            toNpcId: "waiter"
+                        }
                     }
+                ]
+            },
+
+            thomas_hears_joe_visitor_caution: {
+                speaker: "npc",
+                text: "Джо рассказал мне о вашем разговоре. Он сказал, что Лора проверила график инспекции, но вы всё равно уверены, будто знаете, кто приходил в бар. Я не присутствовал при вашем разговоре и не могу подтвердить слова Джо лично. Мне страшно за семью, поэтому прошу: не называйте неизвестного человека безопасным или опасным без независимой проверки.",
+                mood: "guarded",
+                answers: [
+                    { text: "Справедливо. Отделим пересказ Джо от проверенных фактов.", nextNode: "he_saw", tone: "reassuring" },
+                    { text: "Я проверю документы ещё раз и не стану торопить тебя.", nextNode: "end_waiter", tone: "calm" }
                 ]
             },
 
