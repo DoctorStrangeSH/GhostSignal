@@ -127,3 +127,16 @@ test('rumor inquiry requires observed references, discovered leads and persists 
     assert.equal(restored.sourceInquiries.length, 0);
     assert.equal(restored.nextInquiryId, 1);
 });
+
+test('hearsay can initiate a source inquiry without being labelled firsthand evidence', () => {
+    const { create } = boardRuntime();
+    const board = create();
+    const hypothesis = board.addHypothesis('Слова Джо пришли от Лоры');
+    board.linkHypothesis(hypothesis, 'statement', 'joe-lora', 'pending');
+    const claims = [{ id: 'joe-lora', npcId: 'bartender', directObservation: false,
+        referencesRumorIds: ['detective-overstated-visitor-identity'] }];
+    const review = board.reviewHypothesisSources(hypothesis, claims);
+    assert.equal(review.sources[0].origin, 'unverified');
+    assert.equal(review.sources[0].linkedRumorIds[0], 'detective-overstated-visitor-identity');
+    assert.ok(board.startSourceInquiry(hypothesis, 'detective-overstated-visitor-identity', claims));
+});
