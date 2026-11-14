@@ -68,6 +68,12 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "Лора сообщила вам, что удалось проверить в истории с обвинением Томаса?",
+                        nextNode: "joe_lora_thomas_check_update", tone: "calm",
+                        condition: "npc_action_received:lora-updates-joe-after-thomas-check",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Лора не смогла установить личность посетителя. Проверьте записи о визитах за тот вечер.",
                         nextNode: "joe_finds_visitor_log",
                         tone: "calm",
@@ -532,6 +538,15 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 text: "Сначала убедитесь, что Томас и его мать защищены. Я продолжу помогать им, но доверие придётся заслужить заново.",
                 mood: "guarded",
                 endDialogue: true
+            },
+            joe_lora_thomas_check_update: {
+                speaker: "npc",
+                text: "Да, Лора написала мне после разговора с Томасом. Говорит, независимого подтверждения обвинению пока нет. Это не доказывает, что версия ложная, но и повторять её как факт я не собираюсь. Томасу и так хватило неприятностей.",
+                mood: "guarded",
+                answers: [
+                    { text: "Согласен. Проверю первичные свидетельства, прежде чем делать выводы.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо, что рассказали. На сегодня всё.", nextNode: "end_bartender_guarded", tone: "calm" }
+                ]
             },
             end_bartender2: {
                 speaker: "npc",
