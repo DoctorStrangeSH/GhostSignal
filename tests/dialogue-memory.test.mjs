@@ -2326,3 +2326,42 @@ test("Thomas distinguishes fulfilled and broken safety promises without instant 
     assert.equal(restored.getNPCValueAlignment("waiter", "witness_safety"), "contested");
     assert.equal(restored.getNPCValueAlignment("bartender", "witness_safety"), "unseen");
 });
+
+test("Lora's editorial choice waits for completed checks and never publishes automatically", () => {
+    const { engine, context, emitted } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    engine.setRelationshipService(relations);
+    assert.equal(relations.getEditorialDecision("journalist", "lora-questions-joe-about-threat"), null);
+    assert.equal(relations.getEditorialDecision("bartender", "lora-questions-joe-about-threat"), null);
+    engine.startDialogue("dialogue-journalist");
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_withholds_unverified_story"), false);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_requires_editorial_review"), false);
+    engine.reset();
+
+    let result = "no_independent_evidence";
+    relations.getInvestigationOutcome = (npcId, ruleId) =>
+        npcId === "journalist" && ruleId === "lora-questions-joe-about-threat" ? result : null;
+    assert.equal(relations.getEditorialDecision("journalist", "lora-questions-joe-about-threat"), "withheld");
+    engine.startDialogue("dialogue-journalist");
+    const withhold = engine.getAvailableAnswers().find(a => a.nextNode === "lora_withholds_unverified_story");
+    assert.equal(withhold?.isAvailable, true);
+    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "lora_requires_editorial_review"), false);
+    engine.selectAnswer(withhold.index);
+    assert.match(engine.currentNode.text, /решила придержать материал/i);
+    assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "investigation")?.isAvailable, true);
+    engine.reset();
+
+    result = "corroborated";
+    assert.equal(relations.getEditorialDecision("journalist", "lora-questions-joe-about-threat"), "review_required");
+    engine.startDialogue("dialogue-journalist");
+    const review = engine.getAvailableAnswers().find(a => a.nextNode === "lora_requires_editorial_review");
+    assert.equal(review?.isAvailable, true);
+    engine.selectAnswer(review.index);
+    assert.match(engine.currentNode.text, /не готовая публикация/i);
+    assert.equal(emitted.some(event => /publish/i.test(event.name)), false,
+        "independent corroboration does not authorize an automatic publication");
+
+    result = "disputed";
+    assert.equal(relations.getEditorialDecision("journalist", "lora-questions-joe-about-threat"), "withheld");
+});
