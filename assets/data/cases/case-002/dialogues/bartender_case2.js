@@ -28,6 +28,13 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
+                        text: "После переезда матери Томаса никто не интересовался её местонахождением?",
+                        nextNode: "joe_reports_unknown_visitor",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_protected&not:hasInsight:unknown_visitor_asked_about_thomas",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Я неосторожно сказал Кейну, что мать Томаса укрывают родственники Джо. Что теперь делать?",
                         nextNode: "joe_address_compromised",
                         tone: "direct",
@@ -109,6 +116,16 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 ]
             },
 
+            joe_reports_unknown_visitor: {
+                speaker: "npc",
+                text: "Вчера заходил незнакомец и спросил, когда Томас вернётся на смену. Он не назвал себя и не спрашивал адрес матери. Я не стал ничего рассказывать. Не знаю, был ли это человек Кейна — возможно, обычный посетитель.",
+                mood: "wary",
+                innerThought: "Джо лично видел незнакомца, но не имеет данных, связывающих его с Кейном или новой локацией семьи.",
+                givesInsight: "unknown_visitor_asked_about_thomas",
+                answers: [
+                    { text: "Проверю, кто это был, прежде чем делать выводы.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
             joe_address_compromised: {
                 speaker: "npc",
                 text: "Вы сказали это Кейну? Тогда прежний адрес нельзя считать безопасным. Я не назову его снова даже вам. Нужно срочно предупредить Томаса и договориться о другом месте. Сейчас нельзя утверждать, что его мать защищена.",
