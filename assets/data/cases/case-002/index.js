@@ -209,6 +209,16 @@ const CASE_002 = {
                 summary: "Узнав об угрозах детектива, Джо поддержал Томаса и предложил ему помощь."
             },
             {
+                id: "joe-alerts-thomas-after-shelter-leak", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                goalId: "protect_staff", goalProgress: 1,
+                channel: "message", initialDelayMinutes: 20, everyMinutes: 60,
+                maxOccurrences: 1,
+                fromDialogueId: "dialogue-bartender-case2", fromDialogueNodeId: "joe_address_compromised",
+                trustDelta: 1, reciprocalTrustDelta: 0,
+                summary: "После признания детектива в утечке Джо самостоятельно предупредил Томаса: прежнее укрытие нельзя считать безопасным."
+            },
+            {
                 id: "lora-questions-joe-about-threat", relationshipId: "joe-lora-source",
                 investigatesRumorId: "detective-threatened-thomas",
                 fromNpcId: "journalist", toNpcId: "bartender", interaction: "conflict",

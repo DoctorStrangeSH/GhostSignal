@@ -2412,3 +2412,50 @@ test("Thomas retains control of his mother's address even after an offer of help
     assert.equal(memory.getNPCValueAlignment("waiter", "witness_safety"), "unseen",
         "refusing a privacy request must not impersonate a kept promise");
 });
+
+test("Joe warns Thomas autonomously only after personally hearing the shelter leak", () => {
+    const { engine, context, memory, inventory, gameTime, socialNetwork } = createDialogueHarness();
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/npcRelationshipService.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"), context);
+    const npcManager = {
+        isNPCAvailable() { return { available: true, location: "bar_joe" }; }
+    };
+    const relations = vm.runInContext("new NPCRelationshipService()", context);
+    relations.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    const caseData = vm.runInContext("CASE_002", context);
+    relations.setCase(caseData);
+    engine.setRelationshipService(relations);
+    const id = "joe-alerts-thomas-after-shelter-leak";
+
+    gameTime.advance(30);
+    relations.processDueInteractions();
+    assert.equal(relations.hasReceivedInteraction("waiter", id), false,
+        "time alone must not make Joe know about a private leak");
+    assert.equal(engine._checkCondition("npc_action_received:" + id), false);
+
+    memory.recordNodeVisited("bartender", "dialogue-bartender-case2", { id: "joe_address_compromised" });
+    gameTime.advance(60);
+    relations.processDueInteractions();
+    assert.equal(relations.hasReceivedInteraction("waiter", id), true);
+    assert.equal(relations.hasCompletedInteraction("bartender", id), true);
+    assert.equal(inventory.hasInsight("thomas_family_protected"), false,
+        "warning alone cannot certify the family relocation");
+    engine.startDialogue("dialogue-waiter");
+    const question = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_received_joe_shelter_warning");
+    assert.equal(question?.isAvailable, true);
+    engine.selectAnswer(question.index);
+    assert.match(engine.currentNode.text, /Джо сам связался со мной/);
+    assert.match(engine.currentNode.text, /не слышал разговора с Кейном лично/);
+    engine.reset();
+
+    const before = relations.cases["case-002"].rules[id].occurrences;
+    gameTime.advance(120);
+    relations.processDueInteractions();
+    assert.equal(relations.cases["case-002"].rules[id].occurrences, before,
+        "Joe must not send the same autonomous warning repeatedly");
+    context.savedJoeWarning = JSON.parse(JSON.stringify(relations.toJSON()));
+    const restored = vm.runInContext("new NPCRelationshipService(savedJoeWarning)", context);
+    restored.setDependencies(memory, npcManager, gameTime, socialNetwork);
+    restored.setCase(caseData);
+    assert.equal(restored.hasReceivedInteraction("waiter", id), true);
+});
