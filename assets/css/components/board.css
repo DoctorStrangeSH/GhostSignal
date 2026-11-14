@@ -50,6 +50,41 @@
     line-height: 1.45;
 }
 
+.board-tool-list {
+    display: grid;
+    gap: 9px;
+    min-width: 0;
+}
+
+.board-tool {
+    min-width: 0;
+    border: 1px solid rgba(212, 160, 23, 0.23);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+}
+
+.board-tool > summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    color: var(--accent-amber-glow);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.board-tool > summary:focus-visible {
+    outline: 2px solid var(--accent-amber);
+    outline-offset: -3px;
+}
+
+.board-tool-content {
+    padding: 0 10px 10px;
+    min-width: 0;
+}
+
+.board-tool-content > .testimony-journal {
+    margin: 0;
+}
+
 .board-slot {
     position: absolute;
     transform: translate(-50%, -50%);
