@@ -77,7 +77,14 @@ const DIALOGUE_WAITER = {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
                         tone: "calm",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "После раскрытия первого укрытия Джо нашёл новое. Ты подтвердил переезд матери?",
+                        nextNode: "family_safety_reconfirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&hasInsight:joe_relocated_family_after_leak&not:hasInsight:thomas_family_protected",
                         hiddenWhenUnavailable: true
                     },
                     {
@@ -104,7 +111,14 @@ const DIALOGUE_WAITER = {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
                         tone: "calm",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "После раскрытия первого укрытия Джо нашёл новое. Ты подтвердил переезд матери?",
+                        nextNode: "family_safety_reconfirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&hasInsight:joe_relocated_family_after_leak&not:hasInsight:thomas_family_protected",
                         hiddenWhenUnavailable: true
                     },
                     { text: "Почему ты изменил показания после нашего разговора?", nextNode: "revision_under_pressure_reason", tone: "calm" },
@@ -120,7 +134,14 @@ const DIALOGUE_WAITER = {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
                         tone: "calm",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "После раскрытия первого укрытия Джо нашёл новое. Ты подтвердил переезд матери?",
+                        nextNode: "family_safety_reconfirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&hasInsight:joe_relocated_family_after_leak&not:hasInsight:thomas_family_protected",
                         hiddenWhenUnavailable: true
                     },
                     {
@@ -189,7 +210,14 @@ const DIALOGUE_WAITER = {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
                         tone: "calm",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "После раскрытия первого укрытия Джо нашёл новое. Ты подтвердил переезд матери?",
+                        nextNode: "family_safety_reconfirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&hasInsight:joe_relocated_family_after_leak&not:hasInsight:thomas_family_protected",
                         hiddenWhenUnavailable: true
                     },
                     { text: "Посмотри на фотографию: давай уточним, что именно ты видел.", nextNode: "protection_revision", tone: "calm", condition: "hasItem:bar_photo" },
@@ -212,7 +240,14 @@ const DIALOGUE_WAITER = {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
                         tone: "calm",
-                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected",
+                        condition: "all:hasInsight:joe_arranged_safe_lodging&hasInsight:full_confession_kane&not:hasInsight:thomas_family_protected&not:hasInsight:thomas_family_address_exposed",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "После раскрытия первого укрытия Джо нашёл новое. Ты подтвердил переезд матери?",
+                        nextNode: "family_safety_reconfirmed",
+                        tone: "calm",
+                        condition: "all:hasInsight:thomas_family_address_exposed&hasInsight:joe_relocated_family_after_leak&not:hasInsight:thomas_family_protected",
                         hiddenWhenUnavailable: true
                     },
                     { text: "Расскажи только то, что сам видел.", nextNode: "he_saw", tone: "calm", cooperationDelta: 3 },
@@ -465,6 +500,16 @@ const DIALOGUE_WAITER = {
                 ]
             },
 
+            family_safety_reconfirmed: {
+                speaker: "npc",
+                text: "Первое укрытие действительно стало небезопасным. Но мы переехали по новому адресу Джо; я сам отвёз маму и сейчас с ней связался. Кейн не знает, где мы. Пожалуйста, больше никому не рассказывайте о нас.",
+                mood: "guarded",
+                innerThought: "Первоначальная утечка не исчезла из истории, но новое подтверждение позволяет оценить текущую безопасность.",
+                givesInsight: "thomas_family_protected",
+                answers: [
+                    { text: "Адрес останется конфиденциальным. Прости за прежнюю ошибку.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                ]
+            },
             family_safety_confirmed: {
                 speaker: "npc",
                 text: "Да. Я сам проводил маму в место, которое нашёл Джо, и только что говорил с ней. Кейн не знает адреса, а Джо договорился, кто будет проверять её состояние. Теперь я могу сказать, что она в безопасности. Спасибо, что вы не ограничились признанием Кейна.",
