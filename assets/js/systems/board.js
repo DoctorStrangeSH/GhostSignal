@@ -229,6 +229,23 @@ class InvestigationBoard {
         return findings;
     }
 
+    // A requiresItem gate describes the detective's investigation access.
+    // It must never be interpreted as proof that an NPC could not enter.
+    reviewAlibiAccessRestrictions(knownLocations = []) {
+        const locations = new Map((Array.isArray(knownLocations) ? knownLocations : [])
+            .filter(loc => loc && typeof loc.id === 'string').map(loc => [loc.id, loc]));
+        return this.alibiClaims.flatMap(claim => {
+            const loc = locations.get(claim.locationId);
+            if (!loc?.requiresItem) return [];
+            return [{
+                ids: [claim.id], subject: claim.subject, locationId: loc.id,
+                status: 'investigator_access_gate',
+                requirement: loc.requiresItem,
+                reason: `Для осмотра «${loc.name || claim.location}» детективу требуется специальное разрешение. Это правило доступа игрока; оно не доказывает, что ${claim.subject} не мог находиться там или попасть внутрь другим способом.`
+            }];
+        });
+    }
+
     checkConclusions() {
         // Проверяем ключевые пары
         const pairs = [
