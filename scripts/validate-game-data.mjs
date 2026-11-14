@@ -147,6 +147,7 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
              /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^accusation_status:[a-z0-9_:-]{1,100}:(pending|false|retracted|substantiated)$/i.test(rule.condition) ||
              /^all:promise_status:[a-z0-9_:-]{1,100}:(pending|fulfilled|broken)&not:has_visited_node:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
+             /^all:long_term_memory:[a-z0-9_:-]{1,48}&not:has_visited_node:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^npc_action_received:[a-z0-9_:-]{1,64}$/i.test(rule.condition) ||
              /^all:npc_action_received:[a-z0-9_:-]{1,64}&not:has_visited_node:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^npc_investigation_outcome:[a-z0-9_:-]{1,64}:(corroborated|disputed|no_independent_evidence)$/i.test(rule.condition));
