@@ -1082,6 +1082,8 @@ test("Thomas can return to factual testimony after an apology without reopening 
     assert.equal(followUp?.isAvailable, true);
     engine.selectAnswer(followUp.index);
     assert.match(engine.currentNode.text, /не видел, как порошок/);
+    assert.equal(engine.getAvailableAnswers().some(a => a.accusation?.id === "thomas-lied-about-poisoning"), false,
+        "the accusation must not be repeatable after it is resolved");
     assert.equal(memory.getAccusationStatus("waiter", "thomas-lied-about-poisoning"), "false");
     assert.equal(memory.getAccusations("waiter").length, 1);
 });
