@@ -25,12 +25,57 @@ const DIALOGUE_WAITER = {
     tree: {
         start: "greeting",
         entryRules: [
+            { condition: "accusation_status:thomas-lied-about-poisoning:pending", nodeId: "accused_after_revision_opening" },
+            { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
             { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
         ],
         nodes: {
+            accused_after_revision_opening: {
+                speaker: "npc",
+                text: "Вы назвали меня лжецом, когда я исправил показания. Прежде чем спрашивать о Кейне снова, скажите: вы действительно считаете, что я специально обманул вас?",
+                mood: "hurt",
+                answers: [
+                    {
+                        text: "Нет. Я обвинил тебя без доказательств. Мне жаль. Я официально снимаю обвинение.",
+                        nextNode: "apology_not_forgiven",
+                        tone: "reassuring",
+                        resolveAccusation: {
+                            id: "thomas-lied-about-poisoning",
+                            outcome: "false",
+                            reason: "Детектив признал, что добровольное уточнение показаний не доказывает намеренную ложь."
+                        },
+                        report: {
+                            id: "detective-retracted-thomas-lie-accusation",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
+                            sourceName: "Томас",
+                            text: "Детектив признал, что зря обвинил меня во лжи, и снял обвинение. Доверять ему снова пока трудно."
+                        }
+                    },
+                    { text: "Я не готов снять обвинение.", nextNode: "end_waiter_guarded", tone: "cold" }
+                ]
+            },
+            apology_not_forgiven: {
+                speaker: "npc",
+                text: "Хорошо, что вы это признали. Но мои слова уже обсуждали за моей спиной. Я не могу сразу снова вам доверять. Проверьте факты и не заставляйте меня выбирать удобную для вас версию.",
+                mood: "guarded",
+                innerThought: "Извинение исправило запись об обвинении, но доверие и готовность говорить не восстанавливаются мгновенно.",
+                answers: [
+                    { text: "Я проверю всё независимо. Не буду давить на тебя.", nextNode: "end_waiter_guarded", tone: "calm" }
+                ]
+            },
+            apology_acknowledged_opening: {
+                speaker: "npc",
+                text: "Я помню, что вы сняли обвинение. Спасибо за это. Но мне всё ещё трудно говорить с вами после того, что произошло. Давайте пока придерживаться проверенных фактов.",
+                mood: "guarded",
+                answers: [
+                    { text: "Согласен. Не буду требовать большего, чем ты видел.", nextNode: "end_waiter_guarded", tone: "calm" }
+                ]
+            },
             reconsidered_testimony_opening: {
                 speaker: "npc",
                 text: "Я уже объяснил, что после угрозы сказал больше, чем могу подтвердить. Я помню Кейна у столика, но не стану утверждать, будто видел сам момент отравления.",
