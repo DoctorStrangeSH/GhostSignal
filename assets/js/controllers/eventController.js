@@ -10,6 +10,7 @@ class EventController {
         this.unsubscribers = [];
         this.intervals = [];
         this.bound = false;
+        this.pageHideHandler = null;
     }
 
     _subscribe(name, handler) {
@@ -299,6 +300,12 @@ class EventController {
         });
 
         this.intervals.push(setInterval(() => app._quickSave(), 10000));
+        // Timed autosave may not fire if the player closes the tab immediately.
+        // pagehide also covers navigation and bfcache without blocking unload.
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            this.pageHideHandler = () => { if (app.progress) app._quickSave(); };
+            window.addEventListener('pagehide', this.pageHideHandler);
+        }
         this.intervals.push(setInterval(() => {
             if (!app.authManager?.isUserLoggedIn() || !app.progress || !app.syncManager) return;
             // A cloud sync must capture the latest NPC, board and dialogue state,
@@ -308,6 +315,10 @@ class EventController {
     }
 
     dispose() {
+        if (this.pageHideHandler && typeof window !== 'undefined') {
+            window.removeEventListener('pagehide', this.pageHideHandler);
+            this.pageHideHandler = null;
+        }
         this.unsubscribers.splice(0).reverse().forEach(unsubscribe => unsubscribe());
         this.intervals.splice(0).forEach(intervalId => clearInterval(intervalId));
         this.bound = false;

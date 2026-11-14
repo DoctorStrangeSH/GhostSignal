@@ -110,6 +110,36 @@ test("cloud sync captures a fresh snapshot and skips failed or unauthenticated s
     assert.equal(synced.length, 1);
 });
 
+test("pagehide saves the latest investigation and unregisters on dispose", () => {
+    const listeners = new Map();
+    const removed = [];
+    let saves = 0;
+    const app = { progress: { activeCase: "case-002" }, _quickSave() { saves++; return true; } };
+    const EventController = loadEventController({
+        window: {
+            addEventListener(name, handler) { listeners.set(name, handler); },
+            removeEventListener(name, handler) { removed.push([name, handler]); }
+        },
+        setInterval() { return 1; },
+        clearInterval() {}
+    });
+    const controller = new EventController(app, createEventBus());
+    controller.bind();
+    const pagehide = listeners.get("pagehide");
+    assert.equal(typeof pagehide, "function");
+    pagehide();
+    assert.equal(saves, 1);
+
+    app.progress = null;
+    pagehide();
+    assert.equal(saves, 1);
+
+    controller.dispose();
+    assert.equal(removed.length, 1);
+    assert.equal(removed[0][0], "pagehide");
+    assert.equal(removed[0][1], pagehide);
+});
+
 test("EventController persists NPC memory without auto-revealing contradictions", () => {
     const eventBus = createEventBus();
     let saves = 0;
