@@ -2312,6 +2312,9 @@ test("Thomas distinguishes fulfilled and broken safety promises without instant 
     });
     assert.equal(memory.getNPCValueAlignment("waiter", "witness_safety"), "contested");
     engine.startDialogue("dialogue-waiter");
+    const continueToQuestions = engine.getAvailableAnswers().find(a => a.nextNode === "greeting");
+    assert.equal(continueToQuestions?.isAvailable, true);
+    engine.selectAnswer(continueToQuestions.index);
     const conflict = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_conflicted_safety_values");
     assert.equal(conflict?.isAvailable, true);
     engine.selectAnswer(conflict.index);
