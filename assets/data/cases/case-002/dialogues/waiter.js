@@ -428,7 +428,25 @@ const DIALOGUE_WAITER = {
                         tone: "direct",
                         condition: "all:hasInsight:joe_arranged_safe_lodging&not:has_visited_node:thomas_keeps_family_location_private",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо предупредил тебя о том, что первое укрытие оказалось раскрыто?",
+                        nextNode: "thomas_received_joe_shelter_warning",
+                        tone: "cautious",
+                        condition: "all:npc_action_received:joe-alerts-thomas-after-shelter-leak&not:has_visited_node:thomas_received_joe_shelter_warning",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_received_joe_shelter_warning: {
+                speaker: "npc",
+                text: "Да. Джо сам связался со мной и сказал, что вы признались ему в утечке. Я не слышал разговора с Кейном лично, но после такого предупреждения мы не можем полагаться на первое укрытие. Я проверю, что мама добралась до другого безопасного места. Пока этого нет, не называйте её защищённой.",
+                mood: "worried",
+                innerThought: "Томас знает о признании детектива только со слов Джо. Предупреждение не является подтверждением переезда.",
+                answers: [
+                    { text: "Понимаю. Не стану считать безопасность подтверждённой заранее.", nextNode: "greeting", tone: "calm" },
+                    { text: "Вернусь после того, как проверю дальнейшие меры защиты.", nextNode: "end_waiter_guarded", tone: "reassuring" }
                 ]
             },
 
