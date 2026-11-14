@@ -4,6 +4,7 @@ class BoardUI {
         this.board = null;
         this.inventory = null;
         this.memoryService = null;
+        this.locationManager = null;
         this._draggedEvidence = null;
         this._init();
     }
@@ -21,6 +22,15 @@ class BoardUI {
     setMemoryService(service) {
         this.memoryService = service || null;
         this.render();
+    }
+
+    setLocationManager(manager) {
+        this.locationManager = manager || null;
+        this.render();
+    }
+
+    _knownAlibiLocations() {
+        return [...(this.locationManager?.visitedLocations || [])].map(id => getLocationById(id)).filter(Boolean);
     }
     
     _init() {
@@ -224,13 +234,19 @@ class BoardUI {
         ];
         const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
         const claims = this.board?.alibiClaims || [];
-        const warnings = this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || [];
+        const knownLocations = this._knownAlibiLocations();
+        const warnings = [
+            ...(this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || []),
+            ...(this.board?.reviewAlibiLocationHours(knownLocations) || [])
+        ];
         return `<section class="testimony-journal" aria-labelledby="alibi-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">ВЕРСИИ ДЕТЕКТИВА</span><h3 id="alibi-title">📍 ПРОВЕРКА АЛИБИ</h3></div><span class="testimony-count">${claims.length} записей</span></div>
             <p class="hypothesis-help">Это ваша реконструкция по найденным источникам, а не подтверждённый маршрут NPC. Указывайте время, место и степень точности из показания или документа. Интервалы через полночь пока нужно разбивать на две записи.</p>
             <form id="alibi-form" class="hypothesis-form">
                 <input class="terminal-input" name="subject" maxlength="100" required placeholder="Персонаж (одно имя для разных записей)" aria-label="Персонаж">
                 <input class="terminal-input" name="location" maxlength="120" required placeholder="Предполагаемое место" aria-label="Место">
+                <select class="terminal-input" name="locationId" aria-label="Известная локация (необязательно)"><option value="">Не привязывать к известной локации</option>${knownLocations.map(loc => `<option value="${this._escapeHTML(loc.id)}">${this._escapeHTML(loc.name || loc.id)}</option>`).join('')}</select>
+                <p class="hypothesis-help">Привязка доступна только для посещённых мест и позволяет проверить обычные часы работы. Закрытая локация не означает невозможность проникновения.</p>
                 <label>С <input class="terminal-input" type="time" name="start" required></label>
                 <label>По <input class="terminal-input" type="time" name="end" required></label>
                 <select class="terminal-input" name="precision" aria-label="Точность"><option value="approximate">Время приблизительное</option><option value="exact">Время указано точно</option></select>
@@ -238,7 +254,7 @@ class BoardUI {
                 <button class="terminal-btn btn-sm" type="submit">ДОБАВИТЬ В РЕКОНСТРУКЦИЮ</button>
             </form>
             <ol>${claims.map(c => `<li><strong>${this._escapeHTML(c.subject)}</strong>: ${fmt(c.startMinute)}–${fmt(c.endMinute)} · ${this._escapeHTML(c.location)}
-                (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)})
+                (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)}${c.locationId ? ' · привязано к посещённой локации' : ''})
                 <button class="terminal-btn btn-sm alibi-remove" data-id="${this._escapeHTML(c.id)}" type="button" aria-label="Удалить версию">✕</button></li>`).join('') || '<li>Пока нет версий местонахождения.</li>'}</ol>
             ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}</li>`).join('')}</ul></div>` : ''}
         </section>`;
@@ -253,10 +269,12 @@ class BoardUI {
             const [kind, ...sourceParts] = form.elements.source.value.split(':');
             const result = this.board?.addAlibiClaim({
                 subject: form.elements.subject.value, location: form.elements.location.value,
+                locationId: form.elements.locationId.value || null,
                 startMinute: minutes(form.elements.start.value), endMinute: minutes(form.elements.end.value),
                 precision: form.elements.precision.value, kind, sourceId: sourceParts.join(':')
             }, { statements: this.memoryService?.getStatements?.() || [],
-                evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])] });
+                evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])],
+                locations: this._knownAlibiLocations() });
             if (!result) events.emit('notification:show', { message: 'Проверьте интервал, источник и отсутствие дублей.', type: 'warning', duration: 3000 });
         });
         this.container.querySelectorAll('.alibi-remove').forEach(button => button.addEventListener('click', () =>
