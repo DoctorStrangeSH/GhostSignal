@@ -1187,6 +1187,39 @@ test("unfounded accusation after Thomas corrects testimony harms cooperation and
     assert.doesNotMatch(engine.currentNode.text, /больше не буду молчать/);
 });
 
+test('Lora challenges an accusation only after its report reaches her and treats it as hearsay', () => {
+    const { engine, memory, advance } = createDialogueHarness();
+    engine.startDialogue('dialogue-journalist');
+    assert.equal(engine.getAvailableAnswers().some(item =>
+        item.nextNode === 'lora_heard_unfounded_accusation' && item.isAvailable), false);
+
+    memory.recordClaim('waiter', { id: 'waiter-kane-at-poisoning', topic: 'kane-presence-during-poisoning',
+        value: 'saw-poisoning' });
+    memory.recordClaim('waiter', { id: 'waiter-kane-at-poisoning-v2', topic: 'kane-presence-during-poisoning',
+        value: 'near-victim-table-before-collapse', revisesClaimId: 'waiter-kane-at-poisoning' });
+    engine.startDialogue('dialogue-waiter');
+    const accusation = engine.getAvailableAnswers().find(item =>
+        item.accusation?.id === 'thomas-lied-about-poisoning');
+    engine.selectAnswer(accusation.index);
+    assert.equal(memory.hasRumor('journalist', 'detective-accused-thomas-after-correction'), false);
+    for (let i = 0; i < 8; i++) memory.recordAnswerSelected('bartender', 'dialogue-bartender-case2',
+        'pressure-report-' + i, { text: 'Я буду давить на вас.', tone: 'threatening' });
+    advance(15);
+    assert.equal(memory.hasRumor('bartender', 'detective-accused-thomas-after-correction'), true);
+    engine.startDialogue('dialogue-journalist');
+    assert.equal(engine.getAvailableAnswers().some(item =>
+        item.nextNode === 'lora_heard_unfounded_accusation' && item.isAvailable), false);
+    advance(30);
+    assert.equal(memory.hasRumor('journalist', 'detective-accused-thomas-after-correction'), true);
+    engine.startDialogue('dialogue-journalist');
+    const question = engine.getAvailableAnswers().find(item =>
+        item.nextNode === 'lora_heard_unfounded_accusation');
+    assert.equal(question?.isAvailable, true);
+    engine.selectAnswer(question.index);
+    assert.match(engine.currentNode.text, /не присутствовала/);
+    assert.match(engine.currentNode.text, /не могу подтвердить/);
+});
+
 test("Thomas names detective pressure as the cause of his later retraction", () => {
     const { engine, memory } = createDialogueHarness();
     memory.recordClaim("waiter", {
