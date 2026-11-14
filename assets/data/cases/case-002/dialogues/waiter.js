@@ -73,6 +73,18 @@ const DIALOGUE_WAITER = {
                 text: "Я помню, что вы сняли обвинение. Спасибо за это. Но мне всё ещё трудно говорить с вами после того, что произошло. Давайте пока придерживаться проверенных фактов.",
                 mood: "guarded",
                 answers: [
+                    {
+                        text: "Вернёмся к твоим действующим показаниям, без предположений.",
+                        nextNode: "revised_testimony_opening",
+                        tone: "calm",
+                        condition: "has_claim:waiter-kane-at-poisoning-v2"
+                    },
+                    {
+                        text: "Расскажи только о том, что видел после нашего прошлого разговора.",
+                        nextNode: "reconsidered_testimony_opening",
+                        tone: "calm",
+                        condition: "has_claim:waiter-kane-at-poisoning-reconsidered"
+                    },
                     { text: "Согласен. Не буду требовать большего, чем ты видел.", nextNode: "end_waiter_guarded", tone: "calm" }
                 ]
             },
