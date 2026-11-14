@@ -41,7 +41,8 @@ const CASE_002 = {
         "journalist",
         "labour_inspector",
         "tram_conductor",
-        "mill_watchman"
+        "mill_watchman",
+        "diner_owner"
     ],
 
     // === СОЦИАЛЬНАЯ СЕТЬ NPC ===
