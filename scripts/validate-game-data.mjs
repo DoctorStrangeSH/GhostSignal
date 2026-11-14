@@ -143,6 +143,7 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
     for (const rule of entryRules) {
         const validCondition = typeof rule?.condition === "string" &&
             (/^hasInsight:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
+             /^all:hasInsight:[a-z0-9_:-]{1,100}&hasInsight:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^has_claim:[a-z0-9_:-]{1,100}$/i.test(rule.condition) ||
              /^accusation_status:[a-z0-9_:-]{1,100}:(pending|false|retracted|substantiated)$/i.test(rule.condition) ||
              /^npc_action_received:[a-z0-9_:-]{1,64}$/i.test(rule.condition) ||
