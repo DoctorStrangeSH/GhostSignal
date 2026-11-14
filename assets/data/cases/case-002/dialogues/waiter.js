@@ -27,6 +27,8 @@ const DIALOGUE_WAITER = {
         entryRules: [
             { condition: "accusation_status:thomas-lied-about-poisoning:pending", nodeId: "accused_after_revision_opening" },
             { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
+            { condition: "all:promise_status:thomas-family-protection:fulfilled&not:has_visited_node:promise_kept_opening", nodeId: "promise_kept_opening" },
+            { condition: "all:promise_status:thomas-family-protection:broken&not:has_visited_node:promise_broken_opening", nodeId: "promise_broken_opening" },
             { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
@@ -34,6 +36,24 @@ const DIALOGUE_WAITER = {
             { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
         ],
         nodes: {
+            promise_kept_opening: {
+                speaker: "npc",
+                text: "Мама сейчас в безопасности. Вы обещали помочь и довели дело до конца. Я это запомню, детектив. Если мне станет известно что-то новое, я расскажу вам сам — без угроз и давления.",
+                mood: "relieved",
+                answers: [
+                    { text: "Спасибо за доверие. Продолжим только с проверенными фактами.", nextNode: "greeting", tone: "calm" },
+                    { text: "Береги себя и семью, Томас.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            promise_broken_opening: {
+                speaker: "npc",
+                text: "Вы обещали защитить мою семью. Я поверил вам, а потом остался один с этой угрозой. Я больше не стану доверять обещаниям без доказательств. Спрашивайте только о том, что я действительно видел.",
+                mood: "hurt",
+                answers: [
+                    { text: "Я понимаю, почему ты не веришь мне. Не стану требовать доверия.", nextNode: "greeting", tone: "calm" },
+                    { text: "На сегодня закончим.", nextNode: "end_waiter_guarded", tone: "neutral" }
+                ]
+            },
             joe_after_lora_support_opening: {
                 speaker: "npc",
                 text: "Джо поговорил со мной после сообщения Лоры. Она проверила историю, но пока не нашла независимых доказательств обвинения. Я рад, что Джо не отвернулся, однако мне всё ещё страшно и я не хочу снова повторять чужие догадки как факт.",
