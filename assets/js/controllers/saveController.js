@@ -4,14 +4,34 @@
  * Cloud synchronization remains owned by SyncManager.
  */
 class SaveController {
-    constructor(app, storageManager) {
+    constructor(app, storageManager, eventBus = typeof events !== 'undefined' ? events : null) {
         this.app = app;
         this.storage = storageManager;
+        this.eventBus = eventBus;
+        this.saveFailed = false;
     }
 
     saveProgress() {
         if (!this.app.progress) return false;
-        return this.storage.saveProgress(this.app.progress) === true;
+        let saved = false;
+        try {
+            saved = this.storage.saveProgress(this.app.progress) === true;
+        } catch (error) {
+            console.error('Unable to save investigation:', error);
+        }
+        if (!saved && !this.saveFailed) {
+            this.eventBus?.emit('notification:show', {
+                message: '⚠️ Прогресс не сохранён! Проверьте доступное место и настройки браузера. Не закрывайте вкладку.',
+                type: 'error', duration: 10000
+            });
+        } else if (saved && this.saveFailed) {
+            this.eventBus?.emit('notification:show', {
+                message: '✅ Сохранение восстановлено. Прогресс записан.',
+                type: 'success', duration: 5000
+            });
+        }
+        this.saveFailed = !saved;
+        return saved;
     }
 
     quickSave() {

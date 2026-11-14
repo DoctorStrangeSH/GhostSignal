@@ -96,3 +96,47 @@ test("SaveController reports failed writes and does not claim a successful quick
     assert.equal(controller.saveProgress(), false);
     assert.equal(attempts, 2);
 });
+
+test("save errors notify the player once until storage recovers", () => {
+    const notices = [];
+    let writable = false;
+    const storage = { saveProgress() { return writable; } };
+    const bus = { emit(name, detail) { notices.push({ name, detail }); } };
+    const controller = new (loadSaveController())({ progress: { activeCase: "case-001" } }, storage, bus);
+
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(notices.length, 1);
+    assert.equal(notices[0].name, "notification:show");
+    assert.equal(notices[0].detail.type, "error");
+    assert.match(notices[0].detail.message, /не сохранён/i);
+
+    writable = true;
+    assert.equal(controller.saveProgress(), true);
+    assert.equal(notices.length, 2);
+    assert.equal(notices[1].detail.type, "success");
+    assert.equal(controller.saveProgress(), true);
+    assert.equal(notices.length, 2);
+
+    writable = false;
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(notices.length, 3);
+});
+
+test("unexpected storage exceptions surface as a failed save without breaking the app", () => {
+    const notices = [];
+    const errors = [];
+    const SaveController = loadSaveController({
+        console: { error(...args) { errors.push(args); } }
+    });
+    const controller = new SaveController(
+        { progress: { activeCase: "case-002" } },
+        { saveProgress() { throw new Error("Storage unavailable"); } },
+        { emit(name, detail) { notices.push({ name, detail }); } }
+    );
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(notices.length, 1);
+    assert.equal(notices[0].detail.type, "error");
+    assert.equal(errors.length, 2);
+});
