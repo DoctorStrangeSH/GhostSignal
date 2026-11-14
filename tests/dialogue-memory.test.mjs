@@ -3162,38 +3162,27 @@ test("Several source overclaims in one investigation never form a repeated-case 
 });
 
 
-test("Joe remembers repeated pressure from separate investigations, but not repeated choices in one case", () => {
-    const { engine, memory } = createDialogueHarness();
-    for (const [caseId, nodeId] of [["case-001", "first-pressure"], ["case-002", "second-pressure"]]) {
+test("polite reassurance alone never becomes a cross-case pattern of reliable support", () => {
+    const { memory } = createDialogueHarness();
+    for (const caseId of ["case-001", "case-002"]) {
         memory.setCase(caseId);
-        memory.recordAnswerSelected("bartender", "dialogue-bartender-case2", nodeId, {
-            text: "Я добьюсь ответа любой ценой.", tone: "threatening"
+        for (let i = 0; i < 4; i++) {
+            memory.recordAnswerSelected("bartender", "dialogue-bartender", "reassurance-" + i, {
+                text: "Не волнуйтесь, я всё понимаю.", tone: "reassuring"
+            });
+        }
+    }
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 0);
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").consistentSupport, false);
+
+    for (const caseId of ["case-001", "case-002"]) {
+        memory.setCase(caseId);
+        memory.recordAnswerSelected("bartender", "dialogue-bartender", "verified-action", {
+            text: "Я сверил запись и исправил вывод.", tone: "calm",
+            memoryImportance: 3,
+            memoryTags: ["player_completed_cautious_identification"]
         });
     }
-    const pattern = memory.getLongTermBehaviorPattern("bartender");
-    assert.equal(pattern.pressuredCases, 2);
-    assert.equal(pattern.repeatedPressure, true);
-
-    memory.setCase("case-002");
-    engine.startDialogue("dialogue-bartender-case2");
-    assert.equal(engine.currentNode.id, "joe_remembers_repeated_pressure");
-    assert.match(engine.currentNode.text, /не в одном деле/);
-    assert.match(engine.currentNode.text, /не стану торопить Томаса/);
-
-    const answer = engine.getAvailableAnswers().find(item => item.nextNode === "greeting");
-    assert.equal(answer?.isAvailable, true);
-    engine.selectAnswer(answer.index);
-    engine.startDialogue("dialogue-bartender-case2");
-    assert.notEqual(engine.currentNode.id, "joe_remembers_repeated_pressure",
-        "the personal-history opening is shown only once");
-
-    const singleCase = createDialogueHarness();
-    for (let i = 0; i < 4; i++) {
-        singleCase.memory.recordAnswerSelected("bartender", "pressure-dialogue", "pressure-" + i, {
-            text: "Я добьюсь ответа любой ценой.", tone: "threatening"
-        });
-    }
-    assert.equal(singleCase.memory.getLongTermBehaviorPattern("bartender").pressuredCases, 1);
-    singleCase.engine.startDialogue("dialogue-bartender-case2");
-    assert.notEqual(singleCase.engine.currentNode.id, "joe_remembers_repeated_pressure");
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").supportedCases, 2);
+    assert.equal(memory.getLongTermBehaviorPattern("bartender").consistentSupport, true);
 });
