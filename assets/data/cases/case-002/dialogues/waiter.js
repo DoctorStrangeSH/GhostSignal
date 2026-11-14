@@ -414,7 +414,24 @@ const DIALOGUE_WAITER = {
                         tone: "procedural",
                         condition: "all:has_visited_node:thomas_hears_visitor_correction&heard_rumor:joe-reports-detective-visitor-correction&hasInsight:rudenko_denies_visit&hasInsight:joe_rules_out_rudenko&not:has_visited_node:thomas_acknowledges_verified_followup",
                         hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Я помню, что и помог твоей семье, и однажды подвёл её. Можем поговорить честно?",
+                        nextNode: "thomas_conflicted_safety_values",
+                        tone: "cautious",
+                        condition: "all:npc_value_alignment:witness_safety:contested&not:has_visited_node:thomas_conflicted_safety_values",
+                        hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_conflicted_safety_values: {
+                speaker: "npc",
+                text: "Вы действительно помогли моей семье, и я это не забуду. Но помню и нарушенное обещание. Одно не отменяет другого. Я могу рассказать, что видел своими глазами, но прежде чем снова поверить словам о безопасности, мне нужны конкретные подтверждения.",
+                mood: "guarded",
+                answers: [
+                    { text: "Ты прав. Начнём только с того, что ты видел.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Не буду требовать доверия. До встречи.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
 
