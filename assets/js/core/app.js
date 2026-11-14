@@ -275,24 +275,44 @@ class App {
         body.querySelector('#btn-restart-tutorial')?.addEventListener('click', () => { this.tutorialSystem.reset(); modal.hide(); setTimeout(() => this.tutorialSystem.start(), 500); });
         body.querySelector('#btn-reset-case')?.addEventListener('click', () => {
             if (confirm('Сбросить дело?')) {
-                this.inventory = new Inventory(); this.inventory.addItem('magnifying_glass'); this.inventoryUI.setInventory(this.inventory);
-                this.investigationBoard = new InvestigationBoard(); this.boardUI.setBoard(this.investigationBoard); this.dialogueEngine?.setInvestigationBoard(this.investigationBoard);
-                this.notesManager = new NotesManager(); this.notesUI.setNotesManager(this.notesManager);
-                this.npcManager = new NPCManager(this.gameTime, this.inventory);
-                this.npcManager.setMemoryService(this.npcMemoryService);
-                this.npcManager.setSocialNetwork(this.npcSocialNetwork);
-                this.npcManager.setRelationshipService(this.npcRelationshipService);
-                this.npcListUI.setNPCManager(this.npcManager);
-                this.caseManager = new CaseManager(this.gameTime, this.locationManager, this.inventory);
-                this.npcSocialNetwork?.resetCase(this.progress.activeCase);
-                this.npcRelationshipService?.resetCase(this.progress.activeCase);
-                this.progress.npcSocialData = this.npcSocialNetwork?.toJSON();
-                this.progress.npcRelationshipData = this.npcRelationshipService?.toJSON();
-                this.progress.activeCase = null; this.progress.caseData = null; this.progress.inventoryData = null; this.progress.boardData = null; this.progress.npcData = null; this.progress.notesData = null;
-                this._saveProgress(); modal.hide(); this.navigateTo('screen-main-menu');
+                modal.hide();
+                this._resetCurrentCase();
             }
         });
         body.querySelector('#btn-reset-all')?.addEventListener('click', () => { if (confirm('УДАЛИТЬ ВСЁ?')) { storage.clearAll(); modal.hide(); location.reload(); } });
+    }
+
+    _resetCurrentCase() {
+        if (!this.progress?.activeCase) return false;
+        const caseId = this.progress.activeCase;
+
+        // Keep profiles and outcomes from other cases, but discard this run's
+        // NPC statements, rumors and case-specific relationship state.
+        if (this.npcMemoryService) {
+            delete this.npcMemoryService.cases?.[caseId];
+            this.npcMemoryService.currentCaseId = null;
+        }
+        this.npcSocialNetwork?.resetCase(caseId);
+        this.npcRelationshipService?.resetCase(caseId);
+        if (this.npcSocialNetwork) this.npcSocialNetwork.currentCaseId = null;
+        if (this.npcRelationshipService) this.npcRelationshipService.currentCaseId = null;
+
+        const progress = this.progress;
+        for (const key of [
+            'locationData', 'inventoryData', 'caseData', 'npcData', 'boardData',
+            'notesData', 'stakeoutData', 'chainData', 'interrogationData'
+        ]) progress[key] = null;
+        progress.activeCase = null;
+        progress.npcMemoryData = this.npcMemoryService?.toJSON() || null;
+        progress.npcSocialData = this.npcSocialNetwork?.toJSON() || null;
+        progress.npcRelationshipData = this.npcRelationshipService?.toJSON() || null;
+
+        // pagehide saves the live objects; disconnect it first or the old
+        // investigation would overwrite the cleared snapshot during reload.
+        this.eventController?.dispose();
+        this._saveProgress();
+        location.reload();
+        return true;
     }
 
     _saveProgress() {
