@@ -204,6 +204,7 @@ registerData('object', {
     },
     telephone_exchange_slip: {
         id: "telephone_exchange_slip", name: "Карточка междугороднего запроса", type: "evidence",
+        timelineFacts: [{ id: "request-2218", minute: 22 * 60 + 18, label: "Станция приняла междугородний запрос", scope: "textile-district-line", certainty: "recorded", caveat: "Неизвестны номер аппарата, звонивший и результат соединения" }],
         description: "Служебная копия карточки: запрос с линии текстильного района принят в 22:18 по сверенным часам станции, адресован на Восточный узел. Поле номера абонента не сохранилось; результат соединения не отмечен.",
         icon: "📞", takeable: true, isEvidence: true, weight: 0,
         interactions: {
@@ -216,6 +217,11 @@ registerData('object', {
     },
     booth_t17_maintenance_ticket: {
         id: "booth_t17_maintenance_ticket", name: "Наряд на ремонт будки Т-17", type: "evidence",
+        timelineFacts: [
+            { id: "fault-2155", minute: 21 * 60 + 55, label: "Обнаружен нестабильный контакт", scope: "booth-t17", certainty: "recorded", caveat: "Не означает непрерывного полного отключения" },
+            { id: "failed-2205", minute: 22 * 60 + 5, label: "Контрольный вызов не прошёл", scope: "booth-t17", certainty: "recorded", caveat: "Относится к одному контрольному вызову" },
+            { id: "restored-2241", minute: 22 * 60 + 41, label: "Повторная проверка после ремонта", scope: "booth-t17", certainty: "recorded", caveat: "Не устанавливает состояние всех промежуточных минут" }
+        ],
         description: "Технический наряд: нестабильный контакт в колодце Т-17 зафиксирован в 21:55; контрольный вызов с этой будки не прошёл в 22:05; восстановление контакта и повторная проверка — 22:41.",
         icon: "🛠️", takeable: true, isEvidence: true, weight: 0,
         interactions: {
