@@ -8,6 +8,7 @@ const icon = readFileSync(new URL('../assets/icons/ghost-signal.svg', import.met
 const alley = readFileSync(new URL('../assets/art/locations/noir-alley.svg', import.meta.url), 'utf8');
 const hotel = readFileSync(new URL('../assets/art/locations/grand-hotel.svg', import.meta.url), 'utf8');
 const room = readFileSync(new URL('../assets/art/locations/room-304.svg', import.meta.url), 'utf8');
+const bar = readFileSync(new URL('../assets/art/locations/joes-bar.svg', import.meta.url), 'utf8');
 const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
@@ -52,4 +53,11 @@ test('room 304 art keeps secret discoveries out of its illustration', () => {
     for (const discovery of ['hidden_note', 'wire_fragment', 'wall_safe', 'small_key']) {
         assert.ok(!room.includes(discovery), `Visual art must not prematurely reveal ${discovery}`);
     }
+});
+
+test('Joe bar scene has dedicated art without pre-revealing inspectable clues', () => {
+    assert.match(css, /\.scene-location-bar_joe\s*\{/);
+    assert.match(css, /url\('\.\.\/art\/locations\/joes-bar\.svg'\)/);
+    assert.match(bar, /<title id="title">Бар У Джо<\/title>/);
+    assert.ok(!bar.includes('matchbox') && !bar.includes('fabric_clue'));
 });
