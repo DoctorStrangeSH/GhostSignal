@@ -34,7 +34,7 @@ class DeductionScreen {
                 <p class="deduction-question">${question.text}</p>
 
                 <div class="deduction-row">
-                    <label>Подозреваемый:</label>
+                    <label for="ded-suspect">Подозреваемый:</label>
                     <select id="ded-suspect" class="terminal-input">
                         <option value="">-- Выберите --</option>
                         ${(caseData.deductionSuspects || this._getDefaultSuspects(caseData)).map(s =>
@@ -44,7 +44,7 @@ class DeductionScreen {
                 </div>
 
                 <div class="deduction-row">
-                    <label>Мотив:</label>
+                    <label for="ded-motive">Мотив:</label>
                     <select id="ded-motive" class="terminal-input">
                         <option value="">-- Выберите --</option>
                         ${(caseData.deductionMotives || [
@@ -58,7 +58,7 @@ class DeductionScreen {
                 </div>
 
                 <div class="deduction-row">
-                    <label>Орудие:</label>
+                    <label for="ded-weapon">Орудие:</label>
                     <select id="ded-weapon" class="terminal-input">
                         <option value="">-- Выберите --</option>
                         ${(caseData.deductionWeapons || [
@@ -71,7 +71,7 @@ class DeductionScreen {
                 </div>
 
                 <p class="deduction-hint">Это частная проверка гипотезы. Она не влияет на отношения с персонажами.</p>
-                <div id="deduction-feedback" class="hidden" style="margin-top: 16px;"></div>
+                <div id="deduction-feedback" class="hidden" role="status" aria-live="polite"></div>
             </div>
         `;
 
@@ -80,7 +80,7 @@ class DeductionScreen {
             <button class="terminal-btn" data-bs-dismiss="modal">ОТМЕНА</button>
         `;
 
-        const modal = new bootstrap.Modal(document.getElementById('universal-modal'));
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('universal-modal'));
         modal.show();
 
         document.getElementById('btn-deduction-submit')?.addEventListener('click', () => {

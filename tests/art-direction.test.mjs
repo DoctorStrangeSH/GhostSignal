@@ -19,6 +19,20 @@ const callInterface = readFileSync(new URL('../assets/js/npc/callInterface.js', 
 const inventoryUI = readFileSync(new URL('../assets/js/ui/inventoryUI.js', import.meta.url), 'utf8');
 const inventorySystem = readFileSync(new URL('../assets/js/systems/inventory.js', import.meta.url), 'utf8');
 const notificationUI = readFileSync(new URL('../assets/js/ui/notifications.js', import.meta.url), 'utf8');
+const deductionUI = readFileSync(new URL('../assets/js/ui/deductionScreen.js', import.meta.url), 'utf8');
+const eventController = readFileSync(new URL('../assets/js/controllers/eventController.js', import.meta.url), 'utf8');
+
+test('deduction has labelled inputs and separate visual reports for outcome quality', () => {
+    for (const id of ['ded-suspect', 'ded-motive', 'ded-weapon']) {
+        assert.ok(deductionUI.includes(`for="${id}"`));
+    }
+    assert.match(deductionUI, /id="deduction-feedback"[^>]*aria-live="polite"/);
+    for (const quality of ['complete', 'consequences', 'partial', 'limited']) {
+        assert.ok(css.includes(`.ending-report--${quality}`));
+    }
+    assert.match(eventController, /ending\.outcomeQuality === 'compromised'/);
+    assert.match(eventController, /ending-report--\$\{quality\}/);
+});
 
 test('new evidence and testimony discrepancies receive distinct unobtrusive announcements', () => {
     assert.match(inventorySystem, /type: object\.isEvidence \? 'evidence' : 'success'/);

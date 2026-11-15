@@ -308,6 +308,29 @@ body { background: #071014; }
 .prepared-contradiction-kicker { color: #f1a39e; font-weight: 700; letter-spacing: .16em; }
 .prepared-contradiction p { color: #d4dcd5; font-size: 13px; }
 
+/* Финальная реконструкция: протокол дела, не аркадное окно победы. */
+.deduction-screen { padding: 8px 2px 14px; }
+.deduction-question { padding: 16px 18px; background: linear-gradient(125deg,#283337,#17272d); border-left: 3px solid #cfb991; color: #efe5d1; font: 500 18px/1.55 var(--font-serif); }
+.deduction-row { padding: 12px 14px; margin-bottom: 10px; background: rgba(15,34,40,.62); border: 1px solid rgba(189,167,127,.2); border-radius: 6px; }
+.deduction-row label { color: #dfc99f; font-weight: 700; letter-spacing: .1em; }
+.deduction-row select { min-height: 45px; color: #f0e8d7; border-color: rgba(189,167,127,.43); background: #0c1b20; }
+.deduction-hint { color: #b0c1ba; line-height: 1.5; }
+#deduction-feedback { margin-top: 18px; }
+.deduction-screen .feedback { padding: 17px 18px; background: #172b30; border-radius: 6px; border-left-width: 4px; }
+.deduction-screen .feedback-success { border-color: #7dc4bd; background: linear-gradient(110deg,#18413d,#152b30); }
+.deduction-screen .feedback-success h4 { color: #a8e6d8; }
+.deduction-screen .feedback-error { border-color: #d17c77; background: linear-gradient(110deg,#3d262b,#1c292e); }
+.deduction-screen .feedback-warning { border: 1px solid #cbb38b; border-left: 4px solid #cbb38b; background: #393327; }
+.deduction-screen .feedback-warning h4 { color: #ead6ac; }
+.deduction-screen .feedback p, .deduction-screen .feedback li { color: #d5ddd5; line-height: 1.65; }
+.ending-report { padding: clamp(18px,3vw,28px); border: 1px solid rgba(189,167,127,.52); border-left: 4px solid #bda77f; background: linear-gradient(140deg,#253439,#13242a); box-shadow: inset 0 0 45px rgba(0,0,0,.18); }
+.ending-report-kicker { display: block; margin-bottom: 17px; color: #e3ca9b; font: 700 10px/1.4 var(--font-mono); letter-spacing: .16em; }
+.ending-report p { margin: 0; color: #eee7d9; font: 17px/1.75 var(--font-serif); white-space: pre-line; overflow-wrap: anywhere; }
+.ending-report--complete { border-left-color: #7dc4bd; background: linear-gradient(140deg,#20443f,#13272c); }
+.ending-report--consequences { border-left-color: #d17c77; background: linear-gradient(140deg,#3e2e30,#19282d); }
+.ending-report--partial { border-left-color: #d0bb86; }
+.ending-report--limited { border-left-color: #8d9a9a; }
+
 /* Карточка свидетеля напоминает полицейское досье, а не мессенджер. */
 .npc-card { position: relative; overflow: hidden; }
 .npc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(#bda77f,transparent); opacity: .75; }

@@ -282,9 +282,15 @@ class EventController {
                 );
                 if (ending) {
                     events.emit('ending:determined', { caseId, ending });
+                    const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                    })[char]);
+                    const quality = ending.outcomeQuality === 'compromised' ? 'consequences' :
+                        !ending.condition || ending.condition === 'default' ? 'limited' :
+                        ending.condition?.startsWith('evidence_count_') ? 'partial' : 'complete';
                     setTimeout(() => events.emit('modal:show', {
                         title: ending.title || 'Дело завершено',
-                        body: '<div class="ending-report"><p style="white-space:pre-line;">' + (ending.text || 'Расследование завершено.') + '</p></div>',
+                        body: `<div class="ending-report ending-report--${quality}"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено.')}</p></div>`,
                         footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
                     }), 350);
                 }
