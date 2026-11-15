@@ -52,6 +52,7 @@ class NotificationManager {
         };
 
         const notification = document.createElement('div');
+        notification.className = 'notification';
         notification.style.cssText = `
             background: rgba(13, 10, 8, 0.95);
             border: 1px solid ${colors[type] || colors.info};

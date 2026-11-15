@@ -45,6 +45,17 @@ try {
             await page.locator('#screen-case-active.active').waitFor();
             await page.locator('#scene-container .scene-art').first().waitFor();
             await page.screenshot({ path: `${output}/desktop-investigation.png`, fullPage: true });
+
+            // A first-visit introduction is part of gameplay and covers the sidebar.
+            const introduction = page.locator('#universal-modal.show');
+            if (await introduction.isVisible()) {
+                await page.screenshot({ path: `${output}/desktop-introduction.png`, fullPage: true });
+                await introduction.locator('.btn-close').click();
+                await page.locator('.modal-backdrop').waitFor({ state: 'hidden' });
+            }
+            // Toasts are temporary; do not force a click through the player's UI.
+            await page.locator('#notifications-container .notification').first()
+                .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
             await page.locator('.sidebar-tab[data-tab="tab-npcs"]').click();
             await page.locator('#tab-npcs.active .npc-card').first().waitFor();
             await page.screenshot({ path: `${output}/desktop-contacts.png`, fullPage: true });
