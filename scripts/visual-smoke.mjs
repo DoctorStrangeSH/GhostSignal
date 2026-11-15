@@ -50,12 +50,16 @@ try {
 
             // A first-visit introduction is part of gameplay and covers the sidebar.
             const introduction = page.locator('#universal-modal.show');
-            if (await introduction.isVisible()) {
-                await page.screenshot({ path: `${output}/desktop-introduction.png`, fullPage: true });
+            // The first case can queue multiple narrative introductions.
+            // Dismiss each as a player would, then verify the UI is unblocked.
+            for (let index = 0; index < 6; index++) {
+                await page.waitForTimeout(750);
+                if (!await introduction.isVisible()) break;
+                await page.screenshot({ path: `${output}/desktop-introduction-${index + 1}.png`, fullPage: true });
                 await introduction.locator('.btn-close').click();
                 await introduction.waitFor({ state: 'hidden' });
-                await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
             }
+            await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
             // Toasts are temporary; do not force a click through the player's UI.
             await page.locator('#notifications-container .notification').first()
                 .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
