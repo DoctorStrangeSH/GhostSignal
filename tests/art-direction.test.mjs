@@ -94,3 +94,10 @@ test('Mary portrait is available in dossier and call interfaces', () => {
     assert.match(npcList, /npc\.portrait/);
     assert.match(callInterface, /npc\.portrait/);
 });
+
+test('Sergeant Mills portrait is available in dossier and call interfaces', () => {
+    assert.ok(statSync(new URL('../assets/art/portraits/sergeant-mills.webp', import.meta.url)).size > 10_000);
+    assert.match(npcData, /portrait: "assets\/art\/portraits\/sergeant-mills\.webp"/);
+    assert.match(npcList, /npc\.portrait/);
+    assert.match(callInterface, /npc\.portrait/);
+});

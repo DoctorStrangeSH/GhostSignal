@@ -101,6 +101,7 @@ registerData('npc', {
         role: "Начальник участка",
         description: "Ваш непосредственный начальник. Суров, но справедлив. Выдаёт дела и ордеры. Знает больше, чем говорит.",
         icon: "👮",
+        portrait: "assets/art/portraits/sergeant-mills.webp",
         mood: "professional",
         schedule: {
             awake: { start: 7, end: 23 },
