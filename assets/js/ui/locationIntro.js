@@ -49,7 +49,7 @@ class LocationIntro {
         modalFooter.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ОСМОТРЕТЬСЯ</button>';
 
         const modalElement = document.getElementById('universal-modal');
-        const modal = new bootstrap.Modal(modalElement);
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         modal.show();
 
         // При закрытии — убираем затемнение

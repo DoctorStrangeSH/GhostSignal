@@ -39,7 +39,7 @@ class EventController {
             title.innerHTML = data.title || '';
             body.innerHTML = data.body || '';
             footer.innerHTML = data.footer || '';
-            new bootstrap.Modal(document.getElementById('universal-modal')).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('universal-modal')).show();
         });
 
         on('navigation:go', (id) => { app.navigateTo(id); if (id === 'screen-map') app.mapRenderer?.render(); });

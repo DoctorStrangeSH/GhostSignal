@@ -51,7 +51,8 @@ try {
             if (await introduction.isVisible()) {
                 await page.screenshot({ path: `${output}/desktop-introduction.png`, fullPage: true });
                 await introduction.locator('.btn-close').click();
-                await page.locator('.modal-backdrop').waitFor({ state: 'hidden' });
+                await introduction.waitFor({ state: 'hidden' });
+                await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
             }
             // Toasts are temporary; do not force a click through the player's UI.
             await page.locator('#notifications-container .notification').first()
