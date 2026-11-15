@@ -168,6 +168,14 @@ body { background: #071014; }
 .scene-location-hotel_room_304::before { opacity: .1; }
 .scene-location-hotel_room_304 .scene-art-icon { opacity: 0; }
 .scene-location-hotel_room_304 .scene-art-caption { color: #e2d5b9; }
+.scene-location-bar_joe {
+    background-image: linear-gradient(90deg,rgba(13,9,10,.22),transparent 60%),url('../art/locations/joes-bar.svg');
+    background-position: center;
+    background-size: cover;
+}
+.scene-location-bar_joe::before { opacity: .09; }
+.scene-location-bar_joe .scene-art-icon { opacity: 0; }
+.scene-location-bar_joe .scene-art-caption { color: #f6d39a; }
 .scene-art-icon { z-index: 1; font-size: clamp(70px,10vw,120px); opacity: .84; filter: grayscale(.35) drop-shadow(0 16px 22px rgba(0,0,0,.65)); }
 .scene-art-caption { z-index: 1; color: #e1ceb0; font-size: clamp(20px,2.7vw,31px); }
 .scene-title { font: 600 clamp(26px,3vw,38px)/1.1 var(--font-serif); letter-spacing: .06em; color: #ead6ad; text-shadow: none; }
