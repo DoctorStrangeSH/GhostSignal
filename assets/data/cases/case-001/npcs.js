@@ -131,6 +131,7 @@ registerData('npc', {
         role: "Друг Блэквуда",
         description: "Высокий мужчина в чёрной шляпе. Старый друг Блэквуда. Помогал ему с билетами на поезд.",
         icon: "🎩",
+        portrait: "assets/art/portraits/elias-vaughn.webp",
         mood: "nervous",
         schedule: {
             awake: { start: 10, end: 2 },
