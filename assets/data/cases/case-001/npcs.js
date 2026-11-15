@@ -72,6 +72,7 @@ registerData('npc', {
         role: "Горничная",
         description: "Молодая женщина, работает в отеле полгода. Выглядит встревоженной. Избегает зрительного контакта. Была в номере 304 в ночь исчезновения.",
         icon: "👩🏻",
+        portrait: "assets/art/portraits/housekeeper-mary.webp",
         mood: "anxious",
         schedule: {
             awake: { start: 6, end: 22 },

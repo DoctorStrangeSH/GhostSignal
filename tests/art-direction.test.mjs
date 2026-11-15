@@ -87,3 +87,10 @@ test('Joe portrait is available in the same NPC portrait pipeline', () => {
     assert.match(npcList, /npc\.portrait/);
     assert.match(callInterface, /npc\.portrait/);
 });
+
+test('Mary portrait is available in dossier and call interfaces', () => {
+    assert.ok(statSync(new URL('../assets/art/portraits/housekeeper-mary.webp', import.meta.url)).size > 10_000);
+    assert.match(npcData, /portrait: "assets\/art\/portraits\/housekeeper-mary\.webp"/);
+    assert.match(npcList, /npc\.portrait/);
+    assert.match(callInterface, /npc\.portrait/);
+});
