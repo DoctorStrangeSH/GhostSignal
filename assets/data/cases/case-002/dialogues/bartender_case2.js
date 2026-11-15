@@ -66,6 +66,20 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 mood: "tired",
                 innerThought: "Он устал. Но хочет помочь.",
                 answers: [
+                    {
+                        text: "Томас просил вас присутствовать на интервью. Что вы ему ответили?",
+                        nextNode: "joe_can_discuss_interview_escort",
+                        tone: "calm",
+                        condition: "all:npc_escort_response:joe-replies-to-thomas-interview-request:available_to_discuss&not:has_visited_node:joe_can_discuss_interview_escort",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Томас просил вас присутствовать на интервью. Что вы ему ответили?",
+                        nextNode: "joe_proposes_later_interview_escort",
+                        tone: "calm",
+                        condition: "all:npc_escort_response:joe-replies-to-thomas-interview-request:propose_later&not:has_visited_node:joe_proposes_later_interview_escort",
+                        hiddenWhenUnavailable: true
+                    },
                     { text: "Расскажите мне о вечере отравления ещё раз. Медленно.", nextNode: "retell", tone: "calm" },
                     {
                         text: "Лора сообщила вам, что удалось проверить в истории с обвинением Томаса?",
@@ -387,6 +401,25 @@ const DIALOGUE_BARTENDER_CASE2 = {
                 answers: [
                     { text: "Так и поступим. Сначала проверяемые записи.", nextNode: "retell", tone: "calm", cooperationDelta: 4 },
                     { text: "Спасибо. Вернусь с официальным запросом.", nextNode: "end_bartender2", tone: "calm" }
+                ]
+            },
+
+            joe_can_discuss_interview_escort: {
+                speaker: "npc",
+                text: "Да, Томас сам попросил меня быть рядом. Я ответил, что готов обсудить время и условия. Но мы ещё ничего не назначили. Даже если встреча состоится, решение о показаниях и личных сведениях останется за Томасом.",
+                mood: "thoughtful",
+                answers: [
+                    { text: "Согласуем время отдельно и не будем торопить Томаса.", nextNode: "greeting", tone: "calm" },
+                    { text: "Понял, пока уточню только необходимые факты.", nextNode: "end_bartender_guarded", tone: "procedural" }
+                ]
+            },
+            joe_proposes_later_interview_escort: {
+                speaker: "npc",
+                text: "Томас попросил меня присутствовать, но сейчас я не могу обещать время: у меня дела в баре. Я написал ему, что вернусь к вопросу позже. Это не отказ помочь и не согласованная встреча. Не проводите дополнительное интервью без его согласия.",
+                mood: "tired",
+                answers: [
+                    { text: "Хорошо. Дождусь, пока вы договоритесь.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не стану давить на Томаса.", nextNode: "end_bartender_guarded", tone: "reassuring" }
                 ]
             },
 
