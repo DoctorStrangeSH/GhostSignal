@@ -144,6 +144,14 @@ body { background: #071014; }
 .scene-art-crime_scene { background: radial-gradient(ellipse at 72% 37%,rgba(155,59,64,.3),transparent 40%),linear-gradient(135deg,#34282b,#192328 52%,#14191e); }
 .scene-art-evening_venue { background: radial-gradient(ellipse at 68% 32%,rgba(219,139,74,.31),transparent 40%),linear-gradient(125deg,#403126,#202a2b 50%,#181b20); }
 .scene-art-street { background: radial-gradient(ellipse at 67% 25%,rgba(86,157,171,.27),transparent 40%),linear-gradient(135deg,#203641,#112831 54%,#0c171d); }
+.scene-art-street {
+    background-image: linear-gradient(90deg,rgba(3,11,15,.5),transparent 58%),url('../art/locations/noir-alley.svg');
+    background-position: center;
+    background-size: cover;
+}
+.scene-art-street::before { opacity: .18; }
+.scene-art-street .scene-art-icon { opacity: 0; }
+.scene-art-street .scene-art-caption { color: #f1d8ac; text-shadow: 0 3px 13px #070d11; }
 .scene-art-icon { z-index: 1; font-size: clamp(70px,10vw,120px); opacity: .84; filter: grayscale(.35) drop-shadow(0 16px 22px rgba(0,0,0,.65)); }
 .scene-art-caption { z-index: 1; color: #e1ceb0; font-size: clamp(20px,2.7vw,31px); }
 .scene-title { font: 600 clamp(26px,3vw,38px)/1.1 var(--font-serif); letter-spacing: .06em; color: #ead6ad; text-shadow: none; }
