@@ -17,6 +17,9 @@
     --accent-red-bright: #d17c77;
     --accent-blue: #204b53;
     --accent-blue-light: #7dc4bd;
+    --noir-paper: #e0d1ad;
+    --noir-ink: #282521;
+    --noir-sepia: #b6a58b;
     --shadow-glow: 0 0 24px rgba(125, 196, 189, .12);
     --radius-sm: 5px;
     --radius-md: 9px;
@@ -107,6 +110,88 @@ body { background: #071014; }
 .terminal-input { background: #09161a; border-color: rgba(189,167,127,.42); color: #f0e8d7; }
 .terminal-input:focus { border-color: #7dc4bd; box-shadow: 0 0 0 3px rgba(125,196,189,.15); }
 
+/* Места преступлений: панорамная диорама и архивная маркировка. */
+.scene-container {
+    background: radial-gradient(ellipse at 40% 0%, rgba(41, 81, 85, .14), transparent 62%), #0b171c;
+}
+.scene-placeholder-wrapper { max-width: 960px; padding: clamp(16px, 3vw, 32px); }
+.scene-nav-bar { border-bottom-color: rgba(189,167,127,.23); flex-wrap: wrap; }
+.scene-nav-btn, .scene-sublocation-btn { background: #17282e; border-color: rgba(189,167,127,.28); color: #d9e0d8; }
+.scene-nav-btn:hover, .scene-sublocation-btn:hover { background: #244046; border-color: #7dc4bd; color: #f2f6ee; }
+.scene-breadcrumbs { color: #aebcb5; letter-spacing: .08em; }
+.scene-art {
+    height: clamp(220px, 30vw, 370px);
+    border-radius: 5px;
+    border: 1px solid rgba(202,183,143,.5);
+    box-shadow: inset 0 0 90px rgba(0,0,0,.65), 0 18px 38px rgba(0,0,0,.36);
+}
+.scene-art::before {
+    z-index: 0;
+    opacity: .62;
+    background:
+        linear-gradient(90deg, transparent 0 17%, rgba(0,0,0,.5) 17.2% 18%, transparent 18.2% 82%, rgba(0,0,0,.5) 82.2% 83%, transparent 83.2%),
+        linear-gradient(180deg, rgba(133,185,183,.13), transparent 35%, rgba(0,0,0,.72) 97%),
+        repeating-linear-gradient(90deg, rgba(169,188,170,.055) 0 2px, transparent 2px 70px);
+}
+.scene-art::after {
+    z-index: 0;
+    background:
+        linear-gradient(0deg, rgba(6,13,17,.88), transparent 46%),
+        radial-gradient(ellipse at 68% 38%, transparent 12%, rgba(5,12,16,.57) 100%);
+}
+.scene-art-public { background: radial-gradient(ellipse at 68% 30%, rgba(194,166,99,.26), transparent 38%), linear-gradient(135deg,#36372e,#162b2e 52%,#10191d); }
+.scene-art-private { background: radial-gradient(ellipse at 65% 36%, rgba(104,157,160,.22),transparent 36%), linear-gradient(125deg,#28313c,#10232c 55%,#101519); }
+.scene-art-crime_scene { background: radial-gradient(ellipse at 72% 37%,rgba(155,59,64,.3),transparent 40%),linear-gradient(135deg,#34282b,#192328 52%,#14191e); }
+.scene-art-evening_venue { background: radial-gradient(ellipse at 68% 32%,rgba(219,139,74,.31),transparent 40%),linear-gradient(125deg,#403126,#202a2b 50%,#181b20); }
+.scene-art-street { background: radial-gradient(ellipse at 67% 25%,rgba(86,157,171,.27),transparent 40%),linear-gradient(135deg,#203641,#112831 54%,#0c171d); }
+.scene-art-icon { z-index: 1; font-size: clamp(70px,10vw,120px); opacity: .84; filter: grayscale(.35) drop-shadow(0 16px 22px rgba(0,0,0,.65)); }
+.scene-art-caption { z-index: 1; color: #e1ceb0; font-size: clamp(20px,2.7vw,31px); }
+.scene-title { font: 600 clamp(26px,3vw,38px)/1.1 var(--font-serif); letter-spacing: .06em; color: #ead6ad; text-shadow: none; }
+.scene-icon-large { filter: sepia(.36) saturate(.6); animation: none; }
+.scene-description { max-width: 640px; color: #c4cec5; font-size: 17px; }
+.scene-section-title { color: #e3ca9b; border-bottom-color: rgba(189,167,127,.26); font-size: 12px; }
+.scene-info-badge { border-radius: 4px; }
+.scene-object-card, .scene-npc-chip {
+    background: linear-gradient(145deg,#1b3036,#12242a);
+    border: 1px solid rgba(189,167,127,.28);
+    box-shadow: 0 6px 20px rgba(0,0,0,.14);
+}
+.scene-object-card:hover, .scene-npc-chip:hover { border-color: #7dc4bd; background: #234047; box-shadow: 0 10px 26px rgba(0,0,0,.25); }
+.object-card-name { color: #dce4dc; font-size: 12px; }
+.scene-sublocation-btn:hover { transform: translateX(3px); }
+
+/* Доска следствия: тканевый планшет, бумажные карточки, бирюзовые линии. */
+.board-header, .inventory-header { border-bottom-color: rgba(189,167,127,.25); }
+.board-title, .inv-title { color: #e3ca9b; }
+.board-canvas {
+    background:
+        radial-gradient(circle at 50% 40%,rgba(91,119,112,.17),transparent 67%),
+        repeating-linear-gradient(0deg,transparent 0 27px,rgba(210,196,154,.04) 28px),
+        repeating-linear-gradient(90deg,transparent 0 27px,rgba(210,196,154,.04) 28px),
+        #1b292c;
+    border: 7px solid #3a3830;
+    outline: 1px solid rgba(205,184,143,.45);
+    box-shadow: inset 0 0 50px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.25);
+}
+.board-slot { border-radius: 3px; background: #e0d1ad; border-color: #c5b58f; color: #282521; box-shadow: 2px 4px 12px rgba(0,0,0,.3); }
+.board-slot.slot-filled { background: #d5c39b; border-color: #9dd7cb; }
+.board-slot:hover, .board-slot:focus-visible { border-color: #7dc4bd; box-shadow: 0 0 0 2px #7dc4bd, 2px 6px 16px rgba(0,0,0,.35); }
+.board-slot .slot-label, .board-slot .slot-evidence-name { color: #302d26; }
+.board-tool { background: #162b31; border-color: rgba(189,167,127,.28); }
+.board-tool > summary { color: #e3ca9b; }
+.board-tool[open] > summary { border-bottom: 1px solid rgba(189,167,127,.2); }
+.board-layout-status > span { background: rgba(125,196,189,.08); border-color: rgba(125,196,189,.25); }
+.checklist-tasks li { background: rgba(232,222,192,.045); }
+
+/* Архив предметов и досье свидетелей. */
+.inventory-card, .npc-card { background: linear-gradient(145deg,#1c3036,#13252b); border-color: rgba(189,167,127,.23); }
+.inventory-card:hover, .npc-card:hover { background: #223a40; border-color: #7dc4bd; }
+.inventory-card .card-name { color: #d6dfd7; font-size: 10px; }
+.npc-avatar { background: #0a1b20; border-color: #bda77f; }
+.npc-name { font-family: var(--font-serif); font-size: 19px; }
+.npc-role { color: #c7b18a; }
+.newspaper { border-color: #877859; background: #e0d1ad; color: #282521; }
+
 @media (max-width: 720px) {
     .terminal-header { gap: 8px; }
     .header-center { flex-shrink: 0; }
@@ -120,6 +205,10 @@ body { background: #071014; }
     .menu-info { grid-template-columns: 1fr 1fr; padding: 12px; }
     .menu-actions .terminal-btn { min-height: 48px; }
     .menu-footer { font-size: 11px; }
+    .scene-art { height: 215px; }
+    .scene-art-caption { right: 16px; max-width: 58%; }
+    .scene-art-icon { left: 20px; }
+    .board-canvas { border-width: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
