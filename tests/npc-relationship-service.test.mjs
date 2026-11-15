@@ -1077,3 +1077,87 @@ test("receiving a warning does not force mediation when a witness has not person
     assert.equal(relationships.getWitnessInterviewDecision("a", "witness-reply"), null,
         "only the actual witness owns the decision");
 });
+
+test("Joe replies only to Thomas's escorted interview request and the reply is saved", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, maxOccurrences: 1 },
+            { id: "request", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 30,
+                interviewDecisionPolicy: "after_reputation_warning" },
+            { id: "reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "request", requiresReceivedActionAgeMinutes: 30,
+                requiresInterviewDecision: "request_joe_present",
+                escortResponsePolicy: "on_witness_request" }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    memory.setCase("previous");
+    memory.recordAnswerSelected("a", "dialogue-a", "threat-prior", { text: "Отвечай", tone: "threatening" });
+    memory.setCase(caseData.id);
+    memory.recordAnswerSelected("a", "dialogue-a", "threat-now", { text: "Отвечай", tone: "threatening" });
+    advance(30);
+    assert.equal(relationships.hasReceivedInteraction("a", "warning"), true);
+    advance(30);
+    assert.equal(relationships.getWitnessInterviewDecision("a", "request"), "request_joe_present");
+    assert.equal(relationships.getReceivedEscortResponse("a", "reply"), null);
+    advance(30);
+    assert.equal(relationships.getEscortResponse("b", "reply"), "available_to_discuss");
+    assert.equal(relationships.getReceivedEscortResponse("a", "reply"), "available_to_discuss");
+    assert.equal(relationships.getReceivedEscortResponse("b", "reply"), null);
+    context.savedEscort = relationships.toJSON();
+    context.escortMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedEscort, escortMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.getReceivedEscortResponse("a", "reply"), "available_to_discuss");
+});
+
+test("Joe can defer escort assistance and cannot reply when Thomas chose private interviews", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, maxOccurrences: 1 },
+            { id: "request", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 30,
+                interviewDecisionPolicy: "after_reputation_warning" },
+            { id: "reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "request", requiresReceivedActionAgeMinutes: 30,
+                requiresInterviewDecision: "request_joe_present",
+                escortResponsePolicy: "on_witness_request" }
+        ]
+    };
+    const first = createHarness({ caseData: { npcRelationships: config } });
+    first.advance(30);
+    first.advance(30);
+    first.advance(240);
+    assert.equal(first.relationships.getWitnessInterviewDecision("a", "request"), "private_with_boundaries");
+    assert.equal(first.relationships.hasCompletedInteraction("b", "reply"), false);
+    const second = createHarness({ caseData: { npcRelationships: config } });
+    second.memory.setCase("previous");
+    second.memory.recordAnswerSelected("a", "dialogue-a", "threat-prior", { text: "Отвечай", tone: "threatening" });
+    second.memory.setCase(second.caseData.id);
+    second.memory.recordAnswerSelected("a", "dialogue-a", "threat-now", { text: "Отвечай", tone: "threatening" });
+    second.advance(30);
+    second.advance(30);
+    second.availability.b.available = false;
+    second.advance(30);
+    assert.equal(second.relationships.getEscortResponse("b", "reply"), "propose_later");
+    second.availability.b.available = true;
+    assert.equal(second.relationships.getEscortResponse("b", "reply"), "propose_later",
+        "an already sent reply must not change after the bartender returns");
+});
