@@ -9,6 +9,7 @@ const alley = readFileSync(new URL('../assets/art/locations/noir-alley.svg', imp
 const hotel = readFileSync(new URL('../assets/art/locations/grand-hotel.svg', import.meta.url), 'utf8');
 const room = readFileSync(new URL('../assets/art/locations/room-304.svg', import.meta.url), 'utf8');
 const bar = readFileSync(new URL('../assets/art/locations/joes-bar.svg', import.meta.url), 'utf8');
+const mansion = readFileSync(new URL('../assets/art/locations/blackwood-mansion.svg', import.meta.url), 'utf8');
 const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
@@ -60,4 +61,11 @@ test('Joe bar scene has dedicated art without pre-revealing inspectable clues', 
     assert.match(css, /url\('\.\.\/art\/locations\/joes-bar\.svg'\)/);
     assert.match(bar, /<title id="title">Бар У Джо<\/title>/);
     assert.ok(!bar.includes('matchbox') && !bar.includes('fabric_clue'));
+});
+
+test('Blackwood mansion has unique art without revealing document discoveries', () => {
+    assert.match(css, /\.scene-location-blackwood_mansion\s*\{/);
+    assert.match(css, /url\('\.\.\/art\/locations\/blackwood-mansion\.svg'\)/);
+    assert.match(mansion, /<title id="title">Особняк Блэквудов<\/title>/);
+    assert.ok(!mansion.includes('phone_records'));
 });
