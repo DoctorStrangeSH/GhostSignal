@@ -7,6 +7,7 @@ const css = readFileSync(new URL('../assets/css/art-direction.css', import.meta.
 const icon = readFileSync(new URL('../assets/icons/ghost-signal.svg', import.meta.url), 'utf8');
 const alley = readFileSync(new URL('../assets/art/locations/noir-alley.svg', import.meta.url), 'utf8');
 const hotel = readFileSync(new URL('../assets/art/locations/grand-hotel.svg', import.meta.url), 'utf8');
+const room = readFileSync(new URL('../assets/art/locations/room-304.svg', import.meta.url), 'utf8');
 const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
@@ -43,4 +44,12 @@ test('location-specific art does not leak to other locations of the same categor
     assert.match(css, /\.scene-location-hotel_grand\s*\{/);
     assert.match(css, /url\('\.\.\/art\/locations\/grand-hotel\.svg'\)/);
     assert.match(hotel, /<title id="title">Лобби отеля Гранд<\/title>/);
+});
+
+test('room 304 art keeps secret discoveries out of its illustration', () => {
+    assert.match(css, /\.scene-location-hotel_room_304\s*\{/);
+    assert.match(room, /<title id="title">Номер 304 отеля Гранд<\/title>/);
+    for (const discovery of ['hidden_note', 'wire_fragment', 'wall_safe', 'small_key']) {
+        assert.ok(!room.includes(discovery), `Visual art must not prematurely reveal ${discovery}`);
+    }
 });
