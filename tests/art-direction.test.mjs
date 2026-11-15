@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { statSync } from 'node:fs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../assets/css/art-direction.css', import.meta.url), 'utf8');
@@ -11,6 +12,9 @@ const room = readFileSync(new URL('../assets/art/locations/room-304.svg', import
 const bar = readFileSync(new URL('../assets/art/locations/joes-bar.svg', import.meta.url), 'utf8');
 const mansion = readFileSync(new URL('../assets/art/locations/blackwood-mansion.svg', import.meta.url), 'utf8');
 const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
+const npcData = readFileSync(new URL('../assets/data/cases/case-001/npcs.js', import.meta.url), 'utf8');
+const npcList = readFileSync(new URL('../assets/js/ui/npcListUI.js', import.meta.url), 'utf8');
+const callInterface = readFileSync(new URL('../assets/js/npc/callInterface.js', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
     assert.match(html, /href="assets\/icons\/ghost-signal\.svg"/);
@@ -68,4 +72,11 @@ test('Blackwood mansion has unique art without revealing document discoveries', 
     assert.match(css, /url\('\.\.\/art\/locations\/blackwood-mansion\.svg'\)/);
     assert.match(mansion, /<title id="title">Особняк Блэквудов<\/title>/);
     assert.ok(!mansion.includes('phone_records'));
+});
+
+test('Frank portrait is a local image and is shown in dossiers and calls', () => {
+    assert.ok(statSync(new URL('../assets/art/portraits/porter-frank.webp', import.meta.url)).size > 10_000);
+    assert.match(npcData, /portrait: "assets\/art\/portraits\/porter-frank\.webp"/);
+    assert.match(npcList, /npc\.portrait/);
+    assert.match(callInterface, /npc\.portrait/);
 });
