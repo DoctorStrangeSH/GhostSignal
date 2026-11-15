@@ -177,7 +177,7 @@ class NPCListUI {
         return `
             <div class="npc-card ${npc.available ? '' : 'npc-unavailable'}">
                 <div class="npc-header">
-                    <span class="npc-avatar">${npc.icon || '👤'}</span>
+                    <span class="npc-avatar">${npc.portrait ? `<img src="${npc.portrait}" alt="" loading="lazy" decoding="async">` : (npc.icon || '👤')}</span>
                     <div class="npc-info">
                         <span class="npc-name">${npc.name || 'Неизвестно'}</span>
                         <span class="npc-role">${npc.role || ''}</span>
