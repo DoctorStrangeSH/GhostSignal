@@ -192,6 +192,66 @@ body { background: #071014; }
 .npc-role { color: #c7b18a; }
 .newspaper { border-color: #877859; background: #e0d1ad; color: #282521; }
 
+/* Разговоры: телефонный канал, реплики и право игрока на выбор. */
+.call-modal { background: rgba(3,10,13,.9); backdrop-filter: blur(9px); }
+.call-screen {
+    max-width: 610px;
+    background: radial-gradient(ellipse at 50% 5%,rgba(52,99,98,.22),transparent 44%),#0c1a20;
+    border: 1px solid rgba(194,173,132,.5);
+    border-radius: 9px;
+    box-shadow: 0 35px 90px rgba(0,0,0,.75),0 0 0 6px rgba(189,167,127,.06);
+}
+.call-header { background: #101f25; border-bottom-color: rgba(189,167,127,.25); color: #c8d8d0; }
+.call-status.connected { color: #9de5dd; animation: none; }
+.call-status.connected::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 8px; background: #9de5dd; border-radius: 50%; box-shadow: 0 0 9px #7dc4bd; }
+.call-avatar { padding: 22px 16px 12px; }
+.call-avatar-icon {
+    background: radial-gradient(circle at 50% 40%,#315358,#13272e 75%);
+    border: 1px solid #bda77f;
+    box-shadow: 0 0 0 7px rgba(189,167,127,.07),inset 0 0 27px rgba(0,0,0,.5);
+    animation: none;
+}
+.call-name { font: 600 29px var(--font-serif); letter-spacing: .05em; color: #f4e9d5; }
+.call-role { font-size: 11px; letter-spacing: .16em; color: #cbb38b; }
+.dialogue-messages { padding: 14px 4px; }
+.dialogue-message { border-radius: 5px; padding: 15px 18px; max-width: 90%; box-shadow: 0 6px 16px rgba(0,0,0,.13); }
+.npc-message { background: #1c3137; border-left: 2px solid #cbb38b; }
+.player-message { background: #14363c; border-right: 2px solid #7dc4bd; }
+.npc-message .message-speaker { color: #e0c99e; }
+.player-message .message-speaker { color: #9de5dd; }
+.message-text { font-size: 16px; line-height: 1.55; color: #ecebe2; }
+.dialogue-answers { background: rgba(6,20,24,.48); border-top-color: rgba(189,167,127,.25); padding: 14px 0; gap: 8px; }
+.answer-btn { padding: 13px 18px; min-height: 46px; border-left: 2px solid #bda77f; letter-spacing: .03em; line-height: 1.45; }
+.answer-btn:hover { border-left-color: #9de5dd; }
+.answer-locked { opacity: .5; }
+.call-controls { background: rgba(7,19,24,.8); border-top-color: rgba(189,167,127,.2); }
+.hangup-btn { border-radius: 5px; background: #5f3237 !important; }
+.hangup-btn:hover { background: #874349 !important; }
+.dialogue-evidence-tools { border-top-color: rgba(189,167,127,.25); }
+.prepared-contradiction { background: rgba(128,51,57,.15); border-color: rgba(209,124,119,.55); border-radius: 5px; }
+.prepared-contradiction p { color: #d4dcd5; font-size: 13px; }
+
+/* Карточка свидетеля напоминает полицейское досье, а не мессенджер. */
+.npc-card { position: relative; overflow: hidden; }
+.npc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(#bda77f,transparent); opacity: .75; }
+.npc-avatar { border-radius: 5px; width: 54px; height: 62px; flex: 0 0 54px; filter: grayscale(.5) sepia(.22) contrast(1.12); }
+.npc-avatar::after { border-radius: 5px; }
+.npc-card.npc-friendly .npc-avatar { border-color: #7dc4bd; }
+.npc-card.npc-hostile .npc-avatar { border-color: #d17c77; }
+.npc-actions .terminal-btn { min-height: 38px; }
+
+@media (max-width: 576px) {
+    .call-screen { max-width: 100%; height: 100dvh; max-height: none; border: none; border-radius: 0; }
+    .call-avatar { padding: 12px 10px 8px; }
+    .call-avatar-icon { width: 76px; height: 76px; font-size: 48px; }
+    .call-name { font-size: 23px; }
+    .call-role { margin-bottom: 10px; }
+    .dialogue-message { max-width: 96%; padding: 11px 13px; }
+    .message-text { font-size: 15px; }
+    .dialogue-answers { padding: 9px 0; }
+    .answer-btn { padding: 11px 13px; }
+}
+
 @media (max-width: 720px) {
     .terminal-header { gap: 8px; }
     .header-center { flex-shrink: 0; }
