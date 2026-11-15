@@ -16,6 +16,21 @@ const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', i
 const npcData = readFileSync(new URL('../assets/data/cases/case-001/npcs.js', import.meta.url), 'utf8');
 const npcList = readFileSync(new URL('../assets/js/ui/npcListUI.js', import.meta.url), 'utf8');
 const callInterface = readFileSync(new URL('../assets/js/npc/callInterface.js', import.meta.url), 'utf8');
+const inventoryUI = readFileSync(new URL('../assets/js/ui/inventoryUI.js', import.meta.url), 'utf8');
+
+test('evidence board uses readable dossier cards and selected evidence contrast', () => {
+    assert.match(css, /\.board-slot \.slot-evidence-name\s*\{/);
+    assert.match(css, /\.board-evidence-pool\s*\{/);
+    assert.match(css, /\.evidence-pool-item\.is-selected/);
+    assert.match(css, /\.board-slot\.drop-target/);
+});
+
+test('inventory evidence can be inspected with keyboard as well as mouse', () => {
+    assert.match(inventoryUI, /setAttribute\('role', 'button'\)/);
+    assert.match(inventoryUI, /card\.tabIndex = 0/);
+    assert.match(inventoryUI, /event\.key === 'Enter' \|\| event\.key === ' '/);
+    assert.match(css, /\.inventory-card:focus-visible/);
+});
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
     assert.match(html, /href="assets\/icons\/ghost-signal\.svg"/);

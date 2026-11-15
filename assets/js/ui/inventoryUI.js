@@ -71,6 +71,9 @@ class InventoryUI {
         const card = document.createElement('div');
         card.className = 'inventory-card';
         card.dataset.itemId = item.id;
+        card.setAttribute('role', 'button');
+        card.tabIndex = 0;
+        card.setAttribute('aria-label', `Осмотреть: ${item.name}`);
         
         if (item.isEvidence) card.classList.add('card-evidence');
         if (item.isKeyItem) card.classList.add('card-key');
@@ -86,6 +89,12 @@ class InventoryUI {
         card.addEventListener('click', () => {
             this._selectItem(item.id);
             this._showItemDetails(item);
+        });
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                card.click();
+            }
         });
         
         // Правый клик — контекстное меню
