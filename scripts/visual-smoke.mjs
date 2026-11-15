@@ -28,6 +28,8 @@ try {
         page.on('pageerror', error => errors.push(error.message));
         await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
         await page.locator('#screen-main-menu.active').waitFor();
+        // The menu is present behind the boot animation before it is usable.
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.screenshot({ path: `${output}/${name}-menu.png`, fullPage: true });
 
         await page.locator('#btn-open-cases').click();
