@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Особняк Блэквудов</title>
+  <desc id="desc">Парадный зал мрачного особняка с двойной лестницей, старинными портретами, мраморным полом и холодной люстрой.</desc>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#101f2a"/><stop offset="1" stop-color="#343c3d"/></linearGradient>
+    <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#4b5653"/><stop offset="1" stop-color="#101d23"/></linearGradient>
+    <linearGradient id="stairs" x2="0" y2="1"><stop stop-color="#8a9085"/><stop offset="1" stop-color="#333b40"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#cde3da" stop-opacity=".4"/><stop offset="1" stop-color="#a9bfc7" stop-opacity="0"/></radialGradient>
+    <pattern id="wallpaper" width="74" height="68" patternUnits="userSpaceOnUse"><path d="M37 8q-36 26 0 52q36-26 0-52zm0 10v33" fill="none" stroke="#b0a58b" stroke-opacity=".085" stroke-width="2"/></pattern>
+    <pattern id="tiles" width="98" height="98" patternUnits="userSpaceOnUse"><path d="M0 0h98v98H0zM0 0l98 98M98 0L0 98" fill="none" stroke="#b7c2b7" stroke-opacity=".11" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1200" height="440" fill="url(#wall)"/>
+  <path d="M0 0h1200v305H0z" fill="url(#wallpaper)"/>
+  <path d="M0 0h1200v37H0z" fill="#111d26"/>
+  <path d="M0 39h1200" stroke="#8e8871" stroke-opacity=".58" stroke-width="7"/>
+  <path d="M0 300h1200v140H0z" fill="url(#floor)"/>
+  <path d="M0 300h1200v140H0z" fill="url(#tiles)"/>
+  <path d="M0 301h1200" stroke="#b1a891" stroke-opacity=".35" stroke-width="8"/>
+  <path d="M25 0v304M1175 0v304M202 0v304M997 0v304" stroke="#222a30" stroke-width="35"/>
+  <path d="M42 0v304M219 0v304M1014 0v304M1192 0v304" stroke="#a99b7c" stroke-opacity=".35" stroke-width="4"/>
+  <path d="M0 115h1200" stroke="#9b9278" stroke-opacity=".35" stroke-width="7"/>
+  <!-- Opposing staircases converge into a silent upper gallery. -->
+  <path d="M270 160h660v60H270z" fill="#1a282d" stroke="#9c9a88" stroke-width="8"/>
+  <path d="M270 218L50 380h335l161-155zM930 218l220 162H815L654 225z" fill="url(#stairs)" stroke="#9b9d91" stroke-width="5"/>
+  <path d="M54 379l258-1M77 359l257-1M102 340l252-1M129 320l245-1M154 300l238-1M179 280l234-1M205 260l230-1M230 241l221-1" stroke="#1b262c" stroke-width="7"/>
+  <path d="M1146 379l-258-1M1123 359l-257-1M1098 340l-252-1M1071 320l-245-1M1046 300l-238-1M1021 280l-234-1M995 260l-230-1M970 241l-221-1" stroke="#1b262c" stroke-width="7"/>
+  <path d="M265 157h670" stroke="#c0b49a" stroke-width="9"/>
+  <path d="M274 157v71M331 157v71M389 157v71M447 157v71M505 157v71M563 157v71M621 157v71M679 157v71M737 157v71M795 157v71M853 157v71M911 157v71" stroke="#9c8f75" stroke-width="6"/>
+  <path d="M270 225h660" stroke="#c0b49a" stroke-width="8"/>
+  <!-- Upper arch and main doors. -->
+  <path d="M495 170V95q0-74 105-74t105 74v75" fill="#0c1c24" stroke="#aaa389" stroke-width="10"/>
+  <path d="M520 167V98q0-51 80-51t80 51v69" fill="#293d41" stroke="#65787a" stroke-width="4"/>
+  <path d="M530 165h140" stroke="#c3b18f" stroke-width="6"/>
+  <path d="M515 230h170v142H515z" fill="#221f23" stroke="#8d7960" stroke-width="7"/>
+  <path d="M600 235v137" stroke="#967d65" stroke-width="5"/>
+  <path d="M581 304h11M607 304h11" stroke="#d0b692" stroke-width="5" stroke-linecap="round"/>
+  <!-- Portraits deliberately remain anonymous; no clue or suspect verdict is depicted. -->
+  <path d="M96 94h126v154H96zM978 94h126v154H978z" fill="#2b2428" stroke="#b59b70" stroke-width="12"/>
+  <path d="M112 110h94v122h-94zM994 110h94v122h-94z" fill="#2b3b42"/>
+  <path d="M135 226q-14-45 23-65q34 16 21 65zM1017 226q-14-45 23-65q34 16 21 65z" fill="#111e26"/>
+  <circle cx="157" cy="145" r="17" fill="#4f5350"/><circle cx="1039" cy="145" r="17" fill="#4f5350"/>
+  <!-- Chandelier with cool, restrained reflections. -->
+  <path d="M600 0v53" stroke="#988a70" stroke-width="6"/>
+  <path d="M555 55h90l-23 25h-44z" fill="#a9a18b" stroke="#e2d8b7" stroke-width="3"/>
+  <path d="M580 80l-40 24M620 80l40 24M600 79v34" stroke="#a9a18b" stroke-width="5"/>
+  <path d="M528 101h25v14h-25zM647 101h25v14h-25zM588 111h25v14h-25z" fill="#e1d8b8"/>
+  <ellipse cx="600" cy="143" rx="255" ry="184" fill="url(#light)"/>
+  <!-- Marble runner and decorative urns. -->
+  <path d="M436 440l77-70h174l77 70z" fill="#302d34" stroke="#8c786a" stroke-width="5"/>
+  <path d="M480 440l50-70h141l49 70z" fill="#413036" opacity=".75"/>
+  <path d="M338 262h55v71h-55zM807 262h55v71h-55z" fill="#3a3c3b" stroke="#a7a08a" stroke-width="4"/>
+  <path d="M330 267h71l-12-36h-47zM799 267h71l-12-36h-47z" fill="#777a73" stroke="#c6bda4" stroke-width="4"/>
+  <path d="M338 230q-19-45 19-57q-12-33 16-43q30 14 16 43q38 17 10 57M806 230q-19-45 19-57q-12-33 16-43q30 14 16 43q38 17 10 57" fill="#24433b"/>
+  <path d="M0 0h1200v440H0z" fill="none" stroke="#08151c" stroke-width="20" opacity=".66"/>
+</svg>
