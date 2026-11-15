@@ -9,6 +9,7 @@ registerData('npc', {
         role: "Ночной портье",
         description: "Пожилой мужчина с усталыми глазами. Работает в отеле «Гранд» уже 20 лет. Знает всех постояльцев. Слышал шаги в коридоре в ночь исчезновения.",
         icon: "👨🏻",
+        portrait: "assets/art/portraits/porter-frank.webp",
         mood: "nervous",
         schedule: {
             awake: { start: 18, end: 6 },
