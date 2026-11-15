@@ -6,6 +6,8 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../assets/css/art-direction.css', import.meta.url), 'utf8');
 const icon = readFileSync(new URL('../assets/icons/ghost-signal.svg', import.meta.url), 'utf8');
 const alley = readFileSync(new URL('../assets/art/locations/noir-alley.svg', import.meta.url), 'utf8');
+const hotel = readFileSync(new URL('../assets/art/locations/grand-hotel.svg', import.meta.url), 'utf8');
+const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
     assert.match(html, /href="assets\/icons\/ghost-signal\.svg"/);
@@ -34,4 +36,11 @@ test('street locations use a local illustrated asset without changing scene sema
     assert.match(css, /url\('\.\.\/art\/locations\/noir-alley\.svg'\)/);
     assert.match(alley, /<title id="title">Ночной переулок<\/title>/);
     assert.match(alley, /viewBox="0 0 1200 440"/);
+});
+
+test('location-specific art does not leak to other locations of the same category', () => {
+    assert.match(sceneRenderer, /scene-location-\$\{sceneLocation\}/);
+    assert.match(css, /\.scene-location-hotel_grand\s*\{/);
+    assert.match(css, /url\('\.\.\/art\/locations\/grand-hotel\.svg'\)/);
+    assert.match(hotel, /<title id="title">Лобби отеля Гранд<\/title>/);
 });
