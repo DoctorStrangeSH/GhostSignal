@@ -80,8 +80,11 @@ class SceneRenderer {
 
         // Атмосферная панель сцены: тип локации и время суток задают визуальный тон.
         const sceneType = String(location.type || 'default').replace(/[^a-z0-9_-]/gi, '');
+        // Уникальная художественная сцена может быть привязана к ID локации,
+        // не затрагивая её игровые свойства или существующие типовые оформления.
+        const sceneLocation = String(location.id || '').replace(/[^a-z0-9_-]/gi, '');
         const sceneArt = document.createElement('div');
-        sceneArt.className = `scene-art scene-art-${sceneType} ${isNight ? 'is-night' : 'is-day'}`;
+        sceneArt.className = `scene-art scene-art-${sceneType} scene-location-${sceneLocation} ${isNight ? 'is-night' : 'is-day'}`;
         sceneArt.setAttribute('role', 'img');
         sceneArt.setAttribute('aria-label', `${location.name}, ${periodName.toLowerCase()}`);
 
