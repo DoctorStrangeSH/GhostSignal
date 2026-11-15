@@ -85,7 +85,17 @@ class CallInterface {
         this.callModal.classList.remove('hidden');
         document.getElementById('call-status').textContent = 'ВЫЗОВ...';
         document.getElementById('call-status').classList.remove('connected');
-        document.getElementById('call-avatar').querySelector('.call-avatar-icon').textContent = npc.icon || '📞';
+        const avatar = document.getElementById('call-avatar').querySelector('.call-avatar-icon');
+        avatar.replaceChildren();
+        if (npc.portrait) {
+            const image = document.createElement('img');
+            image.src = npc.portrait;
+            image.alt = '';
+            image.decoding = 'async';
+            avatar.appendChild(image);
+        } else {
+            avatar.textContent = npc.icon || '📞';
+        }
         document.getElementById('call-name').textContent = npc.name;
         document.getElementById('call-role').textContent = npc.role;
         document.getElementById('dialogue-messages').innerHTML = '';
