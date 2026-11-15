@@ -10,6 +10,9 @@ class NotificationManager {
     _createContainer() {
         this.container = document.createElement('div');
         this.container.id = 'notifications-container';
+        this.container.setAttribute('role', 'status');
+        this.container.setAttribute('aria-live', 'polite');
+        this.container.setAttribute('aria-atomic', 'false');
         this._updatePosition();
         document.body.appendChild(this.container);
     }
@@ -34,12 +37,16 @@ class NotificationManager {
         events.on('notification:show', (data) => {
             this.show(data.message, data.type || 'info', data.duration || 3000);
         });
+        events.on('npc:contradiction_detected', (data) => {
+            if (!data?.contradictions?.length) return;
+            this.show('Обнаружено расхождение в показаниях. Проверьте источники на доске расследования.', 'discovery', 5500);
+        });
     }
 
     show(message, type = 'info', duration = 3000) {
         const icons = {
             info: 'ℹ️', success: '✅', warning: '⚠️',
-            error: '❌', system: '🖥️', evidence: '🔍'
+            error: '❌', system: '🖥️', evidence: '🔍', discovery: '⚖️'
         };
 
         const colors = {
@@ -48,11 +55,11 @@ class NotificationManager {
             warning: 'rgba(255, 152, 0, 0.3)',
             error: 'rgba(192, 57, 43, 0.3)',
             system: 'rgba(136, 136, 204, 0.3)',
-            evidence: 'rgba(240, 192, 64, 0.3)'
+            evidence: 'rgba(240, 192, 64, 0.3)', discovery: 'rgba(125, 196, 189, 0.48)'
         };
 
         const notification = document.createElement('div');
-        notification.className = 'notification';
+        notification.className = `notification notification--${Object.hasOwn(icons, type) ? type : 'info'}`;
         notification.style.cssText = `
             background: rgba(13, 10, 8, 0.95);
             border: 1px solid ${colors[type] || colors.info};
@@ -61,7 +68,7 @@ class NotificationManager {
             padding: 10px 14px;
             font-family: var(--font-mono);
             font-size: 11px;
-            pointer-events: auto;
+            pointer-events: none;
             border-radius: var(--radius-sm);
             box-shadow: var(--shadow-md);
             animation: notif-in 0.3s ease-out;
@@ -72,10 +79,14 @@ class NotificationManager {
             gap: 8px;
         `;
 
-        notification.innerHTML = `
-            <span style="font-size: 16px; flex-shrink: 0;">${icons[type] || '•'}</span>
-            <span style="flex: 1;">${message}</span>
-        `;
+        const icon = document.createElement('span');
+        icon.className = 'notification-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = icons[type] || '•';
+        const content = document.createElement('span');
+        content.className = 'notification-text';
+        content.textContent = String(message ?? '');
+        notification.append(icon, content);
 
         this.container.appendChild(notification);
 

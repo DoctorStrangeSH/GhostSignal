@@ -110,6 +110,14 @@ body { background: #071014; }
 .terminal-input { background: #09161a; border-color: rgba(189,167,127,.42); color: #f0e8d7; }
 .terminal-input:focus { border-color: #7dc4bd; box-shadow: 0 0 0 3px rgba(125,196,189,.15); }
 
+/* Следственные открытия остаются заметными, но не блокируют нажатия под ними. */
+#notifications-container { max-width: calc(100vw - 16px); }
+#notifications-container .notification { position: relative; overflow: hidden; pointer-events: none; background: rgba(12,28,33,.96) !important; border-color: rgba(189,167,127,.38) !important; border-left-color: #bda77f !important; color: #e9e9df; line-height: 1.5; }
+#notifications-container .notification-icon { font-size: 18px; flex-shrink: 0; }
+#notifications-container .notification-text { flex: 1; overflow-wrap: anywhere; }
+#notifications-container .notification--evidence { border-left: 4px solid #e3ca9b !important; background: linear-gradient(110deg,rgba(71,58,35,.95),rgba(13,29,34,.98)) !important; }
+#notifications-container .notification--discovery { border-left: 4px solid #7dc4bd !important; background: linear-gradient(110deg,rgba(20,65,67,.98),rgba(13,29,34,.98)) !important; box-shadow: 0 0 0 1px rgba(125,196,189,.19),0 12px 30px rgba(0,0,0,.38) !important; }
+
 /* Места преступлений: панорамная диорама и архивная маркировка. */
 .scene-container {
     background: radial-gradient(ellipse at 40% 0%, rgba(41, 81, 85, .14), transparent 62%), #0b171c;

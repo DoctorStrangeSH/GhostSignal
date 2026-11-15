@@ -17,6 +17,17 @@ const npcData = readFileSync(new URL('../assets/data/cases/case-001/npcs.js', im
 const npcList = readFileSync(new URL('../assets/js/ui/npcListUI.js', import.meta.url), 'utf8');
 const callInterface = readFileSync(new URL('../assets/js/npc/callInterface.js', import.meta.url), 'utf8');
 const inventoryUI = readFileSync(new URL('../assets/js/ui/inventoryUI.js', import.meta.url), 'utf8');
+const inventorySystem = readFileSync(new URL('../assets/js/systems/inventory.js', import.meta.url), 'utf8');
+const notificationUI = readFileSync(new URL('../assets/js/ui/notifications.js', import.meta.url), 'utf8');
+
+test('new evidence and testimony discrepancies receive distinct unobtrusive announcements', () => {
+    assert.match(inventorySystem, /type: object\.isEvidence \? 'evidence' : 'success'/);
+    assert.match(notificationUI, /npc:contradiction_detected/);
+    assert.match(notificationUI, /setAttribute\('aria-live', 'polite'\)/);
+    assert.match(notificationUI, /content\.textContent = String\(message \?\? ''\)/);
+    assert.match(notificationUI, /pointer-events: none/);
+    assert.match(css, /\.notification--discovery/);
+});
 
 test('evidence board uses readable dossier cards and selected evidence contrast', () => {
     assert.match(css, /\.board-slot \.slot-evidence-name\s*\{/);
