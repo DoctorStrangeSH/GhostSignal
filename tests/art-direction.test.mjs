@@ -80,3 +80,10 @@ test('Frank portrait is a local image and is shown in dossiers and calls', () =>
     assert.match(npcList, /npc\.portrait/);
     assert.match(callInterface, /npc\.portrait/);
 });
+
+test('Joe portrait is available in the same NPC portrait pipeline', () => {
+    assert.ok(statSync(new URL('../assets/art/portraits/bartender-joe.webp', import.meta.url)).size > 10_000);
+    assert.match(npcData, /portrait: "assets\/art\/portraits\/bartender-joe\.webp"/);
+    assert.match(npcList, /npc\.portrait/);
+    assert.match(callInterface, /npc\.portrait/);
+});

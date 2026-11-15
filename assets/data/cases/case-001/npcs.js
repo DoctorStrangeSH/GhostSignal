@@ -38,6 +38,7 @@ registerData('npc', {
         role: "Бармен",
         description: "Крупный мужчина с добродушной улыбкой. Владелец бара «У Джо». Всегда готов выслушать — и налить.",
         icon: "👨🏾",
+        portrait: "assets/art/portraits/bartender-joe.webp",
         mood: "friendly",
         schedule: {
             awake: { start: 14, end: 4 },
