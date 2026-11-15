@@ -32,6 +32,14 @@ test('inventory evidence can be inspected with keyboard as well as mouse', () =>
     assert.match(css, /\.inventory-card:focus-visible/);
 });
 
+test('interview transcripts distinguish testimony, questions and verified contradictions', () => {
+    assert.match(css, /content: 'ПОКАЗАНИЕ'/);
+    assert.match(css, /content: 'ВОПРОС'/);
+    assert.match(css, /\.prepared-contradiction-kicker/);
+    assert.match(callInterface, /role="log" aria-label="Протокол разговора"/);
+    assert.match(callInterface, /if \(result\.success\) \{\s*this\._appendPlayerStatement\('Я сопоставил/);
+});
+
 test('Midnight Archive design assets are linked after existing component styles', () => {
     assert.match(html, /href="assets\/icons\/ghost-signal\.svg"/);
     assert.match(html, /href="assets\/css\/art-direction\.css"/);

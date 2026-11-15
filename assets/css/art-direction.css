@@ -274,21 +274,30 @@ body { background: #071014; }
 .call-name { font: 600 29px var(--font-serif); letter-spacing: .05em; color: #f4e9d5; }
 .call-role { font-size: 11px; letter-spacing: .16em; color: #cbb38b; }
 .dialogue-messages { padding: 14px 4px; }
-.dialogue-message { border-radius: 5px; padding: 15px 18px; max-width: 90%; box-shadow: 0 6px 16px rgba(0,0,0,.13); }
-.npc-message { background: #1c3137; border-left: 2px solid #cbb38b; }
-.player-message { background: #14363c; border-right: 2px solid #7dc4bd; }
+.dialogue-message { position: relative; border-radius: 5px; padding: 17px 19px; max-width: 90%; box-shadow: 0 8px 18px rgba(0,0,0,.2); }
+.npc-message { background: linear-gradient(150deg,#24373a,#192c32); border: 1px solid rgba(203,179,139,.3); border-left: 3px solid #cbb38b; }
+.player-message { background: linear-gradient(145deg,#163c41,#112c32); border: 1px solid rgba(125,196,189,.28); border-right: 3px solid #7dc4bd; }
+.dialogue-message::before { position: absolute; top: -7px; font: 700 9px var(--font-mono); letter-spacing: .15em; padding: 0 7px; background: #0e2026; }
+.npc-message::before { content: 'ПОКАЗАНИЕ'; left: 12px; color: #cbb38b; }
+.player-message::before { content: 'ВОПРОС'; right: 12px; color: #9de5dd; }
+.message-speaker { font-size: 10px; letter-spacing: .12em; }
 .npc-message .message-speaker { color: #e0c99e; }
 .player-message .message-speaker { color: #9de5dd; }
-.message-text { font-size: 16px; line-height: 1.55; color: #ecebe2; }
-.dialogue-answers { background: rgba(6,20,24,.48); border-top-color: rgba(189,167,127,.25); padding: 14px 0; gap: 8px; }
-.answer-btn { padding: 13px 18px; min-height: 46px; border-left: 2px solid #bda77f; letter-spacing: .03em; line-height: 1.45; }
-.answer-btn:hover { border-left-color: #9de5dd; }
+.message-text { font-size: 16px; line-height: 1.6; color: #ecebe2; overflow-wrap: anywhere; }
+.dialogue-answers { background: rgba(6,20,24,.48); border-top-color: rgba(189,167,127,.25); padding: 16px 0; gap: 9px; }
+.dialogue-answers::before { content: 'ВАШ СЛЕДУЮЩИЙ ВОПРОС'; color: #cbb38b; letter-spacing: .16em; font: 700 10px var(--font-mono); margin-bottom: 2px; }
+.dialogue-answers:empty::before { display: none; }
+.answer-btn { position: relative; padding: 14px 18px 14px 26px; min-height: 48px; border-left: 2px solid #bda77f; letter-spacing: .03em; line-height: 1.45; text-align: left; background: #1b3036; }
+.answer-btn:not(:disabled)::before { content: '›'; position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #bda77f; font-size: 18px; }
+.answer-btn:hover { border-left-color: #9de5dd; background: #294148; }
 .answer-locked { opacity: .5; }
 .call-controls { background: rgba(7,19,24,.8); border-top-color: rgba(189,167,127,.2); }
 .hangup-btn { border-radius: 5px; background: #5f3237 !important; }
 .hangup-btn:hover { background: #874349 !important; }
 .dialogue-evidence-tools { border-top-color: rgba(189,167,127,.25); }
-.prepared-contradiction { background: rgba(128,51,57,.15); border-color: rgba(209,124,119,.55); border-radius: 5px; }
+.evidence-present-row { padding: 10px 0; }
+.prepared-contradiction { background: linear-gradient(125deg,rgba(128,51,57,.18),rgba(45,22,26,.25)); border-color: rgba(209,124,119,.6); border-left: 3px solid #d17c77; border-radius: 5px; }
+.prepared-contradiction-kicker { color: #f1a39e; font-weight: 700; letter-spacing: .16em; }
 .prepared-contradiction p { color: #d4dcd5; font-size: 13px; }
 
 /* Карточка свидетеля напоминает полицейское досье, а не мессенджер. */

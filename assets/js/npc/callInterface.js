@@ -59,9 +59,9 @@ class CallInterface {
                     <div class="call-name" id="call-name"></div>
                     <div class="call-role" id="call-role"></div>
                     <div class="call-dialogue" id="call-dialogue">
-                        <div class="dialogue-messages" id="dialogue-messages"></div>
-                        <div class="dialogue-answers" id="dialogue-answers"></div>
-                        <div class="dialogue-evidence-tools" id="dialogue-evidence-tools"></div>
+                        <div class="dialogue-messages" id="dialogue-messages" role="log" aria-label="Протокол разговора" aria-live="polite" aria-relevant="additions"></div>
+                        <div class="dialogue-answers" id="dialogue-answers" role="group" aria-label="Варианты ответа"></div>
+                        <div class="dialogue-evidence-tools" id="dialogue-evidence-tools" aria-label="Проверка показаний"></div>
                     </div>
                     <div class="call-controls">
                         <button id="btn-hangup" class="call-btn hangup-btn">🔴 СБРОСИТЬ</button>
@@ -167,10 +167,13 @@ class CallInterface {
         // Добавляем сообщение NPC
         const messageEl = document.createElement('div');
         messageEl.className = 'dialogue-message npc-message';
-        messageEl.innerHTML = `
-            <span class="message-speaker">${this.currentNPC?.name || 'NPC'}:</span>
-            <span class="message-text typewriter">${node.text}</span>
-        `;
+        const speaker = document.createElement('span');
+        speaker.className = 'message-speaker';
+        speaker.textContent = `${this.currentNPC?.name || 'Свидетель'}:`;
+        const transcript = document.createElement('span');
+        transcript.className = 'message-text typewriter';
+        transcript.textContent = node.text || '';
+        messageEl.append(speaker, transcript);
         messagesContainer.appendChild(messageEl);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -198,13 +201,7 @@ class CallInterface {
                 if (answer.isAvailable) {
                     btn.addEventListener('click', () => {
                         // Добавляем ответ игрока в сообщения
-                        const playerMsg = document.createElement('div');
-                        playerMsg.className = 'dialogue-message player-message';
-                        playerMsg.innerHTML = `
-                            <span class="message-speaker">ВЫ:</span>
-                            <span class="message-text">${answer.text}</span>
-                        `;
-                        messagesContainer.appendChild(playerMsg);
+                        this._appendPlayerStatement(answer.text);
                         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
                         // Отправляем выбор
@@ -220,6 +217,23 @@ class CallInterface {
         }
 
         this._renderEvidenceTools();
+    }
+
+    _appendPlayerStatement(text, after = null) {
+        const messages = document.getElementById('dialogue-messages');
+        if (!messages) return;
+        const message = document.createElement('div');
+        message.className = 'dialogue-message player-message';
+        const speaker = document.createElement('span');
+        speaker.className = 'message-speaker';
+        speaker.textContent = 'ДЕТЕКТИВ:';
+        const body = document.createElement('span');
+        body.className = 'message-text';
+        body.textContent = text;
+        message.append(speaker, body);
+        if (after?.parentElement === messages) after.after(message);
+        else messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
     }
 
     _renderEvidenceTools() {
@@ -274,7 +288,13 @@ class CallInterface {
                 return;
             }
 
+            const messages = document.getElementById('dialogue-messages');
+            const previousMessage = messages?.lastElementChild;
             const result = this.dialogueEngine.presentEvidence(evidenceId);
+            if (result.success) {
+                const selected = evidence.find(item => item.id === evidenceId);
+                this._appendPlayerStatement(`Прошу взглянуть на улику: ${selected?.name || 'документ'}.`, previousMessage);
+            }
             if (!result.success) {
                 const message = result.reason === 'already_presented'
                     ? 'Вы уже предъявляли эту улику этому персонажу'
@@ -284,16 +304,11 @@ class CallInterface {
         });
 
         document.getElementById('btn-present-contradiction')?.addEventListener('click', () => {
-            const messages = document.getElementById('dialogue-messages');
-            if (messages) {
-                const playerMsg = document.createElement('div');
-                playerMsg.className = 'dialogue-message player-message';
-                playerMsg.innerHTML = '<span class="message-speaker">ВЫ:</span><span class="message-text">Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.</span>';
-                messages.appendChild(playerMsg);
-                messages.scrollTop = messages.scrollHeight;
-            }
-
+            const previousMessage = document.getElementById('dialogue-messages')?.lastElementChild;
             const result = this.dialogueEngine.presentPreparedContradiction();
+            if (result.success) {
+                this._appendPlayerStatement('Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.', previousMessage);
+            }
             if (!result.success) {
                 const message = result.reason === 'already_confronted'
                     ? 'Это противоречие уже предъявлялось'
