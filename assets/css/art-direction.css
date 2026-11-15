@@ -276,6 +276,10 @@ body { background: #071014; }
 .npc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(#bda77f,transparent); opacity: .75; }
 .npc-avatar { border-radius: 5px; width: 54px; height: 62px; flex: 0 0 54px; filter: grayscale(.5) sepia(.22) contrast(1.12); }
 .npc-avatar::after { border-radius: 5px; }
+.npc-avatar img, .call-avatar-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.npc-avatar img { object-position: center 28%; }
+.call-avatar-icon { overflow: hidden; }
+.call-avatar-icon img { object-position: center 24%; }
 .npc-card.npc-friendly .npc-avatar { border-color: #7dc4bd; }
 .npc-card.npc-hostile .npc-avatar { border-color: #d17c77; }
 .npc-actions .terminal-btn { min-height: 38px; }
