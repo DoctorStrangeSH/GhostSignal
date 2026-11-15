@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../assets/css/art-direction.css', import.meta.url), 'utf8');
 const icon = readFileSync(new URL('../assets/icons/ghost-signal.svg', import.meta.url), 'utf8');
+const alley = readFileSync(new URL('../assets/art/locations/noir-alley.svg', import.meta.url), 'utf8');
 
 test('Midnight Archive design assets are linked after existing component styles', () => {
     assert.match(html, /href="assets\/icons\/ghost-signal\.svg"/);
@@ -27,4 +28,10 @@ test('visual theme defines legacy newspaper colors and reduced-motion behavior',
     }
     assert.match(css, /prefers-reduced-motion: reduce/);
     assert.match(css, /:focus-visible/);
+});
+
+test('street locations use a local illustrated asset without changing scene semantics', () => {
+    assert.match(css, /url\('\.\.\/art\/locations\/noir-alley\.svg'\)/);
+    assert.match(alley, /<title id="title">Ночной переулок<\/title>/);
+    assert.match(alley, /viewBox="0 0 1200 440"/);
 });
