@@ -6,6 +6,7 @@ class CallInterface {
         this.callAudioContext = null;
         this._callStartTime = null;
         this._timerInterval = null;
+        this._connectionTimeout = null;
         this._ringtoneOscillator = null;
         this._createCallModal();
     }
@@ -18,6 +19,8 @@ class CallInterface {
     startCall(npcId) {
         const npc = getNPCById(npcId);
         if (!npc) return;
+
+        if (this.isCallActive) this.endCall();
 
         this.currentNPC = npc;
         this.isCallActive = true;
@@ -32,7 +35,9 @@ class CallInterface {
         events.emit('call:started', { npcId });
 
         // Через 2.5 секунды "соединяем"
-        setTimeout(() => {
+        this._connectionTimeout = setTimeout(() => {
+            this._connectionTimeout = null;
+            if (!this.isCallActive || this.currentNPC?.id !== npc.id) return;
             this._connectCall(npc);
         }, 2500);
     }
@@ -92,6 +97,9 @@ class CallInterface {
             image.src = npc.portrait;
             image.alt = '';
             image.decoding = 'async';
+            image.addEventListener('error', () => {
+                avatar.textContent = npc.icon || '📞';
+            }, { once: true });
             avatar.appendChild(image);
         } else {
             avatar.textContent = npc.icon || '📞';
@@ -365,6 +373,11 @@ class CallInterface {
 
     endCall() {
         this.isCallActive = false;
+
+        if (this._connectionTimeout !== null) {
+            clearTimeout(this._connectionTimeout);
+            this._connectionTimeout = null;
+        }
 
         // Останавливаем таймер
         if (this._timerInterval) {

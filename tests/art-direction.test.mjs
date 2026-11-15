@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { statSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../assets/css/art-direction.css', import.meta.url), 'utf8');
@@ -107,4 +108,32 @@ test('Elias Vaughn portrait is available in dossier and call interfaces', () => 
     assert.match(npcData, /portrait: "assets\/art\/portraits\/elias-vaughn\.webp"/);
     assert.match(npcList, /npc\.portrait/);
     assert.match(callInterface, /npc\.portrait/);
+});
+
+test('hanging up during ringing cannot reconnect a cancelled call', () => {
+    const timers = new Map();
+    let nextTimer = 1;
+    const context = {
+        getNPCById: id => ({ id, name: id, icon: '📞' }),
+        events: { emit() {} },
+        setTimeout(callback) { const id = nextTimer++; timers.set(id, callback); return id; },
+        clearTimeout(id) { timers.delete(id); }
+    };
+    const CallInterface = runInNewContext(`${callInterface}\nCallInterface`, context);
+    CallInterface.prototype._createCallModal = function () {};
+    CallInterface.prototype._showCallingScreen = function () {};
+    CallInterface.prototype._playRingtone = function () {};
+    let connections = 0;
+    CallInterface.prototype._connectCall = function () { connections++; };
+    const call = new CallInterface();
+    call.startCall('porter');
+    assert.equal(timers.size, 1);
+    const staleConnection = [...timers.values()][0];
+    call.endCall();
+    assert.equal(timers.size, 0);
+    staleConnection();
+    assert.equal(connections, 0);
+    call.startCall('bartender');
+    [...timers.values()][0]();
+    assert.equal(connections, 1);
 });

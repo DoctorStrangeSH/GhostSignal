@@ -177,7 +177,7 @@ class NPCListUI {
         return `
             <div class="npc-card ${npc.available ? '' : 'npc-unavailable'}">
                 <div class="npc-header">
-                    <span class="npc-avatar">${npc.portrait ? `<img src="${npc.portrait}" alt="" loading="lazy" decoding="async">` : (npc.icon || '👤')}</span>
+                    <span class="npc-avatar">${npc.portrait ? `<img src="${this._escapeHTML(npc.portrait)}" alt="" loading="lazy" decoding="async" data-fallback-icon="${this._escapeHTML(npc.icon || '👤')}">` : (npc.icon || '👤')}</span>
                     <div class="npc-info">
                         <span class="npc-name">${npc.name || 'Неизвестно'}</span>
                         <span class="npc-role">${npc.role || ''}</span>
@@ -263,6 +263,12 @@ class NPCListUI {
     
     _bindEvents() {
         if (!this.container) return;
+
+        this.container.querySelectorAll('.npc-avatar img').forEach(image => {
+            image.addEventListener('error', () => {
+                image.parentElement.textContent = image.dataset.fallbackIcon || '👤';
+            }, { once: true });
+        });
         
         this.container.querySelectorAll('.npc-call-btn').forEach(btn => {
             btn.addEventListener('click', () => {
