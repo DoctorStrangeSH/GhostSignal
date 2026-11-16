@@ -427,6 +427,7 @@
 
 .npc-social-event.event-expired,
 .npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
+.npc-social-event.event-cancelled { border-left-color: var(--accent-red-bright); }
 .npc-social-log-empty {
     padding: 10px;
     border: 1px dashed rgba(180, 180, 180, 0.16);

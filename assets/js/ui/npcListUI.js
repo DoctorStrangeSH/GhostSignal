@@ -72,6 +72,7 @@ class NPCListUI {
             betrayal: 'НАРУШЕНА ЛОЯЛЬНОСТЬ',
             delayed: 'ОТЛОЖЕНО',
             expired: 'НЕ ДОШЛО',
+            cancelled: 'ОТМЕНЕНО',
             duplicate: 'ПОВТОР',
             relationship_support: 'ОТНОШЕНИЯ УКРЕПИЛИСЬ',
             relationship_conflict: 'КОНФЛИКТ',
@@ -129,6 +130,9 @@ class NPCListUI {
             } else if (item.type === 'expired') {
                 headline = `${from} → ${to} · сообщение не дошло`;
                 detail = 'Окно доставки истекло до того, как контакт состоялся.';
+            } else if (item.type === 'cancelled') {
+                headline = `${from} передумал делиться сведениями с ${to}`;
+                detail = 'Передача отменена после потери доверия между персонажами.';
             } else {
                 headline = `${from} → ${to} · повторная передача не выполнена`;
                 detail = 'Получатель уже располагал этими сведениями.';

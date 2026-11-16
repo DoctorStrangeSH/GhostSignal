@@ -410,6 +410,26 @@ class NPCSocialNetwork {
                 expired++;
                 continue;
             }
+            // A message queued before a falling-out is not an irrevocable promise
+            // to disclose. Recheck the sender's present trust when transmission occurs.
+            const edge = this.caseConfig?.edges.find(candidate =>
+                candidate.from === item.fromNpcId && candidate.to === item.toNpcId &&
+                candidate.channel === item.channel &&
+                (!item.edgeId || candidate.id === item.edgeId)
+            );
+            const currentTrust = this.memoryService.getRelationshipTrust(item.fromNpcId, item.toNpcId);
+            if (edge && (currentTrust ?? edge.trust) < edge.minTrustToShare) {
+                state.pending = state.pending.filter(entry => entry.id !== item.id);
+                state.delivered.push({ id: item.id, status: 'cancelled', atGameMinute: now });
+                this._recordEvent('cancelled', {
+                    fromNpcId: item.fromNpcId, toNpcId: item.toNpcId,
+                    reportId: item.rumorId, reportKind: item.report?.kind,
+                    channel: item.channel, relationship: item.relationship,
+                    path: item.path, reason: 'trust_broken',
+                    summary: 'Передача отменена: отправитель больше не доверяет адресату.'
+                });
+                continue;
+            }
             if (!this._canDeliver(item)) {
                 if (!item.deferLogged) {
                     this._recordEvent('delayed', {
@@ -431,7 +451,8 @@ class NPCSocialNetwork {
                 originalSourceNpcId: item.originalSourceNpcId,
                 originalSourceName: item.originalSourceName,
                 sourceEvent: item.sourceEvent, path: item.path, hops: item.hops,
-                channel: item.channel, recipientTrust: item.recipientTrust,
+                channel: item.channel,
+                recipientTrust: this.memoryService.getRelationshipTrust(item.toNpcId, item.fromNpcId) ?? item.recipientTrust,
                 receivedAtGameMinute: now
             });
             state.pending = state.pending.filter(entry => entry.id !== item.id);
