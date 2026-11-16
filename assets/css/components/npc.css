@@ -403,6 +403,13 @@
     font-size: 9px;
     line-height: 1.45;
 }
+.npc-social-event .npc-social-event-source {
+    margin-top: 7px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(180, 180, 180, 0.12);
+    color: var(--accent-cyan, #78b8c5);
+    font-size: 9px;
+}
 .npc-social-event.event-delivered { border-left-color: var(--accent-green); }
 .npc-social-event.event-withheld { border-left-color: var(--accent-red-bright); }
 .npc-social-event.event-betrayal { border-left-color: var(--accent-red-bright); background: rgba(180, 70, 70, 0.07); }

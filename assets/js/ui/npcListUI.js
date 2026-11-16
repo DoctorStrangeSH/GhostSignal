@@ -79,6 +79,10 @@ class NPCListUI {
             relationship_avoidance: 'ДИСТАНЦИЯ'
         };
         const channelLabels = { in_person: 'личная встреча', phone: 'звонок', message: 'сообщение' };
+        const discoveryLabels = {
+            dialogue: 'из разговора', observation: 'из наблюдения',
+            document: 'из документа', evidence: 'из улики'
+        };
         const entries = (socialEvents || []).map(item => {
             const from = this._escapeHTML(item.fromName || 'Неизвестный');
             const to = this._escapeHTML(item.toName || 'неизвестному адресату');
@@ -86,6 +90,13 @@ class NPCListUI {
             const channel = this._escapeHTML(channelLabels[item.channel] || 'контакт');
             const time = this._escapeHTML(`ДЕНЬ ${item.day || 1} · ${item.time || '--:--'}`);
             const status = this._escapeHTML(labels[item.type] || 'СОБЫТИЕ');
+            const discovery = item.discovery;
+            const discoveredAt = Number.isFinite(discovery?.atGameMinute)
+                ? ` · день ${Math.floor(discovery.atGameMinute / 1440) + 1}, ${String(Math.floor((discovery.atGameMinute % 1440) / 60)).padStart(2, '0')}:${String(discovery.atGameMinute % 60).padStart(2, '0')}`
+                : '';
+            const provenance = discoveryLabels[discovery?.method]
+                ? `Стало известно ${discoveryLabels[discovery.method]}${discoveredAt}`
+                : 'Источник обнаружения не указан';
             let headline = '';
             let detail = '';
 
@@ -130,6 +141,7 @@ class NPCListUI {
                     </div>
                     <div class="npc-social-event-title">${this._escapeHTML(headline)}</div>
                     ${detail ? `<p>${this._escapeHTML(detail)}</p>` : ''}
+                    <p class="npc-social-event-source">${this._escapeHTML(provenance)}</p>
                 </article>
             `;
         }).join('');

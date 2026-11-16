@@ -328,6 +328,11 @@ test("NPCSocialNetwork keeps world events hidden until the detective learns abou
     assert.equal(known[0].type, "delivered");
     assert.equal(known[0].fromNpcId, "waiter");
     assert.equal(known[0].toNpcId, "bartender");
+    assert.equal(known[0].discovery.method, "dialogue");
+    assert.equal(known[0].discovery.sourceId, "dialogue-bartender:greeting:2");
+    assert.equal(known[0].discovery.atGameMinute, 18 * 60 + 15);
+    const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", Object.assign(context, { snapshot: network.toJSON(), memory }));
+    assert.equal(restored.getKnownEventLog(20)[0].discovery.sourceId, "dialogue-bartender:greeting:2");
     assert.equal(network.revealEventsForReport("social-test-report", { method: "telepathy", sourceId: "invalid" }).reason, "invalid_discovery");
 });
 

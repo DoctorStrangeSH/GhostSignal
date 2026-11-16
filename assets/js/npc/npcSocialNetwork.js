@@ -539,12 +539,20 @@ class NPCSocialNetwork {
         const state = this._ensureState();
         if (!state) return [];
         const known = new Set(state.knownEventIds);
+        const discoveryByEventId = new Map(state.discoveryLog.map(item => [item.eventId, item]));
         const relevant = state.eventLog.filter(item =>
             known.has(item.id) &&
             (!npcId || item.fromNpcId === npcId || item.toNpcId === npcId || item.protectedNpcId === npcId)
         );
         const safeLimit = Number.isInteger(limit) ? Math.max(1, Math.min(100, limit)) : 30;
-        return this._clone(relevant.slice(-safeLimit).reverse());
+        return this._clone(relevant.slice(-safeLimit).reverse().map(item => ({
+            ...item,
+            discovery: discoveryByEventId.has(item.id) ? {
+                method: discoveryByEventId.get(item.id).method,
+                sourceId: discoveryByEventId.get(item.id).sourceId,
+                atGameMinute: discoveryByEventId.get(item.id).atGameMinute
+            } : null
+        })));
     }
 
     getEventLog(limit = 30, npcId = null) {

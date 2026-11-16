@@ -62,6 +62,12 @@ test('new evidence and testimony discrepancies receive distinct unobtrusive anno
     assert.match(css, /\.notification--discovery/);
 });
 
+test('social timeline shows how and when a contact was discovered', () => {
+    assert.match(npcList, /Стало известно \$\{discoveryLabels\[discovery\.method\]\}/);
+    assert.match(npcList, /npc-social-event-source/);
+    assert.match(npcList, /_escapeHTML\(provenance\)/);
+});
+
 test('evidence board uses readable dossier cards and selected evidence contrast', () => {
     assert.match(css, /\.board-slot \.slot-evidence-name\s*\{/);
     assert.match(css, /\.board-evidence-pool\s*\{/);
