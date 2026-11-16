@@ -1122,7 +1122,14 @@ test("betrayal requires two substantive supportive actions before full reconcili
     assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 2);
     assert.equal(relationships.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 2);
 
-    relationships.recordInteraction("a", "b", "support", { trustDelta: 1, reciprocalTrustDelta: 1 });
+    relationships.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Защитил свидетеля от давления.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    relationships.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Повторил ту же историю.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
     context.snapshot = relationships.toJSON();
     context.savedMemory = memory;
     const restored = vm.runInContext(
@@ -1130,10 +1137,26 @@ test("betrayal requires two substantive supportive actions before full reconcili
     );
     restored.setCase(caseData);
     assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 1);
+    const history = restored.toJSON().cases[caseData.id].relationships["a-b"].repairHistory;
+    assert.equal(history.length, 1, "replaying the same act cannot satisfy another repair step");
+    assert.equal(history[0].summary, "Защитил свидетеля от давления.");
+    assert.equal(history[0].fromNpcId, "a");
     restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
     assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 5);
-    restored.recordInteraction("a", "b", "support", { trustDelta: 1, reciprocalTrustDelta: 1 });
+    restored.recordInteraction("a", "b", "support", {
+        actionId: "provided-safe-documents", summary: "Передал безопасную копию документов.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
     assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 0);
     restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
     assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 26);
+    restored.recordInteraction("a", "b", "betrayal", { trustDelta: -20, reciprocalTrustDelta: -20 });
+    restored.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Снова вступился за свидетеля после нового конфликта.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    const nextCycle = restored.toJSON().cases[caseData.id].relationships["a-b"];
+    assert.equal(nextCycle.betrayalRepairDebt, 1);
+    assert.equal(nextCycle.repairHistory.length, 3, "old reparations remain part of relationship history");
+    assert.equal(nextCycle.repairHistory[2].cycle > nextCycle.repairHistory[0].cycle, true);
 });
