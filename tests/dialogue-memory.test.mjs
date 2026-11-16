@@ -634,6 +634,23 @@ test("DialogueEngine refuses evidence not currently collected", () => {
     assert.equal(result.reason, "evidence_not_available");
 });
 
+test("Thomas opens with a cautious boundary after severe interview pressure", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    for (let i = 0; i < 4; i++) {
+        memory.recordAnswerSelected("waiter", "interview", "demand", {
+            text: "Говори немедленно.", tone: "threatening"
+        });
+    }
+    assert.equal(memory.getPressure("waiter"), 60);
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "overwhelmed_opening");
+    assert.match(engine.currentNode.text, /дайте мне передохнуть/i);
+    assert.equal(engine.getAvailableAnswers().length, 2);
+    inventory.insights.push("thomas_family_protected");
+    engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "overwhelmed_opening");
+});
+
 test("DialogueEngine ends newly named terminal nodes based on their data", () => {
     const { engine } = createDialogueHarness();
     engine.startDialogue("dialogue-bartender-case2");

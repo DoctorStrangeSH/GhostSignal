@@ -35,9 +35,19 @@ const DIALOGUE_WAITER = {
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
-            { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" }
+            { condition: "npc_action_received:joe-reassures-thomas-after-threat", nodeId: "supported_opening" },
+            { condition: "all:pressure_at_least:60&not:hasInsight:thomas_family_protected&not:npc_action_received:joe-informs-thomas-mills-requires-documents", nodeId: "overwhelmed_opening" }
         ],
         nodes: {
+            overwhelmed_opening: {
+                speaker: "npc",
+                text: "Томас сжимает полотенце так, что белеют пальцы. «Я уже несколько раз отвечал. Когда вы снова и снова угрожаете, мне становится трудно даже вспомнить порядок событий. Если хотите правду, дайте мне передохнуть. И не требуйте новых обвинений вместо фактов». ",
+                mood: "scared",
+                answers: [
+                    { text: "Ты прав. Я уйду и проверю доказательства, прежде чем вернуться.", nextNode: "end_waiter", tone: "calm" },
+                    { text: "Обсудим только то, что ты видел лично. Не буду требовать догадок.", nextNode: "greeting", tone: "reassuring", cooperationDelta: 2 }
+                ]
+            },
             past_broken_promise_opening: {
                 speaker: "npc",
                 text: "Я помню, как вы обещали защитить мою семью, а потом не смогли. Мы снова говорим об этом деле, но доверие не начинается с чистого листа. Если хотите мои показания, проверяйте их, а не требуйте верить вам на слово.",
