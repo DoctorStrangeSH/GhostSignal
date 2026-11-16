@@ -53,6 +53,28 @@ test("Repeating the same threat increases pressure without creating evidence or 
     assert.equal(memory.getMemory("waiter").accusations.length, 0);
 });
 
+test("Repeated reassurance has diminishing returns while a new sincere action still helps", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    memory.recordAnswerSelected("waiter", "interview", "pressure", {
+        text: "Вы всё скрываете.", tone: "threatening"
+    });
+    const comfort = { text: "Я выслушаю вас.", tone: "reassuring" };
+    for (let index = 0; index < 4; index++) {
+        memory.recordAnswerSelected("waiter", "interview", "apology", comfort);
+    }
+    const history = memory.getMemory("waiter").dialogueHistory.filter(entry =>
+        entry.type === "answer" && entry.tone === "reassuring");
+    assert.deepEqual(Array.from(history, entry => entry.trustDelta), [3, 1, 0, 0]);
+    assert.deepEqual(Array.from(history, entry => entry.pressureDelta), [-3, -1, 0, 0]);
+    assert.equal(memory.getTrust("waiter"), 49);
+    assert.equal(memory.getPressure("waiter"), 8);
+    memory.recordAnswerSelected("waiter", "interview", "verified_help", {
+        text: "Я помог вашей семье.", tone: "reassuring"
+    });
+    assert.equal(memory.getTrust("waiter"), 52);
+});
+
 test("NPCMemoryService records evidence once per NPC and remembers who saw it", () => {
     const NPCMemoryService = loadService();
     const memory = new NPCMemoryService(null, "case-002");
