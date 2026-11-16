@@ -331,6 +331,24 @@ body { background: #071014; }
 .ending-report--partial { border-left-color: #d0bb86; }
 .ending-report--limited { border-left-color: #8d9a9a; }
 
+/* Источники версий: разница между уликой, словами свидетеля и допущением. */
+.hypothesis-journal { background: linear-gradient(140deg,rgba(22,44,49,.96),rgba(12,27,33,.98)); border-color: rgba(189,167,127,.34); }
+.hypothesis-entry { padding: 15px; border: 1px solid rgba(189,167,127,.25); border-left: 3px solid #aa9874; border-radius: 5px; background: rgba(8,22,27,.42); }
+.hypothesis-entry .testimony-entry-heading strong { font: 600 17px/1.35 var(--font-serif); color: #efe5cf; }
+.hypothesis-stance-summary span { padding: 6px 10px; border-color: rgba(189,167,127,.27); font-size: 11px; }
+.hypothesis-source-balance { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin: 12px 0 5px; }
+.hypothesis-source-balance span { min-width: 0; padding: 8px 9px; font: 700 10px/1.5 var(--font-mono); border: 1px solid rgba(189,167,127,.22); border-radius: 5px; background: #1b3036; overflow-wrap: anywhere; }
+.hypothesis-source-balance .source-evidence { color: #e3ca9b; border-left: 3px solid #bda77f; }
+.hypothesis-source-balance .source-statement { color: #abe0d9; border-left: 3px solid #7dc4bd; }
+.hypothesis-source-balance .source-assumption { color: #dcb3a8; border-left: 3px solid #b78579; }
+.hypothesis-source-disclaimer { margin: 5px 0 12px; color: #aebdb5; font-size: 11px; line-height: 1.55; }
+.hypothesis-links li { padding: 9px 10px; border: 1px solid rgba(189,167,127,.12); background: rgba(255,255,255,.022); font-size: 11px; line-height: 1.5; }
+.hypothesis-source-review { border-color: rgba(125,196,189,.32); border-left: 3px solid #7dc4bd; background: rgba(18,64,65,.15); padding: 12px; }
+.hypothesis-overlap-review { padding: 12px; border-left-color: #d4ab74; background: rgba(102,75,42,.18); }
+.hypothesis-source-review p, .hypothesis-source-review li, .hypothesis-source-review small,
+.hypothesis-overlap-review p, .hypothesis-overlap-review li { font-size: 11px; line-height: 1.6; color: #c1cec5; }
+@media (max-width: 720px) { .hypothesis-source-balance { grid-template-columns: 1fr; } }
+
 /* Карточка свидетеля напоминает полицейское досье, а не мессенджер. */
 .npc-card { position: relative; overflow: hidden; }
 .npc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(#bda77f,transparent); opacity: .75; }

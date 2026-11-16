@@ -461,6 +461,12 @@ class BoardUI {
                             <span class="stance-against">− ${h.links.filter(link => link.stance === 'against').length} против</span>
                             <span class="stance-pending">? ${h.links.filter(link => link.stance === 'pending').length} проверить</span>
                         </div>
+                        <div class="hypothesis-source-balance" aria-label="Типы прикреплённых источников, без оценки правдивости версии">
+                            <span class="source-evidence">▣ Документы и улики: ${h.links.filter(link => link.kind === 'evidence').length}</span>
+                            <span class="source-statement">◈ Показания: ${h.links.filter(link => link.kind === 'statement').length}</span>
+                            <span class="source-assumption">◇ Допущения: ${h.links.filter(link => link.kind === 'assumption').length}</span>
+                        </div>
+                        <p class="hypothesis-source-disclaimer">Количество ссылок не означает количество независимых подтверждений. Проверяйте происхождение каждого сообщения.</p>
                         <ul class="hypothesis-links">
                             ${h.links.map((link, index) => {
                                 const object = link.kind === 'evidence' ? getObjectById(link.sourceId) : null;

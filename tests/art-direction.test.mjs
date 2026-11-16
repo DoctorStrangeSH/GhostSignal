@@ -21,6 +21,16 @@ const inventorySystem = readFileSync(new URL('../assets/js/systems/inventory.js'
 const notificationUI = readFileSync(new URL('../assets/js/ui/notifications.js', import.meta.url), 'utf8');
 const deductionUI = readFileSync(new URL('../assets/js/ui/deductionScreen.js', import.meta.url), 'utf8');
 const eventController = readFileSync(new URL('../assets/js/controllers/eventController.js', import.meta.url), 'utf8');
+const boardUI = readFileSync(new URL('../assets/js/ui/boardUI.js', import.meta.url), 'utf8');
+
+test('hypothesis source summary distinguishes documents testimony and assumptions without claiming truth', () => {
+    for (const kind of ['evidence', 'statement', 'assumption']) {
+        assert.match(boardUI, new RegExp(`link\\.kind === '${kind}'`));
+        assert.ok(css.includes(`.source-${kind}`));
+    }
+    assert.match(boardUI, /Количество ссылок не означает количество независимых подтверждений/);
+    assert.match(boardUI, /Типы прикреплённых источников, без оценки правдивости версии/);
+});
 
 test('deduction has labelled inputs and separate visual reports for outcome quality', () => {
     for (const id of ['ded-suspect', 'ded-motive', 'ded-weapon']) {
