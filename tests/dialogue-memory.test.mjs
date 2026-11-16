@@ -488,6 +488,26 @@ test("DialogueEngine presents a manually prepared contradiction to the selected 
     assert.equal(repeated.reason, "no_prepared_confrontation");
 });
 
+test("Unscripted contradiction responds to NPC distrust but does not invent a confession", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    for (let i = 0; i < 4; i++) engine.selectAnswer(0);
+    engine.startDialogue("dialogue-rival-full");
+    const prepared = memory.prepareConfrontation(
+        "waiter-kane-at-poisoning", "kane-left-before-poisoning", "business_rival"
+    );
+    assert.equal(prepared.prepared, true);
+    memory.adjustTrust("business_rival", -30);
+    engine.currentDialogue = { ...engine.currentDialogue, contradictionReactions: {} };
+    const result = engine.presentPreparedContradiction();
+    assert.equal(result.success, true);
+    assert.equal(result.reaction, false);
+    assert.match(result.node.text, /независимого подтверждения/);
+    assert.match(result.node.text, /несовместимых показания/);
+    assert.equal(result.node.mood, "guarded");
+    assert.equal(inventory.hasInsight("kane_alibi_broken"), false);
+});
+
 test("Thomas withholds formal testimony when trust is low or pressure is high", () => {
     const { engine, inventory, memory } = createDialogueHarness();
     engine.startDialogue("dialogue-waiter");

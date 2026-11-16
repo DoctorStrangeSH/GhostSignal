@@ -263,9 +263,7 @@ class DialogueEngine {
         const npcId = this.currentDialogue?.npcId;
         const npc = npcId && typeof getNPCById === 'function' ? getNPCById(npcId) : null;
         const state = this.memoryService?.getPsychologicalState(npcId, npc?.psychology)?.disposition;
-        const prefix = kind === 'contradiction'
-            ? 'Вы сопоставляете несовместимые показания.'
-            : `Вы показываете ${evidenceName || 'улику'}.`;
+        const prefix = kind === 'contradiction' ? '' : `Вы показываете ${evidenceName || 'улику'}.`;
         const reactions = {
             cooperative: ['Персонаж внимательно изучает материал и предлагает проверить его вместе.', 'thoughtful'],
             distrustful: ['Персонаж отодвигает документ: без независимого подтверждения он не готов ничего признать.', 'guarded'],
@@ -274,7 +272,7 @@ class DialogueEngine {
             reserved: ['Персонаж внимательно изучает материал, но пока не готов сделать вывод.', 'serious']
         };
         const [text, mood] = reactions[state] || reactions.reserved;
-        return { text: `${prefix} ${text}`, mood };
+        return { text: [prefix, text].filter(Boolean).join(' '), mood };
     }
     
     // Предъявить собранную улику текущему персонажу.
@@ -330,18 +328,18 @@ class DialogueEngine {
         const reaction = dialogue.contradictionReactions?.[prepared.topic] || null;
         const first = prepared.contradiction.first;
         const second = prepared.contradiction.second;
-        const responseText = reaction?.text ||
-            `Вы предъявляете два несовместимых показания: «${first.summary}» и «${second.summary}». Персонаж перечитывает записи и просит время, чтобы обдумать ответ.`;
-
         if (!this.memoryService.recordConfrontation(npcId, reaction?.givesInsight || null)) {
             return { success: false, reason: 'already_confronted' };
         }
+        const fallback = this._getUnscriptedReaction('contradiction');
+        const responseText = reaction?.text ||
+            `Вы предъявляете два несовместимых показания: «${first.summary}» и «${second.summary}». ${fallback.text}`;
 
         const node = {
             id: `contradiction_${prepared.topic}`,
             speaker: 'npc',
             text: responseText,
-            mood: reaction?.mood || 'guarded',
+            mood: reaction?.mood || fallback.mood,
             givesInsight: reaction?.givesInsight || null,
             claim: reaction?.claim || null,
             answers: reaction?.answers || this.currentNode?.answers || []
