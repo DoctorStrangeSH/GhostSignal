@@ -74,7 +74,7 @@ class BoardUI {
             
             <div class="board-evidence-pool">
                 <h4>📦 Доступные улики:</h4>
-                <p class="board-selection-help" id="board-selection-help" aria-live="polite">Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.</p>
+                <p class="board-selection-help" id="board-selection-help" role="status" aria-live="polite">Выберите улику, затем нажмите на место на доске. Перетаскивание мышью тоже работает.</p>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
 
@@ -147,7 +147,7 @@ class BoardUI {
                      id="${slot.id}"
                      style="left: ${slot.x}%; top: ${slot.y}%;"
                      data-slot-id="${slot.id}" role="button" tabindex="0"
-                     aria-label="${this._escapeHTML(slot.label)}: ${this._escapeHTML(evidence?.name || 'свободно')}. Выбрать для размещения улики">
+                     aria-label="${this._escapeHTML(slot.label)}: ${this._escapeHTML(evidence?.name || 'свободно')}. ${evidence ? 'Разместить другую улику вместо текущей' : 'Разместить выбранную улику'}">
                     <div class="slot-label">${slot.label}</div>
                     <div class="slot-content">
                         ${evidence ? `
@@ -155,7 +155,7 @@ class BoardUI {
                             <span class="slot-evidence-name">${evidence.name}</span>
                             <button class="slot-remove-btn" type="button" data-slot="${slot.id}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
                         ` : `
-                            <span class="slot-placeholder">Выберите или перетащите улику</span>
+                            <span class="slot-placeholder">Нажмите после выбора улики</span>
                         `}
                     </div>
                 </div>
@@ -227,32 +227,8 @@ class BoardUI {
             });
         });
         
-        // Мобильный Drag & Drop (touch)
-        this.container.querySelectorAll('.evidence-pool-item').forEach(item => {
-            item.addEventListener('touchstart', (e) => {
-                this._draggedEvidence = item.dataset.evidenceId;
-                item.classList.add('dragging');
-            });
-            item.addEventListener('touchend', () => {
-                item.classList.remove('dragging');
-            });
-        });
-        
-        this.container.querySelectorAll('.board-slot').forEach(slot => {
-            slot.addEventListener('touchmove', (e) => e.preventDefault());
-            slot.addEventListener('touchend', (e) => {
-                if (this._draggedEvidence && this.board) {
-                    const touch = e.changedTouches[0];
-                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-                    const targetSlot = targetEl?.closest('.board-slot');
-                    if (targetSlot) {
-                        const slotId = targetSlot.dataset.slotId;
-                        this.board.placeEvidence(this._draggedEvidence, slotId);
-                    }
-                }
-                this._draggedEvidence = null;
-            });
-        });
+        // На сенсорных экранах используем два обычных нажатия: выбрать улику,
+        // затем место. Перехват touchmove раньше блокировал прокрутку доски.
         
         // Кнопки удаления
         this.container.querySelectorAll('.slot-remove-btn').forEach(btn => {
@@ -300,8 +276,8 @@ class BoardUI {
         });
         const help = this.container?.querySelector('#board-selection-help');
         if (help) help.textContent = this._selectedEvidenceId
-            ? 'Улика выбрана. Нажмите на место на доске, чтобы разместить её.'
-            : 'Выберите улику, затем нажмите на свободное место на доске. Перетаскивание тоже работает.';
+            ? 'Улика выбрана. Нажмите на место на доске, чтобы разместить или заменить её.'
+            : 'Выберите улику, затем нажмите на место на доске. Перетаскивание мышью тоже работает.';
     }
 
     _placeSelectedEvidence(slotId) {

@@ -23,6 +23,14 @@ const deductionUI = readFileSync(new URL('../assets/js/ui/deductionScreen.js', i
 const eventController = readFileSync(new URL('../assets/js/controllers/eventController.js', import.meta.url), 'utf8');
 const boardUI = readFileSync(new URL('../assets/js/ui/boardUI.js', import.meta.url), 'utf8');
 
+test('touch evidence placement uses accessible tap selection without hijacking scrolling', () => {
+    assert.match(boardUI, /role="status" aria-live="polite"/);
+    assert.match(boardUI, /this\._selectEvidence\(item\.dataset\.evidenceId\)/);
+    assert.match(boardUI, /this\._placeSelectedEvidence\(slot\.dataset\.slotId\)/);
+    assert.doesNotMatch(boardUI, /addEventListener\('touchmove'/);
+    assert.match(css, /\.board-slot \{ touch-action: pan-y; \}/);
+});
+
 test('hypothesis source summary distinguishes documents testimony and assumptions without claiming truth', () => {
     for (const kind of ['evidence', 'statement', 'assumption']) {
         assert.match(boardUI, new RegExp(`link\\.kind === '${kind}'`));
