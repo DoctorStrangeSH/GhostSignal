@@ -180,14 +180,9 @@ class DialogueEngine {
             this._notifyMemoryChanged();
         }
 
-        // Если диалог завершается
-        if (answer.nextNode === 'end_call' || answer.nextNode === 'end_talk' || 
-            answer.nextNode === 'end_briefing' || answer.nextNode === 'end_elias' ||
-            answer.nextNode === 'end_wife' || answer.nextNode === 'end_red' ||
-            answer.nextNode === 'end_anna' || answer.nextNode === 'end_eva' ||
-            answer.nextNode === 'end_rival' || answer.nextNode === 'end_pharmacist' ||
-            answer.nextNode === 'end_waiter' || answer.nextNode === 'end_journalist' ||
-            answer.nextNode === 'end_bartender2' || answer.nextNode === 'end_red_scarf') {
+        // Финальная реплика определяется данными диалога, а не названием узла.
+        const targetNode = this.currentDialogue.tree.nodes[answer.nextNode];
+        if (targetNode?.endDialogue === true) {
             
             const endNode = this.currentDialogue.tree.nodes[answer.nextNode];
             if (endNode) {
@@ -202,11 +197,11 @@ class DialogueEngine {
             }
             
             if (this.onNodeChange) this.onNodeChange(this.currentNode);
-            return { endDialogue: true };
+            return { ...this.currentNode, endDialogue: true };
         }
         
         // Переходим к следующему узлу
-        const nextNode = this.currentDialogue.tree.nodes[answer.nextNode];
+        const nextNode = targetNode;
         if (!nextNode) {
             console.error('Узел не найден:', answer.nextNode);
             return { error: 'Узел не найден' };
@@ -263,6 +258,24 @@ class DialogueEngine {
     getHistory() {
         return [...this.dialogueHistory];
     }
+
+    _getUnscriptedReaction(kind, evidenceName = '') {
+        const npcId = this.currentDialogue?.npcId;
+        const npc = npcId && typeof getNPCById === 'function' ? getNPCById(npcId) : null;
+        const state = this.memoryService?.getPsychologicalState(npcId, npc?.psychology)?.disposition;
+        const prefix = kind === 'contradiction'
+            ? 'Вы сопоставляете несовместимые показания.'
+            : `Вы показываете ${evidenceName || 'улику'}.`;
+        const reactions = {
+            cooperative: ['Персонаж внимательно изучает материал и предлагает проверить его вместе.', 'thoughtful'],
+            distrustful: ['Персонаж отодвигает документ: без независимого подтверждения он не готов ничего признать.', 'guarded'],
+            pressured: ['Персонаж перечитывает строки, заметно нервничает и просит не торопить его с выводами.', 'nervous'],
+            overwhelmed: ['Персонаж замолкает и просит паузу. Сейчас он не может дать надёжный ответ.', 'shaken'],
+            reserved: ['Персонаж внимательно изучает материал, но пока не готов сделать вывод.', 'serious']
+        };
+        const [text, mood] = reactions[state] || reactions.reserved;
+        return { text: `${prefix} ${text}`, mood };
+    }
     
     // Предъявить собранную улику текущему персонажу.
     presentEvidence(evidenceId) {
@@ -283,11 +296,12 @@ class DialogueEngine {
 
         const reaction = dialogue.evidenceReactions?.[evidenceId];
         const object = getObjectById(evidenceId);
+        const fallback = this._getUnscriptedReaction('evidence', object?.name);
         const node = {
             id: `evidence_${evidenceId}`,
             speaker: 'npc',
-            text: reaction?.text || `Вы показываете ${object?.name || 'улику'}. Персонаж внимательно изучает её, но пока не готов сделать вывод.`,
-            mood: reaction?.mood || 'serious',
+            text: reaction?.text || fallback.text,
+            mood: reaction?.mood || fallback.mood,
             givesInsight: reaction?.givesInsight || null,
             claim: reaction?.claim || null,
             answers: reaction?.answers || this.currentNode?.answers || []

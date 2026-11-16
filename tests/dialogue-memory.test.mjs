@@ -614,6 +614,30 @@ test("DialogueEngine refuses evidence not currently collected", () => {
     assert.equal(result.reason, "evidence_not_available");
 });
 
+test("DialogueEngine ends newly named terminal nodes based on their data", () => {
+    const { engine } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    engine.currentNode = {
+        id: "farewell",
+        answers: [{ text: "До встречи", nextNode: "end_bartender_guarded" }]
+    };
+    const result = engine.selectAnswer(0);
+    assert.equal(result.endDialogue, true);
+    assert.equal(engine.isDialogueEnded(), true);
+    assert.equal(engine.currentNode.id, "end_bartender_guarded");
+});
+
+test("Unscripted evidence reactions reflect trust and pressure without overriding authored dialogue", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-journalist");
+    memory.adjustTrust("journalist", -35);
+    const result = engine.presentEvidence("bar_photo");
+    assert.equal(result.success, true);
+    assert.equal(result.reaction, false);
+    assert.match(result.node.text, /независимого подтверждения/);
+    assert.equal(result.node.mood, "guarded");
+});
+
 
 test("DialogueEngine gates dialogue branches on each NPC's received rumor and independent verification", () => {
     const { engine, memory } = createDialogueHarness();
