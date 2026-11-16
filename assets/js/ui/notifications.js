@@ -41,6 +41,13 @@ class NotificationManager {
             if (!data?.contradictions?.length) return;
             this.show('Обнаружено расхождение в показаниях. Проверьте источники на доске расследования.', 'discovery', 5500);
         });
+        events.on('npc:social_event_discovered', (data) => {
+            if (!Number.isInteger(data?.count) || data.count <= 0) return;
+            this.show(data.count === 1
+                ? 'Раскрыто новое событие между персонажами. Подробности доступны в досье.'
+                : `Раскрыты новые события между персонажами (${data.count}). Подробности доступны в досье.`,
+            'discovery', 5200);
+        });
     }
 
     show(message, type = 'info', duration = 3000) {

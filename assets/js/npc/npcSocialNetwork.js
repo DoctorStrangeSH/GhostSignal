@@ -526,6 +526,12 @@ class NPCSocialNetwork {
             revealed++;
         }
         if (state.discoveryLog.length > 300) state.discoveryLog.splice(0, state.discoveryLog.length - 300);
+        // A private NPC exchange becomes visible only after the detective discovers
+        // its source. Never announce undetected background interactions.
+        if (revealed && typeof events !== 'undefined') {
+            events.emit('npc:social_event_discovered', { count: revealed, method: discovery.method });
+            events.emit('npc:social_network_changed', { reason: 'social_event_discovery' });
+        }
         return { revealed, reason: revealed ? null : 'no_new_matching_events' };
     }
 

@@ -55,6 +55,7 @@ test('deduction has labelled inputs and separate visual reports for outcome qual
 test('new evidence and testimony discrepancies receive distinct unobtrusive announcements', () => {
     assert.match(inventorySystem, /type: object\.isEvidence \? 'evidence' : 'success'/);
     assert.match(notificationUI, /npc:contradiction_detected/);
+    assert.match(notificationUI, /npc:social_event_discovered/);
     assert.match(notificationUI, /setAttribute\('aria-live', 'polite'\)/);
     assert.match(notificationUI, /content\.textContent = String\(message \?\? ''\)/);
     assert.match(notificationUI, /pointer-events: none/);
