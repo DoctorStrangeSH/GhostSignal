@@ -584,11 +584,14 @@ class NPCRelationshipService {
                 'npc_witness_decision:' + rule.id);
         }
         if (rule.interviewDecisionPolicy === 'after_reputation_warning' && !state.rules[rule.id].interviewDecision) {
-            // Thomas alone decides, using his own experiences at the time of the reply.
+            // The witness chooses support only when they still trust the proposed companion.
+            // A warning alone cannot force a private interview into an escorted one.
             const personalPattern = this.memoryService?.getLongTermBehaviorPattern(rule.fromNpcId);
             const personalPressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            const companionTrust = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
             state.rules[rule.id].interviewDecision =
-                personalPattern?.repeatedPressure || personalPressure >= 40 ? 'request_joe_present' : 'private_with_boundaries';
+                (personalPattern?.repeatedPressure || personalPressure >= 40) && companionTrust >= 45
+                    ? 'request_joe_present' : 'private_with_boundaries';
         }
         if (rule.leaveReviewPolicy === 'after_temporary_leave' && !state.rules[rule.id].leaveReviewOutcome) {
             // Pressure represents Thomas's current willingness to return, never the detective's order.

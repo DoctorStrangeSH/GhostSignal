@@ -1077,3 +1077,36 @@ test("receiving a warning does not force mediation when a witness has not person
     assert.equal(relationships.getWitnessInterviewDecision("a", "witness-reply"), null,
         "only the actual witness owns the decision");
 });
+
+test("a pressured witness declines an escort they no longer trust", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, maxOccurrences: 1 },
+            { id: "witness-reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 30,
+                interviewDecisionPolicy: "after_reputation_warning" }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    memory.getMemory("b").pressure = 65;
+    memory.setRelationshipTrust("b", "a", 20);
+    advance(30);
+    advance(30);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
+    memory.setRelationshipTrust("b", "a", 90);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries",
+        "subsequent reconciliation must not retroactively change the witness's decision");
+    context.snapshot = relationships.toJSON();
+    context.savedMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, savedMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
+});
