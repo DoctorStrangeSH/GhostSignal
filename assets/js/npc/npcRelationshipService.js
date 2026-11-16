@@ -570,6 +570,21 @@ class NPCRelationshipService {
         return true;
     }
 
+    getLatestRepairRememberedBy(npcId, otherNpcId) {
+        if (!npcId || !otherNpcId || npcId === otherNpcId) return null;
+        const bond = this._findBond(npcId, otherNpcId);
+        if (!bond) return null;
+        const history = this._ensureState()?.relationships?.[bond.id]?.repairHistory;
+        if (!Array.isArray(history)) return null;
+        const remembered = [...history].reverse().find(item =>
+            item.toNpcId === npcId && item.fromNpcId === otherNpcId && item.summary
+        );
+        return remembered ? this._clone({
+            summary: remembered.summary, atGameMinute: remembered.atGameMinute,
+            actionId: remembered.actionId
+        }) : null;
+    }
+
     _applyInteraction(rule, now) {
         const state = this._ensureState();
         const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {

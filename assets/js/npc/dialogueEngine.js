@@ -32,6 +32,20 @@ class DialogueEngine {
         this.socialNetwork = service || null;
     }
 
+    _personalizeNode(node) {
+        if (!node?.rememberRepairFromNpcId || !this.currentDialogue?.npcId) return node;
+        const remembered = this.relationshipService?.getLatestRepairRememberedBy?.(
+            this.currentDialogue.npcId, node.rememberRepairFromNpcId
+        );
+        if (!remembered?.summary) return node;
+        const helperName = typeof getNPCById === 'function'
+            ? getNPCById(node.rememberRepairFromNpcId)?.name : null;
+        return {
+            ...node,
+            text: `${node.text} Я помню помощь ${helperName || 'этого человека'}: ${remembered.summary}`
+        };
+    }
+
     _recordNodeMemory(node) {
         const npcId = this.currentDialogue?.npcId;
         if (node?.id === 'route_question_response' && npcId === 'business_rival') {
@@ -79,15 +93,15 @@ class DialogueEngine {
             return false;
         }
 
-        this.currentNode = {
+        this.currentNode = this._personalizeNode({
             id: startId,
             ...startNode
-        };
+        });
 
         this.dialogueHistory.push({
             nodeId: startId,
             speaker: startNode.speaker,
-            text: startNode.text
+            text: this.currentNode.text
         });
 
         if (this.memoryService) {
@@ -186,11 +200,11 @@ class DialogueEngine {
             
             const endNode = this.currentDialogue.tree.nodes[answer.nextNode];
             if (endNode) {
-                this.currentNode = { id: answer.nextNode, ...endNode };
+                this.currentNode = this._personalizeNode({ id: answer.nextNode, ...endNode });
                 this.dialogueHistory.push({
                     nodeId: answer.nextNode,
                     speaker: endNode.speaker,
-                    text: endNode.text
+                    text: this.currentNode.text
                 });
                 this._recordNodeMemory(this.currentNode);
                 this._processNodeEffects(endNode);
@@ -207,12 +221,12 @@ class DialogueEngine {
             return { error: 'Узел не найден' };
         }
         
-        this.currentNode = { id: answer.nextNode, ...nextNode };
+        this.currentNode = this._personalizeNode({ id: answer.nextNode, ...nextNode });
         
         this.dialogueHistory.push({
             nodeId: answer.nextNode,
             speaker: nextNode.speaker,
-            text: nextNode.text
+            text: this.currentNode.text
         });
 
         this._recordNodeMemory(this.currentNode);
