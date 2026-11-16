@@ -38,6 +38,21 @@ test("NPCMemoryService records conversations, visited nodes, selected answers an
     assert.equal(saved.dialogueHistory[3].trustDelta, -3);
 });
 
+test("Repeating the same threat increases pressure without creating evidence or granting a confession", () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, "case-002");
+    const threat = { text: "Признавайтесь немедленно.", tone: "threatening" };
+    for (let index = 0; index < 4; index++) {
+        memory.recordAnswerSelected("waiter", "interview", "demand", threat);
+    }
+    const history = memory.getMemory("waiter").dialogueHistory.filter(entry => entry.type === "answer");
+    assert.deepEqual(Array.from(history, entry => entry.pressureDelta), [12, 14, 16, 18]);
+    assert.equal(memory.getPressure("waiter"), 60);
+    assert.equal(memory.getPsychologicalState("waiter").disposition, "overwhelmed");
+    assert.equal(memory.getMemory("waiter").claims.length, 0);
+    assert.equal(memory.getMemory("waiter").accusations.length, 0);
+});
+
 test("NPCMemoryService records evidence once per NPC and remembers who saw it", () => {
     const NPCMemoryService = loadService();
     const memory = new NPCMemoryService(null, "case-002");

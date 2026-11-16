@@ -381,7 +381,16 @@ class NPCMemoryService {
         };
         const effect = toneEffects[answer.tone || 'neutral'] || toneEffects.neutral;
         const trustDelta = Number.isFinite(answer.trustDelta) ? answer.trustDelta : effect.trust;
-        const pressureDelta = Number.isFinite(answer.pressureDelta) ? answer.pressureDelta : effect.pressure;
+        const tone = answer.tone || 'neutral';
+        // Повтор одной и той же угрозы не становится новым аргументом: давление растёт,
+        // но результат расследования по-прежнему зависит от подтверждённых улик.
+        const repeatedPressure = ['aggressive', 'threatening'].includes(tone)
+            ? memory.dialogueHistory.filter(entry => entry.type === 'answer' &&
+                entry.dialogueId === dialogueId && entry.nodeId === nodeId &&
+                entry.answerText === (answer.text || '') && entry.tone === tone).length
+            : 0;
+        const repeatPenalty = Math.min(6, repeatedPressure * 2);
+        const pressureDelta = (Number.isFinite(answer.pressureDelta) ? answer.pressureDelta : effect.pressure) + repeatPenalty;
         memory.trust = Math.max(0, Math.min(100, memory.trust + trustDelta));
         memory.pressure = Math.max(0, Math.min(100, memory.pressure + pressureDelta));
         this._append(memory, {
@@ -389,16 +398,16 @@ class NPCMemoryService {
             dialogueId,
             nodeId,
             answerText: answer.text || '',
-            tone: answer.tone || 'neutral',
+            tone,
             trustDelta,
             pressureDelta,
+            repeatedPressure,
             cooperationDelta: Number.isFinite(answer.cooperationDelta)
                 ? Math.max(-25, Math.min(25, answer.cooperationDelta)) : 0
         });
         if (Number.isFinite(answer.cooperationDelta) && answer.cooperationDelta !== 0) {
             this.adjustCooperation(npcId, answer.cooperationDelta, 'player_answer:' + (answer.tone || 'neutral'));
         }
-        const tone = answer.tone || 'neutral';
         const memorableTones = {
             reassuring: { importance: 3, tag: 'player_reassured', sentiment: 'positive' },
             threatening: { importance: 4, tag: 'player_threatened', sentiment: 'negative' },
