@@ -1110,3 +1110,30 @@ test("a pressured witness declines an escort they no longer trust", () => {
     restored.setCase(caseData);
     assert.equal(restored.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
 });
+
+test("betrayal requires two substantive supportive actions before full reconciliation", () => {
+    const { memory, relationships, context, caseData } = createHarness();
+    const betrayed = relationships.recordInteraction("a", "b", "betrayal", {
+        trustDelta: -20, reciprocalTrustDelta: -20
+    });
+    assert.equal(betrayed.changed, true);
+    const trustAfterBetrayal = memory.getRelationshipTrust("a", "b");
+    relationships.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 2);
+    assert.equal(relationships.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 2);
+
+    relationships.recordInteraction("a", "b", "support", { trustDelta: 1, reciprocalTrustDelta: 1 });
+    context.snapshot = relationships.toJSON();
+    context.savedMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, savedMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 1);
+    restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 5);
+    restored.recordInteraction("a", "b", "support", { trustDelta: 1, reciprocalTrustDelta: 1 });
+    assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 0);
+    restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 26);
+});
