@@ -72,6 +72,36 @@ test("Joe offers a voluntary follow-up only after his off-screen document check 
         'the same offer must not be announced twice');
 });
 
+test("Thomas acknowledges Joe's document offer without claiming an unverified result", () => {
+    const { engine, memory } = createDialogueHarness();
+    let received = false;
+    engine.setRelationshipService({
+        hasReceivedInteraction(npcId, ruleId) {
+            return received && npcId === 'waiter' &&
+                ruleId === 'joe-offers-document-check-after-visitor-warning';
+        },
+        toJSON() { return {}; }
+    });
+    assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'thomas_responds_to_document_offer');
+    received = true;
+    assert.equal(engine.getPendingInitiative('dialogue-waiter')?.nodeId,
+        'thomas_responds_to_document_offer');
+    engine.startDialogue('dialogue-waiter');
+    assert.equal(engine.currentNode.id, 'thomas_responds_to_document_offer');
+    assert.match(engine.currentNode.text, /Я согласился посмотреть записи/);
+    assert.match(engine.currentNode.text, /не могу подтвердить, кто приходил/);
+    assert.equal(memory.hasVisitedNode('waiter', 'dialogue-waiter',
+        'thomas_responds_to_document_offer'), true);
+    assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    engine.selectAnswer(0);
+    assert.equal(engine.currentNode.id, 'greeting');
+    engine.reset();
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'thomas_responds_to_document_offer');
+});
+
 function createDialogueHarness() {
     const registry = { dialogue: {} };
     const emitted = [];
