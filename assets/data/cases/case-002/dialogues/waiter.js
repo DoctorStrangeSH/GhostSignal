@@ -32,6 +32,8 @@ const DIALOGUE_WAITER = {
             { condition: "all:latest_promise_outcome:thomas-family-protection:broken&not:has_visited_node:past_broken_promise_opening", nodeId: "past_broken_promise_opening" },
             { condition: "all:latest_promise_outcome:thomas-family-protection:kept&not:has_visited_node:past_kept_promise_opening", nodeId: "past_kept_promise_opening" },
             { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
+            { condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&heard_rumor:joe-reports-detective-visitor-correction&not:has_visited_node:visitor_correction_initiative", nodeId: "visitor_correction_initiative" },
+            { condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&not:has_visited_node:visitor_caution_initiative", nodeId: "visitor_caution_initiative" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning-v2", nodeId: "revised_testimony_opening" },
             { condition: "has_claim:waiter-kane-at-poisoning", nodeId: "testimony_given_opening" },
@@ -39,6 +41,24 @@ const DIALOGUE_WAITER = {
             { condition: "all:pressure_at_least:60&not:hasInsight:thomas_family_protected&not:npc_action_received:joe-informs-thomas-mills-requires-documents", nodeId: "overwhelmed_opening" }
         ],
         nodes: {
+            visitor_correction_initiative: {
+                speaker: "npc",
+                text: "Детектив, я сам хотел поговорить. Джо рассказал, что вы отозвали прежнее утверждение о посетителе. Это важно, но его слова не доказывают, кто именно приходил. Я не стану выдавать пересказ за собственные показания.",
+                mood: "cautious",
+                answers: [
+                    { text: "Спасибо, Томас. Проверим документы и свидетелей отдельно.", nextNode: "greeting", tone: "calm" },
+                    { text: "Я понимаю. Поговорим позже.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+            visitor_caution_initiative: {
+                speaker: "npc",
+                text: "Детектив, подождите. Джо предупредил меня, что вывод о посетителе мог быть слишком уверенным. Я не был при вашем разговоре и не знаю, кто прав. Но прошу вас не записывать чужой пересказ как установленный факт.",
+                mood: "guarded",
+                answers: [
+                    { text: "Согласен. Сначала проверим источник сведений.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо за предупреждение. Вернусь с доказательствами.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
             overwhelmed_opening: {
                 speaker: "npc",
                 text: "Томас сжимает полотенце так, что белеют пальцы. «Я уже несколько раз отвечал. Когда вы снова и снова угрожаете, мне становится трудно даже вспомнить порядок событий. Если хотите правду, дайте мне передохнуть. И не требуйте новых обвинений вместо фактов». ",

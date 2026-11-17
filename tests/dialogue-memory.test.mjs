@@ -2207,6 +2207,9 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
 
     engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "visitor_caution_initiative");
+    assert.match(engine.currentNode.text, /Джо предупредил.*не знаю, кто прав/i);
+    engine.selectAnswer(0);
     const caution = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_joe_visitor_caution");
     assert.equal(caution?.isAvailable, true);
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw")?.isAvailable, true,
@@ -2217,6 +2220,8 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
 
     engine.reset();
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "visitor_caution_initiative",
+        "Thomas must not repeat an unsolicited warning once it was heard");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false,
         "Thomas must not repeat the special reaction after it was heard");
 });
@@ -2257,6 +2262,10 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
     advance(30);
     assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), true);
     engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "visitor_correction_initiative");
+    assert.match(engine.currentNode.text, /сам хотел поговорить/i);
+    assert.match(engine.currentNode.text, /не доказывают, кто именно приходил/i);
+    engine.selectAnswer(0);
     const reaction = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_visitor_correction");
     assert.equal(reaction?.isAvailable, true);
     engine.selectAnswer(reaction.index);
@@ -2264,6 +2273,8 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
     assert.match(engine.currentNode.text, /не доказывает, кто приходил/i);
     engine.reset();
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "visitor_correction_initiative",
+        "Thomas must not repeat the voluntary correction after the first encounter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_visitor_correction"), false);
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_acknowledges_verified_followup"), false,
         "an apology alone does not restore trust");
