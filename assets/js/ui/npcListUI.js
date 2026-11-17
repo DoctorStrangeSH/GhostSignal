@@ -2,7 +2,13 @@ class NPCListUI {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.npcManager = null;
+        this.dialogueEngine = null;
         this._init();
+    }
+
+    setDialogueEngine(engine) {
+        this.dialogueEngine = engine || null;
+        this.render();
     }
     
     setNPCManager(manager) {
@@ -166,6 +172,7 @@ class NPCListUI {
     }
 
     _createNPCCard(npc) {
+        const initiative = npc.dialogueId && this.dialogueEngine?.getPendingInitiative(npc.dialogueId);
         const statusIcons = {
             'at_work': '💼',
             'at_home': '🏠',
@@ -204,6 +211,7 @@ class NPCListUI {
                 <div class="npc-status ${statusColors[npc.reason] || ''}">
                     ${statusIcons[npc.reason] || '❓'} ${npc.message || 'Статус неизвестен'}
                 </div>
+                ${initiative ? `<div class="npc-initiative" role="status">✉ ${this._escapeHTML(initiative.label)}</div>` : ''}
                 
                 ${npc.description ? `<div class="npc-description">${npc.description}</div>` : ''}
                 

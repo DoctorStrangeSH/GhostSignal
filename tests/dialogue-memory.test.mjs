@@ -2203,10 +2203,20 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false);
     advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null,
+        "a contact card must not reveal an undelivered rumor");
     advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
+    const pendingWarning = engine.getPendingInitiative("dialogue-waiter");
+    assert.deepEqual(JSON.parse(JSON.stringify(pendingWarning)), {
+        npcId: "waiter", dialogueId: "dialogue-waiter", nodeId: "visitor_caution_initiative",
+        label: "Есть предупреждение"
+    });
+    assert.equal(JSON.stringify(engine.getPendingInitiative("dialogue-waiter")), JSON.stringify(pendingWarning),
+        "merely viewing contact cards must not consume an initiative");
 
     engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null);
     assert.equal(engine.currentNode.id, "visitor_caution_initiative");
     assert.match(engine.currentNode.text, /Джо предупредил.*не знаю, кто прав/i);
     engine.selectAnswer(0);
@@ -2261,7 +2271,11 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
 
     advance(30);
     assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), true);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter")?.nodeId,
+        "visitor_correction_initiative");
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.getPendingInitiative("dialogue-waiter")?.nodeId,
+        "visitor_correction_initiative");
     assert.equal(engine.currentNode.id, "visitor_correction_initiative");
     assert.match(engine.currentNode.text, /сам хотел поговорить/i);
     assert.match(engine.currentNode.text, /не доказывают, кто именно приходил/i);

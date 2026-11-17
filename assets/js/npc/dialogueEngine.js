@@ -32,6 +32,20 @@ class DialogueEngine {
         this.socialNetwork = service || null;
     }
 
+    // A read-only preview for contact lists. It must not start a conversation,
+    // advance time, or mark the lead as heard merely because a card is rendered.
+    getPendingInitiative(dialogueId) {
+        const dialogue = getDialogueById(dialogueId);
+        if (!dialogue?.npcId || !dialogue.tree?.nodes) return null;
+        for (const rule of dialogue.tree.entryRules || []) {
+            if (!rule?.initiative || !dialogue.tree.nodes[rule.nodeId]) continue;
+            if (!this._checkCondition(rule.condition, dialogue)) continue;
+            return { npcId: dialogue.npcId, dialogueId, nodeId: rule.nodeId,
+                label: typeof rule.initiativeLabel === 'string' ? rule.initiativeLabel : 'Хочет поговорить' };
+        }
+        return null;
+    }
+
     _personalizeNode(node) {
         if (!node?.rememberRepairFromNpcId || !this.currentDialogue?.npcId) return node;
         const remembered = this.relationshipService?.getLatestRepairRememberedBy?.(
@@ -436,20 +450,20 @@ class DialogueEngine {
         }
     }
     
-    _checkCondition(conditionStr) {
+    _checkCondition(conditionStr, dialogue = this.currentDialogue) {
         if (!conditionStr) return true;
 
         if (conditionStr.startsWith('not:')) {
             const nested = conditionStr.slice(4).trim();
-            return Boolean(nested) && !this._checkCondition(nested);
+            return Boolean(nested) && !this._checkCondition(nested, dialogue);
         }
         if (conditionStr.startsWith('all:')) {
             return conditionStr.slice(4).split('&').map(part => part.trim())
-                .filter(Boolean).every(part => this._checkCondition(part));
+                .filter(Boolean).every(part => this._checkCondition(part, dialogue));
         }
         if (conditionStr.startsWith('any:')) {
             return conditionStr.slice(4).split('&').map(part => part.trim())
-                .filter(Boolean).some(part => this._checkCondition(part));
+                .filter(Boolean).some(part => this._checkCondition(part, dialogue));
         }
         
         // hasItem:itemId
@@ -464,10 +478,10 @@ class DialogueEngine {
             return this.inventory?.hasInsight(insightId) || false;
         }
         
-        const npcId = this.currentDialogue?.npcId;
+        const npcId = dialogue?.npcId;
         if (conditionStr.startsWith('has_visited_node:')) {
             return Boolean(npcId && this.memoryService?.hasVisitedNode(npcId,
-                this.currentDialogue?.id, conditionStr.slice('has_visited_node:'.length)));
+                dialogue?.id, conditionStr.slice('has_visited_node:'.length)));
         }
         if (conditionStr === 'route_question_prepared') {
             return Boolean(npcId && this.investigationBoard?.hasPreparedRouteQuestion(npcId));

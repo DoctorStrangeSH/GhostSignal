@@ -98,6 +98,18 @@
     letter-spacing: 1px;
 }
 
+.npc-initiative {
+    display: inline-block;
+    margin: 0 0 10px 8px;
+    padding: 5px 10px;
+    border: 1px solid rgba(125, 196, 189, .45);
+    border-radius: 12px;
+    background: rgba(125, 196, 189, .1);
+    color: #b7e7db;
+    font-size: 11px;
+    letter-spacing: .03em;
+}
+
 .status-work {
     background: rgba(240, 192, 64, 0.06);
     color: var(--accent-amber-glow);
