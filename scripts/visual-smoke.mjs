@@ -76,6 +76,15 @@ try {
             const tab = page.locator(`.sidebar-tab[data-tab="${tabId}"]`);
             await tab.click();
             await page.locator(contentSelector).first().waitFor();
+            if (name === 'mobile' && tabId === 'tab-board') {
+                const boardScroll = await page.locator('.board-viewport').evaluate(element => ({
+                    scrollWidth: element.scrollWidth,
+                    clientWidth: element.clientWidth
+                }));
+                if (boardScroll.scrollWidth <= boardScroll.clientWidth) {
+                    throw new Error('mobile: board must scroll horizontally instead of shrinking its evidence slots');
+                }
+            }
             if (name === 'mobile') {
                 const bounds = await tab.boundingBox();
                 if (!bounds || bounds.x < -2 || bounds.x + bounds.width > viewport.width + 2) {
