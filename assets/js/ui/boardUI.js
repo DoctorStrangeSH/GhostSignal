@@ -310,7 +310,8 @@ class BoardUI {
         const chronologyReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
             .filter(event => event.action === 'chronology_reviewed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
         const causalReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
-            .filter(event => event.action === 'causal_link_proposed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
+            .filter(event => event.action === 'causal_link_proposed').map(event => ({ ...event, id: h.id,
+                title: h.title, active: h.status !== 'abandoned', assessment: this.board.getChronologyCauseAssessment(h.id) })));
         const independentSources = ids.filter(id => getObjectById(id)?.isEvidence);
         this._chronologySelection = (this._chronologySelection || []).filter(id => facts.some(f => f.id === id));
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
@@ -332,7 +333,18 @@ class BoardUI {
             ${causalReviews.length ? `<div class="noir-timeline-reviews" aria-label="Гипотезы о причинах"><h4>ВОЗМОЖНЫЕ ПРИЧИННЫЕ СВЯЗИ</h4>
                 ${causalReviews.map(review => `<article class="noir-timeline-review noir-timeline-review--unverified">
                     <span>НЕ ДОКАЗАНО${review.supportEvidenceId ? ' · ЕСТЬ ДОПОЛНИТЕЛЬНЫЙ ИСТОЧНИК' : ' · НУЖНА НЕЗАВИСИМАЯ ПРОВЕРКА'}${review.active ? '' : ' · СНЯТА'}</span>
-                    <p>${this._escapeHTML(review.title)}</p><p>${this._escapeHTML(review.explanation || '')}</p></article>`).join('')}</div>` : ''}
+                    <p>${this._escapeHTML(review.title)}</p><p>${this._escapeHTML(review.explanation || '')}</p>
+                    <p class="hypothesis-help">Оценено: за — ${review.assessment?.supporting || 0}; против — ${review.assessment?.challenging || 0}. Вывод о причине пока не установлен.</p>
+                    ${(review.assessment?.assessments || []).map(item => `<p class="hypothesis-help">${item.stance === 'for' ? 'ЗА' : 'ПРОТИВ'} · ${this._escapeHTML(getObjectById(item.evidenceId)?.name || item.evidenceId)}: ${this._escapeHTML(item.note)}</p>`).join('')}
+                    ${review.active ? `<form class="chronology-cause-assess" data-hypothesis="${this._escapeHTML(review.id)}">
+                        <label>Независимая улика <select class="terminal-input causal-assess-source" required><option value="">Выберите улику</option>${independentSources.filter(id => {
+                            const factSources = facts.filter(f => f.id === review.causeId || f.id === review.effectId).map(f => f.evidenceId);
+                            return !factSources.includes(id) && !(review.assessment?.assessments || []).some(item => item.evidenceId === id);
+                        }).map(id => `<option value="${this._escapeHTML(id)}">${this._escapeHTML(getObjectById(id)?.name || id)}</option>`).join('')}</select></label>
+                        <label>Оценка <select class="terminal-input causal-assess-stance"><option value="for">Поддерживает версию</option><option value="against">Противоречит версии</option></select></label>
+                        <label>Почему? <textarea class="terminal-input causal-assess-note" maxlength="500" rows="2" required></textarea></label>
+                        <button type="submit" class="terminal-btn">ПРОВЕРИТЬ ИСТОЧНИК</button>
+                    </form>` : ''}</article>`).join('')}</div>` : ''}
             ${timed.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
                 <select id="chronology-first" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <label for="chronology-second">Вторая отметка</label>
@@ -365,6 +377,15 @@ class BoardUI {
 
     _bindChronologyEvents() {
         if (!Array.isArray(this._chronologySelection)) this._chronologySelection = [];
+        this.container.querySelectorAll('.chronology-cause-assess').forEach(form => form.addEventListener('submit', event => {
+            event.preventDefault();
+            const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+            const result = this.board.assessChronologyCause(form.dataset.hypothesis,
+                form.querySelector('.causal-assess-source')?.value,
+                form.querySelector('.causal-assess-stance')?.value,
+                form.querySelector('.causal-assess-note')?.value, ids);
+            if (!result) events.emit('notification:show', { message: 'Нужна новая независимая улика и объяснение её значения.', type: 'warning', duration: 3000 });
+        }));
         const synchronize = () => {
             const selected = this._chronologySelection;
             this.container.querySelectorAll('.noir-timeline-select').forEach(button => {
