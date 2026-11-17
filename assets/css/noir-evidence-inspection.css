@@ -1,0 +1,70 @@
+/* Evidence inspection opens an actual readable case-file sheet, not a generic paragraph. */
+.evidence-inspection { max-width: 680px; margin: 6px auto; }
+.evidence-inspection-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 15px;
+    background: #193037;
+    border: 1px solid rgba(209, 168, 101, .5);
+    color: #efdeb9;
+    font: 700 10px/1.5 var(--font-mono);
+    letter-spacing: .12em;
+}
+.evidence-inspection-kind { color: #a9d3cc; }
+.evidence-inspection-sheet {
+    position: relative;
+    margin: 0 7px;
+    padding: clamp(22px, 5vw, 38px);
+    background: repeating-linear-gradient(0deg, transparent 0 32px, rgba(98, 77, 47, .09) 33px), linear-gradient(145deg, #f0e4cb, #d3c19d);
+    color: #292a25;
+    border: 1px solid #8c7857;
+    border-top: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .34), inset 0 0 35px rgba(95, 61, 25, .09);
+}
+.evidence-inspection-sheet::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(119, 88, 50, .22);
+    pointer-events: none;
+}
+.evidence-inspection-mark {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 17px;
+    border: 1px double rgba(101, 72, 46, .36);
+    border-radius: 3px;
+    background: rgba(255, 249, 227, .4);
+    font-size: 36px;
+    filter: sepia(.24);
+}
+.evidence-inspection-sheet h3 {
+    margin: 0 0 18px;
+    padding-bottom: 11px;
+    border-bottom: 1px solid rgba(91, 73, 45, .45);
+    color: #33291f;
+    font: 700 clamp(20px, 3vw, 28px)/1.24 var(--font-serif);
+    text-align: center;
+}
+.evidence-inspection-text { margin: 0; color: #36332b; font: 16px/1.8 var(--font-serif); overflow-wrap: anywhere; white-space: pre-wrap; }
+.evidence-inspection-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 9px 20px;
+    padding: 12px 15px;
+    border: 1px solid rgba(209, 168, 101, .4);
+    background: #192c33;
+    color: #cedbd3;
+    font: 12px/1.5 var(--font-mono);
+}
+.evidence-inspection-footer span:last-child { color: #dec49b; }
+@media (max-width: 680px) {
+    .evidence-inspection-sheet { margin: 0 3px; padding: 21px 18px; }
+    .evidence-inspection-text { font-size: 15px; line-height: 1.65; }
+    .evidence-inspection-mark { width: 58px; height: 58px; font-size: 31px; }
+}
