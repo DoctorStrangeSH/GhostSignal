@@ -519,6 +519,13 @@ class BoardUI {
             <form id="evidence-comparison-form" class="hypothesis-form">
                 <label for="comparison-evidence">Улика</label>
                 <select id="comparison-evidence" class="terminal-input" required><option value="">Выберите улику</option>${evidenceIds.map(id => `<option value="${this._escapeHTML(id)}">${this._escapeHTML(getObjectById(id)?.name || id)}</option>`).join('')}</select>
+                <div id="comparison-photo-detail" hidden>
+                    <label for="comparison-photo-focus">Деталь изученного снимка (необязательно)</label>
+                    <select id="comparison-photo-focus" class="terminal-input">
+                        <option value="">Фотография целиком</option>
+                        ${[['counter', 'У стойки'], ['woman', 'Посетительница'], ['waiter', 'Официант']].filter(([id]) => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).map(([id, label]) => `<option value="${id}">${label}</option>`).join('')}
+                    </select>
+                </div>
                 <label for="comparison-statement">Показание</label>
                 <select id="comparison-statement" class="terminal-input" required><option value="">Выберите показание</option>${validStatements.map(item => `<option value="${this._escapeHTML(item.id)}">${this._escapeHTML((item.sourceName || item.npcId) + ' — ' + (item.summary || item.value))}</option>`).join('')}</select>
                 <label for="comparison-result">Предварительный вывод</label>
@@ -530,11 +537,14 @@ class BoardUI {
         </section>`;
     }
 
-    _saveEvidenceComparison(evidenceId, statementId, stance, note) {
+    _saveEvidenceComparison(evidenceId, statementId, stance, note, photoFocus = '') {
         const available = new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])]);
         const statement = (this.memoryService?.getStatements?.() || []).find(item => item.id === statementId && item.status !== 'superseded');
         if (!available.has(evidenceId) || !getObjectById(evidenceId) || !statement || !['for', 'against', 'pending'].includes(stance) || !String(note || '').trim()) return false;
-        const id = this.board?.addHypothesis(String(note).trim());
+        const focusLabels = { counter: 'У стойки', woman: 'Посетительница', waiter: 'Официант' };
+        if (photoFocus && (evidenceId !== 'bar_photo' || !Object.hasOwn(focusLabels, photoFocus) || !this.inventory?.hasInsight?.(`bar_photo_observed_${photoFocus}`))) return false;
+        const description = photoFocus ? `[Фото: ${focusLabels[photoFocus]}] ${String(note).trim()}` : String(note).trim();
+        const id = this.board?.addHypothesis(description);
         if (!id) return false;
         this.board.linkHypothesis(id, 'evidence', evidenceId, 'pending');
         this.board.linkHypothesis(id, 'statement', statementId, stance);
@@ -543,14 +553,22 @@ class BoardUI {
     }
 
     _bindHypothesisEvents() {
-        this.container.querySelector('#evidence-comparison-form')?.addEventListener('submit', e => {
+        const comparisonForm = this.container.querySelector('#evidence-comparison-form');
+        comparisonForm?.querySelector('#comparison-evidence')?.addEventListener('change', e => {
+            const detail = comparisonForm.querySelector('#comparison-photo-detail');
+            if (detail) detail.hidden = e.currentTarget.value !== 'bar_photo';
+            const focus = comparisonForm.querySelector('#comparison-photo-focus');
+            if (focus) focus.value = '';
+        });
+        comparisonForm?.addEventListener('submit', e => {
             e.preventDefault();
             const form = e.currentTarget;
             const evidenceId = form.querySelector('#comparison-evidence')?.value;
             const statementId = form.querySelector('#comparison-statement')?.value;
             const stance = form.querySelector('#comparison-result')?.value;
             const note = form.querySelector('#comparison-note')?.value;
-            if (!this._saveEvidenceComparison(evidenceId, statementId, stance, note))
+            const focus = evidenceId === 'bar_photo' ? form.querySelector('#comparison-photo-focus')?.value : '';
+            if (!this._saveEvidenceComparison(evidenceId, statementId, stance, note, focus))
                 events.emit('notification:show', { message: 'Выберите найденную улику и действующее показание, затем сформулируйте вывод.', type: 'warning', duration: 3000 });
         });
         this.container.querySelectorAll('.inquiry-start').forEach(button => button.addEventListener('click', () => {

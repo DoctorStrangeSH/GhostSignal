@@ -43,3 +43,28 @@ test('comparison stores two sourced links and rejects unavailable or superseded 
         ['hyp-1', 'statement', 'current', 'against']
     ]));
 });
+
+test('photo comparison lists only inspected regions and labels the saved hypothesis', () => {
+    const ui = Object.create(BoardUI.prototype);
+    ui._escapeHTML = text => String(text);
+    ui.inventory = { evidence: ['bar_photo'], hasInsight: id => id === 'bar_photo_observed_waiter' };
+    const html = ui._renderEvidenceComparison(['bar_photo'], [{ id: 'current', status: 'active' }]);
+    assert.match(html, /id="comparison-photo-detail" hidden/);
+    assert.match(html, /value="waiter">Официант/);
+    assert.doesNotMatch(html, /value="woman">/);
+    assert.doesNotMatch(html, /value="counter">/);
+
+    const titles = [];
+    ui.memoryService = { getStatements: () => [{ id: 'current', status: 'active' }] };
+    ui.board = {
+        evidenceOnBoard: [],
+        addHypothesis: text => { titles.push(text); return 'hyp-1'; },
+        linkHypothesis: () => true
+    };
+    ui._expandedTools = new Set();
+    assert.equal(ui._saveEvidenceComparison('bar_photo', 'current', 'pending', 'Время неизвестно', 'woman'), false);
+    assert.equal(ui._saveEvidenceComparison('wrong', 'current', 'pending', 'Время неизвестно', 'waiter'), false);
+    assert.equal(ui._saveEvidenceComparison('bar_photo', 'current', 'pending', 'Время неизвестно', 'waiter'), true);
+    assert.equal(titles.length, 1);
+    assert.equal(titles[0], '[Фото: Официант] Время неизвестно');
+});
