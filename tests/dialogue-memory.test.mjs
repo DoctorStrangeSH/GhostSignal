@@ -40,6 +40,38 @@ test("a witness recalls a specific supportive deed only in their own dialogue", 
     assert.doesNotMatch(resolved.text, /прежнюю обиду/);
 });
 
+test("Joe offers a voluntary follow-up only after his off-screen document check offer", () => {
+    const { engine, memory } = createDialogueHarness();
+    let completed = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return completed && npcId === 'bartender' &&
+                ruleId === 'joe-offers-document-check-after-visitor-warning';
+        },
+        toJSON() { return {}; }
+    });
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2'), null);
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.notEqual(engine.currentNode.id, 'joe_reports_document_check_offer');
+
+    completed = true;
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2')?.nodeId,
+        'joe_reports_document_check_offer');
+    assert.equal(memory.hasVisitedNode('bartender', 'dialogue-bartender-case2',
+        'joe_reports_document_check_offer'), false);
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.equal(engine.currentNode.id, 'joe_reports_document_check_offer');
+    assert.match(engine.currentNode.text, /предложил Томасу проверить журнал посетителей/i);
+    assert.match(engine.currentNode.text, /ещё не подтверждение/i);
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2'), null);
+    engine.selectAnswer(0);
+    assert.equal(engine.currentNode.id, 'greeting');
+    engine.reset();
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.notEqual(engine.currentNode.id, 'joe_reports_document_check_offer',
+        'the same offer must not be announced twice');
+});
+
 function createDialogueHarness() {
     const registry = { dialogue: {} };
     const emitted = [];

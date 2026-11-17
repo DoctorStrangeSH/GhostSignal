@@ -22,9 +22,19 @@ const DIALOGUE_BARTENDER_CASE2 = {
         entryRules: [
             { condition: "all:hasInsight:thomas_family_protected&hasInsight:thomas_family_address_exposed", nodeId: "joe_after_protection_verified_opening" },
             { condition: "hasInsight:joe_relocated_family_after_leak", nodeId: "joe_after_relocation_opening" },
-            { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" }
+            { condition: "hasInsight:thomas_family_address_exposed", nodeId: "joe_after_leak_opening" },
+            { condition: "all:npc_action_completed:joe-offers-document-check-after-visitor-warning&not:has_visited_node:joe_reports_document_check_offer", nodeId: "joe_reports_document_check_offer", initiative: true, initiativeLabel: "Расскажет о помощи Томасу" }
         ],
         nodes: {
+            joe_reports_document_check_offer: {
+                speaker: "npc",
+                text: "Детектив, я сам предложил Томасу проверить журнал посетителей. Я слышал предупреждение Лоры и не хочу, чтобы чьи-то догадки стали официальными показаниями. Мы пока только договорились сверить записи — это ещё не подтверждение, кто именно приходил.",
+                mood: "serious",
+                answers: [
+                    { text: "Правильно. Проверим записи и сопоставим их с независимыми показаниями.", nextNode: "greeting", tone: "calm" },
+                    { text: "Спасибо за осторожность. Вернёмся к разговору позже.", nextNode: "end_bartender_guarded", tone: "reassuring" }
+                ]
+            },
             joe_after_protection_verified_opening: {
                 verifiedRestitution: { id: 'joe-confirmed-thomas-family-safety',
                     priorMemoryTag: 'player_threatened', requiresInsight: 'thomas_family_protected' },
