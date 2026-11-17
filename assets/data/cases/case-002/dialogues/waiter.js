@@ -918,7 +918,45 @@ const DIALOGUE_WAITER = {
                 givesInsight: "waiter_photo_comparison_discussed",
                 answers: [
                     { text: "Согласен. Сверю время с другими источниками, прежде чем делать вывод.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 3 },
+                    { text: "Я всё же хочу понять, почему твоя версия не совпадает с положением на снимке.", nextNode: "photo_hypothesis_insistence", tone: "direct", pressureDelta: 6, cooperationDelta: -4 },
+                    {
+                        text: "Ты сознательно солгал о том, что видел. Я запишу это как обвинение.",
+                        nextNode: "photo_hypothesis_unfounded_accusation",
+                        tone: "aggressive",
+                        pressureDelta: 14,
+                        cooperationDelta: -20,
+                        condition: "not:has_accusation:thomas-photo-testimony-lie",
+                        accusation: { id: "thomas-photo-testimony-lie", text: "Детектив без независимой проверки обвинил Томаса в сознательной лжи при сопоставлении фотографии и показаний." },
+                        report: {
+                            id: "detective-accused-thomas-over-photo-comparison",
+                            kind: "detective_behavior",
+                            networkPropagation: true,
+                            targetNpcId: "waiter",
+                            sourceName: "Томас",
+                            text: "Детектив предъявил собственную версию по одному кадру и назвал меня лжецом без проверки времени событий."
+                        }
+                    },
                     { text: "Зафиксирую расхождение как открытый вопрос, а не обвинение.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
+
+            photo_hypothesis_insistence: {
+                speaker: "npc",
+                text: "Я уже объяснил, что фотография показывает лишь один момент. Могу ещё раз назвать маршрут по залу, но от ваших повторных вопросов воспоминание точнее не станет. Мне нужно, чтобы вы проверили время, а не требовали от меня догадок.",
+                mood: "tense",
+                innerThought: "Настойчивость увеличивает напряжение, но не доказывает умышленную ложь и не меняет показания.",
+                answers: [
+                    { text: "Понял. Сначала проверю хронологию независимо.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
+
+            photo_hypothesis_unfounded_accusation: {
+                speaker: "npc",
+                text: "Вы называете меня лжецом, потому что на снимке я смотрю в другую сторону? Я не могу доказать вам, что видел в другой момент, но вы тоже этого не проверили. После такого разговора я не хочу отвечать без другого свидетеля.",
+                mood: "hurt",
+                innerThought: "Обвинение зафиксировано как поступок детектива, а не как установление лжи Томаса. Доверие повреждено.",
+                answers: [
+                    { text: "Разговор окончен.", nextNode: "end_waiter_guarded", tone: "cold" }
                 ]
             },
 

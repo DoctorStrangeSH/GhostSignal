@@ -37,3 +37,21 @@ test('Thomas responds without automatically confirming guilt or rewriting his te
     assert.equal(node.accusation, undefined);
     assert.match(node.text, /другим свидетельствам/);
 });
+
+test('presenting a sourced hypothesis offers cautious, persistent and accusatory paths with consequences', () => {
+    const answers = dialogue.tree.nodes.photo_hypothesis_confrontation.answers;
+    const calm = answers.find(answer => answer.tone === 'reassuring');
+    const insistence = answers.find(answer => answer.nextNode === 'photo_hypothesis_insistence');
+    const accusation = answers.find(answer => answer.nextNode === 'photo_hypothesis_unfounded_accusation');
+    assert.equal(calm.cooperationDelta, 3);
+    assert.ok(insistence.pressureDelta > 0);
+    assert.ok(insistence.cooperationDelta < 0);
+    assert.ok(accusation.pressureDelta > insistence.pressureDelta);
+    assert.ok(accusation.cooperationDelta < insistence.cooperationDelta);
+    assert.equal(accusation.accusation.id, 'thomas-photo-testimony-lie');
+    assert.equal(accusation.report.networkPropagation, true);
+    assert.equal(accusation.condition, 'not:has_accusation:thomas-photo-testimony-lie');
+    assert.equal(dialogue.tree.nodes.photo_hypothesis_insistence.claim, undefined);
+    assert.equal(dialogue.tree.nodes.photo_hypothesis_unfounded_accusation.claim, undefined);
+    assert.match(dialogue.tree.nodes.photo_hypothesis_unfounded_accusation.innerThought, /не как установление лжи/);
+});
