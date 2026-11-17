@@ -251,6 +251,37 @@ test('player chronology proposals persist as sourced hypotheses without turning 
     assert.equal('culprit' in restored.hypotheses[3], false);
 });
 
+test('causal links require an explanation and accessible independent leads, never imply proof', () => {
+    const objects = {
+        photo: [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }],
+        log: [{ id: 'log-event', minute: 1338, label: 'Log', scope: 'station', certainty: 'recorded' }],
+        witness: [],
+        hidden: []
+    };
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id =>
+        objects[id] ? { isEvidence: true, timelineFacts: objects[id] } : null });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    assert.equal(board.proposeChronologyCause('photo-event', 'log-event', '', '', ['photo', 'log']), null);
+    assert.equal(board.proposeChronologyCause('photo-event', 'photo-event', 'Because', '', ['photo', 'log']), null);
+    assert.equal(board.proposeChronologyCause('photo-event', 'log-event', 'Because', 'hidden', ['photo', 'log']), null);
+    assert.equal(board.proposeChronologyCause('photo-event', 'log-event', 'Because', 'photo', ['photo', 'log']), null);
+    assert.equal(board.proposeChronologyCause('photo-event', 'log-event', 'Because', 'log', ['photo', 'log']), null);
+    const without = board.proposeChronologyCause('photo-event', 'log-event', 'A possible chain', '', ['photo', 'log']);
+    assert.equal(without.status, 'unverified');
+    assert.equal(without.hasIndependentLead, false);
+    const withLead = board.proposeChronologyCause('photo-event', 'log-event', 'A witness might explain this', 'witness', ['photo', 'log', 'witness']);
+    assert.equal(withLead.status, 'unverified');
+    assert.equal(withLead.hasIndependentLead, true);
+    const restored = vm.runInContext('InvestigationBoard.fromJSON', context)(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.hypotheses.length, 2);
+    assert.equal(restored.hypotheses[1].links.length, 3);
+    assert.ok(restored.hypotheses[1].links.every(link => link.stance === 'pending'));
+    assert.equal(restored.hypotheses[1].history.at(-1).action, 'causal_link_proposed');
+    assert.equal(restored.hypotheses[1].history.at(-1).explanation, 'A witness might explain this');
+    assert.equal('culprit' in restored.hypotheses[1], false);
+});
+
 test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
