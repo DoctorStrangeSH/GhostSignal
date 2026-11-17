@@ -480,6 +480,17 @@ class DialogueEngine {
             const insightId = conditionStr.replace('hasInsight:', '');
             return this.inventory?.hasInsight(insightId) || false;
         }
+
+        if (conditionStr === 'has_waiter_photo_comparison') {
+            const statements = this.memoryService?.getStatements?.() || [];
+            const activeWaiterStatements = new Set(statements.filter(item =>
+                item.npcId === 'waiter' && item.status !== 'superseded').map(item => item.id));
+            return Boolean(this.inventory?.hasInsight?.('bar_photo_observed_waiter') &&
+                this.investigationBoard?.hypotheses?.some(h => h.status === 'open' &&
+                    h.title.startsWith('[Фото: Официант]') &&
+                    h.links?.some(link => link.kind === 'evidence' && link.sourceId === 'bar_photo') &&
+                    h.links?.some(link => link.kind === 'statement' && activeWaiterStatements.has(link.sourceId))));
+        }
         
         const npcId = dialogue?.npcId;
         if (conditionStr.startsWith('has_visited_node:')) {

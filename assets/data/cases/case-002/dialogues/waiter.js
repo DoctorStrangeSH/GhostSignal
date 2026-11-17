@@ -239,6 +239,7 @@ const DIALOGUE_WAITER = {
                 text: "Детектив, я уже уточнил показания после фотографии. Я видел Кейна рядом со столиком, но не видел, как порошок попал в стакан. Я не стану снова говорить, будто видел больше.",
                 mood: "guarded",
                 answers: [
+                    { text: "Я сопоставил твои показания с участком снимка, где ты за стойкой.", nextNode: "photo_hypothesis_confrontation", tone: "calm", condition: "all:has_waiter_photo_comparison&not:hasInsight:waiter_photo_comparison_discussed", hiddenWhenUnavailable: true },
                     { text: "Я изучил твоё положение на снимке. Ты действительно видел, что происходило у стойки?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
@@ -326,6 +327,7 @@ const DIALOGUE_WAITER = {
                 text: "Я уже дал показания о Кейне, детектив. Мне страшно, но я готов уточнить то, что помню, если это поможет установить правду.",
                 mood: "nervous",
                 answers: [
+                    { text: "Хочу проверить свою версию по фотографии и твоим показаниям.", nextNode: "photo_hypothesis_confrontation", tone: "calm", condition: "all:has_waiter_photo_comparison&not:hasInsight:waiter_photo_comparison_discussed", hiddenWhenUnavailable: true },
                     { text: "На снимке твой взгляд неясен. С какого места ты наблюдал за Кейном?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
@@ -905,6 +907,18 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Запишу как неразрешённый вопрос о времени и проверю другие источники.", nextNode: "end_waiter", tone: "calm", cooperationDelta: 3 },
                     { text: "Понял. Один кадр не устанавливает всю последовательность.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+
+            photo_hypothesis_confrontation: {
+                speaker: "npc",
+                text: "Вы сопоставили мой рассказ с фотографией? Хорошо, давайте отделим одно от другого. На кадре я за стойкой — это можно проверить. Но я говорил о другом моменте, когда Кейн был у столика. Если время не совпадает, нужно восстановить последовательность по другим свидетельствам, а не считать меня лжецом по одному снимку.",
+                mood: "guarded",
+                innerThought: "Детектив предъявил собственную версию с двумя источниками. Свидетель уточняет границы сведений; его реакция не подтверждает правильность гипотезы.",
+                givesInsight: "waiter_photo_comparison_discussed",
+                answers: [
+                    { text: "Согласен. Сверю время с другими источниками, прежде чем делать вывод.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 3 },
+                    { text: "Зафиксирую расхождение как открытый вопрос, а не обвинение.", nextNode: "end_waiter", tone: "calm" }
                 ]
             },
 
