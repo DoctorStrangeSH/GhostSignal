@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Бар У Джо</title>
+  <desc id="desc">Полутёмный джазовый бар с длинной стойкой красного дерева, бутылками, музыкальным автоматом, столиками и янтарными лампами.</desc>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#141d23"/><stop offset="1" stop-color="#3a2b27"/></linearGradient>
+    <linearGradient id="bar" x2="0" y2="1"><stop stop-color="#8f5540"/><stop offset=".28" stop-color="#50302b"/><stop offset="1" stop-color="#211d21"/></linearGradient>
+    <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#3a2927"/><stop offset="1" stop-color="#0e151a"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#ffcb79" stop-opacity=".55"/><stop offset="1" stop-color="#ed9b4a" stop-opacity="0"/></radialGradient>
+    <pattern id="panel" width="105" height="100" patternUnits="userSpaceOnUse"><path d="M7 0v100M98 0v100M7 91h91" fill="none" stroke="#ad7d57" stroke-opacity=".22" stroke-width="3"/></pattern>
+  </defs>
+  <rect width="1200" height="440" fill="url(#wall)"/>
+  <path d="M0 0h1200v270H0z" fill="url(#panel)"/>
+  <path d="M0 257h1200v183H0z" fill="url(#floor)"/>
+  <path d="M0 258h1200" stroke="#9a7050" stroke-opacity=".6" stroke-width="7"/>
+  <path d="M254 42h680v225H254z" fill="#1a2024" stroke="#735442" stroke-width="12"/>
+  <path d="M268 54h652v200H268z" fill="#162127"/>
+  <path d="M285 80h620M285 149h620M285 219h620" stroke="#a36b49" stroke-width="9"/>
+  <path d="M285 88h620M285 157h620M285 227h620" stroke="#261f21" stroke-width="4"/>
+  <!-- Bottles and glasses: legible atmospheric props, not discovered evidence. -->
+  <g fill="#35534e" stroke="#8e9571" stroke-opacity=".5" stroke-width="2">
+    <path d="M315 70h13v-18h11v18h12v69h-36zM365 83h13v-28h10v28h12v56h-35zM427 74h12v-22h11v22h13v65h-36zM496 81h15v-26h9v26h15v58h-39zM566 70h13v-16h11v16h12v69h-36zM640 80h13v-26h11v26h12v59h-36zM705 75h12v-24h12v24h12v64h-36zM782 78h13v-20h11v20h12v61h-36zM851 71h12v-20h12v20h13v68h-37z"/>
+  </g>
+  <g fill="#8c552e" opacity=".8"><path d="M316 104h34v25h-34zM428 99h34v29h-34zM497 103h37v22h-37zM641 96h34v30h-34zM782 103h36v25h-36zM853 96h33v30h-33z"/></g>
+  <path d="M302 160h18v51h-18zM335 175h25v36h-25zM400 167h18v44h-18zM451 173h30v38h-30zM535 168h16v43h-16zM595 173h32v38h-32zM680 165h22v46h-22zM757 171h17v40h-17zM829 164h28v47h-28z" fill="#52615a" opacity=".65"/>
+  <!-- Art deco hanging lights. -->
+  <path d="M350 0v69M842 0v69" stroke="#927857" stroke-width="6"/>
+  <path d="M300 67h100l-19 30h-64zM792 67h100l-19 30h-64z" fill="#a77e56" stroke="#d3ac75" stroke-width="4"/>
+  <path d="M316 95h69M809 95h69" stroke="#ffe0a0" stroke-width="8"/>
+  <ellipse cx="351" cy="156" rx="200" ry="160" fill="url(#light)"/>
+  <ellipse cx="840" cy="156" rx="200" ry="160" fill="url(#light)"/>
+  <!-- Counter and upholstered stools. -->
+  <path d="M155 247h810l87 42H67z" fill="#7e4d3a" stroke="#c18b5c" stroke-width="8"/>
+  <path d="M67 289h985v89H67z" fill="url(#bar)" stroke="#8e6347" stroke-width="5"/>
+  <path d="M82 303h954M82 364h954" stroke="#aa7654" stroke-opacity=".53" stroke-width="4"/>
+  <path d="M125 308h190v55H125zM371 308h190v55H371zM618 308h190v55H618zM862 308h130v55H862z" fill="none" stroke="#a47350" stroke-opacity=".3" stroke-width="3"/>
+  <path d="M95 378h930v16H95z" fill="#201e20"/>
+  <g fill="#4e3030" stroke="#8e6152" stroke-width="4"><ellipse cx="218" cy="390" rx="42" ry="13"/><ellipse cx="490" cy="390" rx="42" ry="13"/><ellipse cx="768" cy="390" rx="42" ry="13"/><ellipse cx="984" cy="390" rx="42" ry="13"/></g>
+  <path d="M218 391v49M490 391v49M768 391v49M984 391v49" stroke="#5a4942" stroke-width="9"/>
+  <!-- A glowing jukebox, its interactive scratches remain undisclosed. -->
+  <path d="M1078 136q0-39 40-39t40 39v193h-80z" fill="#5b3334" stroke="#c58b5d" stroke-width="6"/>
+  <path d="M1092 146v98h52v-98q0-26-26-26t-26 26z" fill="#2b4c4e" stroke="#daa968" stroke-width="4"/>
+  <path d="M1099 160h38M1099 178h38M1099 196h38M1099 214h38" stroke="#d5bc8b" stroke-opacity=".6" stroke-width="4"/>
+  <path d="M1092 258h52v55h-52z" fill="#322728" stroke="#ba8b5e" stroke-width="4"/>
+  <path d="M1101 268h34M1101 282h34M1101 296h34" stroke="#a5b19e" stroke-opacity=".65" stroke-width="3"/>
+  <!-- Back door, deliberately featureless until examined. -->
+  <path d="M21 66h115v192H21z" fill="#251e21" stroke="#88684f" stroke-width="7"/>
+  <path d="M35 79h87v164H35z" fill="#32282a" stroke="#795944" stroke-opacity=".5" stroke-width="3"/>
+  <circle cx="107" cy="170" r="5" fill="#c2a176"/>
+  <path d="M0 0h1200v440H0z" fill="none" stroke="#0c1319" stroke-width="18" opacity=".6"/>
+</svg>

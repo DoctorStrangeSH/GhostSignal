@@ -410,6 +410,26 @@ class NPCSocialNetwork {
                 expired++;
                 continue;
             }
+            // A message queued before a falling-out is not an irrevocable promise
+            // to disclose. Recheck the sender's present trust when transmission occurs.
+            const edge = this.caseConfig?.edges.find(candidate =>
+                candidate.from === item.fromNpcId && candidate.to === item.toNpcId &&
+                candidate.channel === item.channel &&
+                (!item.edgeId || candidate.id === item.edgeId)
+            );
+            const currentTrust = this.memoryService.getRelationshipTrust(item.fromNpcId, item.toNpcId);
+            if (edge && (currentTrust ?? edge.trust) < edge.minTrustToShare) {
+                state.pending = state.pending.filter(entry => entry.id !== item.id);
+                state.delivered.push({ id: item.id, status: 'cancelled', atGameMinute: now });
+                this._recordEvent('cancelled', {
+                    fromNpcId: item.fromNpcId, toNpcId: item.toNpcId,
+                    reportId: item.rumorId, reportKind: item.report?.kind,
+                    channel: item.channel, relationship: item.relationship,
+                    path: item.path, reason: 'trust_broken',
+                    summary: 'Передача отменена: отправитель больше не доверяет адресату.'
+                });
+                continue;
+            }
             if (!this._canDeliver(item)) {
                 if (!item.deferLogged) {
                     this._recordEvent('delayed', {
@@ -431,7 +451,8 @@ class NPCSocialNetwork {
                 originalSourceNpcId: item.originalSourceNpcId,
                 originalSourceName: item.originalSourceName,
                 sourceEvent: item.sourceEvent, path: item.path, hops: item.hops,
-                channel: item.channel, recipientTrust: item.recipientTrust,
+                channel: item.channel,
+                recipientTrust: this.memoryService.getRelationshipTrust(item.toNpcId, item.fromNpcId) ?? item.recipientTrust,
                 receivedAtGameMinute: now
             });
             state.pending = state.pending.filter(entry => entry.id !== item.id);
@@ -526,6 +547,12 @@ class NPCSocialNetwork {
             revealed++;
         }
         if (state.discoveryLog.length > 300) state.discoveryLog.splice(0, state.discoveryLog.length - 300);
+        // A private NPC exchange becomes visible only after the detective discovers
+        // its source. Never announce undetected background interactions.
+        if (revealed && typeof events !== 'undefined') {
+            events.emit('npc:social_event_discovered', { count: revealed, method: discovery.method });
+            events.emit('npc:social_network_changed', { reason: 'social_event_discovery' });
+        }
         return { revealed, reason: revealed ? null : 'no_new_matching_events' };
     }
 
@@ -533,12 +560,20 @@ class NPCSocialNetwork {
         const state = this._ensureState();
         if (!state) return [];
         const known = new Set(state.knownEventIds);
+        const discoveryByEventId = new Map(state.discoveryLog.map(item => [item.eventId, item]));
         const relevant = state.eventLog.filter(item =>
             known.has(item.id) &&
             (!npcId || item.fromNpcId === npcId || item.toNpcId === npcId || item.protectedNpcId === npcId)
         );
         const safeLimit = Number.isInteger(limit) ? Math.max(1, Math.min(100, limit)) : 30;
-        return this._clone(relevant.slice(-safeLimit).reverse());
+        return this._clone(relevant.slice(-safeLimit).reverse().map(item => ({
+            ...item,
+            discovery: discoveryByEventId.has(item.id) ? {
+                method: discoveryByEventId.get(item.id).method,
+                sourceId: discoveryByEventId.get(item.id).sourceId,
+                atGameMinute: discoveryByEventId.get(item.id).atGameMinute
+            } : null
+        })));
     }
 
     getEventLog(limit = 30, npcId = null) {

@@ -98,6 +98,18 @@
     letter-spacing: 1px;
 }
 
+.npc-initiative {
+    display: inline-block;
+    margin: 0 0 10px 8px;
+    padding: 5px 10px;
+    border: 1px solid rgba(125, 196, 189, .45);
+    border-radius: 12px;
+    background: rgba(125, 196, 189, .1);
+    color: #b7e7db;
+    font-size: 11px;
+    letter-spacing: .03em;
+}
+
 .status-work {
     background: rgba(240, 192, 64, 0.06);
     color: var(--accent-amber-glow);
@@ -403,6 +415,13 @@
     font-size: 9px;
     line-height: 1.45;
 }
+.npc-social-event .npc-social-event-source {
+    margin-top: 7px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(180, 180, 180, 0.12);
+    color: var(--accent-cyan, #78b8c5);
+    font-size: 9px;
+}
 .npc-social-event.event-delivered { border-left-color: var(--accent-green); }
 .npc-social-event.event-withheld { border-left-color: var(--accent-red-bright); }
 .npc-social-event.event-betrayal { border-left-color: var(--accent-red-bright); background: rgba(180, 70, 70, 0.07); }
@@ -420,6 +439,7 @@
 
 .npc-social-event.event-expired,
 .npc-social-event.event-delayed { border-left-color: var(--accent-amber); }
+.npc-social-event.event-cancelled { border-left-color: var(--accent-red-bright); }
 .npc-social-log-empty {
     padding: 10px;
     border: 1px dashed rgba(180, 180, 180, 0.16);

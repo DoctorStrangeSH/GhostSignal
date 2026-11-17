@@ -104,6 +104,26 @@ test("NPCSocialNetwork schedules attributed rumors instead of revealing them imm
     assert.equal(rumor.channel, "in_person");
 });
 
+test("a conflict cancels a queued disclosure, and a later reconciliation permits new reports", () => {
+    const { memory, network, advance, context } = createHarness();
+    publish(memory, network, { targetNpcId: "detective" });
+    memory.setRelationshipTrust("waiter", "bartender", 12);
+    advance(15);
+    assert.equal(memory.hasRumor("bartender", "social-test-report"), false);
+    assert.equal(network.getPendingDeliveries().length, 0);
+    assert.equal(network.getEventLog(20).filter(event => event.type === "cancelled").length, 1);
+    assert.equal(network.getKnownEventLog(20).length, 0, "private cancellation must stay hidden");
+    const snapshot = network.toJSON();
+    context.snapshot = snapshot;
+    context.memory = memory;
+    const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", context);
+    assert.equal(restored.getEventLog(20).filter(event => event.type === "cancelled").length, 1);
+    memory.setRelationshipTrust("waiter", "bartender", 75);
+    assert.equal(publish(memory, network, { id: "after-reconciliation", targetNpcId: "detective" }).queued, 1);
+    advance(15);
+    assert.equal(memory.hasRumor("bartender", "after-reconciliation"), true);
+});
+
 test("NPCSocialNetwork defers an in-person rumor until both NPCs can meet", () => {
     const { memory, network, advance, availability } = createHarness();
     publish(memory, network, { targetNpcId: "detective" });
@@ -303,21 +323,36 @@ test("NPCSocialNetwork records a betrayal when pressure breaks a character loyal
 });
 
 test("NPCSocialNetwork keeps world events hidden until the detective learns about them", () => {
-    const { memory, network, advance } = createHarness();
+    const { memory, network, advance, context } = createHarness();
+    const announcements = [];
+    context.events = { emit(name, payload) { announcements.push({ name, payload }); } };
     publish(memory, network, { targetNpcId: "detective" });
     assert.equal(network.getEventLog(20).length > 0, true);
     advance(15);
     assert.equal(network.getKnownEventLog(20).length, 0);
+    assert.equal(announcements.length, 0);
     const revealed = network.revealEventsForReport("social-test-report", {
         method: "dialogue", sourceId: "dialogue-bartender:greeting:2",
         eventTypes: ["delivered"], fromNpcId: "waiter", toNpcId: "bartender"
     });
     assert.equal(revealed.revealed, 1);
+    assert.equal(announcements.filter(item => item.name === 'npc:social_event_discovered').length, 1);
+    assert.equal(announcements.find(item => item.name === 'npc:social_event_discovered').payload.count, 1);
+    assert.equal(network.revealEventsForReport("social-test-report", {
+        method: "dialogue", sourceId: "dialogue-bartender:greeting:2", eventTypes: ["delivered"],
+        fromNpcId: "waiter", toNpcId: "bartender"
+    }).revealed, 0);
+    assert.equal(announcements.filter(item => item.name === 'npc:social_event_discovered').length, 1);
     const known = network.getKnownEventLog(20);
     assert.equal(known.length, 1);
     assert.equal(known[0].type, "delivered");
     assert.equal(known[0].fromNpcId, "waiter");
     assert.equal(known[0].toNpcId, "bartender");
+    assert.equal(known[0].discovery.method, "dialogue");
+    assert.equal(known[0].discovery.sourceId, "dialogue-bartender:greeting:2");
+    assert.equal(known[0].discovery.atGameMinute, 18 * 60 + 15);
+    const restored = vm.runInContext("NPCSocialNetwork.fromJSON(snapshot, memory, npcManager, clock)", Object.assign(context, { snapshot: network.toJSON(), memory }));
+    assert.equal(restored.getKnownEventLog(20)[0].discovery.sourceId, "dialogue-bartender:greeting:2");
     assert.equal(network.revealEventsForReport("social-test-report", { method: "telepathy", sourceId: "invalid" }).reason, "invalid_discovery");
 });
 

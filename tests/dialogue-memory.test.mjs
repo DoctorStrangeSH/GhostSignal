@@ -7,6 +7,120 @@ import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+test("a witness recalls a specific supportive deed only in their own dialogue", () => {
+    const { engine } = createDialogueHarness();
+    engine.setRelationshipService({
+        getLatestRepairRememberedBy(npcId, otherNpcId) {
+            return npcId === 'waiter' && otherNpcId === 'bartender'
+                ? { summary: 'Он помог мне с документами.', remainingRepairSteps: 1 } : null;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue('dialogue-waiter');
+    engine.currentNode = { id: 'test-memory-question', answers: [
+        { text: 'Как ты отнёсся к помощи Джо?', nextNode: 'thomas_prefers_private_interview' }
+    ] };
+    engine.selectAnswer(0);
+    assert.match(engine.currentNode.text, /Я помню помощь Джо: Он помог мне с документами/);
+    assert.match(engine.currentNode.text, /одного хорошего поступка недостаточно/);
+    assert.equal(engine.dialogueHistory.at(-1).text, engine.currentNode.text);
+    engine.currentDialogue.npcId = 'journalist';
+    const unrelated = engine._personalizeNode({ text: 'Чужой разговор.', rememberRepairFromNpcId: 'bartender' });
+    assert.equal(unrelated.text, 'Чужой разговор.');
+    engine.currentDialogue.npcId = 'waiter';
+    engine.setRelationshipService({
+        getLatestRepairRememberedBy() {
+            return { summary: 'Он помог мне с документами.', remainingRepairSteps: 0 };
+        }
+    });
+    const resolved = engine._personalizeNode({
+        text: 'Спасибо за помощь.', rememberRepairFromNpcId: 'bartender'
+    });
+    assert.match(resolved.text, /за словами последовали настоящие дела/);
+    assert.doesNotMatch(resolved.text, /прежнюю обиду/);
+});
+
+test("Joe offers a voluntary follow-up only after his off-screen document check offer", () => {
+    const { engine, memory } = createDialogueHarness();
+    let completed = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return completed && npcId === 'bartender' &&
+                ruleId === 'joe-offers-document-check-after-visitor-warning';
+        },
+        toJSON() { return {}; }
+    });
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2'), null);
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.notEqual(engine.currentNode.id, 'joe_reports_document_check_offer');
+
+    completed = true;
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2')?.nodeId,
+        'joe_reports_document_check_offer');
+    assert.equal(memory.hasVisitedNode('bartender', 'dialogue-bartender-case2',
+        'joe_reports_document_check_offer'), false);
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.equal(engine.currentNode.id, 'joe_reports_document_check_offer');
+    assert.match(engine.currentNode.text, /предложил Томасу проверить журнал посетителей/i);
+    assert.match(engine.currentNode.text, /ещё не подтверждение/i);
+    assert.equal(engine.getPendingInitiative('dialogue-bartender-case2'), null);
+    engine.selectAnswer(0);
+    assert.equal(engine.currentNode.id, 'greeting');
+    engine.reset();
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.notEqual(engine.currentNode.id, 'joe_reports_document_check_offer',
+        'the same offer must not be announced twice');
+});
+
+test("Thomas acknowledges Joe's document offer without claiming an unverified result", () => {
+    const { engine, memory } = createDialogueHarness();
+    let received = false;
+    engine.setRelationshipService({
+        hasCompletedInteraction(npcId, ruleId) {
+            return received && npcId === 'waiter' &&
+                ruleId === 'thomas-accepts-joe-document-check';
+        },
+        toJSON() { return {}; }
+    });
+    assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'thomas_responds_to_document_offer');
+    received = true;
+    assert.equal(engine.getPendingInitiative('dialogue-waiter')?.nodeId,
+        'thomas_responds_to_document_offer');
+    engine.startDialogue('dialogue-waiter');
+    assert.equal(engine.currentNode.id, 'thomas_responds_to_document_offer');
+    assert.match(engine.currentNode.text, /Я согласился посмотреть записи/);
+    assert.match(engine.currentNode.text, /не могу подтвердить, кто приходил/);
+    assert.equal(memory.hasVisitedNode('waiter', 'dialogue-waiter',
+        'thomas_responds_to_document_offer'), true);
+    assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    engine.selectAnswer(0);
+    assert.equal(engine.currentNode.id, 'greeting');
+    engine.reset();
+    engine.startDialogue('dialogue-waiter');
+    assert.notEqual(engine.currentNode.id, 'thomas_responds_to_document_offer');
+});
+
+test("Thomas communicates a low-trust refusal or high-pressure delay only after his decision", () => {
+    for (const [action, expectedNode] of [
+        ['thomas-declines-joe-document-check-low-trust', 'thomas_declines_document_offer'],
+        ['thomas-defers-joe-document-check-under-pressure', 'thomas_defers_document_offer']
+    ]) {
+        const { engine } = createDialogueHarness();
+        engine.setRelationshipService({
+            hasCompletedInteraction(npcId, ruleId) {
+                return npcId === 'waiter' && ruleId === action;
+            },
+            toJSON() { return {}; }
+        });
+        assert.equal(engine.getPendingInitiative('dialogue-waiter')?.nodeId, expectedNode);
+        engine.startDialogue('dialogue-waiter');
+        assert.equal(engine.currentNode.id, expectedNode);
+        assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    }
+});
+
 function createDialogueHarness() {
     const registry = { dialogue: {} };
     const emitted = [];
@@ -488,6 +602,26 @@ test("DialogueEngine presents a manually prepared contradiction to the selected 
     assert.equal(repeated.reason, "no_prepared_confrontation");
 });
 
+test("Unscripted contradiction responds to NPC distrust but does not invent a confession", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    for (let i = 0; i < 4; i++) engine.selectAnswer(0);
+    engine.startDialogue("dialogue-rival-full");
+    const prepared = memory.prepareConfrontation(
+        "waiter-kane-at-poisoning", "kane-left-before-poisoning", "business_rival"
+    );
+    assert.equal(prepared.prepared, true);
+    memory.adjustTrust("business_rival", -30);
+    engine.currentDialogue = { ...engine.currentDialogue, contradictionReactions: {} };
+    const result = engine.presentPreparedContradiction();
+    assert.equal(result.success, true);
+    assert.equal(result.reaction, false);
+    assert.match(result.node.text, /независимого подтверждения/);
+    assert.match(result.node.text, /несовместимых показания/);
+    assert.equal(result.node.mood, "guarded");
+    assert.equal(inventory.hasInsight("kane_alibi_broken"), false);
+});
+
 test("Thomas withholds formal testimony when trust is low or pressure is high", () => {
     const { engine, inventory, memory } = createDialogueHarness();
     engine.startDialogue("dialogue-waiter");
@@ -612,6 +746,47 @@ test("DialogueEngine refuses evidence not currently collected", () => {
     const result = engine.presentEvidence("contract_folder");
     assert.equal(result.success, false);
     assert.equal(result.reason, "evidence_not_available");
+});
+
+test("Thomas opens with a cautious boundary after severe interview pressure", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    for (let i = 0; i < 4; i++) {
+        memory.recordAnswerSelected("waiter", "interview", "demand", {
+            text: "Говори немедленно.", tone: "threatening"
+        });
+    }
+    assert.equal(memory.getPressure("waiter"), 60);
+    engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.currentNode.id, "overwhelmed_opening");
+    assert.match(engine.currentNode.text, /дайте мне передохнуть/i);
+    assert.equal(engine.getAvailableAnswers().length, 2);
+    inventory.insights.push("thomas_family_protected");
+    engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "overwhelmed_opening");
+});
+
+test("DialogueEngine ends newly named terminal nodes based on their data", () => {
+    const { engine } = createDialogueHarness();
+    engine.startDialogue("dialogue-bartender-case2");
+    engine.currentNode = {
+        id: "farewell",
+        answers: [{ text: "До встречи", nextNode: "end_bartender_guarded" }]
+    };
+    const result = engine.selectAnswer(0);
+    assert.equal(result.endDialogue, true);
+    assert.equal(engine.isDialogueEnded(), true);
+    assert.equal(engine.currentNode.id, "end_bartender_guarded");
+});
+
+test("Unscripted evidence reactions reflect trust and pressure without overriding authored dialogue", () => {
+    const { engine, memory } = createDialogueHarness();
+    engine.startDialogue("dialogue-journalist");
+    memory.adjustTrust("journalist", -35);
+    const result = engine.presentEvidence("bar_photo");
+    assert.equal(result.success, true);
+    assert.equal(result.reaction, false);
+    assert.match(result.node.text, /независимого подтверждения/);
+    assert.equal(result.node.mood, "guarded");
 });
 
 
@@ -2081,7 +2256,7 @@ test("Lora protects confidential sources after an overconfident accusation witho
 });
 
 test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed delivery", () => {
-    const { engine, memory, inventory, advance } = createDialogueHarness();
+    const { engine, memory, inventory, advance, context } = createDialogueHarness();
     inventory.insights.push("joe_found_inspection_entry");
     engine.startDialogue("dialogue-journalist");
     const verify = engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule");
@@ -2109,10 +2284,40 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false);
     advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null,
+        "a contact card must not reveal an undelivered rumor");
     advance(10);
     assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
+    const pendingWarning = engine.getPendingInitiative("dialogue-waiter");
+    assert.deepEqual(JSON.parse(JSON.stringify(pendingWarning)), {
+        npcId: "waiter", dialogueId: "dialogue-waiter", nodeId: "visitor_caution_initiative",
+        label: "Есть предупреждение"
+    });
+    assert.equal(JSON.stringify(engine.getPendingInitiative("dialogue-waiter")), JSON.stringify(pendingWarning),
+        "merely viewing contact cards must not consume an initiative");
+    const originalCondition = engine._checkCondition;
+    engine._checkCondition = function(condition, dialogue) {
+        if (condition === "accusation_status:thomas-lied-about-poisoning:pending") return true;
+        return originalCondition.call(this, condition, dialogue);
+    };
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null,
+        "a higher-priority accusation opening must not show a misleading initiative badge");
+    engine._checkCondition = originalCondition;
+
+    const savedMemory = memory.toJSON();
+    context.savedInitiativeMemory = savedMemory;
+    const restoredMemory = vm.runInContext("NPCMemoryService.fromJSON(savedInitiativeMemory, 'case-002')",
+        context);
+    engine.setMemoryService(restoredMemory);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter")?.nodeId, "visitor_caution_initiative",
+        "the invitation must survive saving and restoring witness memory");
+    engine.setMemoryService(memory);
 
     engine.startDialogue("dialogue-waiter");
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null);
+    assert.equal(engine.currentNode.id, "visitor_caution_initiative");
+    assert.match(engine.currentNode.text, /Джо предупредил.*не знаю, кто прав/i);
+    engine.selectAnswer(0);
     const caution = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_joe_visitor_caution");
     assert.equal(caution?.isAvailable, true);
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw")?.isAvailable, true,
@@ -2123,6 +2328,8 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
 
     engine.reset();
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "visitor_caution_initiative",
+        "Thomas must not repeat an unsolicited warning once it was heard");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false,
         "Thomas must not repeat the special reaction after it was heard");
 });
@@ -2162,7 +2369,15 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
 
     advance(30);
     assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), true);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter")?.nodeId,
+        "visitor_correction_initiative");
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.getPendingInitiative("dialogue-waiter")?.nodeId,
+        "visitor_correction_initiative");
+    assert.equal(engine.currentNode.id, "visitor_correction_initiative");
+    assert.match(engine.currentNode.text, /сам хотел поговорить/i);
+    assert.match(engine.currentNode.text, /не доказывают, кто именно приходил/i);
+    engine.selectAnswer(0);
     const reaction = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_visitor_correction");
     assert.equal(reaction?.isAvailable, true);
     engine.selectAnswer(reaction.index);
@@ -2170,6 +2385,8 @@ test("Joe relays a genuine visitor correction to Thomas without erasing the earl
     assert.match(engine.currentNode.text, /не доказывает, кто приходил/i);
     engine.reset();
     engine.startDialogue("dialogue-waiter");
+    assert.notEqual(engine.currentNode.id, "visitor_correction_initiative",
+        "Thomas must not repeat the voluntary correction after the first encounter");
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_visitor_correction"), false);
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_acknowledges_verified_followup"), false,
         "an apology alone does not restore trust");

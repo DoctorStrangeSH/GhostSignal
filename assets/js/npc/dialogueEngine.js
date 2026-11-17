@@ -32,6 +32,40 @@ class DialogueEngine {
         this.socialNetwork = service || null;
     }
 
+    // A read-only preview for contact lists. It must not start a conversation,
+    // advance time, or mark the lead as heard merely because a card is rendered.
+    getPendingInitiative(dialogueId) {
+        const dialogue = getDialogueById(dialogueId);
+        if (!dialogue?.npcId || !dialogue.tree?.nodes) return null;
+        for (const rule of Array.isArray(dialogue.tree.entryRules) ? dialogue.tree.entryRules : []) {
+            if (!rule?.nodeId || !dialogue.tree.nodes[rule.nodeId]) continue;
+            if (!this._checkCondition(rule.condition, dialogue)) continue;
+            // A higher-priority ordinary entry takes precedence. Never advertise
+            // an initiative the player would not actually hear on contact.
+            if (!rule.initiative) return null;
+            return { npcId: dialogue.npcId, dialogueId, nodeId: rule.nodeId,
+                label: typeof rule.initiativeLabel === 'string' ? rule.initiativeLabel : 'Хочет поговорить' };
+        }
+        return null;
+    }
+
+    _personalizeNode(node) {
+        if (!node?.rememberRepairFromNpcId || !this.currentDialogue?.npcId) return node;
+        const remembered = this.relationshipService?.getLatestRepairRememberedBy?.(
+            this.currentDialogue.npcId, node.rememberRepairFromNpcId
+        );
+        if (!remembered?.summary) return node;
+        const helperName = typeof getNPCById === 'function'
+            ? getNPCById(node.rememberRepairFromNpcId)?.name : null;
+        const reflection = remembered.remainingRepairSteps > 0
+            ? 'Но одного хорошего поступка недостаточно, чтобы забыть прежнюю обиду.'
+            : 'Мне важно, что за словами последовали настоящие дела.';
+        return {
+            ...node,
+            text: `${node.text} Я помню помощь ${helperName || 'этого человека'}: ${remembered.summary} ${reflection}`
+        };
+    }
+
     _recordNodeMemory(node) {
         const npcId = this.currentDialogue?.npcId;
         if (node?.id === 'route_question_response' && npcId === 'business_rival') {
@@ -79,15 +113,15 @@ class DialogueEngine {
             return false;
         }
 
-        this.currentNode = {
+        this.currentNode = this._personalizeNode({
             id: startId,
             ...startNode
-        };
+        });
 
         this.dialogueHistory.push({
             nodeId: startId,
             speaker: startNode.speaker,
-            text: startNode.text
+            text: this.currentNode.text
         });
 
         if (this.memoryService) {
@@ -180,44 +214,39 @@ class DialogueEngine {
             this._notifyMemoryChanged();
         }
 
-        // Если диалог завершается
-        if (answer.nextNode === 'end_call' || answer.nextNode === 'end_talk' || 
-            answer.nextNode === 'end_briefing' || answer.nextNode === 'end_elias' ||
-            answer.nextNode === 'end_wife' || answer.nextNode === 'end_red' ||
-            answer.nextNode === 'end_anna' || answer.nextNode === 'end_eva' ||
-            answer.nextNode === 'end_rival' || answer.nextNode === 'end_pharmacist' ||
-            answer.nextNode === 'end_waiter' || answer.nextNode === 'end_journalist' ||
-            answer.nextNode === 'end_bartender2' || answer.nextNode === 'end_red_scarf') {
+        // Финальная реплика определяется данными диалога, а не названием узла.
+        const targetNode = this.currentDialogue.tree.nodes[answer.nextNode];
+        if (targetNode?.endDialogue === true) {
             
             const endNode = this.currentDialogue.tree.nodes[answer.nextNode];
             if (endNode) {
-                this.currentNode = { id: answer.nextNode, ...endNode };
+                this.currentNode = this._personalizeNode({ id: answer.nextNode, ...endNode });
                 this.dialogueHistory.push({
                     nodeId: answer.nextNode,
                     speaker: endNode.speaker,
-                    text: endNode.text
+                    text: this.currentNode.text
                 });
                 this._recordNodeMemory(this.currentNode);
                 this._processNodeEffects(endNode);
             }
             
             if (this.onNodeChange) this.onNodeChange(this.currentNode);
-            return { endDialogue: true };
+            return { ...this.currentNode, endDialogue: true };
         }
         
         // Переходим к следующему узлу
-        const nextNode = this.currentDialogue.tree.nodes[answer.nextNode];
+        const nextNode = targetNode;
         if (!nextNode) {
             console.error('Узел не найден:', answer.nextNode);
             return { error: 'Узел не найден' };
         }
         
-        this.currentNode = { id: answer.nextNode, ...nextNode };
+        this.currentNode = this._personalizeNode({ id: answer.nextNode, ...nextNode });
         
         this.dialogueHistory.push({
             nodeId: answer.nextNode,
             speaker: nextNode.speaker,
-            text: nextNode.text
+            text: this.currentNode.text
         });
 
         this._recordNodeMemory(this.currentNode);
@@ -263,6 +292,22 @@ class DialogueEngine {
     getHistory() {
         return [...this.dialogueHistory];
     }
+
+    _getUnscriptedReaction(kind, evidenceName = '') {
+        const npcId = this.currentDialogue?.npcId;
+        const npc = npcId && typeof getNPCById === 'function' ? getNPCById(npcId) : null;
+        const state = this.memoryService?.getPsychologicalState(npcId, npc?.psychology)?.disposition;
+        const prefix = kind === 'contradiction' ? '' : `Вы показываете ${evidenceName || 'улику'}.`;
+        const reactions = {
+            cooperative: ['Персонаж внимательно изучает материал и предлагает проверить его вместе.', 'thoughtful'],
+            distrustful: ['Персонаж отодвигает документ: без независимого подтверждения он не готов ничего признать.', 'guarded'],
+            pressured: ['Персонаж перечитывает строки, заметно нервничает и просит не торопить его с выводами.', 'nervous'],
+            overwhelmed: ['Персонаж замолкает и просит паузу. Сейчас он не может дать надёжный ответ.', 'shaken'],
+            reserved: ['Персонаж внимательно изучает материал, но пока не готов сделать вывод.', 'serious']
+        };
+        const [text, mood] = reactions[state] || reactions.reserved;
+        return { text: [prefix, text].filter(Boolean).join(' '), mood };
+    }
     
     // Предъявить собранную улику текущему персонажу.
     presentEvidence(evidenceId) {
@@ -283,11 +328,12 @@ class DialogueEngine {
 
         const reaction = dialogue.evidenceReactions?.[evidenceId];
         const object = getObjectById(evidenceId);
+        const fallback = this._getUnscriptedReaction('evidence', object?.name);
         const node = {
             id: `evidence_${evidenceId}`,
             speaker: 'npc',
-            text: reaction?.text || `Вы показываете ${object?.name || 'улику'}. Персонаж внимательно изучает её, но пока не готов сделать вывод.`,
-            mood: reaction?.mood || 'serious',
+            text: reaction?.text || fallback.text,
+            mood: reaction?.mood || fallback.mood,
             givesInsight: reaction?.givesInsight || null,
             claim: reaction?.claim || null,
             answers: reaction?.answers || this.currentNode?.answers || []
@@ -316,18 +362,18 @@ class DialogueEngine {
         const reaction = dialogue.contradictionReactions?.[prepared.topic] || null;
         const first = prepared.contradiction.first;
         const second = prepared.contradiction.second;
-        const responseText = reaction?.text ||
-            `Вы предъявляете два несовместимых показания: «${first.summary}» и «${second.summary}». Персонаж перечитывает записи и просит время, чтобы обдумать ответ.`;
-
         if (!this.memoryService.recordConfrontation(npcId, reaction?.givesInsight || null)) {
             return { success: false, reason: 'already_confronted' };
         }
+        const fallback = this._getUnscriptedReaction('contradiction');
+        const responseText = reaction?.text ||
+            `Вы предъявляете два несовместимых показания: «${first.summary}» и «${second.summary}». ${fallback.text}`;
 
         const node = {
             id: `contradiction_${prepared.topic}`,
             speaker: 'npc',
             text: responseText,
-            mood: reaction?.mood || 'guarded',
+            mood: reaction?.mood || fallback.mood,
             givesInsight: reaction?.givesInsight || null,
             claim: reaction?.claim || null,
             answers: reaction?.answers || this.currentNode?.answers || []
@@ -407,20 +453,20 @@ class DialogueEngine {
         }
     }
     
-    _checkCondition(conditionStr) {
+    _checkCondition(conditionStr, dialogue = this.currentDialogue) {
         if (!conditionStr) return true;
 
         if (conditionStr.startsWith('not:')) {
             const nested = conditionStr.slice(4).trim();
-            return Boolean(nested) && !this._checkCondition(nested);
+            return Boolean(nested) && !this._checkCondition(nested, dialogue);
         }
         if (conditionStr.startsWith('all:')) {
             return conditionStr.slice(4).split('&').map(part => part.trim())
-                .filter(Boolean).every(part => this._checkCondition(part));
+                .filter(Boolean).every(part => this._checkCondition(part, dialogue));
         }
         if (conditionStr.startsWith('any:')) {
             return conditionStr.slice(4).split('&').map(part => part.trim())
-                .filter(Boolean).some(part => this._checkCondition(part));
+                .filter(Boolean).some(part => this._checkCondition(part, dialogue));
         }
         
         // hasItem:itemId
@@ -435,10 +481,10 @@ class DialogueEngine {
             return this.inventory?.hasInsight(insightId) || false;
         }
         
-        const npcId = this.currentDialogue?.npcId;
+        const npcId = dialogue?.npcId;
         if (conditionStr.startsWith('has_visited_node:')) {
             return Boolean(npcId && this.memoryService?.hasVisitedNode(npcId,
-                this.currentDialogue?.id, conditionStr.slice('has_visited_node:'.length)));
+                dialogue?.id, conditionStr.slice('has_visited_node:'.length)));
         }
         if (conditionStr === 'route_question_prepared') {
             return Boolean(npcId && this.investigationBoard?.hasPreparedRouteQuestion(npcId));

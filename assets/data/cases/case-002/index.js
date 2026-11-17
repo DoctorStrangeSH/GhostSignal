@@ -415,6 +415,50 @@ const CASE_002 = {
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
             {
+                id: "joe-offers-document-check-after-visitor-warning", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 90, everyMinutes: 120, retryMinutes: 20, maxOccurrences: 1,
+                fromRumorId: "detective-overstated-visitor-identity",
+                fromRumorAgeMinutesAtLeast: 30,
+                minTrust: 55, fromPressureBelow: 70,
+                trustDelta: 1, reciprocalTrustDelta: 1, toCooperationDelta: 2,
+                summary: "После предупреждения Лоры Джо предложил Томасу вместе проверить журнал посетителей. Он не утверждал, кто приходил: сначала нужны записи и свидетели."
+            },
+            {
+                id: "thomas-accepts-joe-document-check", decisionGroup: "thomas-document-check-decision",
+                relationshipId: "joe-thomas-colleagues", fromNpcId: "waiter", toNpcId: "bartender",
+                interaction: "support", channel: "message", initialDelayMinutes: 135,
+                everyMinutes: 60, maxOccurrences: 1,
+                requiresReceivedActionId: "joe-offers-document-check-after-visitor-warning",
+                requiresReceivedActionAgeMinutes: 20,
+                minTrust: 60, fromPressureBelow: 55,
+                trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Томас согласился спокойно сверить журнал с Джо, но не стал считать ещё не изученные записи доказательством личности посетителя."
+            },
+            {
+                id: "thomas-declines-joe-document-check-low-trust", decisionGroup: "thomas-document-check-decision",
+                relationshipId: "joe-thomas-colleagues", fromNpcId: "waiter", toNpcId: "bartender",
+                interaction: "avoidance", channel: "message", initialDelayMinutes: 135,
+                everyMinutes: 60, maxOccurrences: 1,
+                requiresReceivedActionId: "joe-offers-document-check-after-visitor-warning",
+                requiresReceivedActionAgeMinutes: 20,
+                maxTrust: 59,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Томас отказался сверять журнал с Джо: их отношения пока слишком испорчены для совместной проверки."
+            },
+            {
+                id: "thomas-defers-joe-document-check-under-pressure", decisionGroup: "thomas-document-check-decision",
+                relationshipId: "joe-thomas-colleagues", fromNpcId: "waiter", toNpcId: "bartender",
+                interaction: "avoidance", channel: "message", initialDelayMinutes: 135,
+                everyMinutes: 60, maxOccurrences: 1,
+                requiresReceivedActionId: "joe-offers-document-check-after-visitor-warning",
+                requiresReceivedActionAgeMinutes: 20,
+                minTrust: 60, fromPressureAtLeast: 55,
+                trustDelta: 0, reciprocalTrustDelta: 0,
+                summary: "Томас попросил отложить совместную проверку журнала: сейчас ему слишком тяжело возвращаться к обвинениям."
+            },
+            {
                 id: "thomas-snaps-at-joe", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "waiter", toNpcId: "bartender", interaction: "conflict",
                 channel: "in_person", requiresSameLocation: true,

@@ -134,6 +134,7 @@ class App {
         this.dialogueEngine.setMotivationService(this.npcMotivationService);
         this.dialogueEngine.setSocialNetwork(this.npcSocialNetwork);
         this.dialogueEngine.setRelationshipService(this.npcRelationshipService);
+        this.npcListUI.setDialogueEngine(this.dialogueEngine);
         this.callInterface = new CallInterface(); this.callInterface.setDialogueEngine(this.dialogueEngine);
 
         this.ttsEngine = new TTSEngine();

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Лобби отеля Гранд</title>
+  <desc id="desc">Пустынный отель эпохи ар-деко, высокая стойка регистрации, лестницы, латунные светильники и часы за полночь.</desc>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#182d32"/><stop offset="1" stop-color="#34413e"/></linearGradient>
+    <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#17252a"/><stop offset="1" stop-color="#080f13"/></linearGradient>
+    <linearGradient id="gold" x2="1" y2=".35"><stop stop-color="#735e43"/><stop offset=".5" stop-color="#dec194"/><stop offset="1" stop-color="#766044"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#ffe0ac" stop-opacity=".49"/><stop offset="1" stop-color="#c8995b" stop-opacity="0"/></radialGradient>
+    <pattern id="marble" width="74" height="42" patternUnits="userSpaceOnUse"><path d="M0 39l24-9 20 6 30-22" fill="none" stroke="#a8aca1" stroke-opacity=".08" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1200" height="440" fill="url(#wall)"/>
+  <path d="M0 0h1200v66H0z" fill="#0c1b20"/>
+  <path d="M0 68h1200" stroke="url(#gold)" stroke-width="7"/>
+  <path d="M0 290h1200v150H0z" fill="url(#floor)"/>
+  <path d="M0 290h1200v150H0z" fill="url(#marble)"/>
+  <path d="M0 290h1200" stroke="#a18a63" stroke-opacity=".4" stroke-width="7"/>
+  <path d="M326 295V99Q326 44 384 44H816Q874 44 874 99V295" fill="#0d1e25" stroke="url(#gold)" stroke-width="11"/>
+  <path d="M360 288V116Q360 79 395 79H805Q840 79 840 116V288" fill="#16282f" stroke="#967d54" stroke-width="3"/>
+  <path d="M379 272V126Q379 99 407 99H793Q821 99 821 126V272" fill="#2b3b3d"/>
+  <path d="M379 270h442" stroke="#bc9e6b" stroke-width="5"/>
+  <path d="M405 276l92-106h201l97 106" fill="#15242a" stroke="#9a835f" stroke-width="4"/>
+  <path d="M419 276l90-97M440 276l82-97M461 276l74-97M483 276l64-97M504 276l56-97M525 276l48-97M546 276l41-97M568 276l32-97M589 276l24-97M610 276l15-97M632 276l8-97M654 276v-97M675 276l-9-97M698 276l-17-97M721 276l-26-97M744 276l-36-97M766 276l-45-97" stroke="#a18b66" stroke-opacity=".2" stroke-width="2"/>
+  <path d="M0 95h230v198H0zM970 95h230v198H970z" fill="#13242a"/>
+  <path d="M45 100v190M185 100v190M1015 100v190M1155 100v190" stroke="url(#gold)" stroke-width="12"/>
+  <path d="M25 99h190M990 99h190" stroke="#aa916b" stroke-width="5"/>
+  <path d="M77 128h82v128H77zM1041 128h82v128h-82z" fill="#07161b" stroke="#a78c64" stroke-width="6"/>
+  <path d="M92 143h52v95H92zM1056 143h52v95h-52z" fill="#49686a" opacity=".33"/>
+  <path d="M118 143v95M1082 143v95" stroke="#a78c64" stroke-width="5"/>
+  <path d="M260 0v290M940 0v290" stroke="#1b292b" stroke-width="26"/>
+  <path d="M253 0v290M933 0v290" stroke="url(#gold)" stroke-opacity=".55" stroke-width="5"/>
+  <path d="M547 0h106v24H547z" fill="#a89164"/>
+  <path d="M600 20v52" stroke="#bda577" stroke-width="5"/>
+  <path d="M530 74h140l-23 31h-94z" fill="#9b805b" stroke="#e3c497" stroke-width="3"/>
+  <path d="M545 102l23 48h64l23-48" fill="#d1b184" stroke="#866a46" stroke-width="4"/>
+  <path d="M562 149h76" stroke="#ffe3a3" stroke-width="8"/>
+  <ellipse cx="600" cy="173" rx="300" ry="188" fill="url(#glow)"/>
+  <circle cx="600" cy="121" r="29" fill="#101d23" stroke="#c6aa78" stroke-width="5"/>
+  <path d="M600 121V102M600 121l13 9" stroke="#ead1a0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M386 276h428l37 78H348z" fill="#442e29" stroke="#c8a678" stroke-width="7"/>
+  <path d="M368 316h463l20 41H347z" fill="#332b29" stroke="#8c7152" stroke-width="5"/>
+  <path d="M373 357h456v55H373z" fill="#253036" stroke="#a9926b" stroke-width="5"/>
+  <path d="M396 376h408" stroke="#9f8b6a" stroke-opacity=".4" stroke-width="3"/>
+  <path d="M564 355h72v50h-72z" fill="#1a272c" stroke="#cbb184" stroke-width="3"/>
+  <path d="M580 371h39v22h-39z" fill="#9f8d68"/>
+  <path d="M463 275h273" stroke="#d1b389" stroke-width="3"/>
+  <path d="M466 262h43v14h-43zM673 262h43v14h-43z" fill="#bc9c6a"/>
+  <path d="M52 347l72-42 78 42M998 347l78-42 72 42" fill="#16262a" stroke="#8e815e" stroke-width="3"/>
+  <path d="M80 305v-40M1120 305v-40" stroke="#5a644c" stroke-width="5"/>
+  <path d="M80 269c-49-18-51-61-8-53-26-33 10-62 29-35 11-31 48-15 37 14 35-14 45 34 2 43-8 23-35 31-60 31z" fill="#253f36"/>
+  <path d="M1120 269c49-18 51-61 8-53 26-33-10-62-29-35-11-31-48-15-37 14-35-14-45 34-2 43 8 23 35 31 60 31z" fill="#253f36"/>
+  <path d="M0 435h1200" stroke="#ad956e" stroke-opacity=".16" stroke-width="8"/>
+  <path d="M0 0h1200v440H0z" fill="none" stroke="#081216" stroke-width="20" opacity=".58"/>
+</svg>

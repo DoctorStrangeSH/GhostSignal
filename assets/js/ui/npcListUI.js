@@ -2,7 +2,13 @@ class NPCListUI {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.npcManager = null;
+        this.dialogueEngine = null;
         this._init();
+    }
+
+    setDialogueEngine(engine) {
+        this.dialogueEngine = engine || null;
+        this.render();
     }
     
     setNPCManager(manager) {
@@ -72,6 +78,7 @@ class NPCListUI {
             betrayal: 'НАРУШЕНА ЛОЯЛЬНОСТЬ',
             delayed: 'ОТЛОЖЕНО',
             expired: 'НЕ ДОШЛО',
+            cancelled: 'ОТМЕНЕНО',
             duplicate: 'ПОВТОР',
             relationship_support: 'ОТНОШЕНИЯ УКРЕПИЛИСЬ',
             relationship_conflict: 'КОНФЛИКТ',
@@ -79,6 +86,10 @@ class NPCListUI {
             relationship_avoidance: 'ДИСТАНЦИЯ'
         };
         const channelLabels = { in_person: 'личная встреча', phone: 'звонок', message: 'сообщение' };
+        const discoveryLabels = {
+            dialogue: 'из разговора', observation: 'из наблюдения',
+            document: 'из документа', evidence: 'из улики'
+        };
         const entries = (socialEvents || []).map(item => {
             const from = this._escapeHTML(item.fromName || 'Неизвестный');
             const to = this._escapeHTML(item.toName || 'неизвестному адресату');
@@ -86,6 +97,13 @@ class NPCListUI {
             const channel = this._escapeHTML(channelLabels[item.channel] || 'контакт');
             const time = this._escapeHTML(`ДЕНЬ ${item.day || 1} · ${item.time || '--:--'}`);
             const status = this._escapeHTML(labels[item.type] || 'СОБЫТИЕ');
+            const discovery = item.discovery;
+            const discoveredAt = Number.isFinite(discovery?.atGameMinute)
+                ? ` · день ${Math.floor(discovery.atGameMinute / 1440) + 1}, ${String(Math.floor((discovery.atGameMinute % 1440) / 60)).padStart(2, '0')}:${String(discovery.atGameMinute % 60).padStart(2, '0')}`
+                : '';
+            const provenance = discoveryLabels[discovery?.method]
+                ? `Стало известно ${discoveryLabels[discovery.method]}${discoveredAt}`
+                : 'Источник обнаружения не указан';
             let headline = '';
             let detail = '';
 
@@ -118,6 +136,9 @@ class NPCListUI {
             } else if (item.type === 'expired') {
                 headline = `${from} → ${to} · сообщение не дошло`;
                 detail = 'Окно доставки истекло до того, как контакт состоялся.';
+            } else if (item.type === 'cancelled') {
+                headline = `${from} передумал делиться сведениями с ${to}`;
+                detail = 'Передача отменена после потери доверия между персонажами.';
             } else {
                 headline = `${from} → ${to} · повторная передача не выполнена`;
                 detail = 'Получатель уже располагал этими сведениями.';
@@ -130,6 +151,7 @@ class NPCListUI {
                     </div>
                     <div class="npc-social-event-title">${this._escapeHTML(headline)}</div>
                     ${detail ? `<p>${this._escapeHTML(detail)}</p>` : ''}
+                    <p class="npc-social-event-source">${this._escapeHTML(provenance)}</p>
                 </article>
             `;
         }).join('');
@@ -150,6 +172,7 @@ class NPCListUI {
     }
 
     _createNPCCard(npc) {
+        const initiative = npc.dialogueId && this.dialogueEngine?.getPendingInitiative(npc.dialogueId);
         const statusIcons = {
             'at_work': '💼',
             'at_home': '🏠',
@@ -177,7 +200,7 @@ class NPCListUI {
         return `
             <div class="npc-card ${npc.available ? '' : 'npc-unavailable'}">
                 <div class="npc-header">
-                    <span class="npc-avatar">${npc.icon || '👤'}</span>
+                    <span class="npc-avatar">${npc.portrait ? `<img src="${this._escapeHTML(npc.portrait)}" alt="" loading="lazy" decoding="async" data-fallback-icon="${this._escapeHTML(npc.icon || '👤')}">` : (npc.icon || '👤')}</span>
                     <div class="npc-info">
                         <span class="npc-name">${npc.name || 'Неизвестно'}</span>
                         <span class="npc-role">${npc.role || ''}</span>
@@ -188,6 +211,7 @@ class NPCListUI {
                 <div class="npc-status ${statusColors[npc.reason] || ''}">
                     ${statusIcons[npc.reason] || '❓'} ${npc.message || 'Статус неизвестен'}
                 </div>
+                ${initiative ? `<div class="npc-initiative" role="status">✉ ${this._escapeHTML(initiative.label)}</div>` : ''}
                 
                 ${npc.description ? `<div class="npc-description">${npc.description}</div>` : ''}
                 
@@ -263,6 +287,12 @@ class NPCListUI {
     
     _bindEvents() {
         if (!this.container) return;
+
+        this.container.querySelectorAll('.npc-avatar img').forEach(image => {
+            image.addEventListener('error', () => {
+                image.parentElement.textContent = image.dataset.fallbackIcon || '👤';
+            }, { once: true });
+        });
         
         this.container.querySelectorAll('.npc-call-btn').forEach(btn => {
             btn.addEventListener('click', () => {

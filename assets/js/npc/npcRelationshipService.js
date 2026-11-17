@@ -132,6 +132,7 @@ class NPCRelationshipService {
                 const conditions = item.conditions && typeof item.conditions === 'object' ? item.conditions : item;
                 return {
                     id: item.id,
+                    decisionGroup: typeof item.decisionGroup === 'string' && /^[a-z0-9_:-]{1,64}$/i.test(item.decisionGroup) ? item.decisionGroup : null,
                     relationshipId: item.relationshipId,
                     fromNpcId: item.fromNpcId,
                     goalId: typeof item.goalId === 'string' ? item.goalId : null,
@@ -374,6 +375,9 @@ class NPCRelationshipService {
 
     _conditionsMet(rule) {
         const conditions = rule.conditions;
+        if (rule.decisionGroup && this.caseConfig.autonomousInteractions.some(other =>
+            other.id !== rule.id && other.decisionGroup === rule.decisionGroup &&
+            (this.cases[this.currentCaseId]?.rules?.[other.id]?.occurrences || 0) > 0)) return false;
         const trust = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const fromPressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
         const toPressure = this.memoryService?.getPressure(rule.toNpcId) ?? 0;
@@ -553,9 +557,51 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.leaveReviewOutcome || null;
     }
 
+    // Private relationship history. Do not expose it through the player's dossier:
+    // a detective must first discover what happened between the characters.
+    _recordRepair(bondState, actionId, fromNpcId, toNpcId, summary, now) {
+        const debt = Math.max(0, Number(bondState.betrayalRepairDebt) || 0);
+        if (!debt || typeof actionId !== 'string' || !actionId.trim()) return false;
+        bondState.repairHistory = Array.isArray(bondState.repairHistory) ? bondState.repairHistory : [];
+        const cycle = Math.max(0, Number(bondState.betrayalCycle) || 0);
+        if (bondState.repairHistory.some(item => item.actionId === actionId && (item.cycle || 0) === cycle)) return false;
+        bondState.repairHistory.push({
+            actionId: actionId.slice(0, 100), cycle, fromNpcId, toNpcId,
+            summary: String(summary || '').slice(0, 240), atGameMinute: now
+        });
+        if (bondState.repairHistory.length > 40) bondState.repairHistory.shift();
+        bondState.betrayalRepairDebt = debt - 1;
+        return true;
+    }
+
+    getLatestRepairRememberedBy(npcId, otherNpcId) {
+        if (!npcId || !otherNpcId || npcId === otherNpcId) return null;
+        const bond = this._findBond(npcId, otherNpcId);
+        if (!bond) return null;
+        const history = this._ensureState()?.relationships?.[bond.id]?.repairHistory;
+        if (!Array.isArray(history)) return null;
+        const remembered = [...history].reverse().find(item =>
+            item.toNpcId === npcId && item.fromNpcId === otherNpcId && item.summary
+        );
+        return remembered ? this._clone({
+            summary: remembered.summary, atGameMinute: remembered.atGameMinute,
+            actionId: remembered.actionId,
+            remainingRepairSteps: Math.max(0, Number(this._ensureState()?.relationships?.[bond.id]?.betrayalRepairDebt) || 0)
+        }) : null;
+    }
+
     _applyInteraction(rule, now) {
+        const state = this._ensureState();
+        const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
+            interactionCount: 0, lastInteractionAt: null, discoveredAt: null
+        });
+        const repairDebt = Math.max(0, Number(bondState.betrayalRepairDebt) || 0);
+        const trustDelta = rule.interaction === 'reconcile' && repairDebt > 0
+            ? Math.min(2, rule.trustDelta) : rule.trustDelta;
+        const reciprocalDelta = rule.interaction === 'reconcile' && repairDebt > 0
+            ? Math.min(2, rule.reciprocalTrustDelta) : rule.reciprocalTrustDelta;
         const before = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
-        const after = this._clamp(before + rule.trustDelta, 0, 100, before);
+        const after = this._clamp(before + trustDelta, 0, 100, before);
         this.memoryService?.setRelationshipTrust(rule.fromNpcId, rule.toNpcId, after);
         this._setWorldTrust(rule.fromNpcId, rule.toNpcId, after);
         if (rule.fromCooperationDelta !== null) {
@@ -566,12 +612,11 @@ class NPCRelationshipService {
         }
         if (this.caseConfig.bonds.find(item => item.id === rule.relationshipId)?.reciprocal) {
             const reverseBefore = this.memoryService?.getRelationshipTrust(rule.toNpcId, rule.fromNpcId) ?? 50;
-            const reverseAfter = this._clamp(reverseBefore + rule.reciprocalTrustDelta, 0, 100, reverseBefore);
+            const reverseAfter = this._clamp(reverseBefore + reciprocalDelta, 0, 100, reverseBefore);
             this.memoryService?.setRelationshipTrust(rule.toNpcId, rule.fromNpcId, reverseAfter);
             this._setWorldTrust(rule.toNpcId, rule.fromNpcId, reverseAfter);
         }
 
-        const state = this._ensureState();
         if (rule.investigatesRumorId) state.rules[rule.id].investigationOutcome = this._investigateRumor(rule);
         if (rule.consultationPolicy === 'witness_protection' && !state.rules[rule.id].consultationOutcome) {
             state.rules[rule.id].consultationOutcome = before >= 65 ? 'procedure_guidance' : 'written_request_required';
@@ -584,20 +629,23 @@ class NPCRelationshipService {
                 'npc_witness_decision:' + rule.id);
         }
         if (rule.interviewDecisionPolicy === 'after_reputation_warning' && !state.rules[rule.id].interviewDecision) {
-            // Thomas alone decides, using his own experiences at the time of the reply.
+            // The witness chooses support only when they still trust the proposed companion.
+            // A warning alone cannot force a private interview into an escorted one.
             const personalPattern = this.memoryService?.getLongTermBehaviorPattern(rule.fromNpcId);
             const personalPressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            const companionTrust = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
             state.rules[rule.id].interviewDecision =
-                personalPattern?.repeatedPressure || personalPressure >= 40 ? 'request_joe_present' : 'private_with_boundaries';
+                (personalPattern?.repeatedPressure || personalPressure >= 40) && companionTrust >= 45
+                    ? 'request_joe_present' : 'private_with_boundaries';
         }
         if (rule.leaveReviewPolicy === 'after_temporary_leave' && !state.rules[rule.id].leaveReviewOutcome) {
             // Pressure represents Thomas's current willingness to return, never the detective's order.
             const pressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
             state.rules[rule.id].leaveReviewOutcome = pressure < 50 ? 'return_to_work' : 'extend_leave';
         }
-        const bondState = state.relationships[rule.relationshipId] || (state.relationships[rule.relationshipId] = {
-            interactionCount: 0, lastInteractionAt: null, discoveredAt: null
-        });
+        if (rule.interaction === 'support' && trustDelta > 0) {
+            this._recordRepair(bondState, rule.id, rule.fromNpcId, rule.toNpcId, rule.summary, now);
+        }
         bondState.interactionCount++;
         bondState.lastInteractionAt = now;
         const beforeStatus = this._status(before);
@@ -623,22 +671,37 @@ class NPCRelationshipService {
     recordInteraction(fromNpcId, toNpcId, interaction, options = {}) {
         const bond = this._findBond(fromNpcId, toNpcId, options.relationshipId);
         if (!bond || !this.memoryService) return { changed: false, reason: 'relationship_not_found' };
+        const state = this._ensureState();
+        const bondState = state.relationships[bond.id] || (state.relationships[bond.id] = {
+            interactionCount: 0, lastInteractionAt: null, discoveredAt: null
+        });
+        if (interaction === 'support' && typeof options.actionId === 'string' &&
+            bondState.repairHistory?.some(item => item.actionId === options.actionId &&
+                (item.cycle || 0) === (bondState.betrayalCycle || 0))) {
+            return { changed: false, reason: 'duplicate_support_action', relationshipId: bond.id };
+        }
+        const debt = Math.max(0, Number(bondState.betrayalRepairDebt) || 0);
         const before = this.memoryService.getRelationshipTrust(fromNpcId, toNpcId);
-        const trustDelta = this._clamp(options.trustDelta, -25, 25, 0);
+        const requestedDelta = this._clamp(options.trustDelta, -25, 25, 0);
+        const trustDelta = interaction === 'reconcile' && debt > 0 ? Math.min(2, requestedDelta) : requestedDelta;
         const after = this._clamp(before + trustDelta, 0, 100, before);
         this.memoryService.setRelationshipTrust(fromNpcId, toNpcId, after);
         this._setWorldTrust(fromNpcId, toNpcId, after);
         if (bond.reciprocal) {
             const reverseBefore = this.memoryService.getRelationshipTrust(toNpcId, fromNpcId);
-            const reverseDelta = this._clamp(options.reciprocalTrustDelta, -25, 25, trustDelta);
+            const requestedReverse = this._clamp(options.reciprocalTrustDelta, -25, 25, requestedDelta);
+            const reverseDelta = interaction === 'reconcile' && debt > 0 ? Math.min(2, requestedReverse) : requestedReverse;
             const reverseAfter = this._clamp(reverseBefore + reverseDelta, 0, 100, reverseBefore);
             this.memoryService.setRelationshipTrust(toNpcId, fromNpcId, reverseAfter);
             this._setWorldTrust(toNpcId, fromNpcId, reverseAfter);
         }
-        const state = this._ensureState();
-        const bondState = state.relationships[bond.id] || (state.relationships[bond.id] = {
-            interactionCount: 0, lastInteractionAt: null, discoveredAt: null
-        });
+        if (interaction === 'betrayal') {
+            bondState.betrayalRepairDebt = Math.max(2, debt);
+            bondState.betrayalCycle = (bondState.betrayalCycle || 0) + 1;
+        }
+        if (interaction === 'support' && trustDelta > 0) {
+            this._recordRepair(bondState, options.actionId, fromNpcId, toNpcId, options.summary, this._now());
+        }
         bondState.interactionCount++;
         bondState.lastInteractionAt = this._now();
         const type = interaction === 'betrayal' || interaction === 'conflict'

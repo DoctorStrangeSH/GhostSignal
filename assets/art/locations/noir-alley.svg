@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Ночной переулок</title>
+  <desc id="desc">Дождливая улица в городе сороковых годов, старый фонарь, неоновое отражение и силуэты зданий.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#091a25"/><stop offset=".65" stop-color="#1a3037"/><stop offset="1" stop-color="#141f24"/></linearGradient>
+    <linearGradient id="wall" x2="1" y2=".3"><stop stop-color="#0b171d"/><stop offset="1" stop-color="#35444a"/></linearGradient>
+    <linearGradient id="wallR"><stop stop-color="#223039"/><stop offset="1" stop-color="#0b151b"/></linearGradient>
+    <linearGradient id="street" x2="0" y2="1"><stop stop-color="#253c43"/><stop offset="1" stop-color="#071218"/></linearGradient>
+    <radialGradient id="lamp"><stop stop-color="#f6d6a1" stop-opacity=".85"/><stop offset=".3" stop-color="#e9ac6c" stop-opacity=".34"/><stop offset="1" stop-color="#e9ac6c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="reflection" x2="0" y2="1"><stop stop-color="#dda977" stop-opacity=".5"/><stop offset="1" stop-color="#dfa977" stop-opacity="0"/></linearGradient>
+    <pattern id="brick" width="76" height="34" patternUnits="userSpaceOnUse"><path d="M0 0H76M0 17H76M38 0V17M0 17V34M76 17V34" fill="none" stroke="#9aaca8" stroke-opacity=".09" stroke-width="2"/></pattern>
+    <pattern id="rain" width="53" height="71" patternUnits="userSpaceOnUse"><path d="M10 5l-9 24M41 42l-10 24" stroke="#b4d8d6" stroke-opacity=".27" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="1200" height="440" fill="url(#sky)"/>
+  <path d="M290 0h94v260h-94zM389 45h130v220H389zM650 15h120v257H650zM780 68h100v200H780z" fill="#10222a"/>
+  <path d="M326 48h14v23h-14zm0 63h14v23h-14zm92-32h17v28h-17zm43 0h17v28h-17zm233 0h15v27h-15zm41 0h15v27h-15zm81 60h16v30h-16z" fill="#bead81" opacity=".26"/>
+  <path d="M0 0H278L347 290L0 357Z" fill="url(#wall)"/>
+  <path d="M0 0H278L347 290L0 357Z" fill="url(#brick)"/>
+  <path d="M1200 0H921L848 290L1200 356Z" fill="url(#wallR)"/>
+  <path d="M1200 0H921L848 290L1200 356Z" fill="url(#brick)"/>
+  <path d="M0 355L347 281H848L1200 356V440H0Z" fill="url(#street)"/>
+  <path d="M347 281H848" stroke="#a6c4bb" stroke-opacity=".12" stroke-width="4"/>
+  <path d="M0 356L347 284M1200 356L848 284" fill="none" stroke="#7f9691" stroke-opacity=".32" stroke-width="6"/>
+  <path d="M0 357L1200 356" stroke="#a4b8ab" stroke-opacity=".1"/>
+  <path d="M185 0L215 325M1005 0L986 324" stroke="#050e14" stroke-width="9" opacity=".6"/>
+  <path d="M82 80h105v155H82zm20 18h65v99h-65z" fill="#08151a" stroke="#768786" stroke-opacity=".4" stroke-width="5"/>
+  <path d="M96 99h72v96H96z" fill="#324b4d" opacity=".48"/>
+  <path d="M132 99v96M96 145h72" stroke="#0b141a" stroke-width="7"/>
+  <path d="M985 75h118v170H985z" fill="#0b1920" stroke="#6d8685" stroke-opacity=".35" stroke-width="6"/>
+  <path d="M1000 90h88v135h-88z" fill="#456b69" opacity=".23"/>
+  <path d="M1044 90v135M1000 160h88" stroke="#0a151b" stroke-width="8"/>
+  <path d="M854 0v244M865 0v244" stroke="#121d23" stroke-width="7"/>
+  <path d="M834 244h50l17 35h-82z" fill="#111e23"/>
+  <path d="M846 250h41" stroke="#bdab85" stroke-opacity=".3" stroke-width="3"/>
+  <path d="M574 130v155" stroke="#0a151a" stroke-width="8"/>
+  <path d="M574 133c0-45 47-51 65-23" fill="none" stroke="#111e25" stroke-width="9"/>
+  <path d="M622 102h32l-5 25h-23z" fill="#192a30" stroke="#8d896f" stroke-width="2"/>
+  <path d="M626 117h22" stroke="#f6cf91" stroke-width="7"/>
+  <ellipse cx="637" cy="179" rx="220" ry="145" fill="url(#lamp)"/>
+  <path d="M628 290l-23 150h78l-36-150z" fill="url(#reflection)" opacity=".45"/>
+  <path d="M585 319l-35 121M655 325l58 115" stroke="#f0ba78" stroke-opacity=".2" stroke-width="4"/>
+  <path d="M414 333l-80 18M746 355l101 16M500 394l-142 23M835 418l170 11" stroke="#8bb8b2" stroke-opacity=".17" stroke-width="3"/>
+  <path d="M37 298l122-27 16 75-153 22z" fill="#122128" stroke="#637773" stroke-opacity=".34" stroke-width="3"/>
+  <path d="M33 294l126-28" stroke="#869f97" stroke-opacity=".4" stroke-width="6"/>
+  <path d="M44 321l131-27M51 345l129-26" stroke="#061319" stroke-width="5" opacity=".7"/>
+  <path d="M1124 261h25v94h-25zM1115 252h43v12h-43z" fill="#101e24" stroke="#667875" stroke-opacity=".4" stroke-width="3"/>
+  <path d="M1102 355h72" stroke="#070f14" stroke-width="9"/>
+  <path d="M875 288l-19 14 4 9 22-13z" fill="#aa956b" opacity=".46"/>
+  <rect width="1200" height="440" fill="url(#rain)"/>
+  <path d="M0 0h1200v440H0z" fill="none" stroke="#0b1319" stroke-opacity=".6" stroke-width="18"/>
+</svg>

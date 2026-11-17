@@ -379,9 +379,25 @@ class NPCMemoryService {
             threatening: { trust: -5, pressure: 12 },
             neutral: { trust: 0, pressure: 0 }
         };
-        const effect = toneEffects[answer.tone || 'neutral'] || toneEffects.neutral;
-        const trustDelta = Number.isFinite(answer.trustDelta) ? answer.trustDelta : effect.trust;
-        const pressureDelta = Number.isFinite(answer.pressureDelta) ? answer.pressureDelta : effect.pressure;
+        const tone = answer.tone || 'neutral';
+        const effect = toneEffects[tone] || toneEffects.neutral;
+        const repeatedAnswerCount = memory.dialogueHistory.filter(entry => entry.type === 'answer' &&
+            entry.dialogueId === dialogueId && entry.nodeId === nodeId &&
+            entry.answerText === (answer.text || '') && entry.tone === tone).length;
+        // Одно и то же утешение не восстанавливает доверие бесконечно.
+        // Особые сюжетные эффекты (явные trustDelta/pressureDelta) сохраняются.
+        const comfortFactor = ['calm', 'reassuring'].includes(tone)
+            ? (repeatedAnswerCount === 0 ? 1 : repeatedAnswerCount === 1 ? 1 / 3 : 0)
+            : 1;
+        const trustDelta = Number.isFinite(answer.trustDelta)
+            ? answer.trustDelta : Math.round(effect.trust * comfortFactor);
+        // Повтор одной и той же угрозы не становится новым аргументом: давление растёт,
+        // но результат расследования по-прежнему зависит от подтверждённых улик.
+        const repeatedPressure = ['aggressive', 'threatening'].includes(tone) ? repeatedAnswerCount : 0;
+        const repeatPenalty = Math.min(6, repeatedPressure * 2);
+        const basePressureDelta = Number.isFinite(answer.pressureDelta)
+            ? answer.pressureDelta : Math.round(effect.pressure * comfortFactor);
+        const pressureDelta = basePressureDelta + repeatPenalty;
         memory.trust = Math.max(0, Math.min(100, memory.trust + trustDelta));
         memory.pressure = Math.max(0, Math.min(100, memory.pressure + pressureDelta));
         this._append(memory, {
@@ -389,16 +405,17 @@ class NPCMemoryService {
             dialogueId,
             nodeId,
             answerText: answer.text || '',
-            tone: answer.tone || 'neutral',
+            tone,
             trustDelta,
             pressureDelta,
+            repeatedPressure,
+            repeatedComfort: ['calm', 'reassuring'].includes(tone) ? repeatedAnswerCount : 0,
             cooperationDelta: Number.isFinite(answer.cooperationDelta)
                 ? Math.max(-25, Math.min(25, answer.cooperationDelta)) : 0
         });
         if (Number.isFinite(answer.cooperationDelta) && answer.cooperationDelta !== 0) {
             this.adjustCooperation(npcId, answer.cooperationDelta, 'player_answer:' + (answer.tone || 'neutral'));
         }
-        const tone = answer.tone || 'neutral';
         const memorableTones = {
             reassuring: { importance: 3, tag: 'player_reassured', sentiment: 'positive' },
             threatening: { importance: 4, tag: 'player_threatened', sentiment: 'negative' },
@@ -407,7 +424,7 @@ class NPCMemoryService {
         };
         const memoryTone = memorableTones[tone];
         const explicitImportance = Number.isFinite(answer.memoryImportance) ? answer.memoryImportance : null;
-        const importance = explicitImportance ?? memoryTone?.importance ?? 0;
+        const importance = explicitImportance ?? (comfortFactor === 0 ? 0 : memoryTone?.importance ?? 0);
         if (importance >= 2 || answer.remember === true) {
             this._recordLongTermMemory(npcId, {
                 type: 'player_interaction',

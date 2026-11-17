@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Номер 304 отеля Гранд</title>
+  <desc id="desc">Тревожный гостиничный номер: смятая постель, закрытое окно, тяжёлый шкаф, треснувшее зеркало, дверь с цепочкой и тёмный ковёр.</desc>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#12242d"/><stop offset="1" stop-color="#364146"/></linearGradient>
+    <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#222d30"/><stop offset="1" stop-color="#101a20"/></linearGradient>
+    <linearGradient id="bed" x2=".2" y2="1"><stop stop-color="#b5afa1"/><stop offset="1" stop-color="#696c6c"/></linearGradient>
+    <linearGradient id="wood" x2="1" y2=".2"><stop stop-color="#201b1e"/><stop offset=".55" stop-color="#4c3230"/><stop offset="1" stop-color="#1a191c"/></linearGradient>
+    <radialGradient id="moon"><stop stop-color="#a5d5d8" stop-opacity=".44"/><stop offset="1" stop-color="#5c929c" stop-opacity="0"/></radialGradient>
+    <pattern id="wallpaper" width="70" height="52" patternUnits="userSpaceOnUse"><path d="M35 8Q8 26 35 44Q62 26 35 8ZM35 15v23" fill="none" stroke="#b9ab8c" stroke-opacity=".095" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1200" height="440" fill="url(#wall)"/>
+  <rect width="1200" height="288" fill="url(#wallpaper)"/>
+  <path d="M0 282h1200" stroke="#95866c" stroke-width="8" opacity=".64"/>
+  <path d="M0 291h1200v149H0z" fill="url(#floor)"/>
+  <path d="M0 0h1200v17H0z" fill="#101a20"/>
+  <path d="M0 17h1200" stroke="#a28d68" stroke-opacity=".48" stroke-width="4"/>
+  <!-- The window gives environmental context but no discovered clue. -->
+  <path d="M374 45h335v246H374z" fill="#111d25" stroke="#928a78" stroke-width="13"/>
+  <path d="M394 62h295v207H394z" fill="#193640"/>
+  <path d="M394 62h295v207H394z" fill="url(#moon)"/>
+  <path d="M410 238l60-65 42 32 69-90 62 59 46-42v137H410z" fill="#10252c"/>
+  <path d="M410 267h279" stroke="#758f8e" stroke-opacity=".28" stroke-width="4"/>
+  <path d="M541 62v207M394 165h295" stroke="#8c8a7d" stroke-width="13"/>
+  <path d="M541 62v207M394 165h295" stroke="#1b3037" stroke-width="7"/>
+  <path d="M375 48q-51 54-31 226l22 25q-11-180 30-242zM708 48q51 54 31 226l-22 25q11-180-30-242z" fill="#4b3c3c" stroke="#89715f" stroke-opacity=".4" stroke-width="3"/>
+  <path d="M368 285h350" stroke="#bdad8d" stroke-width="8"/>
+  <!-- A closed, unexamined wardrobe. -->
+  <path d="M37 72h222v257H37z" fill="url(#wood)" stroke="#8e6d54" stroke-width="8"/>
+  <path d="M51 86h193v227H51z" fill="none" stroke="#b0926e" stroke-opacity=".44" stroke-width="3"/>
+  <path d="M147 81v242" stroke="#1b171a" stroke-width="7"/>
+  <path d="M134 192v41M160 192v41" stroke="#bea17b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M29 329h243v16H29z" fill="#251d1c"/>
+  <!-- The crooked mirror is opaque: nothing hidden behind it is shown. -->
+  <g transform="rotate(-3 880 158)"><path d="M804 57h164v206H804z" fill="#42312c" stroke="#bb9a6b" stroke-width="9"/><path d="M822 77h128v166H822z" fill="#344e52" stroke="#c0b9a4" stroke-opacity=".55" stroke-width="4"/><path d="M830 209l66-79-13 45 60-88" fill="none" stroke="#9ac3bc" stroke-opacity=".37" stroke-width="3"/><path d="M889 82l-20 50 31 34-36 54" fill="none" stroke="#c7d4ce" stroke-opacity=".6" stroke-width="2"/></g>
+  <!-- Door chain visible only as hardware; its examined mechanism remains in gameplay. -->
+  <path d="M1004 39h171v302h-171z" fill="#2d2426" stroke="#806a56" stroke-width="10"/>
+  <path d="M1021 56h138v268h-138z" fill="#32292b" stroke="#a68c6b" stroke-opacity=".4" stroke-width="3"/>
+  <path d="M1137 192h-19" stroke="#bca480" stroke-width="8" stroke-linecap="round"/>
+  <path d="M1120 210q-25 18-47-4" fill="none" stroke="#ad9a7c" stroke-width="4" stroke-dasharray="4 4"/>
+  <!-- Hotel bed: ruffled blankets, no hidden note drawn. -->
+  <path d="M322 293l100-99h309l134 97v99H322z" fill="#3d3030" stroke="#8e7361" stroke-width="7"/>
+  <path d="M393 183h369v53H393z" fill="#3b3331" stroke="#8b7764" stroke-width="6"/>
+  <path d="M405 193h133v53H405zM589 193h130v53H589z" fill="#b7b1a2" stroke="#ded2b6" stroke-width="3"/>
+  <path d="M437 204l62 19M626 219l50-14" stroke="#8c8f88" stroke-opacity=".5" stroke-width="3"/>
+  <path d="M361 251l83-33 137 18 95-17 148 40 32 95H326z" fill="url(#bed)" stroke="#c0b29b" stroke-width="5"/>
+  <path d="M355 312l122-33 106 36 85-27 170 36M388 350l105-30 101 25 71-25 132 29" fill="none" stroke="#515c5e" stroke-opacity=".42" stroke-width="6"/>
+  <path d="M340 350h525v32H340z" fill="#2a2426" stroke="#987b61" stroke-width="5"/>
+  <path d="M357 382v20M847 382v20" stroke="#463230" stroke-width="14"/>
+  <path d="M219 386q390-36 730 0l44 54H168z" fill="#242528" stroke="#665956" stroke-width="3"/>
+  <path d="M238 412q366-36 681 0" fill="none" stroke="#a18f76" stroke-opacity=".13" stroke-width="5"/>
+  <path d="M712 396q30-8 50 4q-26 14-55 7z" fill="#3e3033" opacity=".55"/>
+  <path d="M0 0h1200v440H0z" fill="none" stroke="#091318" stroke-opacity=".6" stroke-width="20"/>
+</svg>

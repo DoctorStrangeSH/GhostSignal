@@ -89,6 +89,96 @@ function createHarness(overrides = {}) {
     };
 }
 
+test("exclusive NPC decisions follow trust and pressure and persist after restoring a save", () => {
+    const config = {
+        bonds: [{ id: 'a-b', fromNpcId: 'a', toNpcId: 'b', trust: 70, reciprocal: true }],
+        autonomousInteractions: [
+            { id: 'offer', relationshipId: 'a-b', fromNpcId: 'a', toNpcId: 'b',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1, trustDelta: 0 },
+            { id: 'accept', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer',
+                minTrust: 60, fromPressureBelow: 55 },
+            { id: 'decline', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'avoidance', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer', maxTrust: 59 },
+            { id: 'delay', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'avoidance', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer',
+                minTrust: 60, fromPressureAtLeast: 55 }
+        ]
+    };
+    for (const [trust, pressure, winner] of [
+        [70, 0, 'accept'], [45, 0, 'decline'], [70, 75, 'delay']
+    ]) {
+        const { memory, relationships, context, advance, caseData } = createHarness({
+            caseData: { npcRelationships: config }
+        });
+        memory.setRelationshipTrust('b', 'a', trust);
+        memory.cases[memory.currentCaseId].b.pressure = pressure;
+        advance(30);
+        assert.equal(relationships.hasReceivedInteraction('b', 'offer'), true);
+        advance(30);
+        for (const id of ['accept', 'decline', 'delay']) {
+            assert.equal(relationships.hasCompletedInteraction('b', id), id === winner, `${winner}: ${id}`);
+        }
+        context.savedDecision = relationships.toJSON();
+        context.savedDecisionMemory = memory;
+        const restored = vm.runInContext(
+            'NPCRelationshipService.fromJSON(savedDecision, savedDecisionMemory, npcManager, clock)', context
+        );
+        restored.setCase(caseData);
+        assert.equal(restored.hasCompletedInteraction('b', winner), true);
+        advance(180);
+        assert.equal(['accept', 'decline', 'delay'].filter(id =>
+            relationships.hasCompletedInteraction('b', id)).length, 1,
+            'changing relationship stats must not allow a second decision');
+    }
+});
+
+test("an autonomous document-check offer requires the actor's received rumor and remains one-time after restore", () => {
+    const ruleId = "joe-offers-document-check-after-visitor-warning";
+    const harness = createHarness({ caseData: {
+        id: "case-relationship-test", npcs: ["a", "b"],
+        npcRelationships: {
+            bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", relationship: "colleagues", trust: 60, reciprocal: true }],
+            autonomousInteractions: [{
+                id: ruleId, relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
+                fromRumorId: "overstated-identity", fromRumorAgeMinutesAtLeast: 60,
+                minTrust: 55, trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Алекс предлагает проверить документы, не объявляя слух фактом."
+            }]
+        }
+    }});
+    const { memory, relationships, context, advance } = harness;
+    assert.equal(advance(30).changed, 0, "the action must not happen before the actor hears the report");
+    const received = memory.receiveSocialRumor("a", {
+        id: "overstated-identity", kind: "detective_behavior", text: "Неуверенное опознание"
+    }, {
+        fromNpcId: "b", originalSourceNpcId: "b", recipientTrust: 80,
+        sourceEvent: { dialogueId: "source", nodeId: "warning", answerText: "Проверим запись" },
+        receivedAtGameMinute: 510
+    });
+    assert.equal(received.received, true);
+    assert.equal(advance(30).changed, 0, "the witness needs time to reflect on the received report");
+    assert.equal(advance(30).changed, 1);
+    assert.equal(relationships.hasCompletedInteraction("a", ruleId), true);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 61);
+
+    context.savedRelationshipState = relationships.toJSON();
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedRelationshipState, null, npcManager, clock)", context
+    );
+    restored.setDependencies(memory, context.npcManager, context.clock);
+    restored.setCase(harness.caseData);
+    assert.equal(restored.hasCompletedInteraction("a", ruleId), true);
+    assert.equal(restored.processDueInteractions().changed, 0,
+        "loading must not repeat a completed off-screen action");
+});
+
 test("NPCRelationshipService initializes authored bonds but hides them until evidence is found", () => {
     const { memory, relationships, network } = createHarness();
     assert.equal(memory.getRelationshipTrust("a", "b"), 60);
@@ -1076,4 +1166,94 @@ test("receiving a warning does not force mediation when a witness has not person
     assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
     assert.equal(relationships.getWitnessInterviewDecision("a", "witness-reply"), null,
         "only the actual witness owns the decision");
+});
+
+test("a pressured witness declines an escort they no longer trust", () => {
+    const config = {
+        bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", trust: 60, reciprocal: true }],
+        autonomousInteractions: [
+            { id: "warning", relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "message", initialDelayMinutes: 30, maxOccurrences: 1 },
+            { id: "witness-reply", relationshipId: "a-b", fromNpcId: "b", toNpcId: "a",
+                interaction: "support", channel: "message", initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1,
+                requiresReceivedActionId: "warning", requiresReceivedActionAgeMinutes: 30,
+                interviewDecisionPolicy: "after_reputation_warning" }
+        ]
+    };
+    const { memory, relationships, advance, context, caseData } = createHarness({
+        caseData: { npcRelationships: config }
+    });
+    memory.getMemory("b").pressure = 65;
+    memory.setRelationshipTrust("b", "a", 20);
+    advance(30);
+    advance(30);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
+    memory.setRelationshipTrust("b", "a", 90);
+    assert.equal(relationships.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries",
+        "subsequent reconciliation must not retroactively change the witness's decision");
+    context.snapshot = relationships.toJSON();
+    context.savedMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, savedMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.getWitnessInterviewDecision("b", "witness-reply"), "private_with_boundaries");
+});
+
+test("betrayal requires two substantive supportive actions before full reconciliation", () => {
+    const { memory, relationships, context, caseData } = createHarness();
+    const betrayed = relationships.recordInteraction("a", "b", "betrayal", {
+        trustDelta: -20, reciprocalTrustDelta: -20
+    });
+    assert.equal(betrayed.changed, true);
+    const trustAfterBetrayal = memory.getRelationshipTrust("a", "b");
+    relationships.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 2);
+    assert.equal(relationships.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 2);
+
+    relationships.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Защитил свидетеля от давления.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    relationships.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Повторил ту же историю.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    context.snapshot = relationships.toJSON();
+    context.savedMemory = memory;
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(snapshot, savedMemory, npcManager, clock)", context
+    );
+    restored.setCase(caseData);
+    assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 1);
+    const history = restored.toJSON().cases[caseData.id].relationships["a-b"].repairHistory;
+    assert.equal(history.length, 1, "replaying the same act cannot satisfy another repair step");
+    assert.equal(history[0].summary, "Защитил свидетеля от давления.");
+    assert.equal(history[0].fromNpcId, "a");
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").summary, "Защитил свидетеля от давления.");
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").remainingRepairSteps, 1);
+    assert.equal(restored.getLatestRepairRememberedBy("a", "b"), null,
+        "only the recipient of an action may remember it as personal support");
+    restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 5);
+    restored.recordInteraction("a", "b", "support", {
+        actionId: "provided-safe-documents", summary: "Передал безопасную копию документов.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 0);
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").remainingRepairSteps, 0);
+    restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
+    assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 26);
+    restored.recordInteraction("a", "b", "betrayal", { trustDelta: -20, reciprocalTrustDelta: -20 });
+    restored.recordInteraction("a", "b", "support", {
+        actionId: "protected-testimony", summary: "Снова вступился за свидетеля после нового конфликта.",
+        trustDelta: 1, reciprocalTrustDelta: 1
+    });
+    const nextCycle = restored.toJSON().cases[caseData.id].relationships["a-b"];
+    assert.equal(nextCycle.betrayalRepairDebt, 1);
+    assert.equal(nextCycle.repairHistory.length, 3, "old reparations remain part of relationship history");
+    assert.equal(nextCycle.repairHistory[2].cycle > nextCycle.repairHistory[0].cycle, true);
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").summary,
+        "Снова вступился за свидетеля после нового конфликта.");
 });

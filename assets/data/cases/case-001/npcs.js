@@ -9,6 +9,7 @@ registerData('npc', {
         role: "Ночной портье",
         description: "Пожилой мужчина с усталыми глазами. Работает в отеле «Гранд» уже 20 лет. Знает всех постояльцев. Слышал шаги в коридоре в ночь исчезновения.",
         icon: "👨🏻",
+        portrait: "assets/art/portraits/porter-frank.webp",
         mood: "nervous",
         schedule: {
             awake: { start: 18, end: 6 },
@@ -37,6 +38,7 @@ registerData('npc', {
         role: "Бармен",
         description: "Крупный мужчина с добродушной улыбкой. Владелец бара «У Джо». Всегда готов выслушать — и налить.",
         icon: "👨🏾",
+        portrait: "assets/art/portraits/bartender-joe.webp",
         mood: "friendly",
         schedule: {
             awake: { start: 14, end: 4 },
@@ -70,6 +72,7 @@ registerData('npc', {
         role: "Горничная",
         description: "Молодая женщина, работает в отеле полгода. Выглядит встревоженной. Избегает зрительного контакта. Была в номере 304 в ночь исчезновения.",
         icon: "👩🏻",
+        portrait: "assets/art/portraits/housekeeper-mary.webp",
         mood: "anxious",
         schedule: {
             awake: { start: 6, end: 22 },
@@ -98,6 +101,7 @@ registerData('npc', {
         role: "Начальник участка",
         description: "Ваш непосредственный начальник. Суров, но справедлив. Выдаёт дела и ордеры. Знает больше, чем говорит.",
         icon: "👮",
+        portrait: "assets/art/portraits/sergeant-mills.webp",
         mood: "professional",
         schedule: {
             awake: { start: 7, end: 23 },
@@ -127,6 +131,7 @@ registerData('npc', {
         role: "Друг Блэквуда",
         description: "Высокий мужчина в чёрной шляпе. Старый друг Блэквуда. Помогал ему с билетами на поезд.",
         icon: "🎩",
+        portrait: "assets/art/portraits/elias-vaughn.webp",
         mood: "nervous",
         schedule: {
             awake: { start: 10, end: 2 },

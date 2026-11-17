@@ -52,8 +52,8 @@ class Inventory {
 
         events.emit('inventory:changed', { action: 'add', itemId });
         events.emit('notification:show', {
-            message: `Взят предмет: ${object.name}`,
-            type: 'success', duration: 2500
+            message: object.isEvidence ? `Новая улика: ${object.name}` : `Взят предмет: ${object.name}`,
+            type: object.isEvidence ? 'evidence' : 'success', duration: object.isEvidence ? 4200 : 2500
         });
 
         return true;
