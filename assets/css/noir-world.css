@@ -1,0 +1,132 @@
+/* Ghost Signal — Noir Archive: environment art and interactive city atlas. */
+:root {
+    --noir-ink: #07151b;
+    --noir-brass: #d9b67a;
+    --noir-paper: #e5d2aa;
+}
+
+/* The illustration is a real location background, never an emoji stand-in. */
+.scene-art.scene-location-police_station {
+    min-height: 250px;
+    height: clamp(250px, 31vw, 420px);
+    background: #07151b url('../art/world/police-precinct-noir.webp') center 54% / cover no-repeat;
+    border: 1px solid rgba(217, 182, 122, .55);
+    border-radius: 4px;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, .46), inset 0 0 0 5px rgba(7, 21, 27, .32);
+}
+
+.scene-art.scene-location-police_station::before {
+    opacity: .16;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(235, 214, 178, .12) 4px);
+}
+
+.scene-art.scene-location-police_station::after {
+    background: linear-gradient(0deg, rgba(3, 10, 14, .72), transparent 48%),
+        linear-gradient(90deg, transparent 48%, rgba(3, 10, 14, .2));
+}
+
+.scene-art.scene-location-police_station .scene-art-icon { display: none; }
+.scene-art.scene-location-police_station .scene-art-caption {
+    right: 28px;
+    bottom: 18px;
+    padding: 6px 14px;
+    background: rgba(6, 18, 23, .78);
+    border-left: 2px solid var(--noir-brass);
+    color: var(--noir-paper);
+    font-style: normal;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    letter-spacing: .25em;
+    text-transform: uppercase;
+}
+
+/* A usable illustrated atlas: the city's map is art, markers remain live UI. */
+.map-container {
+    padding: clamp(12px, 2vw, 30px);
+    align-items: flex-start;
+    overflow-y: auto;
+}
+.map-wrapper { max-width: 1000px; aspect-ratio: auto; }
+.map-background {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    background: #102c32 url('../art/world/city-map-noir.webp') center / 100% 100% no-repeat;
+    border: 2px solid #9a7952;
+    border-radius: 3px;
+    box-shadow: 0 16px 65px rgba(0, 0, 0, .5), inset 0 0 0 8px rgba(7, 21, 27, .4);
+}
+.map-background::before {
+    background: linear-gradient(180deg, rgba(4, 16, 20, .12), transparent 18%, transparent 84%, rgba(4, 16, 20, .25));
+}
+.map-roads, .map-grid { display: none; }
+.map-marker { max-width: 150px; }
+.map-marker {
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    background: transparent;
+    border: 0;
+}
+.map-marker:focus-visible { outline: 2px solid #f2c87d; outline-offset: 9px; }
+.marker-pin {
+    width: clamp(30px, 4vw, 44px);
+    height: clamp(30px, 4vw, 44px);
+    margin-bottom: 5px;
+    background: rgba(6, 24, 29, .92);
+    border: 1px solid #e2bc80;
+    border-radius: 5px;
+    box-shadow: 0 5px 0 rgba(4, 12, 17, .66), 0 0 0 3px rgba(225, 183, 119, .18);
+    transform: rotate(45deg);
+}
+.marker-pin::after {
+    bottom: -5px; border-left-width: 5px; border-right-width: 5px;
+    border-top-color: #e2bc80;
+}
+.marker-icon { display: inline-block; font-size: clamp(15px, 2.4vw, 22px); transform: rotate(-45deg); }
+.map-marker:hover .marker-icon { transform: rotate(-45deg) scale(1.15); }
+.marker-label {
+    display: block;
+    padding: 4px 6px;
+    background: rgba(4, 19, 24, .9);
+    border: 1px solid rgba(217, 182, 122, .38);
+    border-radius: 3px;
+    font-size: 10px;
+    line-height: 1.35;
+    color: #f5e2bc;
+    letter-spacing: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    width: 108px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s;
+}
+.map-marker:hover, .map-marker:focus-visible { z-index: 10; }
+.map-marker:hover .marker-label,
+.map-marker:focus-visible .marker-label,
+.map-marker.marker-current .marker-label {
+    opacity: 1 !important; visibility: visible;
+}
+.marker-status {
+    display: none;
+}
+.map-marker.marker-current { z-index: 4; }
+.marker-current .marker-pin { border-color: #f2c87d; background: #1b4245; }
+.map-legend {
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    padding: 16px 10px;
+    color: #d9c49d;
+}
+@media (max-width: 700px) {
+    .scene-art.scene-location-police_station { height: 230px; min-height: 230px; background-position: 42% center; }
+    .map-container { display: block; overflow-x: auto; }
+    .map-wrapper { min-width: 540px; }
+    .map-legend { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .map-marker, .marker-label { transition: none; }
+}
