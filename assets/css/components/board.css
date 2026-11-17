@@ -250,6 +250,43 @@
     letter-spacing: 1.5px;
 }
 .testimony-count { color: var(--text-dim); font-size: 10px; white-space: nowrap; }
+/* Evidence chronology: paper cards on a brass archival rail. */
+.noir-timeline {
+    position: relative; display: grid; gap: 12px; list-style: none;
+    margin: 18px 0 12px; padding: 2px 0 2px 29px;
+}
+.noir-timeline::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 10px; width: 2px;
+    background: linear-gradient(#ab7f43, rgba(171, 127, 67, 0.18));
+}
+.noir-timeline-card {
+    position: relative; min-width: 0; padding: 14px 15px;
+    background: linear-gradient(140deg, rgba(55, 48, 40, .85), rgba(18, 28, 31, .97));
+    border: 1px solid rgba(189, 148, 89, .3); border-radius: 4px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 222, 169, .05);
+}
+.noir-timeline-card::before {
+    content: ''; position: absolute; left: -26px; top: 19px; width: 10px; height: 10px;
+    border-radius: 50%; background: #d8ac6b; border: 2px solid #263236;
+    box-shadow: 0 0 0 2px rgba(216, 172, 107, .28);
+}
+.noir-timeline-card--approximate::before { background: #adbdc0; }
+.noir-timeline-card--unknown::before { background: #65787d; border-style: dashed; }
+.noir-timeline-card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; }
+.noir-timeline-card time { color: #efd0a0; font-family: var(--font-serif); font-size: 15px; }
+.noir-timeline-badge { font-size: 9px; letter-spacing: 1.1px; color: #d3b68d; }
+.noir-timeline-card--approximate .noir-timeline-badge { color: #b6ccd1; }
+.noir-timeline-card--unknown .noir-timeline-badge { color: #a6b4b6; }
+.noir-timeline-event { display: block; margin: 9px 0; color: var(--text-primary); font-size: 13px; line-height: 1.5; }
+.noir-timeline-source { display: block; color: #caa775; font-size: 9px; letter-spacing: .7px; }
+.noir-timeline-caveat { margin: 9px 0 0; color: var(--text-dim); font-size: 11px; line-height: 1.55; }
+.noir-timeline-reviews { margin-top: 19px; display: grid; gap: 8px; }
+.noir-timeline-reviews h4 { margin: 0 0 4px; color: #d3b68d; letter-spacing: 1.5px; font-size: 10px; }
+.noir-timeline-review { border-left: 3px solid #82929a; background: rgba(12, 23, 29, .57); padding: 10px 12px; }
+.noir-timeline-review--consistent { border-color: #84977b; }
+.noir-timeline-review--conflicts { border-color: #b46f63; }
+.noir-timeline-review span { color: #d1c4af; font-size: 9px; letter-spacing: .8px; }
+.noir-timeline-review p { margin: 5px 0 0; color: var(--text-primary); font-size: 11px; line-height: 1.5; }
 .testimony-list {
     display: grid;
     gap: 7px;
@@ -352,6 +389,11 @@
 }
 @media (max-width: 576px) {
     .testimony-journal { padding: 10px; }
+    .noir-timeline { padding-left: 22px; gap: 10px; }
+    .noir-timeline::before { left: 6px; }
+    .noir-timeline-card { padding: 11px 10px; }
+    .noir-timeline-card::before { left: -22px; }
+    .noir-timeline-card time { font-size: 13px; }
     .testimony-entry-heading { flex-direction: column; gap: 3px; }
     .testimony-entry-heading span { text-align: left; }
 }

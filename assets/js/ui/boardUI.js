@@ -303,12 +303,24 @@ class BoardUI {
         const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
         const timeLabel = fact => fact.minute === null ? 'Время неизвестно' : (fact.certainty === 'approximate' ? 'Около ' : '') + fmt(fact.minute);
         const timed = facts.filter(fact => fact.minute !== null);
+        const timeClass = fact => fact.minute === null ? 'unknown' : fact.certainty === 'approximate' ? 'approximate' : 'recorded';
+        const badge = fact => fact.minute === null ? 'НЕ УСТАНОВЛЕНО' : fact.certainty === 'approximate' ? 'ПРИБЛИЗИТЕЛЬНО' : 'ПО ДОКУМЕНТУ';
+        const chronologyReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
+            .filter(event => event.action === 'chronology_reviewed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
             <h3 id="chronology-title">🕰️ ХРОНОЛОГИЯ УЛИК</h3></div><span class="testimony-count">${facts.length} отметок</span></div>
             <p class="hypothesis-help">Показаны события только из обнаруженных улик: точные, приблизительные и без установленного времени. Неизвестное время нельзя выводить из соседних отметок.</p>
-            ${facts.length ? `<ol>${facts.map(f => `<li><strong>${this._escapeHTML(timeLabel(f))}</strong> — ${this._escapeHTML(f.label)}
-                <small>(${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}). ${this._escapeHTML(f.caveat)}</small></li>`).join('')}</ol>` : '<p>Найдите документ с временными отметками, чтобы начать реконструкцию.</p>'}
+            ${facts.length ? `<ol class="noir-timeline" aria-label="Хронология обнаруженных событий">${facts.map(f => `<li class="noir-timeline-card noir-timeline-card--${timeClass(f)}">
+                <div class="noir-timeline-card-top"><time>${this._escapeHTML(timeLabel(f))}</time><span class="noir-timeline-badge">${badge(f)}</span></div>
+                <strong class="noir-timeline-event">${this._escapeHTML(f.label)}</strong>
+                <span class="noir-timeline-source">ИСТОЧНИК · ${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}</span>
+                ${f.caveat ? `<p class="noir-timeline-caveat">${this._escapeHTML(f.caveat)}</p>` : ''}
+                </li>`).join('')}</ol>` : '<p>Найдите документ с временными отметками, чтобы начать реконструкцию.</p>'}
+            ${chronologyReviews.length ? `<div class="noir-timeline-reviews" aria-label="Записанные версии хронологии"><h4>АРХИВ ВЕРСИЙ</h4>
+                ${chronologyReviews.map(review => `<article class="noir-timeline-review noir-timeline-review--${review.status}">
+                    <span>${review.status === 'consistent' ? 'СОГЛАСУЕТСЯ С ОТМЕТКАМИ' : review.status === 'conflicts' ? 'РАСХОЖДЕНИЕ ВРЕМЕНИ' : 'НЕДОСТАТОЧНО ДАННЫХ'}${review.active ? '' : ' · СНЯТА'}</span>
+                    <p>${this._escapeHTML(review.title)}</p></article>`).join('')}</div>` : ''}
             ${timed.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
                 <select id="chronology-first" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <label for="chronology-second">Вторая отметка</label>
