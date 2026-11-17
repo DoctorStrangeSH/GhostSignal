@@ -8,12 +8,14 @@ class BoardUI {
         this.locationManager = null;
         this._draggedEvidence = null;
         this._selectedEvidenceId = null;
+        this._chronologySelection = [];
         this._expandedTools = new Set(['checklist', 'hypotheses']);
         this._init();
     }
     
     setBoard(board) {
         this.board = board;
+        this._chronologySelection = [];
         if (board?.hasPreparedRouteQuestion?.('business_rival') || board?.hasDiscussedRouteQuestion?.('business_rival')) this._expandedTools?.add('alibi');
         this.render();
     }
@@ -307,11 +309,14 @@ class BoardUI {
         const badge = fact => fact.minute === null ? 'НЕ УСТАНОВЛЕНО' : fact.certainty === 'approximate' ? 'ПРИБЛИЗИТЕЛЬНО' : 'ПО ДОКУМЕНТУ';
         const chronologyReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
             .filter(event => event.action === 'chronology_reviewed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
+        this._chronologySelection = (this._chronologySelection || []).filter(id => facts.some(f => f.id === id));
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
             <h3 id="chronology-title">🕰️ ХРОНОЛОГИЯ УЛИК</h3></div><span class="testimony-count">${facts.length} отметок</span></div>
             <p class="hypothesis-help">Показаны события только из обнаруженных улик: точные, приблизительные и без установленного времени. Неизвестное время нельзя выводить из соседних отметок.</p>
-            ${facts.length ? `<ol class="noir-timeline" aria-label="Хронология обнаруженных событий">${facts.map(f => `<li class="noir-timeline-card noir-timeline-card--${timeClass(f)}">
+            ${facts.length > 1 ? '<p class="hypothesis-help">Выберите две карточки нажатием или клавишей Enter — они появятся в форме версии ниже.</p><p id="chronology-selection-status" class="noir-timeline-selection-status" role="status" aria-live="polite"></p>' : ''}
+            ${facts.length ? `<ol class="noir-timeline" aria-label="Хронология обнаруженных событий">${facts.map(f => `<li class="noir-timeline-card noir-timeline-card--${timeClass(f)}${this._chronologySelection.includes(f.id) ? ' is-selected' : ''}">
+                <button class="noir-timeline-select" type="button" data-timeline-id="${this._escapeHTML(f.id)}" aria-pressed="${this._chronologySelection.includes(f.id)}" aria-label="Выбрать событие: ${this._escapeHTML(f.label)}">${this._chronologySelection.indexOf(f.id) === 0 ? '01 · ВЫБРАНО' : this._chronologySelection.indexOf(f.id) === 1 ? '02 · ВЫБРАНО' : 'ВЫБРАТЬ'}</button>
                 <div class="noir-timeline-card-top"><time>${this._escapeHTML(timeLabel(f))}</time><span class="noir-timeline-badge">${badge(f)}</span></div>
                 <strong class="noir-timeline-event">${this._escapeHTML(f.label)}</strong>
                 <span class="noir-timeline-source">ИСТОЧНИК · ${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}</span>
@@ -340,6 +345,34 @@ class BoardUI {
     }
 
     _bindChronologyEvents() {
+        if (!Array.isArray(this._chronologySelection)) this._chronologySelection = [];
+        const synchronize = () => {
+            const selected = this._chronologySelection;
+            this.container.querySelectorAll('.noir-timeline-select').forEach(button => {
+                const index = selected.indexOf(button.dataset.timelineId);
+                button.setAttribute('aria-pressed', String(index !== -1));
+                button.textContent = index === 0 ? '01 · ВЫБРАНО' : index === 1 ? '02 · ВЫБРАНО' : 'ВЫБРАТЬ';
+                button.closest('.noir-timeline-card')?.classList.toggle('is-selected', index !== -1);
+            });
+            if (selected.length === 2) {
+                for (const [first, second] of [['chronology-order-first', 'chronology-order-second'], ['chronology-first', 'chronology-second']]) {
+                    const a = this.container.querySelector('#' + first), b = this.container.querySelector('#' + second);
+                    if (a && b && [...a.options].some(option => option.value === selected[0]) && [...b.options].some(option => option.value === selected[1])) {
+                        a.value = selected[0]; b.value = selected[1];
+                    }
+                }
+            }
+            const status = this.container.querySelector('#chronology-selection-status');
+            if (status) status.textContent = selected.length === 2 ? 'Два события выбраны. Укажите порядок и запишите версию ниже.' :
+                selected.length ? 'Первое событие выбрано. Теперь выберите второе.' : 'Выберите первое событие.';
+        };
+        this.container.querySelectorAll('.noir-timeline-select').forEach(button => button.addEventListener('click', () => {
+            const id = button.dataset.timelineId;
+            if (this._chronologySelection.includes(id)) this._chronologySelection = this._chronologySelection.filter(value => value !== id);
+            else this._chronologySelection = this._chronologySelection.length < 2 ? [...this._chronologySelection, id] : [this._chronologySelection[1], id];
+            synchronize();
+        }));
+        synchronize();
         this.container.querySelector('#chronology-order-save')?.addEventListener('click', () => {
             const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
             const result = this.board.proposeChronologyOrder(
