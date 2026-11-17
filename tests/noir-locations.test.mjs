@@ -36,3 +36,18 @@ test('Blackwood mansion and newspaper office ship matching cinematic scenes', ()
         assert.ok(statSync(new URL(`../assets/art/world/${image}`, import.meta.url)).size > 20000);
     }
 });
+
+test('train terminal and Kane office have dedicated art linked to valid location IDs', () => {
+    const css = read('assets/css/noir-locations.css');
+    const firstCase = read('assets/data/cases/case-001/locations.js');
+    const secondCase = read('assets/data/cases/case-002/locations.js');
+    for (const [id, filename, data] of [
+        ['train_station', 'train-station-noir.webp', firstCase],
+        ['rival_office', 'kanes-office-noir.webp', secondCase],
+    ]) {
+        assert.match(data, new RegExp(`${id}:`));
+        assert.ok(css.includes(`.scene-location-${id}`));
+        assert.ok(css.includes(filename));
+        assert.ok(statSync(new URL(`../assets/art/world/${filename}`, import.meta.url)).size > 20000);
+    }
+});
