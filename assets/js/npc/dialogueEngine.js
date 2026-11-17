@@ -40,9 +40,12 @@ class DialogueEngine {
         if (!remembered?.summary) return node;
         const helperName = typeof getNPCById === 'function'
             ? getNPCById(node.rememberRepairFromNpcId)?.name : null;
+        const reflection = remembered.remainingRepairSteps > 0
+            ? 'Но одного хорошего поступка недостаточно, чтобы забыть прежнюю обиду.'
+            : 'Мне важно, что за словами последовали настоящие дела.';
         return {
             ...node,
-            text: `${node.text} Я помню помощь ${helperName || 'этого человека'}: ${remembered.summary}`
+            text: `${node.text} Я помню помощь ${helperName || 'этого человека'}: ${remembered.summary} ${reflection}`
         };
     }
 

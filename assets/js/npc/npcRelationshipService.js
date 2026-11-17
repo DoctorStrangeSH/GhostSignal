@@ -581,7 +581,8 @@ class NPCRelationshipService {
         );
         return remembered ? this._clone({
             summary: remembered.summary, atGameMinute: remembered.atGameMinute,
-            actionId: remembered.actionId
+            actionId: remembered.actionId,
+            remainingRepairSteps: Math.max(0, Number(this._ensureState()?.relationships?.[bond.id]?.betrayalRepairDebt) || 0)
         }) : null;
     }
 

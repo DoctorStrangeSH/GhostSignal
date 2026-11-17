@@ -1142,6 +1142,7 @@ test("betrayal requires two substantive supportive actions before full reconcili
     assert.equal(history[0].summary, "Защитил свидетеля от давления.");
     assert.equal(history[0].fromNpcId, "a");
     assert.equal(restored.getLatestRepairRememberedBy("b", "a").summary, "Защитил свидетеля от давления.");
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").remainingRepairSteps, 1);
     assert.equal(restored.getLatestRepairRememberedBy("a", "b"), null,
         "only the recipient of an action may remember it as personal support");
     restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
@@ -1151,6 +1152,7 @@ test("betrayal requires two substantive supportive actions before full reconcili
         trustDelta: 1, reciprocalTrustDelta: 1
     });
     assert.equal(restored.toJSON().cases[caseData.id].relationships["a-b"].betrayalRepairDebt, 0);
+    assert.equal(restored.getLatestRepairRememberedBy("b", "a").remainingRepairSteps, 0);
     restored.recordInteraction("a", "b", "reconcile", { trustDelta: 20, reciprocalTrustDelta: 20 });
     assert.equal(memory.getRelationshipTrust("a", "b"), trustAfterBetrayal + 26);
     restored.recordInteraction("a", "b", "betrayal", { trustDelta: -20, reciprocalTrustDelta: -20 });

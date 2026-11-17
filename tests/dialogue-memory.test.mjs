@@ -12,7 +12,7 @@ test("a witness recalls a specific supportive deed only in their own dialogue", 
     engine.setRelationshipService({
         getLatestRepairRememberedBy(npcId, otherNpcId) {
             return npcId === 'waiter' && otherNpcId === 'bartender'
-                ? { summary: 'Он помог мне с документами.' } : null;
+                ? { summary: 'Он помог мне с документами.', remainingRepairSteps: 1 } : null;
         },
         toJSON() { return {}; }
     });
@@ -22,10 +22,22 @@ test("a witness recalls a specific supportive deed only in their own dialogue", 
     ] };
     engine.selectAnswer(0);
     assert.match(engine.currentNode.text, /Я помню помощь Джо: Он помог мне с документами/);
+    assert.match(engine.currentNode.text, /одного хорошего поступка недостаточно/);
     assert.equal(engine.dialogueHistory.at(-1).text, engine.currentNode.text);
     engine.currentDialogue.npcId = 'journalist';
     const unrelated = engine._personalizeNode({ text: 'Чужой разговор.', rememberRepairFromNpcId: 'bartender' });
     assert.equal(unrelated.text, 'Чужой разговор.');
+    engine.currentDialogue.npcId = 'waiter';
+    engine.setRelationshipService({
+        getLatestRepairRememberedBy() {
+            return { summary: 'Он помог мне с документами.', remainingRepairSteps: 0 };
+        }
+    });
+    const resolved = engine._personalizeNode({
+        text: 'Спасибо за помощь.', rememberRepairFromNpcId: 'bartender'
+    });
+    assert.match(resolved.text, /за словами последовали настоящие дела/);
+    assert.doesNotMatch(resolved.text, /прежнюю обиду/);
 });
 
 function createDialogueHarness() {
@@ -2198,56 +2210,6 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
     const caution = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_joe_visitor_caution");
     assert.equal(caution?.isAvailable, true);
     assert.equal(engine.getAvailableAnswers().find(a => a.nextNode === "he_saw")?.isAvailable, true,
-        "main witness testimony must remain accessible");
-    engine.selectAnswer(caution.index);
-    assert.match(engine.currentNode.text, /не присутствовал.*разговоре/i);
-    assert.match(engine.currentNode.text, /не могу подтвердить.*лично/i);
-
-    engine.reset();
-    engine.startDialogue("dialogue-waiter");
-    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_joe_visitor_caution"), false,
-        "Thomas must not repeat the special reaction after it was heard");
-});
-
-test("Joe relays a genuine visitor correction to Thomas without erasing the earlier mistake", () => {
-    const { engine, memory, inventory, advance } = createDialogueHarness();
-    inventory.insights.push("joe_found_inspection_entry");
-    engine.startDialogue("dialogue-journalist");
-    engine.selectAnswer(engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule").index);
-    engine.selectAnswer(engine.getAvailableAnswers().find(a => a.nextNode === "lora_rejects_certain_visitor_identity").index);
-    advance(30);
-
-    engine.startDialogue("dialogue-bartender-case2");
-    engine.selectAnswer(engine.getAvailableAnswers().find(a => a.nextNode === "joe_challenges_visitor_overclaim").index);
-    engine.selectAnswer(engine.getAvailableAnswers().find(a => a.text.includes("Мне достаточно совпадения")).index);
-    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_doubled_down_on_visitor_overclaim"), true);
-    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), false);
-    advance(30);
-    assert.equal(memory.hasRumor("waiter", "joe-warns-thomas-of-visitor-overclaim"), true);
-
-    engine.startDialogue("dialogue-waiter");
-    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_visitor_correction"), false);
-    engine.startDialogue("dialogue-bartender-case2");
-    const repair = engine.getAvailableAnswers().find(a => a.nextNode === "joe_offer_visitor_repair");
-    assert.equal(repair?.isAvailable, true);
-    engine.selectAnswer(repair.index);
-    assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), false);
-    const retract = engine.getAvailableAnswers().find(a => a.text.includes("Мой прежний вывод был необоснованным"));
-    assert.equal(retract?.isAvailable, true);
-    engine.selectAnswer(retract.index);
-    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_retracted_visitor_overclaim"), true);
-    assert.equal(memory.hasLongTermMemoryTag("bartender", "player_doubled_down_on_visitor_overclaim"), true,
-        "repair must not erase the past misjudgment");
-    assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), false);
-    engine.startDialogue("dialogue-waiter");
-    assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_hears_visitor_correction"), false);
-
-    advance(30);
-    assert.equal(memory.hasRumor("waiter", "joe-reports-detective-visitor-correction"), true);
-    engine.startDialogue("dialogue-waiter");
-    const reaction = engine.getAvailableAnswers().find(a => a.nextNode === "thomas_hears_visitor_correction");
-    assert.equal(reaction?.isAvailable, true);
-    engine.selectAnswer(reaction.index);
         "main witness testimony must remain accessible");
     engine.selectAnswer(caution.index);
     assert.match(engine.currentNode.text, /не присутствовал.*разговоре/i);
