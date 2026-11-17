@@ -309,6 +309,9 @@ class BoardUI {
         const badge = fact => fact.minute === null ? 'НЕ УСТАНОВЛЕНО' : fact.certainty === 'approximate' ? 'ПРИБЛИЗИТЕЛЬНО' : 'ПО ДОКУМЕНТУ';
         const chronologyReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
             .filter(event => event.action === 'chronology_reviewed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
+        const causalReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
+            .filter(event => event.action === 'causal_link_proposed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
+        const independentSources = ids.filter(id => getObjectById(id)?.isEvidence);
         this._chronologySelection = (this._chronologySelection || []).filter(id => facts.some(f => f.id === id));
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
@@ -326,6 +329,10 @@ class BoardUI {
                 ${chronologyReviews.map(review => `<article class="noir-timeline-review noir-timeline-review--${review.status}">
                     <span>${review.status === 'consistent' ? 'СОГЛАСУЕТСЯ С ОТМЕТКАМИ' : review.status === 'conflicts' ? 'РАСХОЖДЕНИЕ ВРЕМЕНИ' : 'НЕДОСТАТОЧНО ДАННЫХ'}${review.active ? '' : ' · СНЯТА'}</span>
                     <p>${this._escapeHTML(review.title)}</p></article>`).join('')}</div>` : ''}
+            ${causalReviews.length ? `<div class="noir-timeline-reviews" aria-label="Гипотезы о причинах"><h4>ВОЗМОЖНЫЕ ПРИЧИННЫЕ СВЯЗИ</h4>
+                ${causalReviews.map(review => `<article class="noir-timeline-review noir-timeline-review--unverified">
+                    <span>НЕ ДОКАЗАНО${review.supportEvidenceId ? ' · ЕСТЬ ДОПОЛНИТЕЛЬНЫЙ ИСТОЧНИК' : ' · НУЖНА НЕЗАВИСИМАЯ ПРОВЕРКА'}${review.active ? '' : ' · СНЯТА'}</span>
+                    <p>${this._escapeHTML(review.title)}</p><p>${this._escapeHTML(review.explanation || '')}</p></article>`).join('')}</div>` : ''}
             ${timed.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
                 <select id="chronology-first" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <label for="chronology-second">Вторая отметка</label>
@@ -341,6 +348,18 @@ class BoardUI {
                 <button id="chronology-order-save" type="button" class="terminal-btn">ЗАПИСАТЬ ВЕРСИЮ</button>
                 <p class="hypothesis-help">Версия попадёт в журнал гипотез и останется доступной после загрузки. Согласование времени ещё не доказывает причинную связь.</p>
                 <div id="chronology-order-result" aria-live="polite"></div></div>` : ''}
+            ${facts.length > 1 ? `<div class="testimony-compare"><h4>Могло ли одно событие вызвать другое?</h4>
+                <p class="hypothesis-help">Порядок во времени ещё не доказывает причину. Запишите объяснение и, если есть, независимую улику для дальнейшей проверки.</p>
+                <label for="chronology-cause-first">Предполагаемая причина</label>
+                <select id="chronology-cause-first" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <label for="chronology-cause-second">Предполагаемое следствие</label>
+                <select id="chronology-cause-second" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <label for="chronology-cause-reason">Почему вы предполагаете связь?</label>
+                <textarea id="chronology-cause-reason" class="terminal-input" maxlength="500" rows="3" placeholder="Что могло связать эти события?" ></textarea>
+                <label for="chronology-cause-support">Дополнительная независимая улика (необязательно)</label>
+                <select id="chronology-cause-support" class="terminal-input"><option value="">Пока нет</option>${independentSources.map(id => `<option value="${this._escapeHTML(id)}">${this._escapeHTML(getObjectById(id)?.name || id)}</option>`).join('')}</select>
+                <button id="chronology-cause-save" type="button" class="terminal-btn">СОХРАНИТЬ ПРИЧИННУЮ ГИПОТЕЗУ</button>
+                <div id="chronology-cause-result" aria-live="polite"></div></div>` : ''}
         </section>`;
     }
 
@@ -355,7 +374,7 @@ class BoardUI {
                 button.closest('.noir-timeline-card')?.classList.toggle('is-selected', index !== -1);
             });
             if (selected.length === 2) {
-                for (const [first, second] of [['chronology-order-first', 'chronology-order-second'], ['chronology-first', 'chronology-second']]) {
+                for (const [first, second] of [['chronology-order-first', 'chronology-order-second'], ['chronology-first', 'chronology-second'], ['chronology-cause-first', 'chronology-cause-second']]) {
                     const a = this.container.querySelector('#' + first), b = this.container.querySelector('#' + second);
                     if (a && b && [...a.options].some(option => option.value === selected[0]) && [...b.options].some(option => option.value === selected[1])) {
                         a.value = selected[0]; b.value = selected[1];
@@ -384,6 +403,18 @@ class BoardUI {
                 result.status === 'consistent' ? 'Версия сохранена: порядок согласуется с точными отметками, но связь событий не доказана.' :
                 result.status === 'conflicts' ? 'Версия сохранена: порядок расходится с точными отметками. Пересмотрите источники.' :
                 'Версия сохранена как непроверенная: время одного из событий неизвестно или приблизительно.';
+        });
+        this.container.querySelector('#chronology-cause-save')?.addEventListener('click', () => {
+            const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+            const result = this.board.proposeChronologyCause(
+                this.container.querySelector('#chronology-cause-first')?.value,
+                this.container.querySelector('#chronology-cause-second')?.value,
+                this.container.querySelector('#chronology-cause-reason')?.value,
+                this.container.querySelector('#chronology-cause-support')?.value, ids);
+            const target = this.container.querySelector('#chronology-cause-result');
+            if (target) target.textContent = !result ? 'Выберите разные события, объясните связь и укажите только независимую доступную улику.' :
+                result.hasIndependentLead ? 'Гипотеза сохранена. Дополнительная улика — повод для проверки, не доказательство причины.' :
+                'Гипотеза сохранена как непроверенная. Найдите независимое подтверждение.';
         });
         this.container.querySelector('#chronology-compare')?.addEventListener('click', () => {
             const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];

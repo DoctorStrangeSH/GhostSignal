@@ -164,6 +164,29 @@ class InvestigationBoard {
         return { id, status };
     }
 
+    // A proposed cause is never established by chronology alone. Even an
+    // independent document is a lead to examine, not proof of causation.
+    proposeChronologyCause(causeId, effectId, explanation, supportEvidenceId = '', discoveredIds = []) {
+        const reason = typeof explanation === 'string' ? explanation.trim().slice(0, 500) : '';
+        if (!reason || causeId === effectId) return null;
+        const facts = this.getEvidenceChronology(discoveredIds);
+        const cause = facts.find(f => f.id === causeId);
+        const effect = facts.find(f => f.id === effectId);
+        if (!cause || !effect) return null;
+        const support = supportEvidenceId ? String(supportEvidenceId) : '';
+        if (support && (!discoveredIds.includes(support) || !getObjectById(support)?.isEvidence ||
+            support === cause.evidenceId || support === effect.evidenceId)) return null;
+        const id = this.addHypothesis(`Возможная связь: «${cause.label}» → «${effect.label}»`);
+        if (!id) return null;
+        for (const evidenceId of new Set([cause.evidenceId, effect.evidenceId, support].filter(Boolean))) {
+            this.linkHypothesis(id, 'evidence', evidenceId, 'pending');
+        }
+        const hypothesis = this.hypotheses.find(h => h.id === id);
+        hypothesis.history.push({ action: 'causal_link_proposed', status: 'unverified',
+            causeId, effectId, supportEvidenceId: support || null, explanation: reason });
+        return { id, status: 'unverified', hasIndependentLead: Boolean(support) };
+    }
+
     // Проверить, сделаны ли правильные выводы
     addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);
