@@ -30,3 +30,27 @@ test('photo study only appears for the genuine bar_photo inventory item', () => 
     assert.match(code, /item\.id === 'bar_photo' \? this\._renderBarPhotoStudy\(\) : ''/);
     assert.match(code, /if \(item\.id === 'bar_photo'\) this\._bindBarPhotoStudy\(\)/);
 });
+
+test('the photo journal retains only discovered observations and never presents unseen notes', () => {
+    const UI = runInNewContext(`${read('assets/js/ui/inventoryUI.js')}\nInventoryUI`, {});
+    const ui = Object.create(UI.prototype);
+    const found = new Set(['bar_photo_observed_woman']);
+    ui.inventory = { hasInsight: id => found.has(id) };
+    let markup = ui._renderBarPhotoStudy();
+    assert.match(markup, /Журнал наблюдений \(<span id="photo-study-journal-count">1/);
+    assert.match(markup, /Женщина отворачивается от стойки/);
+    assert.doesNotMatch(markup, /Мужчина наклоняется у стойки/);
+    assert.doesNotMatch(markup, /Официант находится за стойкой/);
+    found.add('bar_photo_observed_waiter');
+    markup = ui._renderBarPhotoStudy();
+    assert.match(markup, /photo-study-journal-count">2/);
+    assert.match(markup, /Официант находится за стойкой/);
+    assert.match(markup, /data-photo-zoom aria-pressed="false"/);
+});
+
+test('zoom is an accessible reversible toggle without new evidence or time cost', () => {
+    const source = read('assets/js/ui/inventoryUI.js');
+    assert.match(source, /classList\.toggle\('is-enlarged'\)/);
+    assert.match(source, /zoom\.setAttribute\('aria-pressed', String\(Boolean\(enlarged\)\)\)/);
+    assert.match(read('assets/css/noir-photo-study.css'), /\.photo-study-frame\.is-enlarged img \{ width: 200%/);
+});
