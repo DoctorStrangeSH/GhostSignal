@@ -1,5 +1,5 @@
 /* Ghost Signal: individually painted scenes, shared premium noir art direction. */
-.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office) {
     min-height: 250px;
     height: clamp(250px, 31vw, 420px);
     border: 1px solid rgba(217, 182, 122, .55);
@@ -22,18 +22,24 @@
 .scene-art.scene-location-newspaper_office {
     background-image: url('../art/world/newspaper-office-noir.webp');
 }
-.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office)::before {
+.scene-art.scene-location-train_station {
+    background-image: url('../art/world/train-station-noir.webp');
+}
+.scene-art.scene-location-rival_office {
+    background-image: url('../art/world/kanes-office-noir.webp');
+}
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office)::before {
     opacity: .13;
     background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(235, 214, 178, .12) 4px);
 }
-.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office)::after {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office)::after {
     background: linear-gradient(0deg, rgba(3, 10, 14, .75), transparent 48%),
         linear-gradient(90deg, transparent 50%, rgba(3, 10, 14, .19));
 }
-.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) .scene-art-icon {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office) .scene-art-icon {
     display: none;
 }
-.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) .scene-art-caption {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office) .scene-art-caption {
     right: 28px;
     bottom: 18px;
     padding: 6px 14px;
@@ -45,7 +51,7 @@
     text-transform: uppercase;
 }
 @media (max-width: 700px) {
-    .scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) {
+    .scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office, .scene-location-train_station, .scene-location-rival_office) {
         min-height: 230px; height: 230px; background-position: 40% center;
     }
 }
