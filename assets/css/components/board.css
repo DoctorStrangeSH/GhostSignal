@@ -265,6 +265,20 @@
     border: 1px solid rgba(189, 148, 89, .3); border-radius: 4px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 222, 169, .05);
 }
+.noir-timeline-card.is-selected {
+    border-color: #e7bf7f;
+    box-shadow: 0 0 0 2px rgba(231, 191, 127, .17), 0 8px 20px rgba(0, 0, 0, .3);
+}
+.noir-timeline-select {
+    display: block; width: 100%; margin-bottom: 12px; padding: 10px 12px;
+    border: 1px solid rgba(214, 172, 108, .45); border-radius: 3px;
+    background: rgba(17, 29, 32, .8); color: #f1ce99;
+    font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    cursor: pointer; text-align: left;
+}
+.noir-timeline-select:hover, .noir-timeline-select[aria-pressed="true"] { background: rgba(149, 103, 53, .3); }
+.noir-timeline-select:focus-visible { outline: 3px solid #e7bf7f; outline-offset: 2px; }
+.noir-timeline-selection-status { color: #d3b68d; font-size: 11px; min-height: 1.5em; }
 .noir-timeline-card::before {
     content: ''; position: absolute; left: -26px; top: 19px; width: 10px; height: 10px;
     border-radius: 50%; background: #d8ac6b; border: 2px solid #263236;
