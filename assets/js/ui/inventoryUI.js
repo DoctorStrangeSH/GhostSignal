@@ -163,6 +163,7 @@ class InventoryUI {
                     <div class="evidence-inspection-sheet">
                         <div class="evidence-inspection-mark" aria-hidden="true">${escape(item.icon || '📄')}</div>
                         <h3>${escape(item.name)}</h3>
+                        ${item.id === 'bar_photo' ? this._renderBarPhotoStudy() : ''}
                         <p class="evidence-inspection-text">${inspection}</p>
                     </div>
                     <footer class="evidence-inspection-footer">
@@ -177,10 +178,47 @@ class InventoryUI {
             `
         });
 
+        if (item.id === 'bar_photo') this._bindBarPhotoStudy();
+
         // Тратим время на осмотр
         if (this.inventory) {
             events.emit('time:advance', details.timeCost || 5);
         }
+    }
+
+    _renderBarPhotoStudy() {
+        const studied = ['counter', 'woman', 'waiter'].filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).length;
+        return `<section class="photo-study" aria-label="Подробное изучение снимка">
+            <div class="photo-study-frame"><img src="assets/art/evidence/bar-contact-print.webp" alt="Архивный чёрно-белый снимок бара: мужчина наклоняется у стойки, женщина отворачивается, официант находится за стойкой" loading="lazy"></div>
+            <p class="photo-study-hint">Выберите участок снимка для наблюдения. Фотография не доказывает, какой предмет был поднят.</p>
+            <div class="photo-study-actions" role="group" aria-label="Участки фотографии">
+                <button type="button" data-photo-focus="counter" aria-pressed="false" class="terminal-btn">01 · У СТОЙКИ</button>
+                <button type="button" data-photo-focus="woman" aria-pressed="false" class="terminal-btn">02 · ПОСЕТИТЕЛЬНИЦА</button>
+                <button type="button" data-photo-focus="waiter" aria-pressed="false" class="terminal-btn">03 · ОФИЦИАНТ</button>
+            </div>
+            <p class="photo-study-progress">Изучено участков: <span id="photo-study-count">${studied}</span> из 3</p>
+            <p class="photo-study-observation" id="photo-study-observation" role="status" aria-live="polite">Выберите интересующий фрагмент.</p>
+        </section>`;
+    }
+
+    _bindBarPhotoStudy() {
+        const panel = document.getElementById('modal-body')?.querySelector('.photo-study');
+        if (!panel) return;
+        const observations = {
+            counter: 'Мужчина наклоняется у стойки и держит салфетку. Небольшой предмет на снимке не опознаётся: по этому кадру нельзя установить, что именно он взял.',
+            woman: 'Женщина отворачивается от стойки. Снимок показывает положение людей в один момент, но не позволяет определить, что она видела.',
+            waiter: 'Официант находится за стойкой. Направление его взгляда на фотографии неоднозначно; нужно отдельно проверить его показания.'
+        };
+        panel.querySelectorAll('[data-photo-focus]').forEach(button => button.addEventListener('click', () => {
+            const focus = button.dataset.photoFocus;
+            if (!Object.hasOwn(observations, focus)) return;
+            panel.querySelectorAll('[data-photo-focus]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+            panel.querySelector('#photo-study-observation').textContent = observations[focus];
+            this.inventory?.addInsight?.(`bar_photo_observed_${focus}`);
+            const count = ['counter', 'woman', 'waiter'].filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).length;
+            const counter = panel.querySelector('#photo-study-count');
+            if (counter) counter.textContent = String(count);
+        }));
     }
 
     _evidenceKind(item) {
