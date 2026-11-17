@@ -1,0 +1,49 @@
+/* Ghost Signal: individually painted scenes, shared premium noir art direction. */
+.scene-art.scene-location-hotel_grand,
+.scene-art.scene-location-bar_joe {
+    min-height: 250px;
+    height: clamp(250px, 31vw, 420px);
+    border: 1px solid rgba(217, 182, 122, .55);
+    border-radius: 4px;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, .46), inset 0 0 0 5px rgba(7, 21, 27, .32);
+    background-color: #081b21;
+    background-position: center 55%;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+.scene-art.scene-location-hotel_grand {
+    background-image: url('../art/world/grand-hotel-noir.webp');
+}
+.scene-art.scene-location-bar_joe {
+    background-image: url('../art/world/joes-bar-noir.webp');
+}
+.scene-art.scene-location-hotel_grand::before,
+.scene-art.scene-location-bar_joe::before {
+    opacity: .13;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(235, 214, 178, .12) 4px);
+}
+.scene-art.scene-location-hotel_grand::after,
+.scene-art.scene-location-bar_joe::after {
+    background: linear-gradient(0deg, rgba(3, 10, 14, .75), transparent 48%),
+        linear-gradient(90deg, transparent 50%, rgba(3, 10, 14, .19));
+}
+.scene-art.scene-location-hotel_grand .scene-art-icon,
+.scene-art.scene-location-bar_joe .scene-art-icon {
+    display: none;
+}
+.scene-art.scene-location-hotel_grand .scene-art-caption,
+.scene-art.scene-location-bar_joe .scene-art-caption {
+    right: 28px;
+    bottom: 18px;
+    padding: 6px 14px;
+    background: rgba(6, 18, 23, .82);
+    border-left: 2px solid #d9b67a;
+    color: #e5d2aa;
+    font: 12px var(--font-mono);
+    letter-spacing: .25em;
+    text-transform: uppercase;
+}
+@media (max-width: 700px) {
+    .scene-art.scene-location-hotel_grand,
+    .scene-art.scene-location-bar_joe { min-height: 230px; height: 230px; background-position: 40% center; }
+}
