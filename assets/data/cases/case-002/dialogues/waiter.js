@@ -239,6 +239,7 @@ const DIALOGUE_WAITER = {
                 text: "Детектив, я уже уточнил показания после фотографии. Я видел Кейна рядом со столиком, но не видел, как порошок попал в стакан. Я не стану снова говорить, будто видел больше.",
                 mood: "guarded",
                 answers: [
+                    { text: "Я изучил твоё положение на снимке. Ты действительно видел, что происходило у стойки?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
@@ -325,6 +326,7 @@ const DIALOGUE_WAITER = {
                 text: "Я уже дал показания о Кейне, детектив. Мне страшно, но я готов уточнить то, что помню, если это поможет установить правду.",
                 mood: "nervous",
                 answers: [
+                    { text: "На снимке твой взгляд неясен. С какого места ты наблюдал за Кейном?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
@@ -891,6 +893,18 @@ const DIALOGUE_WAITER = {
                 },
                 answers: [
                     { text: "Спасибо, что уточнил. Так показания будут точнее.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 8 }
+                ]
+            },
+
+            photo_observation_comparison: {
+                speaker: "npc",
+                text: "На том кадре я за стойкой, но куда смотрел в сам момент съёмки — не вспомню. Я видел Кейна у столика в другое время. Не стоит делать вывод по направлению моего взгляда на одном снимке. Я могу описать маршрут по залу, но не подтвердить по фотографии, что он держал в руке.",
+                mood: "thoughtful",
+                innerThought: "Сопоставление выявляет пробел в хронологии, а не доказанную ложь. Фотография не опровергает присутствие Кейна у столика в другое время.",
+                givesInsight: "bar_photo_testimony_scope_checked",
+                answers: [
+                    { text: "Запишу как неразрешённый вопрос о времени и проверю другие источники.", nextNode: "end_waiter", tone: "calm", cooperationDelta: 3 },
+                    { text: "Понял. Один кадр не устанавливает всю последовательность.", nextNode: "end_waiter", tone: "reassuring" }
                 ]
             },
 
