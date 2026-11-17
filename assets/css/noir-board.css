@@ -1,0 +1,128 @@
+/* Noir archive: interactive paper cards over a hand-painted corkboard. */
+.board-header {
+    gap: 12px;
+    padding: 5px 0 13px;
+    border-bottom: 1px solid rgba(202, 167, 104, .37);
+}
+.board-header .board-title {
+    color: #efd6a4;
+    font: 700 clamp(12px, 1.2vw, 15px)/1.4 var(--font-serif);
+    letter-spacing: .12em;
+}
+.board-layout-status > span {
+    border-color: rgba(202, 167, 104, .35);
+    background: linear-gradient(130deg, rgba(85, 68, 44, .33), rgba(16, 36, 39, .72));
+    color: #e4d7c2;
+}
+.board-canvas {
+    isolation: isolate;
+    background: #76502d url('../art/board/noir-corkboard.webp') center / 100% 100% no-repeat;
+    border: 0;
+    border-radius: 4px;
+    outline: 1px solid #a27b48;
+    box-shadow: 0 20px 35px rgba(0, 0, 0, .36), 0 0 0 5px #1b2425;
+    min-height: 235px;
+    overflow: hidden;
+}
+.board-connections {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+    filter: drop-shadow(1px 2px 1px rgba(24, 6, 5, .78));
+}
+.board-canvas .connection-line {
+    stroke: #4f271f;
+    stroke-width: 2;
+    opacity: .27;
+}
+.board-canvas .connection-line.active {
+    stroke: #b83e35;
+    stroke-width: 3;
+    opacity: .95;
+}
+.board-slots { position: static; }
+.board-canvas .board-slot {
+    z-index: 2;
+    width: clamp(92px, 17%, 134px);
+    min-height: 95px;
+    padding: 14px 7px 8px;
+    background: linear-gradient(151deg, #f4e8cb 0%, #e5d4af 72%, #cbb993 100%);
+    border: 1px solid #a99672;
+    border-radius: 2px;
+    color: #29291f;
+    box-shadow: 2px 5px 2px rgba(44, 23, 12, .3), 4px 9px 16px rgba(20, 13, 8, .28);
+    transition: box-shadow .16s ease, background .16s ease;
+}
+.board-canvas .board-slot:nth-child(3n+1) { rotate: -2deg; }
+.board-canvas .board-slot:nth-child(3n+2) { rotate: 1.6deg; }
+.board-canvas .board-slot:nth-child(3n) { rotate: -.6deg; }
+.board-canvas .board-slot::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    width: 11px;
+    height: 11px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 25%, #f5d7a0 0 12%, #a92827 25%, #681c1b 75%);
+    border: 1px solid #622621;
+    box-shadow: 1px 2px 3px rgba(34, 18, 9, .6);
+}
+.board-canvas .board-slot.slot-filled {
+    background: linear-gradient(150deg, #fff1d1, #e9d8b6 76%, #c5ad82);
+    border-color: #775934;
+}
+.board-canvas .board-slot:hover,
+.board-canvas .board-slot:focus-visible {
+    background: #fff2d5;
+    border-color: #215b5b;
+    box-shadow: 0 0 0 3px #95ddd0, 4px 10px 20px rgba(0, 0, 0, .4);
+}
+.board-canvas .board-slot.drop-target {
+    background: #fff1c8;
+    box-shadow: 0 0 0 3px #a2ded0, 4px 10px 20px rgba(0, 0, 0, .4) !important;
+}
+.board-canvas .board-slot .slot-label {
+    color: #6d5239;
+    border-bottom: 1px solid rgba(110, 80, 47, .3);
+    padding-bottom: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+}
+.board-canvas .board-slot .slot-evidence-name {
+    color: #2f281f;
+    font-size: 12px;
+    line-height: 1.28;
+}
+.board-canvas .board-slot .slot-placeholder { color: #735d43; }
+.board-canvas .board-slot .slot-evidence-icon { font-size: 21px; }
+.board-canvas .board-slot .slot-remove-btn {
+    background: #514136;
+    color: #fff2df;
+    border-radius: 50%;
+    border: 1px solid #8b6d51;
+    cursor: pointer;
+}
+.board-canvas .board-slot .slot-remove-btn:focus-visible { outline: 3px solid #287a76; outline-offset: 2px; }
+.board-legend-line { border-color: #c3483a; transform: rotate(-8deg); }
+.board-connection-hint { color: #c9d3cd; line-height: 1.6; }
+.board-evidence-pool {
+    background: linear-gradient(140deg, rgba(17, 37, 42, .94), rgba(32, 48, 46, .88));
+    border: 1px solid rgba(194, 155, 94, .4);
+    box-shadow: inset 0 1px rgba(237, 204, 154, .1), 0 8px 20px rgba(0, 0, 0, .15);
+}
+.board-evidence-pool h4 { color: #efd6a4; letter-spacing: .04em; }
+.board-evidence-pool .evidence-pool-item { min-height: 44px; }
+.board-evidence-pool .evidence-pool-item[aria-pressed='true'] { border-color: #b4e1d8; }
+@media (max-width: 680px) {
+    .board-canvas { width: 620px; max-width: none; min-height: 300px; aspect-ratio: 3 / 2; }
+    .board-canvas .board-slot { width: 100px; min-height: 92px; }
+    .board-header { align-items: flex-start; }
+    .board-header .terminal-btn { min-height: 42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .board-canvas .board-slot { transition: none; }
+}

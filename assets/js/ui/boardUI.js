@@ -60,7 +60,7 @@ class BoardUI {
         
         this.container.innerHTML = `
             <div class="board-header">
-                <span class="board-title">📋 ДОСКА РАССЛЕДОВАНИЯ</span>
+                <span class="board-title">ДОСЬЕ / ДОСКА РАССЛЕДОВАНИЯ</span>
                 <button id="btn-board-reset" class="terminal-btn btn-sm">🔄 СБРОС</button>
             </div>
 
@@ -73,10 +73,10 @@ class BoardUI {
                     <div class="board-slots" id="board-slots">${this._renderSlots()}</div>
                 </div>
             </div>
-            <p class="board-connection-hint"><span class="board-legend-line" aria-hidden="true"></span> Линия показывает соседство на схеме, а не доказанную связь. Проверяйте выводы в гипотезах и показаниях.</p>
+            <p class="board-connection-hint"><span class="board-legend-line" aria-hidden="true"></span> Красная нить показывает соседство карточек, а не доказанную связь. Проверяйте версии по показаниям и фактам.</p>
             
             <div class="board-evidence-pool">
-                <h4>📦 Доступные улики:</h4>
+                <h4>Картотека / доступные улики</h4>
                 <p class="board-selection-help" id="board-selection-help" role="status" aria-live="polite">Выберите улику, затем нажмите на место на доске. Перетаскивание мышью тоже работает.</p>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
             </div>
@@ -158,7 +158,7 @@ class BoardUI {
                             <span class="slot-evidence-name">${evidence.name}</span>
                             <button class="slot-remove-btn" type="button" data-slot="${slot.id}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
                         ` : `
-                            <span class="slot-placeholder">Нажмите после выбора улики</span>
+                            <span class="slot-placeholder">Место для улики</span>
                         `}
                     </div>
                 </div>
