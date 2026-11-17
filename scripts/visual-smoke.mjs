@@ -42,30 +42,45 @@ try {
         );
         if (documentOverflow > 2) throw new Error(`${name}: horizontal page overflow of ${documentOverflow}px`);
 
-        if (name === 'desktop') {
-            await page.locator('.case-btn[data-case-id="case-001"]').click();
-            await page.locator('#screen-case-active.active').waitFor();
-            await page.locator('#scene-container .scene-art').first().waitFor();
-            await page.screenshot({ path: `${output}/desktop-investigation.png`, fullPage: true });
+        await page.locator('.case-btn[data-case-id="case-001"]').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+        await page.screenshot({ path: `${output}/${name}-investigation.png`, fullPage: true });
 
-            // A first-visit introduction is part of gameplay and covers the sidebar.
-            const introduction = page.locator('#universal-modal.show');
-            // The first case can queue multiple narrative introductions.
-            // Dismiss each as a player would, then verify the UI is unblocked.
-            for (let index = 0; index < 6; index++) {
-                await page.waitForTimeout(750);
-                if (!await introduction.isVisible()) break;
-                await page.screenshot({ path: `${output}/desktop-introduction-${index + 1}.png`, fullPage: true });
-                await introduction.locator('.btn-close').click();
-                await introduction.waitFor({ state: 'hidden' });
+        // Introductory narrative overlays are part of gameplay, on both screen sizes.
+        const introduction = page.locator('#universal-modal.show');
+        for (let index = 0; index < 8; index++) {
+            await page.waitForTimeout(750);
+            if (!await introduction.isVisible()) break;
+            if (index === 0) await page.screenshot({ path: `${output}/${name}-introduction.png`, fullPage: true });
+            await introduction.locator('.btn-close').click();
+            await introduction.waitFor({ state: 'hidden' });
+        }
+        await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
+        await page.locator('#notifications-container .notification').first()
+            .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+
+        for (const [tabId, filename, contentSelector] of [
+            ['tab-npcs', 'contacts', '#tab-npcs.active .npc-card'],
+            ['tab-board', 'board', '#tab-board.active .board-canvas'],
+            ['tab-inventory', 'evidence', '#tab-inventory.active']
+        ]) {
+            const tab = page.locator(`.sidebar-tab[data-tab="${tabId}"]`);
+            await tab.click();
+            await page.locator(contentSelector).first().waitFor();
+            if (name === 'mobile') {
+                const bounds = await tab.boundingBox();
+                if (!bounds || bounds.x < -2 || bounds.x + bounds.width > viewport.width + 2) {
+                    throw new Error(`mobile: ${tabId} navigation is outside the viewport`);
+                }
             }
-            await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
-            // Toasts are temporary; do not force a click through the player's UI.
-            await page.locator('#notifications-container .notification').first()
-                .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-            await page.locator('.sidebar-tab[data-tab="tab-npcs"]').click();
-            await page.locator('#tab-npcs.active .npc-card').first().waitFor();
-            await page.screenshot({ path: `${output}/desktop-contacts.png`, fullPage: true });
+            await page.screenshot({ path: `${output}/${name}-${filename}.png`, fullPage: true });
+        }
+        const investigationOverflow = await page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth
+        );
+        if (investigationOverflow > 2) {
+            throw new Error(`${name}: investigation has horizontal page overflow of ${investigationOverflow}px`);
         }
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
