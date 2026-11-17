@@ -49,13 +49,21 @@ try {
 
         // Introductory narrative overlays are part of gameplay, on both screen sizes.
         const introduction = page.locator('#universal-modal.show');
-        for (let index = 0; index < 8; index++) {
-            await page.waitForTimeout(750);
-            if (!await introduction.isVisible()) break;
-            if (index === 0) await page.screenshot({ path: `${output}/${name}-introduction.png`, fullPage: true });
+        let dismissed = 0;
+        // Follow-up narrative windows can be queued after the previous one closes.
+        // Consider the intro complete only after a short modal-free interval.
+        for (let index = 0; index < 20; index++) {
+            await page.waitForTimeout(1000);
+            if (!await introduction.isVisible()) {
+                await page.waitForTimeout(750);
+                if (!await introduction.isVisible()) break;
+            }
+            if (dismissed === 0) await page.screenshot({ path: `${output}/${name}-introduction.png`, fullPage: true });
             await introduction.locator('.btn-close').click();
             await introduction.waitFor({ state: 'hidden' });
+            dismissed++;
         }
+        if (await introduction.isVisible()) throw new Error(`${name}: introductory modals did not settle`);
         await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
         await page.locator('#notifications-container .notification').first()
             .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
