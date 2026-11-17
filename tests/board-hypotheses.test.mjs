@@ -282,6 +282,39 @@ test('causal links require an explanation and accessible independent leads, neve
     assert.equal('culprit' in restored.hypotheses[1], false);
 });
 
+test('independent causal evidence assessments preserve both sides without declaring causality proven', () => {
+    const objects = {
+        photo: [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }],
+        log: [{ id: 'log-event', minute: 1338, label: 'Log', scope: 'station' }],
+        witness: [], counter: [], hidden: []
+    };
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id =>
+        objects[id] ? { isEvidence: true, timelineFacts: objects[id] } : null });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    const proposal = board.proposeChronologyCause('photo-event', 'log-event', 'What connected them?', 'witness', ['photo', 'log', 'witness']);
+    const id = proposal.id;
+    assert.equal(board.assessChronologyCause(id, 'photo', 'for', 'Not independent', ['photo', 'log']), null);
+    assert.equal(board.assessChronologyCause(id, 'hidden', 'against', 'Not discovered', ['photo', 'log']), null);
+    assert.equal(board.assessChronologyCause(id, 'witness', 'for', '', ['photo', 'log', 'witness']), null);
+    const support = board.assessChronologyCause(id, 'witness', 'for', 'The witness heard a call', ['photo', 'log', 'witness']);
+    assert.equal(support.supporting, 1);
+    assert.equal(support.status, 'unverified');
+    assert.equal(board.assessChronologyCause(id, 'witness', 'against', 'Contradiction', ['photo', 'log', 'witness']), null);
+    const challenge = board.assessChronologyCause(id, 'counter', 'against', 'The log was unrelated', ['photo', 'log', 'counter']);
+    assert.equal(challenge.challenging, 1);
+    assert.equal(challenge.supporting, 1);
+    assert.equal(challenge.status, 'unverified');
+    const restored = vm.runInContext('InvestigationBoard.fromJSON', context)(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.getChronologyCauseAssessment(id).challenging, 1);
+    assert.equal(restored.getChronologyCauseAssessment(id).supporting, 1);
+    assert.equal(restored.hypotheses[0].links.find(link => link.sourceId === 'witness').stance, 'for');
+    assert.equal(restored.hypotheses[0].links.find(link => link.sourceId === 'counter').stance, 'against');
+    assert.equal(restored.getChronologyCauseAssessment('unknown'), null);
+    assert.equal(restored.abandonHypothesis(id), true);
+    assert.equal(restored.assessChronologyCause(id, 'hidden', 'for', 'Too late', ['photo', 'log', 'hidden']), null);
+});
+
 test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {
     const runtime = boardRuntime();
     const board = runtime.create();

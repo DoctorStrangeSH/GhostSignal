@@ -187,6 +187,38 @@ class InvestigationBoard {
         return { id, status: 'unverified', hasIndependentLead: Boolean(support) };
     }
 
+    // Records a player's assessment of an independent source. Supporting
+    // material never upgrades a causal theory to an established fact.
+    assessChronologyCause(hypothesisId, evidenceId, stance, note, discoveredIds = []) {
+        const hypothesis = this.hypotheses.find(h => h.id === hypothesisId && h.status === 'open');
+        const proposal = hypothesis?.history.find(event => event.action === 'causal_link_proposed');
+        const source = typeof evidenceId === 'string' ? evidenceId : '';
+        const explanation = typeof note === 'string' ? note.trim().slice(0, 500) : '';
+        if (!proposal || !['for', 'against'].includes(stance) || !explanation ||
+            !Array.isArray(discoveredIds) || !discoveredIds.includes(source) || !getObjectById(source)?.isEvidence) return null;
+        const facts = this.getEvidenceChronology(discoveredIds);
+        const cause = facts.find(f => f.id === proposal.causeId);
+        const effect = facts.find(f => f.id === proposal.effectId);
+        if (!cause || !effect || source === cause.evidenceId || source === effect.evidenceId) return null;
+        const existing = hypothesis.history.find(event => event.action === 'causal_evidence_assessed' && event.evidenceId === source);
+        if (existing) return null;
+        const linked = hypothesis.links.find(link => link.kind === 'evidence' && link.sourceId === source);
+        if (linked) linked.stance = stance;
+        else hypothesis.links.push({ kind: 'evidence', sourceId: source, stance });
+        hypothesis.history.push({ action: 'causal_evidence_assessed', evidenceId: source, stance, note: explanation });
+        events.emit('board:updated', { action: 'causal_evidence_assessed', id: hypothesisId });
+        return this.getChronologyCauseAssessment(hypothesisId);
+    }
+
+    getChronologyCauseAssessment(hypothesisId) {
+        const hypothesis = this.hypotheses.find(h => h.id === hypothesisId);
+        if (!hypothesis?.history.some(event => event.action === 'causal_link_proposed')) return null;
+        const assessments = hypothesis.history.filter(event => event.action === 'causal_evidence_assessed');
+        return { status: 'unverified', supporting: assessments.filter(event => event.stance === 'for').length,
+            challenging: assessments.filter(event => event.stance === 'against').length,
+            assessments: assessments.map(event => ({ ...event })) };
+    }
+
     // Проверить, сделаны ли правильные выводы
     addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);
