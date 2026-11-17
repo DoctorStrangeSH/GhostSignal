@@ -314,10 +314,32 @@ class BoardUI {
                 <label for="chronology-second">Вторая отметка</label>
                 <select id="chronology-second" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <button id="chronology-compare" type="button" class="terminal-btn">СОПОСТАВИТЬ ВРЕМЯ</button><div id="chronology-result" aria-live="polite"></div></div>` : ''}
+            ${facts.length > 1 ? `<div class="testimony-compare"><h4>Моя версия порядка событий</h4>
+                <label for="chronology-order-first">Первое событие</label>
+                <select id="chronology-order-first" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <label for="chronology-order-relation">Предполагаемый порядок</label>
+                <select id="chronology-order-relation" class="terminal-input"><option value="before">Произошло раньше</option><option value="after">Произошло позже</option></select>
+                <label for="chronology-order-second">Второе событие</label>
+                <select id="chronology-order-second" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <button id="chronology-order-save" type="button" class="terminal-btn">ЗАПИСАТЬ ВЕРСИЮ</button>
+                <p class="hypothesis-help">Версия попадёт в журнал гипотез и останется доступной после загрузки. Согласование времени ещё не доказывает причинную связь.</p>
+                <div id="chronology-order-result" aria-live="polite"></div></div>` : ''}
         </section>`;
     }
 
     _bindChronologyEvents() {
+        this.container.querySelector('#chronology-order-save')?.addEventListener('click', () => {
+            const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
+            const result = this.board.proposeChronologyOrder(
+                this.container.querySelector('#chronology-order-first')?.value,
+                this.container.querySelector('#chronology-order-second')?.value,
+                this.container.querySelector('#chronology-order-relation')?.value, ids);
+            const target = this.container.querySelector('#chronology-order-result');
+            if (target) target.textContent = !result ? 'Выберите два разных доступных события.' :
+                result.status === 'consistent' ? 'Версия сохранена: порядок согласуется с точными отметками, но связь событий не доказана.' :
+                result.status === 'conflicts' ? 'Версия сохранена: порядок расходится с точными отметками. Пересмотрите источники.' :
+                'Версия сохранена как непроверенная: время одного из событий неизвестно или приблизительно.';
+        });
         this.container.querySelector('#chronology-compare')?.addEventListener('click', () => {
             const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
             const comparison = this.board.compareChronologyFacts(

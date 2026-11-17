@@ -141,6 +141,29 @@ class InvestigationBoard {
                 : 'Записи относятся к разным объектам. Совпадение времени не устанавливает их связь, личность участника или противоречие.' };
     }
 
+    // A player-authored order is a hypothesis, not a factual verdict. In
+    // particular an approximate timestamp cannot establish strict order.
+    proposeChronologyOrder(firstId, secondId, relation, discoveredIds = []) {
+        if (!['before', 'after'].includes(relation) || firstId === secondId) return null;
+        const facts = this.getEvidenceChronology(discoveredIds);
+        const first = facts.find(f => f.id === firstId);
+        const second = facts.find(f => f.id === secondId);
+        if (!first || !second) return null;
+        const timed = first.minute !== null && second.minute !== null;
+        const exact = timed && first.certainty === 'recorded' && second.certainty === 'recorded';
+        const agrees = exact && (relation === 'before' ? first.minute < second.minute : first.minute > second.minute);
+        const disagrees = exact && !agrees;
+        const status = agrees ? 'consistent' : disagrees ? 'conflicts' : 'unverified';
+        const relationText = relation === 'before' ? 'раньше' : 'позже';
+        const id = this.addHypothesis(`Хронология: «${first.label}» ${relationText}, чем «${second.label}»`);
+        if (!id) return null;
+        this.linkHypothesis(id, 'evidence', first.evidenceId, 'pending');
+        if (first.evidenceId !== second.evidenceId) this.linkHypothesis(id, 'evidence', second.evidenceId, 'pending');
+        const hypothesis = this.hypotheses.find(h => h.id === id);
+        hypothesis.history.push({ action: 'chronology_reviewed', status, firstId, secondId, relation });
+        return { id, status };
+    }
+
     // Проверить, сделаны ли правильные выводы
     addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);

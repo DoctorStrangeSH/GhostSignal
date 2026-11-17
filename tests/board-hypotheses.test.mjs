@@ -224,6 +224,33 @@ test('document chronology uses discovered evidence only and does not infer an al
     assert.equal('contradiction' in approximate, false);
 });
 
+test('player chronology proposals persist as sourced hypotheses without turning time order into guilt', () => {
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id => ({ isEvidence: true,
+        timelineFacts: id === 'photo' ? [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }] :
+            id === 'tram' ? [{ id: 'tram-event', minute: 1335, label: 'Tram', scope: 'stop', certainty: 'approximate' }] :
+            id === 'log' ? [{ id: 'log-event', minute: 1338, label: 'Log', scope: 'station', certainty: 'recorded' }] :
+            id === 'ticket' ? [{ id: 'ticket-event', minute: 1325, label: 'Ticket', scope: 'booth', certainty: 'recorded' }] : []
+    }) });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    assert.equal(board.proposeChronologyOrder('photo-event', 'log-event', 'before', ['log']), null);
+    assert.equal(board.proposeChronologyOrder('log-event', 'log-event', 'before', ['log']), null);
+    const unknown = board.proposeChronologyOrder('photo-event', 'log-event', 'before', ['photo', 'log']);
+    assert.equal(unknown.status, 'unverified');
+    const approximate = board.proposeChronologyOrder('tram-event', 'log-event', 'before', ['tram', 'log']);
+    assert.equal(approximate.status, 'unverified');
+    const consistent = board.proposeChronologyOrder('ticket-event', 'log-event', 'before', ['ticket', 'log']);
+    assert.equal(consistent.status, 'consistent');
+    const conflict = board.proposeChronologyOrder('ticket-event', 'log-event', 'after', ['ticket', 'log']);
+    assert.equal(conflict.status, 'conflicts');
+    const saved = JSON.parse(JSON.stringify(board.toJSON()));
+    const restored = vm.runInContext('InvestigationBoard.fromJSON', context)(saved);
+    assert.equal(restored.hypotheses.length, 4);
+    assert.ok(restored.hypotheses.every(h => h.links.every(l => l.stance === 'pending')));
+    assert.equal(restored.hypotheses[3].history.at(-1).status, 'conflicts');
+    assert.equal('culprit' in restored.hypotheses[3], false);
+});
+
 test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
