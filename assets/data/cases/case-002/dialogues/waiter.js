@@ -25,6 +25,9 @@ const DIALOGUE_WAITER = {
     tree: {
         start: "greeting",
         entryRules: [
+            { condition: "all:accusation_status:thomas-photo-testimony-lie:pending&hasInsight:thomas_photo_accusation_apology", nodeId: "photo_accusation_followup" },
+            { condition: "accusation_status:thomas-photo-testimony-lie:pending", nodeId: "photo_accusation_pending" },
+            { condition: "all:accusation_status:thomas-photo-testimony-lie:retracted&not:has_visited_node:photo_accusation_retracted_opening", nodeId: "photo_accusation_retracted_opening" },
             { condition: "accusation_status:thomas-lied-about-poisoning:pending", nodeId: "accused_after_revision_opening" },
             { condition: "accusation_status:thomas-lied-about-poisoning:false", nodeId: "apology_acknowledged_opening" },
             { condition: "all:promise_status:thomas-family-protection:fulfilled&not:has_visited_node:promise_kept_opening", nodeId: "promise_kept_opening" },
@@ -44,6 +47,63 @@ const DIALOGUE_WAITER = {
             { condition: "all:pressure_at_least:60&not:hasInsight:thomas_family_protected&not:npc_action_received:joe-informs-thomas-mills-requires-documents", nodeId: "overwhelmed_opening" }
         ],
         nodes: {
+            photo_accusation_pending: {
+                speaker: "npc",
+                text: "Вы назвали меня лжецом из-за одной фотографии. Прежде чем мы продолжим, признайте: вы не установили время событий и не доказали, что я сознательно обманул вас.",
+                mood: "hurt",
+                answers: [
+                    { text: "Да. Я поспешил с обвинением. Прости, Томас. Я отдельно проверю источники.", nextNode: "photo_accusation_apology", tone: "reassuring" },
+                    { text: "Сейчас не стану требовать от тебя новых показаний.", nextNode: "end_waiter_guarded", tone: "calm" }
+                ]
+            },
+            photo_accusation_apology: {
+                speaker: "npc",
+                text: "Я услышал извинение. Но в вашем деле всё ещё записано обвинение, а слухи уже могли разойтись. Пока запись не исправлена, я не стану считать вопрос закрытым. И даже после этого доверие не вернётся сразу.",
+                mood: "guarded",
+                givesInsight: "thomas_photo_accusation_apology",
+                answers: [
+                    { text: "Понимаю. Вернусь, чтобы отдельно исправить официальную запись.", nextNode: "end_waiter_guarded", tone: "calm" }
+                ]
+            },
+            photo_accusation_followup: {
+                speaker: "npc",
+                text: "Вы снова здесь. Если хотите исправить ошибку, снимите обвинение письменно. Фото подтверждает, где я стоял в момент съёмки, но не доказывает, что я обманывал вас о другом моменте. Не надо записывать и мою невиновность как доказанную одним кадром.",
+                mood: "cautious",
+                answers: [
+                    {
+                        text: "Официально отзываю обвинение: этих источников недостаточно для вывода об умышленной лжи.",
+                        nextNode: "photo_accusation_retraction",
+                        tone: "procedural",
+                        resolveAccusation: {
+                            id: "thomas-photo-testimony-lie",
+                            outcome: "retracted",
+                            reason: "Сопоставление одного снимка и показаний не доказывает умышленную ложь; детектив снял необоснованное обвинение."
+                        },
+                        report: {
+                            id: "detective-retracted-thomas-photo-accusation",
+                            kind: "detective_behavior", networkPropagation: true,
+                            targetNpcId: "waiter", sourceName: "Томас",
+                            text: "Детектив публично отозвал обвинение во лжи, которое сделал после сопоставления снимка и моих показаний."
+                        }
+                    },
+                    { text: "Мне нужно разобраться с записями. Не буду давить на тебя.", nextNode: "end_waiter_guarded", tone: "calm" }
+                ]
+            },
+            photo_accusation_retraction: {
+                speaker: "npc", mood: "guarded",
+                text: "Спасибо, что исправили запись, а не ограничились словами. Но я помню обвинение. Теперь я готов обсуждать только вопросы с проверяемыми источниками, и не обещаю, что сразу снова стану вам доверять.",
+                answers: [
+                    { text: "Справедливо. Буду проверять данные до выводов.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                ]
+            },
+            photo_accusation_retracted_opening: {
+                speaker: "npc", mood: "cautious",
+                text: "Я помню, что вы сняли обвинение о фотографии. Это важный шаг, но прежнего доверия пока нет. Если продолжим расследование, отделяйте увиденное от предположений.",
+                answers: [
+                    { text: "Согласен. Поговорим только о том, что можно подтвердить.", nextNode: "greeting", tone: "calm" },
+                    { text: "Не стану торопить тебя. До встречи.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                ]
+            },
             thomas_declines_document_offer: {
                 speaker: "npc", mood: "guarded",
                 text: "Джо предлагал проверить журнал, но я отказался. После всего случившегося мне трудно довериться ему даже в таком деле. Это не значит, что записи бесполезны — просто я не готов разбирать их вместе с Джо.",
