@@ -5,14 +5,14 @@ class MapRenderer {
         this._markers = [];
         this._init();
     }
-    
+
     setLocationManager(manager) {
         this.locationManager = manager;
     }
-    
+
     _init() {
         if (!this.container) return;
-        
+
         this.container.innerHTML = `
             <div class="map-wrapper">
                 <div class="map-background">
@@ -27,45 +27,47 @@ class MapRenderer {
                 </div>
             </div>
         `;
-        
+
         this.markersContainer = this.container.querySelector('.map-markers');
     }
-    
+
     render() {
         if (!this.locationManager || !this.markersContainer) return;
-        
+
         const locations = this.locationManager.getAvailableMapLocations();
         this.markersContainer.innerHTML = '';
         this._markers = [];
-        
+
         locations.forEach(location => {
             const marker = this._createMarker(location);
             this.markersContainer.appendChild(marker.element);
             this._markers.push(marker);
         });
     }
-    
+
     _createMarker(location) {
-        const el = document.createElement('div');
+        const el = document.createElement('button');
+        el.type = 'button';
         el.className = 'map-marker';
         el.style.left = location.mapPosition.x + '%';
         el.style.top = location.mapPosition.y + '%';
-        
+        el.setAttribute('aria-label', `${location.name}: ${location.isCurrent ? 'вы здесь' : location.isAvailable ? 'доступно' : 'закрыто'}`);
+
         if (location.isCurrent) el.classList.add('marker-current');
         if (!location.isAvailable) el.classList.add('marker-locked');
         if (location.isAvailable && !location.isCurrent) el.classList.add('marker-available');
-        
+
         el.innerHTML = `
             <div class="marker-pin">
                 <span class="marker-icon">${location.icon}</span>
             </div>
             <div class="marker-label">${location.name}</div>
             <div class="marker-status">
-                ${location.isCurrent ? '📍 ВЫ ЗДЕСЬ' : 
-                  location.isAvailable ? '🟢 ОТКРЫТО' : '🔴 ЗАКРЫТО'}
+                ${location.isCurrent ? 'ВЫ ЗДЕСЬ' :
+                  location.isAvailable ? 'ОТКРЫТО' : 'ЗАКРЫТО'}
             </div>
         `;
-        
+
         // КЛИК — СРАЗУ ПЕРЕХОДИМ
         el.addEventListener('click', () => {
             if (location.isAvailable || location.isUnlocked) {
@@ -81,17 +83,17 @@ class MapRenderer {
                 });
             }
         });
-        
+
         el.addEventListener('mouseenter', () => {
             el.querySelector('.marker-label').style.opacity = '1';
         });
-        
+
         el.addEventListener('mouseleave', () => {
             if (!location.isCurrent) {
                 el.querySelector('.marker-label').style.opacity = '0.7';
             }
         });
-        
+
         return { element: el, location };
     }
 }
