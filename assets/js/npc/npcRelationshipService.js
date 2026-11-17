@@ -132,6 +132,7 @@ class NPCRelationshipService {
                 const conditions = item.conditions && typeof item.conditions === 'object' ? item.conditions : item;
                 return {
                     id: item.id,
+                    decisionGroup: typeof item.decisionGroup === 'string' && /^[a-z0-9_:-]{1,64}$/i.test(item.decisionGroup) ? item.decisionGroup : null,
                     relationshipId: item.relationshipId,
                     fromNpcId: item.fromNpcId,
                     goalId: typeof item.goalId === 'string' ? item.goalId : null,
@@ -374,6 +375,9 @@ class NPCRelationshipService {
 
     _conditionsMet(rule) {
         const conditions = rule.conditions;
+        if (rule.decisionGroup && this.caseConfig.autonomousInteractions.some(other =>
+            other.id !== rule.id && other.decisionGroup === rule.decisionGroup &&
+            (this.cases[this.currentCaseId]?.rules?.[other.id]?.occurrences || 0) > 0)) return false;
         const trust = this.memoryService?.getRelationshipTrust(rule.fromNpcId, rule.toNpcId) ?? 50;
         const fromPressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
         const toPressure = this.memoryService?.getPressure(rule.toNpcId) ?? 0;

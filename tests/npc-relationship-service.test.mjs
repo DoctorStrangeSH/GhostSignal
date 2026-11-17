@@ -89,6 +89,54 @@ function createHarness(overrides = {}) {
     };
 }
 
+test("exclusive NPC decisions follow trust and pressure and persist after restoring a save", () => {
+    const config = {
+        bonds: [{ id: 'a-b', fromNpcId: 'a', toNpcId: 'b', trust: 70, reciprocal: true }],
+        autonomousInteractions: [
+            { id: 'offer', relationshipId: 'a-b', fromNpcId: 'a', toNpcId: 'b',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 30,
+                everyMinutes: 30, maxOccurrences: 1, trustDelta: 0 },
+            { id: 'accept', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'support', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer',
+                minTrust: 60, fromPressureBelow: 55 },
+            { id: 'decline', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'avoidance', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer', maxTrust: 59 },
+            { id: 'delay', decisionGroup: 'reply', relationshipId: 'a-b', fromNpcId: 'b', toNpcId: 'a',
+                interaction: 'avoidance', channel: 'message', initialDelayMinutes: 60,
+                everyMinutes: 30, maxOccurrences: 1, requiresReceivedActionId: 'offer',
+                minTrust: 60, fromPressureAtLeast: 55 }
+        ]
+    };
+    for (const [trust, pressure, winner] of [
+        [70, 0, 'accept'], [45, 0, 'decline'], [70, 75, 'delay']
+    ]) {
+        const { memory, relationships, context, advance, caseData } = createHarness({
+            caseData: { npcRelationships: config }
+        });
+        memory.setRelationshipTrust('b', 'a', trust);
+        memory.cases[memory.currentCaseId].b.pressure = pressure;
+        advance(30);
+        assert.equal(relationships.hasReceivedInteraction('b', 'offer'), true);
+        advance(30);
+        for (const id of ['accept', 'decline', 'delay']) {
+            assert.equal(relationships.hasCompletedInteraction('b', id), id === winner, `${winner}: ${id}`);
+        }
+        context.savedDecision = relationships.toJSON();
+        context.savedDecisionMemory = memory;
+        const restored = vm.runInContext(
+            'NPCRelationshipService.fromJSON(savedDecision, savedDecisionMemory, npcManager, clock)', context
+        );
+        restored.setCase(caseData);
+        assert.equal(restored.hasCompletedInteraction('b', winner), true);
+        advance(180);
+        assert.equal(['accept', 'decline', 'delay'].filter(id =>
+            relationships.hasCompletedInteraction('b', id)).length, 1,
+            'changing relationship stats must not allow a second decision');
+    }
+});
+
 test("an autonomous document-check offer requires the actor's received rumor and remains one-time after restore", () => {
     const ruleId = "joe-offers-document-check-after-visitor-warning";
     const harness = createHarness({ caseData: {

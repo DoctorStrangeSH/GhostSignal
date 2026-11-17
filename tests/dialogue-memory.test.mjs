@@ -76,9 +76,9 @@ test("Thomas acknowledges Joe's document offer without claiming an unverified re
     const { engine, memory } = createDialogueHarness();
     let received = false;
     engine.setRelationshipService({
-        hasReceivedInteraction(npcId, ruleId) {
+        hasCompletedInteraction(npcId, ruleId) {
             return received && npcId === 'waiter' &&
-                ruleId === 'joe-offers-document-check-after-visitor-warning';
+                ruleId === 'thomas-accepts-joe-document-check';
         },
         toJSON() { return {}; }
     });
@@ -100,6 +100,25 @@ test("Thomas acknowledges Joe's document offer without claiming an unverified re
     engine.reset();
     engine.startDialogue('dialogue-waiter');
     assert.notEqual(engine.currentNode.id, 'thomas_responds_to_document_offer');
+});
+
+test("Thomas communicates a low-trust refusal or high-pressure delay only after his decision", () => {
+    for (const [action, expectedNode] of [
+        ['thomas-declines-joe-document-check-low-trust', 'thomas_declines_document_offer'],
+        ['thomas-defers-joe-document-check-under-pressure', 'thomas_defers_document_offer']
+    ]) {
+        const { engine } = createDialogueHarness();
+        engine.setRelationshipService({
+            hasCompletedInteraction(npcId, ruleId) {
+                return npcId === 'waiter' && ruleId === action;
+            },
+            toJSON() { return {}; }
+        });
+        assert.equal(engine.getPendingInitiative('dialogue-waiter')?.nodeId, expectedNode);
+        engine.startDialogue('dialogue-waiter');
+        assert.equal(engine.currentNode.id, expectedNode);
+        assert.equal(engine.getPendingInitiative('dialogue-waiter'), null);
+    }
 });
 
 function createDialogueHarness() {

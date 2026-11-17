@@ -32,7 +32,9 @@ const DIALOGUE_WAITER = {
             { condition: "all:latest_promise_outcome:thomas-family-protection:broken&not:has_visited_node:past_broken_promise_opening", nodeId: "past_broken_promise_opening" },
             { condition: "all:latest_promise_outcome:thomas-family-protection:kept&not:has_visited_node:past_kept_promise_opening", nodeId: "past_kept_promise_opening" },
             { condition: "all:npc_action_received:joe-reassures-thomas-after-lora-update&not:has_visited_node:joe_after_lora_support_opening", nodeId: "joe_after_lora_support_opening" },
-            { condition: "all:npc_action_received:joe-offers-document-check-after-visitor-warning&not:has_visited_node:thomas_responds_to_document_offer", nodeId: "thomas_responds_to_document_offer", initiative: true, initiativeLabel: "Расскажет о предложении Джо" },
+            { condition: "all:npc_action_completed:thomas-accepts-joe-document-check&not:has_visited_node:thomas_responds_to_document_offer", nodeId: "thomas_responds_to_document_offer", initiative: true, initiativeLabel: "Согласился на проверку" },
+            { condition: "all:npc_action_completed:thomas-declines-joe-document-check-low-trust&not:has_visited_node:thomas_declines_document_offer", nodeId: "thomas_declines_document_offer", initiative: true, initiativeLabel: "Не доверяет Джо" },
+            { condition: "all:npc_action_completed:thomas-defers-joe-document-check-under-pressure&not:has_visited_node:thomas_defers_document_offer", nodeId: "thomas_defers_document_offer", initiative: true, initiativeLabel: "Просит время" },
             { condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&heard_rumor:joe-reports-detective-visitor-correction&not:has_visited_node:visitor_correction_initiative", nodeId: "visitor_correction_initiative", initiative: true, initiativeLabel: "Хочет уточнить показания" },
             { condition: "all:heard_rumor:joe-warns-thomas-of-visitor-overclaim&not:has_visited_node:visitor_caution_initiative", nodeId: "visitor_caution_initiative", initiative: true, initiativeLabel: "Есть предупреждение" },
             { condition: "has_claim:waiter-kane-at-poisoning-reconsidered", nodeId: "reconsidered_testimony_opening" },
@@ -42,6 +44,22 @@ const DIALOGUE_WAITER = {
             { condition: "all:pressure_at_least:60&not:hasInsight:thomas_family_protected&not:npc_action_received:joe-informs-thomas-mills-requires-documents", nodeId: "overwhelmed_opening" }
         ],
         nodes: {
+            thomas_declines_document_offer: {
+                speaker: "npc", mood: "guarded",
+                text: "Джо предлагал проверить журнал, но я отказался. После всего случившегося мне трудно довериться ему даже в таком деле. Это не значит, что записи бесполезны — просто я не готов разбирать их вместе с Джо.",
+                answers: [
+                    { text: "Понимаю. Тебя никто не заставляет.", nextNode: "greeting", tone: "reassuring" },
+                    { text: "Я найду другой способ проверить документы.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
+            thomas_defers_document_offer: {
+                speaker: "npc", mood: "tired",
+                text: "Я знаю, что Джо хочет помочь с журналом. Но сейчас у меня нет сил снова возвращаться к этому вечеру. Я попросил его подождать. Это не отказ от правды — мне просто нужно время.",
+                answers: [
+                    { text: "Не буду торопить. Проверим записи без давления.", nextNode: "greeting", tone: "reassuring" },
+                    { text: "Отдохни, Томас. Вернёмся к этому позже.", nextNode: "end_waiter", tone: "calm" }
+                ]
+            },
             thomas_responds_to_document_offer: {
                 speaker: "npc",
                 text: "Джо предложил вместе сверить журнал посетителей. Я согласился посмотреть записи, если это можно сделать спокойно и без новых обвинений. Пока я не видел журнала и не могу подтвердить, кто приходил. Даже если там найдётся запись, её ещё нужно сопоставить с другими свидетельствами.",
