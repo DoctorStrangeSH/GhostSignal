@@ -36,6 +36,7 @@ registerData('npc', {
         role: "Сестра Анны",
         description: "Рыжеволосая женщина в алом платье. Появляется и исчезает как тень. Сестра Анны, готовая на всё ради неё.",
         icon: "💃",
+        portrait: "assets/art/portraits/eva-kovalyova.webp",
         mood: "suspicious",
         psychology: {
             opennessThreshold: 62, pressureThreshold: 60, calmPressureLimit: 14,
@@ -121,6 +122,7 @@ registerData('npc', {
         role: "Официант бара",
         description: "Молодой парень, подрабатывает в баре по вечерам. Видел всё, но боится говорить — Кейн угрожал его семье.",
         icon: "🧑‍🍳",
+        portrait: "assets/art/portraits/waiter-thomas.webp",
         mood: "scared",
         psychology: {
             opennessThreshold: 56, pressureThreshold: 28, calmPressureLimit: 7,
