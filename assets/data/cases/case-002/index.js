@@ -415,6 +415,17 @@ const CASE_002 = {
                 summary: "Джо поинтересовался, всё ли в порядке у Томаса."
             },
             {
+                id: "joe-offers-document-check-after-visitor-warning", relationshipId: "joe-thomas-colleagues",
+                fromNpcId: "bartender", toNpcId: "waiter", interaction: "support",
+                channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 90, everyMinutes: 120, retryMinutes: 20, maxOccurrences: 1,
+                fromRumorId: "detective-overstated-visitor-identity",
+                fromRumorAgeMinutesAtLeast: 30,
+                minTrust: 55, fromPressureBelow: 70,
+                trustDelta: 1, reciprocalTrustDelta: 1, toCooperationDelta: 2,
+                summary: "После предупреждения Лоры Джо предложил Томасу вместе проверить журнал посетителей. Он не утверждал, кто приходил: сначала нужны записи и свидетели."
+            },
+            {
                 id: "thomas-snaps-at-joe", relationshipId: "joe-thomas-colleagues",
                 fromNpcId: "waiter", toNpcId: "bartender", interaction: "conflict",
                 channel: "in_person", requiresSameLocation: true,

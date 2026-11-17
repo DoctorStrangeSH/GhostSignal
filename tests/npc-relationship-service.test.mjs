@@ -89,6 +89,48 @@ function createHarness(overrides = {}) {
     };
 }
 
+test("an autonomous document-check offer requires the actor's received rumor and remains one-time after restore", () => {
+    const ruleId = "joe-offers-document-check-after-visitor-warning";
+    const harness = createHarness({ caseData: {
+        id: "case-relationship-test", npcs: ["a", "b"],
+        npcRelationships: {
+            bonds: [{ id: "a-b", fromNpcId: "a", toNpcId: "b", relationship: "colleagues", trust: 60, reciprocal: true }],
+            autonomousInteractions: [{
+                id: ruleId, relationshipId: "a-b", fromNpcId: "a", toNpcId: "b",
+                interaction: "support", channel: "in_person", requiresSameLocation: true,
+                initialDelayMinutes: 30, everyMinutes: 60, maxOccurrences: 1,
+                fromRumorId: "overstated-identity", fromRumorAgeMinutesAtLeast: 60,
+                minTrust: 55, trustDelta: 1, reciprocalTrustDelta: 1,
+                summary: "Алекс предлагает проверить документы, не объявляя слух фактом."
+            }]
+        }
+    }});
+    const { memory, relationships, context, advance } = harness;
+    assert.equal(advance(30).changed, 0, "the action must not happen before the actor hears the report");
+    const received = memory.receiveSocialRumor("a", {
+        id: "overstated-identity", kind: "detective_behavior", text: "Неуверенное опознание"
+    }, {
+        fromNpcId: "b", originalSourceNpcId: "b", recipientTrust: 80,
+        sourceEvent: { dialogueId: "source", nodeId: "warning", answerText: "Проверим запись" },
+        receivedAtGameMinute: 510
+    });
+    assert.equal(received.received, true);
+    assert.equal(advance(30).changed, 0, "the witness needs time to reflect on the received report");
+    assert.equal(advance(30).changed, 1);
+    assert.equal(relationships.hasCompletedInteraction("a", ruleId), true);
+    assert.equal(memory.getRelationshipTrust("a", "b"), 61);
+
+    context.savedRelationshipState = relationships.toJSON();
+    const restored = vm.runInContext(
+        "NPCRelationshipService.fromJSON(savedRelationshipState, null, npcManager, clock)", context
+    );
+    restored.setDependencies(memory, context.npcManager, context.clock);
+    restored.setCase(harness.caseData);
+    assert.equal(restored.hasCompletedInteraction("a", ruleId), true);
+    assert.equal(restored.processDueInteractions().changed, 0,
+        "loading must not repeat a completed off-screen action");
+});
+
 test("NPCRelationshipService initializes authored bonds but hides them until evidence is found", () => {
     const { memory, relationships, network } = createHarness();
     assert.equal(memory.getRelationshipTrust("a", "b"), 60);
