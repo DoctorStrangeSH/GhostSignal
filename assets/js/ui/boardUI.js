@@ -426,6 +426,7 @@ class BoardUI {
                     <h3 id="hypothesis-title">🧩 ГИПОТЕЗЫ</h3>
                 </div><span class="testimony-count">${hypotheses.length} версий</span></div>
                 <p class="hypothesis-help">Записи отражают ваши предположения. Игра не подтверждает их автоматически.</p>
+                ${this._renderEvidenceComparison(evidenceIds, statements)}
                 <form id="hypothesis-create-form" class="hypothesis-form">
                     <label for="hypothesis-new-text">Новая версия событий</label>
                     <textarea id="hypothesis-new-text" class="terminal-input" maxlength="240" rows="2" required placeholder="Что, по-вашему, произошло?"></textarea>
@@ -509,7 +510,49 @@ class BoardUI {
         `;
     }
 
+    _renderEvidenceComparison(evidenceIds, statements) {
+        const validStatements = statements.filter(item => item.status !== 'superseded');
+        if (!evidenceIds.length || !validStatements.length) return '<p class="hypothesis-help">Для сопоставления нужны найденная улика и действующее показание свидетеля.</p>';
+        return `<section class="hypothesis-source-review evidence-comparison" aria-label="Сопоставление двух источников">
+            <strong>СОПОСТАВИТЬ ИСТОЧНИКИ</strong>
+            <p>Выберите найденную улику и действующее показание. Сформулируйте свою версию: совпадение, расхождение или нехватка сведений — это оценка детектива, не вердикт игры.</p>
+            <form id="evidence-comparison-form" class="hypothesis-form">
+                <label for="comparison-evidence">Улика</label>
+                <select id="comparison-evidence" class="terminal-input" required><option value="">Выберите улику</option>${evidenceIds.map(id => `<option value="${this._escapeHTML(id)}">${this._escapeHTML(getObjectById(id)?.name || id)}</option>`).join('')}</select>
+                <label for="comparison-statement">Показание</label>
+                <select id="comparison-statement" class="terminal-input" required><option value="">Выберите показание</option>${validStatements.map(item => `<option value="${this._escapeHTML(item.id)}">${this._escapeHTML((item.sourceName || item.npcId) + ' — ' + (item.summary || item.value))}</option>`).join('')}</select>
+                <label for="comparison-result">Предварительный вывод</label>
+                <select id="comparison-result" class="terminal-input"><option value="pending">Недостаточно информации</option><option value="for">Согласуются</option><option value="against">Есть расхождение</option></select>
+                <label for="comparison-note">Ваша формулировка</label>
+                <textarea id="comparison-note" class="terminal-input" maxlength="240" rows="2" required placeholder="Что именно совпадает, расходится или пока неизвестно?"></textarea>
+                <button class="terminal-btn" type="submit">СОХРАНИТЬ СОПОСТАВЛЕНИЕ</button>
+            </form>
+        </section>`;
+    }
+
+    _saveEvidenceComparison(evidenceId, statementId, stance, note) {
+        const available = new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])]);
+        const statement = (this.memoryService?.getStatements?.() || []).find(item => item.id === statementId && item.status !== 'superseded');
+        if (!available.has(evidenceId) || !getObjectById(evidenceId) || !statement || !['for', 'against', 'pending'].includes(stance) || !String(note || '').trim()) return false;
+        const id = this.board?.addHypothesis(String(note).trim());
+        if (!id) return false;
+        this.board.linkHypothesis(id, 'evidence', evidenceId, 'pending');
+        this.board.linkHypothesis(id, 'statement', statementId, stance);
+        this._expandedTools?.add('hypotheses');
+        return true;
+    }
+
     _bindHypothesisEvents() {
+        this.container.querySelector('#evidence-comparison-form')?.addEventListener('submit', e => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const evidenceId = form.querySelector('#comparison-evidence')?.value;
+            const statementId = form.querySelector('#comparison-statement')?.value;
+            const stance = form.querySelector('#comparison-result')?.value;
+            const note = form.querySelector('#comparison-note')?.value;
+            if (!this._saveEvidenceComparison(evidenceId, statementId, stance, note))
+                events.emit('notification:show', { message: 'Выберите найденную улику и действующее показание, затем сформулируйте вывод.', type: 'warning', duration: 3000 });
+        });
         this.container.querySelectorAll('.inquiry-start').forEach(button => button.addEventListener('click', () => {
             const statements = this.memoryService?.getStatements?.() || [];
             this.board?.startSourceInquiry(button.dataset.hypothesis, button.dataset.rumor, statements);
