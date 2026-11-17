@@ -71,12 +71,14 @@ registerData('object', {
     },
     bar_photo: {
         id: "bar_photo", name: "Фотография из бара", type: "evidence",
+        timelineFacts: [{ id: "bar-photo-undated", minute: null, label: "Сделан снимок внутри бара", scope: "bar-interior", certainty: "unknown", caveat: "Время экспозиции не установлено; положение Томаса относится лишь к моменту съёмки" }],
         description: "Снимок бара в ночь отравления. Кейн у стойки, Анна отворачивается, пузырёк исчезает.",
         icon: "📸", takeable: true, isEvidence: true, weight: 0,
         interactions: { examine: { text: "Кейн поднимает небольшой предмет через салфетку и убирает его в карман. Сам предмет на кадре неразличим, но время совпадает с рассказами Евы и официанта. Снимок согласуется с частью рассказа Евы, но сам по себе не подтверждает ни кражу пузырька, ни точность показаний официанта.", timeCost: 5, givesInsight: "kane_caught" } }
     },
     tram_route_entry: {
         id: "tram_route_entry", name: "Выписка из путевого листа трамвая №4", type: "evidence",
+        timelineFacts: [{ id: "tram-stop-approx-2215", minute: 22 * 60 + 15, label: "Трамвай №4 задержался у остановки возле бара", scope: "tram-stop", certainty: "approximate", caveat: "Время приблизительное; пассажир не опознан, события внутри бара не подтверждены" }],
         description: "Запись дежурного кондуктора: задержка у остановки возле бара около 22:15 и пассажир, вышедший у старой текстильной улицы.",
         icon: "🎟️", takeable: true, isEvidence: true, weight: 0,
         interactions: {
