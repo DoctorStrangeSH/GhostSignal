@@ -1,6 +1,5 @@
 /* Ghost Signal: individually painted scenes, shared premium noir art direction. */
-.scene-art.scene-location-hotel_grand,
-.scene-art.scene-location-bar_joe {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) {
     min-height: 250px;
     height: clamp(250px, 31vw, 420px);
     border: 1px solid rgba(217, 182, 122, .55);
@@ -17,22 +16,24 @@
 .scene-art.scene-location-bar_joe {
     background-image: url('../art/world/joes-bar-noir.webp');
 }
-.scene-art.scene-location-hotel_grand::before,
-.scene-art.scene-location-bar_joe::before {
+.scene-art.scene-location-blackwood_mansion {
+    background-image: url('../art/world/blackwood-mansion-noir.webp');
+}
+.scene-art.scene-location-newspaper_office {
+    background-image: url('../art/world/newspaper-office-noir.webp');
+}
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office)::before {
     opacity: .13;
     background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(235, 214, 178, .12) 4px);
 }
-.scene-art.scene-location-hotel_grand::after,
-.scene-art.scene-location-bar_joe::after {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office)::after {
     background: linear-gradient(0deg, rgba(3, 10, 14, .75), transparent 48%),
         linear-gradient(90deg, transparent 50%, rgba(3, 10, 14, .19));
 }
-.scene-art.scene-location-hotel_grand .scene-art-icon,
-.scene-art.scene-location-bar_joe .scene-art-icon {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) .scene-art-icon {
     display: none;
 }
-.scene-art.scene-location-hotel_grand .scene-art-caption,
-.scene-art.scene-location-bar_joe .scene-art-caption {
+.scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) .scene-art-caption {
     right: 28px;
     bottom: 18px;
     padding: 6px 14px;
@@ -44,6 +45,7 @@
     text-transform: uppercase;
 }
 @media (max-width: 700px) {
-    .scene-art.scene-location-hotel_grand,
-    .scene-art.scene-location-bar_joe { min-height: 230px; height: 230px; background-position: 40% center; }
+    .scene-art:is(.scene-location-hotel_grand, .scene-location-bar_joe, .scene-location-blackwood_mansion, .scene-location-newspaper_office) {
+        min-height: 230px; height: 230px; background-position: 40% center;
+    }
 }

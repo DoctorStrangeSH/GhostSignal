@@ -21,3 +21,18 @@ test('location art stylesheet loads last and location IDs remain unchanged', () 
     assert.match(locations, /hotel_grand:/);
     assert.match(locations, /bar_joe:/);
 });
+
+test('Blackwood mansion and newspaper office ship matching cinematic scenes', () => {
+    const css = read('assets/css/noir-locations.css');
+    const locations1 = read('assets/data/cases/case-001/locations.js');
+    const locations2 = read('assets/data/cases/case-002/locations.js');
+    for (const [id, image, data] of [
+        ['blackwood_mansion', 'blackwood-mansion-noir.webp', locations1],
+        ['newspaper_office', 'newspaper-office-noir.webp', locations2],
+    ]) {
+        assert.match(data, new RegExp(`${id}:`));
+        assert.ok(css.includes(`.scene-location-${id}`));
+        assert.ok(css.includes(image));
+        assert.ok(statSync(new URL(`../assets/art/world/${image}`, import.meta.url)).size > 20000);
+    }
+});
