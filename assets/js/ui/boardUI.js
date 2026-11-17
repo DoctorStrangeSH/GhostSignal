@@ -301,16 +301,18 @@ class BoardUI {
         const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
         const facts = this.board?.getEvidenceChronology(ids) || [];
         const fmt = minute => String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+        const timeLabel = fact => fact.minute === null ? 'Время неизвестно' : (fact.certainty === 'approximate' ? 'Около ' : '') + fmt(fact.minute);
+        const timed = facts.filter(fact => fact.minute !== null);
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
             <h3 id="chronology-title">🕰️ ХРОНОЛОГИЯ УЛИК</h3></div><span class="testimony-count">${facts.length} отметок</span></div>
-            <p class="hypothesis-help">Показаны только обнаруженные документы с точными отметками. Запись о запросе не доказывает состоявшийся звонок или личность звонившего.</p>
-            ${facts.length ? `<ol>${facts.map(f => `<li><strong>${fmt(f.minute)}</strong> — ${this._escapeHTML(f.label)}
+            <p class="hypothesis-help">Показаны события только из обнаруженных улик: точные, приблизительные и без установленного времени. Неизвестное время нельзя выводить из соседних отметок.</p>
+            ${facts.length ? `<ol>${facts.map(f => `<li><strong>${this._escapeHTML(timeLabel(f))}</strong> — ${this._escapeHTML(f.label)}
                 <small>(${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}). ${this._escapeHTML(f.caveat)}</small></li>`).join('')}</ol>` : '<p>Найдите документ с временными отметками, чтобы начать реконструкцию.</p>'}
-            ${facts.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
-                <select id="chronology-first" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+            ${timed.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
+                <select id="chronology-first" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <label for="chronology-second">Вторая отметка</label>
-                <select id="chronology-second" class="terminal-input">${facts.map(f => `<option value="${this._escapeHTML(f.id)}">${fmt(f.minute)} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
+                <select id="chronology-second" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
                 <button id="chronology-compare" type="button" class="terminal-btn">СОПОСТАВИТЬ ВРЕМЯ</button><div id="chronology-result" aria-live="polite"></div></div>` : ''}
         </section>`;
     }
@@ -323,7 +325,7 @@ class BoardUI {
                 this.container.querySelector('#chronology-second')?.value, ids);
             const target = this.container.querySelector('#chronology-result');
             if (target) target.textContent = comparison
-                ? `${comparison.minutesApart} мин. между отметками. ${comparison.warning}`
+                ? `${comparison.minutesApart === null ? 'Точный интервал не установлен.' : comparison.minutesApart + ' мин. между отметками.'} ${comparison.warning}`
                 : 'Выберите две разные доступные отметки.';
         });
     }

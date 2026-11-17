@@ -198,6 +198,10 @@ test('document chronology uses discovered evidence only and does not infer an al
         ] : id === 'ticket' ? [
             { id: 'failed', minute: 1325, label: 'Test failed', scope: 'booth' },
             { id: 'bad', minute: 1500, label: 'Invalid time', scope: 'booth' }
+        ] : id === 'photo' ? [
+            { id: 'photo-undated', minute: null, label: 'Exposure', scope: 'bar', certainty: 'unknown' }
+        ] : id === 'tram' ? [
+            { id: 'tram-stop', minute: 1335, label: 'Tram near bar', scope: 'stop', certainty: 'approximate' }
         ] : []
     }) });
     vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
@@ -211,6 +215,13 @@ test('document chronology uses discovered evidence only and does not infer an al
     assert.equal(comparison.sameScope, false);
     assert.equal('culprit' in comparison, false);
     assert.equal('contradiction' in comparison, false);
+    const unknown = board.getEvidenceChronology(['photo', 'exchange']);
+    assert.deepEqual(Array.from(unknown, item => item.id), ['request', 'photo-undated']);
+    assert.equal(board.compareChronologyFacts('photo-undated', 'request', ['photo', 'exchange']), null);
+    const approximate = board.compareChronologyFacts('tram-stop', 'request', ['tram', 'exchange']);
+    assert.equal(approximate.minutesApart, null);
+    assert.match(approximate.warning, /приблизительна/);
+    assert.equal('contradiction' in approximate, false);
 });
 
 test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {

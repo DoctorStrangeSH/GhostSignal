@@ -118,21 +118,25 @@ class InvestigationBoard {
         return [...new Set(Array.isArray(discoveredIds) ? discoveredIds : [])].flatMap(evidenceId => {
             const object = getObjectById(evidenceId);
             if (!object?.isEvidence || !Array.isArray(object.timelineFacts)) return [];
-            return object.timelineFacts.filter(fact => Number.isInteger(fact.minute) && fact.minute >= 0 && fact.minute < 1440 &&
+            return object.timelineFacts.filter(fact => (fact.minute === null ||
+                (Number.isInteger(fact.minute) && fact.minute >= 0 && fact.minute < 1440)) &&
                 typeof fact.id === 'string' && typeof fact.label === 'string' && typeof fact.scope === 'string')
                 .map(fact => ({ evidenceId, id: fact.id, minute: fact.minute, label: fact.label,
                     scope: fact.scope, certainty: fact.certainty || 'unknown', caveat: fact.caveat || '' }));
-        }).sort((a, b) => a.minute - b.minute || a.id.localeCompare(b.id));
+        }).sort((a, b) => (a.minute === null ? Infinity : a.minute) - (b.minute === null ? Infinity : b.minute) || a.id.localeCompare(b.id));
     }
 
     compareChronologyFacts(firstId, secondId, discoveredIds = []) {
         const facts = this.getEvidenceChronology(discoveredIds);
         const first = facts.find(f => f.id === firstId);
         const second = facts.find(f => f.id === secondId);
-        if (!first || !second || first.id === second.id) return null;
-        return { first, second, minutesApart: Math.abs(first.minute - second.minute),
+        if (!first || !second || first.id === second.id || first.minute === null || second.minute === null) return null;
+        const approximate = first.certainty === 'approximate' || second.certainty === 'approximate';
+        return { first, second, minutesApart: approximate ? null : Math.abs(first.minute - second.minute),
             sameScope: first.scope === second.scope,
-            warning: first.scope === second.scope
+            warning: approximate
+                ? 'Хотя записи имеют временные ориентиры, одна из них приблизительна: точный интервал вычислять нельзя. Совпадение времени не доказывает связь событий.'
+                : first.scope === second.scope
                 ? 'Записи относятся к одному объекту, но сами по себе не устанавливают непрерывное состояние между отметками.'
                 : 'Записи относятся к разным объектам. Совпадение времени не устанавливает их связь, личность участника или противоречие.' };
     }
