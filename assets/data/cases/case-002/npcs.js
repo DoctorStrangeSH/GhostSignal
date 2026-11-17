@@ -9,6 +9,7 @@ registerData('npc', {
         role: "Бывшая жена",
         description: "Элегантная женщина в красном. Развелась с жертвой полгода назад. Получила крупные отступные, но потеряла всё остальное.",
         icon: "👩‍🦰",
+        portrait: "assets/art/portraits/anna-kovalyova.webp",
         mood: "angry",
         psychology: {
             opennessThreshold: 68, pressureThreshold: 55, calmPressureLimit: 12,
@@ -67,6 +68,7 @@ registerData('npc', {
         role: "Конкурент по бизнесу",
         description: "Седой мужчина в дорогом костюме. Владелец конкурирующей фирмы. Судился с жертвой за крупный контракт.",
         icon: "👨‍💼",
+        portrait: "assets/art/portraits/viktor-kane.webp",
         mood: "cold",
         psychology: {
             opennessThreshold: 78, pressureThreshold: 50, calmPressureLimit: 16,

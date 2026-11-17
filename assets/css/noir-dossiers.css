@@ -1,0 +1,51 @@
+/* Noir archive: physical dossiers and readable evidence labels. */
+.npc-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #20353b, #11232a 74%);
+    border: 1px solid rgba(192, 155, 101, .38);
+    border-left: 3px solid #a78657;
+    box-shadow: inset 0 1px rgba(239, 208, 156, .08), 0 9px 24px rgba(0, 0, 0, .2);
+}
+.npc-card:hover { border-color: #bfaa7d; border-left-color: #d8b477; }
+.npc-card .npc-header {
+    padding: 5px 0 12px;
+    border-bottom: 1px solid rgba(211, 183, 134, .2);
+}
+.npc-card .npc-avatar {
+    width: 65px;
+    height: 78px;
+    flex: 0 0 65px;
+    border: 3px solid #d7c7a7;
+    border-radius: 2px;
+    background: #192a2e;
+    box-shadow: 0 0 0 1px #665542, 3px 5px 9px rgba(0, 0, 0, .36);
+    filter: sepia(.16) saturate(.82) contrast(1.08);
+}
+.npc-card .npc-avatar::after {
+    border-radius: 0;
+    background: linear-gradient(180deg, rgba(255, 232, 183, .06), transparent 45%, rgba(10, 16, 18, .3));
+}
+.npc-card .npc-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center 24%; }
+.npc-card .npc-name { color: #f0e4cf; font: 700 16px/1.25 var(--font-serif); letter-spacing: .035em; }
+.npc-card .npc-role { color: #d0b78e; line-height: 1.5; letter-spacing: .035em; }
+.npc-card .npc-description { color: #c8d4cf; line-height: 1.6; }
+.npc-card.npc-unavailable { opacity: .73; filter: none; }
+.npc-card.npc-unavailable .npc-avatar { filter: grayscale(.75) contrast(.92); }
+.inventory-card.card-evidence {
+    border: 1px solid #a99069;
+    border-top: 4px solid #d6c5a2;
+    background: linear-gradient(150deg, #e9dcc0, #c7b48e);
+    color: #262922;
+    box-shadow: 2px 5px 12px rgba(0, 0, 0, .23);
+}
+.inventory-card.card-evidence .card-name { color: #2e2b24; font-weight: 700; }
+.inventory-card.card-evidence .card-badge { background: #5c3328; color: #f8e9d4; }
+.inventory-card.card-evidence:hover,
+.inventory-card.card-evidence:focus-visible { background: #fff0d1; border-color: #a8e0d8; }
+.inventory-card.card-evidence.card-selected { outline: 2px solid #94d4cd; outline-offset: 2px; }
+@media (max-width: 680px) {
+    .npc-card .npc-avatar { width: 58px; height: 70px; flex-basis: 58px; }
+    .npc-card { padding: 13px; }
+    .inventory-card.card-evidence { min-height: 100px; }
+}
