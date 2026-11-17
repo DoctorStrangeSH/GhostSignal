@@ -37,9 +37,12 @@ class DialogueEngine {
     getPendingInitiative(dialogueId) {
         const dialogue = getDialogueById(dialogueId);
         if (!dialogue?.npcId || !dialogue.tree?.nodes) return null;
-        for (const rule of dialogue.tree.entryRules || []) {
-            if (!rule?.initiative || !dialogue.tree.nodes[rule.nodeId]) continue;
+        for (const rule of Array.isArray(dialogue.tree.entryRules) ? dialogue.tree.entryRules : []) {
+            if (!rule?.nodeId || !dialogue.tree.nodes[rule.nodeId]) continue;
             if (!this._checkCondition(rule.condition, dialogue)) continue;
+            // A higher-priority ordinary entry takes precedence. Never advertise
+            // an initiative the player would not actually hear on contact.
+            if (!rule.initiative) return null;
             return { npcId: dialogue.npcId, dialogueId, nodeId: rule.nodeId,
                 label: typeof rule.initiativeLabel === 'string' ? rule.initiativeLabel : 'Хочет поговорить' };
         }

@@ -2175,7 +2175,7 @@ test("Lora protects confidential sources after an overconfident accusation witho
 });
 
 test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed delivery", () => {
-    const { engine, memory, inventory, advance } = createDialogueHarness();
+    const { engine, memory, inventory, advance, context } = createDialogueHarness();
     inventory.insights.push("joe_found_inspection_entry");
     engine.startDialogue("dialogue-journalist");
     const verify = engine.getAvailableAnswers().find(a => a.nextNode === "lora_verifies_inspection_schedule");
@@ -2214,6 +2214,23 @@ test("Joe's warning reaches Thomas only after a witnessed rebuttal and timed del
     });
     assert.equal(JSON.stringify(engine.getPendingInitiative("dialogue-waiter")), JSON.stringify(pendingWarning),
         "merely viewing contact cards must not consume an initiative");
+    const originalCondition = engine._checkCondition;
+    engine._checkCondition = function(condition, dialogue) {
+        if (condition === "accusation_status:thomas-lied-about-poisoning:pending") return true;
+        return originalCondition.call(this, condition, dialogue);
+    };
+    assert.equal(engine.getPendingInitiative("dialogue-waiter"), null,
+        "a higher-priority accusation opening must not show a misleading initiative badge");
+    engine._checkCondition = originalCondition;
+
+    const savedMemory = memory.toJSON();
+    context.savedInitiativeMemory = savedMemory;
+    const restoredMemory = vm.runInContext("NPCMemoryService.fromJSON(savedInitiativeMemory, 'case-002')",
+        context);
+    engine.setMemoryService(restoredMemory);
+    assert.equal(engine.getPendingInitiative("dialogue-waiter")?.nodeId, "visitor_caution_initiative",
+        "the invitation must survive saving and restoring witness memory");
+    engine.setMemoryService(memory);
 
     engine.startDialogue("dialogue-waiter");
     assert.equal(engine.getPendingInitiative("dialogue-waiter"), null);
