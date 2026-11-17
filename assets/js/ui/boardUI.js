@@ -66,9 +66,12 @@ class BoardUI {
 
             <div class="board-layout-status" aria-live="polite">${this._renderLayoutStatus()}</div>
             
-            <div class="board-canvas" id="board-canvas">
-                <svg class="board-connections" id="board-connections" role="img" aria-label="Схема сопоставления размещённых улик. Линии не подтверждают истинность версии."></svg>
-                <div class="board-slots" id="board-slots">${this._renderSlots()}</div>
+            <p class="board-mobile-scroll-hint">↔ Проведите по доске влево или вправо, чтобы увидеть все места для улик.</p>
+            <div class="board-viewport" role="region" aria-label="Прокручиваемая доска расследования" tabindex="0">
+                <div class="board-canvas" id="board-canvas">
+                    <svg class="board-connections" id="board-connections" role="img" aria-label="Схема сопоставления размещённых улик. Линии не подтверждают истинность версии."></svg>
+                    <div class="board-slots" id="board-slots">${this._renderSlots()}</div>
+                </div>
             </div>
             <p class="board-connection-hint"><span class="board-legend-line" aria-hidden="true"></span> Линия показывает соседство на схеме, а не доказанную связь. Проверяйте выводы в гипотезах и показаниях.</p>
             

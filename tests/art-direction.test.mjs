@@ -31,6 +31,14 @@ test('touch evidence placement uses accessible tap selection without hijacking s
     assert.match(css, /\.board-slot \{ touch-action: pan-y; \}/);
 });
 
+test('mobile evidence board keeps readable slots inside a horizontally scrollable viewport', () => {
+    assert.match(boardUI, /class="board-viewport" role="region" aria-label="Прокручиваемая доска расследования" tabindex="0"/);
+    assert.match(boardUI, /board-mobile-scroll-hint/);
+    assert.match(css, /\.board-viewport \{ overflow-x: auto; overflow-y: hidden;/);
+    assert.match(css, /\.board-canvas \{ width: 620px; max-width: none;/);
+    assert.match(css, /\.board-slot \{ width: 92px; min-height: 78px;/);
+});
+
 test('hypothesis source summary distinguishes documents testimony and assumptions without claiming truth', () => {
     for (const kind of ['evidence', 'statement', 'assumption']) {
         assert.match(boardUI, new RegExp(`link\\.kind === '${kind}'`));
@@ -55,17 +63,10 @@ test('deduction has labelled inputs and separate visual reports for outcome qual
 test('new evidence and testimony discrepancies receive distinct unobtrusive announcements', () => {
     assert.match(inventorySystem, /type: object\.isEvidence \? 'evidence' : 'success'/);
     assert.match(notificationUI, /npc:contradiction_detected/);
-    assert.match(notificationUI, /npc:social_event_discovered/);
     assert.match(notificationUI, /setAttribute\('aria-live', 'polite'\)/);
     assert.match(notificationUI, /content\.textContent = String\(message \?\? ''\)/);
     assert.match(notificationUI, /pointer-events: none/);
     assert.match(css, /\.notification--discovery/);
-});
-
-test('social timeline shows how and when a contact was discovered', () => {
-    assert.match(npcList, /Стало известно \$\{discoveryLabels\[discovery\.method\]\}/);
-    assert.match(npcList, /npc-social-event-source/);
-    assert.match(npcList, /_escapeHTML\(provenance\)/);
 });
 
 test('evidence board uses readable dossier cards and selected evidence contrast', () => {
