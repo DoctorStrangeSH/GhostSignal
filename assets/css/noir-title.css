@@ -1,0 +1,140 @@
+/* Ghost Signal — Noir Archive title screen. All gameplay controls remain HTML. */
+#screen-main-menu { background: #07141b; }
+#screen-main-menu .menu-container {
+    min-height: 100%;
+    padding: clamp(26px, 4vw, 55px) 24px 44px;
+    gap: clamp(14px, 2vw, 24px);
+    background:
+        linear-gradient(90deg, rgba(3, 11, 16, .53), rgba(4, 14, 21, .72) 32%, rgba(4, 14, 21, .75) 68%, rgba(3, 11, 16, .37)),
+        linear-gradient(180deg, rgba(4, 13, 18, .3), rgba(4, 13, 18, .12) 40%, rgba(4, 13, 18, .78)),
+        url('../art/brand/detective-office-menu.webp') center / cover no-repeat;
+}
+#screen-main-menu .menu-container::before {
+    width: min(92vw, 670px);
+    height: min(100%, 900px);
+    aspect-ratio: auto;
+    top: 50%;
+    border: 1px solid rgba(213, 182, 122, .23);
+    border-radius: 5px;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, .32), 0 0 0 7px rgba(7, 19, 24, .28);
+    background: rgba(2, 12, 18, .31);
+    z-index: -1;
+}
+#screen-main-menu .menu-identity { width: min(100%, 620px); }
+#screen-main-menu .menu-eyebrow {
+    display: inline-block;
+    padding: 7px 14px;
+    font-size: clamp(8px, 1vw, 10px);
+    color: #e7c68b;
+    border: 1px solid rgba(224, 192, 136, .35);
+    background: rgba(3, 17, 23, .82);
+    letter-spacing: .17em;
+}
+#screen-main-menu .menu-emblem {
+    width: clamp(110px, 12vw, 165px);
+    height: clamp(110px, 12vw, 165px);
+    margin: 14px auto 4px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+#screen-main-menu .menu-emblem::before,
+#screen-main-menu .menu-emblem::after,
+#screen-main-menu .menu-emblem span { display: none; }
+#screen-main-menu .menu-emblem img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .7));
+}
+#screen-main-menu .menu-identity h1 {
+    font-size: clamp(47px, 7vw, 82px);
+    font-weight: 700;
+    letter-spacing: .11em;
+    color: #f4dfb6;
+    text-shadow: 0 5px 28px #020a0d, 0 0 35px rgba(222, 171, 93, .16);
+}
+#screen-main-menu .menu-identity h1 em {
+    color: #e2bb77;
+    font-weight: 500;
+    letter-spacing: .18em;
+}
+#screen-main-menu .menu-tagline {
+    margin-top: 12px;
+    color: #eee3d0;
+    text-shadow: 0 3px 9px #020a0d;
+}
+#screen-main-menu .menu-info {
+    width: min(100%, 480px);
+    gap: 9px;
+    border: 1px solid rgba(221, 186, 124, .32);
+    border-radius: 4px;
+    background: rgba(4, 16, 22, .89);
+    box-shadow: 0 10px 30px rgba(0,0,0,.22);
+}
+#screen-main-menu .menu-actions {
+    width: min(100%, 440px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+#screen-main-menu .menu-actions .terminal-btn {
+    min-width: 0;
+    min-height: 52px;
+    padding: 13px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    text-align: left;
+    border-radius: 3px;
+    border: 1px solid rgba(228, 190, 129, .45);
+    background: linear-gradient(145deg, rgba(22, 46, 51, .96), rgba(9, 26, 33, .97));
+    box-shadow: 0 7px 18px rgba(0, 0, 0, .28);
+    color: #f0dec1;
+    font: 700 clamp(11px, 1vw, 13px) var(--font-mono);
+    letter-spacing: .05em;
+}
+#screen-main-menu .menu-actions .terminal-btn span { color: #d9b67a; font-size: 18px; }
+#screen-main-menu .menu-actions .terminal-btn:hover {
+    transform: translateY(-2px);
+    border-color: #f3cd8e;
+    background: #24434a;
+}
+#screen-main-menu .menu-actions .terminal-btn:first-child {
+    grid-column: 1 / -1;
+    background: linear-gradient(125deg, #f0d8a7, #b9915c);
+    color: #16282c;
+    border-color: #f1d5a4;
+}
+#screen-main-menu .menu-actions .terminal-btn:first-child span { color: #17282c; }
+#screen-main-menu .menu-actions .terminal-btn:first-child:hover { background: #ffe6b6; }
+#screen-main-menu .menu-actions .terminal-btn.hidden { display: none; }
+#screen-main-menu .menu-footer { color: #e9d4b4; text-shadow: 0 2px 8px #000; }
+.terminal-header .terminal-logo::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 9px;
+    vertical-align: -5px;
+    background: url('../art/brand/ghost-signal-emblem.png') center / contain no-repeat;
+}
+@media (max-width: 600px) {
+    #screen-main-menu .menu-container { padding: 24px 13px 30px; background-position: 53% center; }
+    #screen-main-menu .menu-container::before { width: calc(100% - 16px); }
+    #screen-main-menu .menu-identity h1 { font-size: clamp(40px, 10vw, 57px); }
+    #screen-main-menu .menu-actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+    #screen-main-menu .menu-actions .terminal-btn { min-height: 50px; font-size: 11px; }
+    #screen-main-menu .menu-info { grid-template-columns: 1fr 1fr; }
+    .terminal-header .terminal-logo::before { width: 18px; height: 18px; margin-right: 5px; vertical-align: -4px; }
+}
+@media (max-width: 360px) {
+    #screen-main-menu .menu-actions { grid-template-columns: 1fr; }
+    #screen-main-menu .menu-actions .terminal-btn:first-child { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #screen-main-menu .menu-actions .terminal-btn { transition: none; }
+}
