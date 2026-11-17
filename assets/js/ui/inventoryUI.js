@@ -187,9 +187,11 @@ class InventoryUI {
     }
 
     _renderBarPhotoStudy() {
-        const studied = ['counter', 'woman', 'waiter'].filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).length;
+        const observations = this._barPhotoObservations();
+        const studied = Object.keys(observations).filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).length;
         return `<section class="photo-study" aria-label="Подробное изучение снимка">
-            <div class="photo-study-frame"><img src="assets/art/evidence/bar-contact-print.webp" alt="Архивный чёрно-белый снимок бара: мужчина наклоняется у стойки, женщина отворачивается, официант находится за стойкой" loading="lazy"></div>
+            <div class="photo-study-frame" id="photo-study-frame"><img src="assets/art/evidence/bar-contact-print.webp" alt="Архивный чёрно-белый снимок бара: мужчина наклоняется у стойки, женщина отворачивается, официант находится за стойкой" loading="lazy"></div>
+            <button type="button" class="photo-study-zoom" data-photo-zoom aria-pressed="false" aria-controls="photo-study-frame">⌕ Увеличить снимок</button>
             <p class="photo-study-hint">Выберите участок снимка для наблюдения. Фотография не доказывает, какой предмет был поднят.</p>
             <div class="photo-study-actions" role="group" aria-label="Участки фотографии">
                 <button type="button" data-photo-focus="counter" aria-pressed="false" class="terminal-btn">01 · У СТОЙКИ</button>
@@ -198,17 +200,38 @@ class InventoryUI {
             </div>
             <p class="photo-study-progress">Изучено участков: <span id="photo-study-count">${studied}</span> из 3</p>
             <p class="photo-study-observation" id="photo-study-observation" role="status" aria-live="polite">Выберите интересующий фрагмент.</p>
+            <details class="photo-study-journal"><summary>Журнал наблюдений (<span id="photo-study-journal-count">${studied}</span>)</summary>
+                <ol id="photo-study-journal-list">${this._barPhotoJournalEntries(observations)}</ol>
+            </details>
         </section>`;
+    }
+
+    _barPhotoObservations() {
+        return {
+            counter: 'Мужчина наклоняется у стойки и держит салфетку. Небольшой предмет на снимке не опознаётся: по этому кадру нельзя установить, что именно он взял.',
+            woman: 'Женщина отворачивается от стойки. Снимок показывает положение людей в один момент, но не позволяет определить, что она видела.',
+            waiter: 'Официант находится за стойкой. Направление его взгляда на фотографии неоднозначно; нужно отдельно проверить его показания.'
+        };
+    }
+
+    _barPhotoJournalEntries(observations = this._barPhotoObservations()) {
+        const labels = { counter: 'У стойки', woman: 'Посетительница', waiter: 'Официант' };
+        const entries = Object.keys(observations).filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`));
+        return entries.length
+            ? entries.map(id => `<li><strong>${labels[id]}</strong><p>${observations[id]}</p></li>`).join('')
+            : '<li class="photo-study-empty">Пока нет записей. Изучите участок фотографии.</li>';
     }
 
     _bindBarPhotoStudy() {
         const panel = document.getElementById('modal-body')?.querySelector('.photo-study');
         if (!panel) return;
-        const observations = {
-            counter: 'Мужчина наклоняется у стойки и держит салфетку. Небольшой предмет на снимке не опознаётся: по этому кадру нельзя установить, что именно он взял.',
-            woman: 'Женщина отворачивается от стойки. Снимок показывает положение людей в один момент, но не позволяет определить, что она видела.',
-            waiter: 'Официант находится за стойкой. Направление его взгляда на фотографии неоднозначно; нужно отдельно проверить его показания.'
-        };
+        const observations = this._barPhotoObservations();
+        const zoom = panel.querySelector('[data-photo-zoom]');
+        zoom?.addEventListener('click', () => {
+            const enlarged = panel.querySelector('#photo-study-frame')?.classList.toggle('is-enlarged');
+            zoom.setAttribute('aria-pressed', String(Boolean(enlarged)));
+            zoom.textContent = enlarged ? '⌕ Вернуть размер' : '⌕ Увеличить снимок';
+        });
         panel.querySelectorAll('[data-photo-focus]').forEach(button => button.addEventListener('click', () => {
             const focus = button.dataset.photoFocus;
             if (!Object.hasOwn(observations, focus)) return;
@@ -218,6 +241,10 @@ class InventoryUI {
             const count = ['counter', 'woman', 'waiter'].filter(id => this.inventory?.hasInsight?.(`bar_photo_observed_${id}`)).length;
             const counter = panel.querySelector('#photo-study-count');
             if (counter) counter.textContent = String(count);
+            const journalCount = panel.querySelector('#photo-study-journal-count');
+            if (journalCount) journalCount.textContent = String(count);
+            const journal = panel.querySelector('#photo-study-journal-list');
+            if (journal) journal.innerHTML = this._barPhotoJournalEntries(observations);
         }));
     }
 
