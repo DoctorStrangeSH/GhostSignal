@@ -301,6 +301,7 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Я сопоставил твои показания с участком снимка, где ты за стойкой.", nextNode: "photo_hypothesis_confrontation", tone: "calm", condition: "all:has_waiter_photo_comparison&not:hasInsight:waiter_photo_comparison_discussed", hiddenWhenUnavailable: true },
                     { text: "Я изучил твоё положение на снимке. Ты действительно видел, что происходило у стойки?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
+                    { text: "Сверим снимок с независимой отметкой кондуктора о трамвае у бара.", nextNode: "photo_tram_independent_check", tone: "calm", condition: "all:hasInsight:bar_photo_testimony_scope_checked&hasInsight:tram_passenger_route_corroboration&not:hasInsight:photo_tram_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
@@ -389,6 +390,7 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Хочу проверить свою версию по фотографии и твоим показаниям.", nextNode: "photo_hypothesis_confrontation", tone: "calm", condition: "all:has_waiter_photo_comparison&not:hasInsight:waiter_photo_comparison_discussed", hiddenWhenUnavailable: true },
                     { text: "На снимке твой взгляд неясен. С какого места ты наблюдал за Кейном?", nextNode: "photo_observation_comparison", tone: "calm", condition: "all:hasItem:bar_photo&hasInsight:bar_photo_observed_waiter&not:hasInsight:bar_photo_testimony_scope_checked", hiddenWhenUnavailable: true },
+                    { text: "У меня есть отдельная запись кондуктора. Проверим, что она меняет в нашей хронологии.", nextNode: "photo_tram_independent_check", tone: "calm", condition: "all:hasInsight:bar_photo_testimony_scope_checked&hasInsight:tram_passenger_route_corroboration&not:hasInsight:photo_tram_scope_checked", hiddenWhenUnavailable: true },
                     {
                         text: "Джо организовал для твоей матери временное безопасное место. Ты убедился, что она там?",
                         nextNode: "family_safety_confirmed",
@@ -967,6 +969,18 @@ const DIALOGUE_WAITER = {
                 answers: [
                     { text: "Запишу как неразрешённый вопрос о времени и проверю другие источники.", nextNode: "end_waiter", tone: "calm", cooperationDelta: 3 },
                     { text: "Понял. Один кадр не устанавливает всю последовательность.", nextNode: "end_waiter", tone: "reassuring" }
+                ]
+            },
+
+            photo_tram_independent_check: {
+                speaker: "npc",
+                text: "В путевом листе отмечена задержка трамвая у бара около 22:15. Я не следил за трамваем и не могу связать его пассажира с Кейном. Запись независимая, но она говорит о движении снаружи. Ни время самого фотокадра, ни мой маршрут между стойкой и столиком из неё не следуют.",
+                mood: "thoughtful",
+                innerThought: "Проверка двух разных источников отделила подтверждённое внешнее событие от непроверенной последовательности внутри бара.",
+                givesInsight: "photo_tram_scope_checked",
+                answers: [
+                    { text: "Отмечу трамвай как отдельную временную опору, а время снимка оставлю открытым.", nextNode: "end_waiter", tone: "calm", cooperationDelta: 4 },
+                    { text: "Значит, нужна запись фотографа или иной независимый источник времени кадра.", nextNode: "end_waiter", tone: "reassuring", cooperationDelta: 2 }
                 ]
             },
 
