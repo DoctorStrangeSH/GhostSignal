@@ -396,6 +396,26 @@ class DialogueEngine {
         return { success: true, reaction: Boolean(reaction), node: this.currentNode };
     }
 
+    // A causal challenge asks for clarification; it is not an accusation or
+    // a scripted admission. The response depends on existing NPC disposition.
+    presentPreparedCausalQuestion() {
+        const npcId = this.currentDialogue?.npcId;
+        const board = this.investigationBoard;
+        const prepared = npcId && board?.getPreparedCausalQuestion?.(npcId);
+        if (!prepared) return { success: false, reason: 'no_prepared_causal_question' };
+        const fallback = this._getUnscriptedReaction('contradiction');
+        if (!board.discussCausalQuestion(npcId)) return { success: false, reason: 'already_discussed' };
+        const node = { id: `causal_question_${prepared.hypothesisId}`, speaker: 'npc',
+            text: `Вы спрашиваете, как объяснить факты, не согласующиеся с версией «${prepared.title}». ${fallback.text} Мне нужно уточнить обстоятельства; одно совпадение ещё не говорит, что события связаны.`,
+            mood: fallback.mood, answers: this.currentNode?.answers || [] };
+        this.currentNode = node;
+        this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
+        this._recordNodeMemory(node);
+        if (this.gameTime) this.gameTime.advance(CONFIG.time.costs.dialogue);
+        if (this.onNodeChange) this.onNodeChange(node);
+        return { success: true, node };
+    }
+
     // ============ ВНУТРЕННИЕ МЕТОДЫ ============
     
     _processNodeEffects(node) {

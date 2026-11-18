@@ -219,6 +219,37 @@ class InvestigationBoard {
             assessments: assessments.map(event => ({ ...event })) };
     }
 
+    prepareCausalQuestion(hypothesisId, npcId, statements = []) {
+        const hypothesis = this.hypotheses.find(h => h.id === hypothesisId && h.status === 'open');
+        const assessment = this.getChronologyCauseAssessment(hypothesisId);
+        if (!hypothesis || !assessment?.challenging || typeof npcId !== 'string' ||
+            !statements.some(s => s.npcId === npcId && s.status !== 'superseded') ||
+            hypothesis.history.some(e => e.action === 'causal_question_prepared' && e.npcId === npcId)) return false;
+        hypothesis.history.push({ action: 'causal_question_prepared', npcId });
+        events.emit('board:updated', { action: 'causal_question_prepared', hypothesisId, npcId });
+        return true;
+    }
+
+    getPreparedCausalQuestion(npcId) {
+        for (const h of this.hypotheses) {
+            if (h.status !== 'open') continue;
+            const prepared = h.history.findLast(e => e.action === 'causal_question_prepared' && e.npcId === npcId);
+            if (prepared && !h.history.some(e => e.action === 'causal_question_discussed' && e.npcId === npcId)) {
+                return { hypothesisId: h.id, title: h.title, assessment: this.getChronologyCauseAssessment(h.id) };
+            }
+        }
+        return null;
+    }
+
+    discussCausalQuestion(npcId) {
+        const prepared = this.getPreparedCausalQuestion(npcId);
+        if (!prepared) return false;
+        const hypothesis = this.hypotheses.find(h => h.id === prepared.hypothesisId);
+        hypothesis.history.push({ action: 'causal_question_discussed', npcId });
+        events.emit('board:updated', { action: 'causal_question_discussed', hypothesisId: hypothesis.id, npcId });
+        return true;
+    }
+
     // Проверить, сделаны ли правильные выводы
     addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);

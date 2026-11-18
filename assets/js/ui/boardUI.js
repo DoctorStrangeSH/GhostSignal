@@ -313,6 +313,9 @@ class BoardUI {
             .filter(event => event.action === 'causal_link_proposed').map(event => ({ ...event, id: h.id,
                 title: h.title, active: h.status !== 'abandoned', assessment: this.board.getChronologyCauseAssessment(h.id) })));
         const independentSources = ids.filter(id => getObjectById(id)?.isEvidence);
+        const availableWitnesses = [...new Map((this.memoryService?.getStatements?.() || [])
+            .filter(statement => statement.status !== 'superseded' && statement.npcId)
+            .map(statement => [statement.npcId, statement.sourceName || statement.npcId])).entries()];
         this._chronologySelection = (this._chronologySelection || []).filter(id => facts.some(f => f.id === id));
         return `<section class="testimony-journal" aria-labelledby="chronology-title">
             <div class="testimony-journal-header"><div><span class="testimony-journal-kicker">СВЕРКА ВРЕМЕНИ</span>
@@ -344,6 +347,10 @@ class BoardUI {
                         <label>Оценка <select class="terminal-input causal-assess-stance"><option value="for">Поддерживает версию</option><option value="against">Противоречит версии</option></select></label>
                         <label>Почему? <textarea class="terminal-input causal-assess-note" maxlength="500" rows="2" required></textarea></label>
                         <button type="submit" class="terminal-btn">ПРОВЕРИТЬ ИСТОЧНИК</button>
+                    </form>` : ''}
+                    ${review.active && review.assessment?.challenging > 0 && availableWitnesses.length ? `<form class="chronology-cause-question" data-hypothesis="${this._escapeHTML(review.id)}">
+                        <label>Кого спросить о расхождении? <select class="terminal-input causal-question-npc">${availableWitnesses.map(([id, name]) => `<option value="${this._escapeHTML(id)}">${this._escapeHTML(name)}</option>`).join('')}</select></label>
+                        <button type="submit" class="terminal-btn">ПОДГОТОВИТЬ ВОПРОС</button>
                     </form>` : ''}</article>`).join('')}</div>` : ''}
             ${timed.length > 1 ? `<div class="testimony-compare"><label for="chronology-first">Первая отметка</label>
                 <select id="chronology-first" class="terminal-input">${timed.map(f => `<option value="${this._escapeHTML(f.id)}">${this._escapeHTML(timeLabel(f))} · ${this._escapeHTML(f.label)}</option>`).join('')}</select>
@@ -377,6 +384,13 @@ class BoardUI {
 
     _bindChronologyEvents() {
         if (!Array.isArray(this._chronologySelection)) this._chronologySelection = [];
+        this.container.querySelectorAll('.chronology-cause-question').forEach(form => form.addEventListener('submit', event => {
+            event.preventDefault();
+            const npcId = form.querySelector('.causal-question-npc')?.value;
+            const ok = this.board.prepareCausalQuestion(form.dataset.hypothesis, npcId, this.memoryService?.getStatements?.() || []);
+            events.emit('notification:show', { message: ok ? 'Вопрос подготовлен. Вернитесь к свидетелю и предъявите его в разговоре.' :
+                'Этот вопрос уже подготовлен или у свидетеля нет актуальных показаний.', type: ok ? 'success' : 'warning', duration: 3600 });
+        }));
         this.container.querySelectorAll('.chronology-cause-assess').forEach(form => form.addEventListener('submit', event => {
             event.preventDefault();
             const ids = [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])];
