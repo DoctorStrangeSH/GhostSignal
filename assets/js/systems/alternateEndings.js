@@ -19,7 +19,8 @@ class AlternateEndings {
             ending.condition &&
             ending.condition !== 'default' &&
             !ending.condition.startsWith('evidence_count_') &&
-            hasInsight(ending.condition)
+            hasInsight(ending.condition) &&
+            (ending.requiredInsights || []).every(hasInsight)
         );
         let selected = perfect;
 

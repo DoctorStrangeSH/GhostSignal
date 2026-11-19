@@ -146,6 +146,7 @@ const DIALOGUE_HOUSEKEEPER = {
                 text: "В подвале отеля. Там есть старая кладовка. Я приносила ему еду. Он был в порядке. Просто спал. А потом... потом я испугалась и не знала, что делать.",
                 mood: "crying",
                 innerThought: "Блэквуд в подвале! Он жив!",
+                givesInsight: "blackwood_location_revealed",
                 answers: [
                     { text: "Мэри, вы совершили ошибку. Но он жив. Это главное.", nextNode: "resolution" }
                 ]
