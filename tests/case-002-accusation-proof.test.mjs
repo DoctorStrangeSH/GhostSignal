@@ -135,16 +135,31 @@ test('legacy typed answers do not disclose correctness before proof is sufficien
     assert.equal(correct.text, wrong.text);
 });
 
-test('case one remains compatible without evidence requirements', () => {
+test('case one cannot be solved by guessing without evidence', () => {
     const h = createHarness();
     const verdict = h.screen._checkDeduction(h.first, 'housekeeper', 'love', 'sedative');
     assert.equal(verdict.allCorrect, true);
-    assert.equal(verdict.proof.sufficient, true);
+    assert.equal(verdict.proof.sufficient, false);
+    assert.deepEqual(Array.from(verdict.proof.missingItems), ['hidden_note', 'wire_fragment']);
+    assert.equal(verdict.proof.missingCorroboration, true);
     const manager = new h.manager(null, null, h.inventory);
     manager.currentCase = h.first;
     manager.caseState = 'active';
-    assert.equal(manager.checkFinalAnswer('мэри').isCorrect, true);
-    assert.equal(manager.caseState, 'solved');
+    assert.equal(manager.checkFinalAnswer('мэри').insufficientEvidence, true);
+    assert.equal(manager.caseState, 'active');
+});
+
+test('case one can close with scene evidence and either independent source', () => {
+    for (const insight of ['victim_knew_danger', 'blackwood_affair']) {
+        const h = createHarness(['hidden_note', 'wire_fragment'], [insight]);
+        const verdict = h.screen._checkDeduction(h.first, 'housekeeper', 'love', 'sedative');
+        assert.equal(verdict.proof.sufficient, true);
+        const manager = new h.manager(null, null, h.inventory);
+        manager.currentCase = h.first;
+        manager.caseState = 'active';
+        assert.equal(manager.checkFinalAnswer('мэри').isCorrect, true);
+        assert.equal(manager.caseState, 'solved');
+    }
 });
 
 test('private checks never accuse Anna, but an explicit public declaration does', () => {
