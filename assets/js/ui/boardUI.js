@@ -149,16 +149,16 @@ class BoardUI {
             const evidence = slot.evidenceId ? getObjectById(slot.evidenceId) : null;
             return `
                 <div class="board-slot ${evidence ? 'slot-filled' : 'slot-empty'}"
-                     id="${slot.id}"
+                     id="${this._escapeHTML(slot.id)}"
                      style="left: ${slot.x}%; top: ${slot.y}%;"
-                     data-slot-id="${slot.id}" role="button" tabindex="0"
+                     data-slot-id="${this._escapeHTML(slot.id)}" role="button" tabindex="0"
                      aria-label="${this._escapeHTML(slot.label)}: ${this._escapeHTML(evidence?.name || 'свободно')}. ${evidence ? 'Разместить другую улику вместо текущей' : 'Разместить выбранную улику'}">
-                    <div class="slot-label">${slot.label}</div>
+                    <div class="slot-label">${this._escapeHTML(slot.label)}</div>
                     <div class="slot-content">
                         ${evidence ? `
-                            <span class="slot-evidence-icon">${evidence.icon}</span>
-                            <span class="slot-evidence-name">${evidence.name}</span>
-                            <button class="slot-remove-btn" type="button" data-slot="${slot.id}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
+                            <span class="slot-evidence-icon">${this._escapeHTML(evidence.icon)}</span>
+                            <span class="slot-evidence-name">${this._escapeHTML(evidence.name)}</span>
+                            <button class="slot-remove-btn" type="button" data-slot="${this._escapeHTML(slot.id)}" aria-label="Убрать улику из ${this._escapeHTML(slot.label)}">✕</button>
                         ` : `
                             <span class="slot-placeholder">Место для улики</span>
                         `}
@@ -175,7 +175,7 @@ class BoardUI {
         if (evidenceObjects.length === 0) return '<div class="pool-empty">Все улики на доске</div>';
         return evidenceObjects.map(ev => `
             <button type="button" class="evidence-pool-item ${this._selectedEvidenceId === ev.id ? 'is-selected' : ''}" draggable="true" data-evidence-id="${this._escapeHTML(ev.id)}" aria-pressed="${this._selectedEvidenceId === ev.id}">
-                <span class="pool-icon">${ev.icon}</span>
+                <span class="pool-icon">${this._escapeHTML(ev.icon)}</span>
                 <span class="pool-name">${this._escapeHTML(ev.name)}</span>
             </button>
         `).join('');
