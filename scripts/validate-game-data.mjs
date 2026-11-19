@@ -22,7 +22,7 @@ for (const scriptPath of dataScripts) {
 }
 
 vm.runInContext(
-    "globalThis.__ghostSignalData = { cases: CASES_INDEX, locations: window.LOCATIONS_INDEX, npcs: window.NPCS_INDEX, objects: window.OBJECTS_INDEX, dialogues: window.DIALOGUES_INDEX, evidenceChains: window.EVIDENCE_CHAINS, endings: window.ENDINGS };",
+    "globalThis.__ghostSignalData = { cases: CASES_INDEX, locations: window.LOCATIONS_INDEX, npcs: window.NPCS_INDEX, objects: window.OBJECTS_INDEX, dialogues: window.DIALOGUES_INDEX, evidenceChains: window.EVIDENCE_CHAINS, endings: window.ENDINGS, newspapers: typeof NEWSPAPERS === 'object' ? NEWSPAPERS : {} };",
     sandbox
 );
 
@@ -603,6 +603,12 @@ for (const [caseId] of Object.entries(data.cases)) {
 for (const [id, ending] of Object.entries(data.endings || {})) {
     if (ending.id !== id) errors.push("Ending key/id mismatch: " + id);
     if (ending.caseId && !data.cases[ending.caseId]) errors.push("Ending " + id + " references missing case: " + ending.caseId);
+    if (!ending.newspaperId) errors.push("Ending " + id + " is missing its newspaper edition");
+    else checkRef(data.newspapers, ending.newspaperId, "Ending " + id + " newspaper");
+}
+
+for (const [id, newspaper] of Object.entries(data.newspapers || {})) {
+    if (newspaper.id !== id) errors.push("Newspaper key/id mismatch: " + id);
 }
 
 if (errors.length) {
