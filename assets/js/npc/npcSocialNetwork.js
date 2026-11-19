@@ -329,6 +329,35 @@ class NPCSocialNetwork {
         return { published: true, queued };
     }
 
+    // A withdrawn accusation may be shared only after the accused NPC has
+    // actually taken part in the dialogue action that records the retraction.
+    publishAccusationRetraction(npcId, accusationId, sourceEvent) {
+        const accusation = this.memoryService?.getAccusations(npcId)?.find(item => item.id === accusationId);
+        if (!this.caseConfig || !npcId || !accusation || accusation.status !== 'retracted' ||
+            !sourceEvent?.dialogueId || !sourceEvent?.nodeId ||
+            !this.memoryService?.hasVisitedNode(npcId, sourceEvent.dialogueId, sourceEvent.nodeId)) {
+            return { published: false, reason: 'unverified_retraction' };
+        }
+        const state = this._ensureState();
+        const reportId = 'accusation-retracted-' + this.currentCaseId + '-' + npcId + '-' + accusationId;
+        if (state.publishedIds.includes(reportId)) return { published: false, reason: 'already_published' };
+        const report = {
+            id: reportId, kind: 'detective_behavior', targetNpcId: 'detective',
+            sourceName: this._name(npcId),
+            text: this._name(npcId) + ' сообщил(а), что детектив отозвал обвинение. Причины и обстоятельства отзыва следует проверять по исходному разговору.'
+        };
+        const source = {
+            dialogueId: sourceEvent.dialogueId, nodeId: sourceEvent.nodeId,
+            answerText: 'Детектив отозвал обвинение: ' + accusation.text, tone: 'reassuring'
+        };
+        state.publishedIds.push(reportId);
+        this._recordEvent('reported', { fromNpcId: npcId, reportId, reportKind: report.kind,
+            summary: report.text, reason: 'verified_accusation_retraction' });
+        const queued = this._queueOutgoing(npcId, report, source, {
+            originalSourceNpcId: npcId, originalSourceName: this._name(npcId), path: [npcId], hops: 0
+        });
+        return { published: true, queued };
+    }
     // A correction travels only after Anna actually receives the verified
     // restitution dialogue. An apology or an inventory insight alone cannot
     // create this report, and the chain still follows ordinary social links.
