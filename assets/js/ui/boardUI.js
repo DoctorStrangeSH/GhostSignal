@@ -324,6 +324,8 @@ class BoardUI {
         const timed = facts.filter(fact => fact.minute !== null);
         const timeClass = fact => fact.minute === null ? 'unknown' : fact.certainty === 'approximate' ? 'approximate' : 'recorded';
         const badge = fact => fact.minute === null ? 'НЕ УСТАНОВЛЕНО' : fact.certainty === 'approximate' ? 'ПРИБЛИЗИТЕЛЬНО' : 'ПО ДОКУМЕНТУ';
+        const uncertaintyLabel = fact => Number.isInteger(fact.uncertaintyMinutes)
+            ? `ОКНО ±${fact.uncertaintyMinutes} МИН.` : '';
         const chronologyReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
             .filter(event => event.action === 'chronology_reviewed').map(event => ({ ...event, title: h.title, active: h.status !== 'abandoned' })));
         const causalReviews = (this.board?.hypotheses || []).flatMap(h => (h.history || [])
@@ -342,6 +344,7 @@ class BoardUI {
             ${facts.length ? `<ol class="noir-timeline" aria-label="Хронология обнаруженных событий">${facts.map(f => `<li class="noir-timeline-card noir-timeline-card--${timeClass(f)}${this._chronologySelection.includes(f.id) ? ' is-selected' : ''}">
                 <button class="noir-timeline-select" type="button" data-timeline-id="${this._escapeHTML(f.id)}" aria-pressed="${this._chronologySelection.includes(f.id)}" aria-label="Выбрать событие: ${this._escapeHTML(f.label)}">${this._chronologySelection.indexOf(f.id) === 0 ? '01 · ВЫБРАНО' : this._chronologySelection.indexOf(f.id) === 1 ? '02 · ВЫБРАНО' : 'ВЫБРАТЬ'}</button>
                 <div class="noir-timeline-card-top"><time>${this._escapeHTML(timeLabel(f))}</time><span class="noir-timeline-badge">${badge(f)}</span></div>
+                ${uncertaintyLabel(f) ? `<span class="noir-timeline-uncertainty">${uncertaintyLabel(f)}</span>` : ''}
                 <strong class="noir-timeline-event">${this._escapeHTML(f.label)}</strong>
                 <span class="noir-timeline-source">ИСТОЧНИК · ${this._escapeHTML(getObjectById(f.evidenceId)?.name || f.evidenceId)}</span>
                 ${f.caveat ? `<p class="noir-timeline-caveat">${this._escapeHTML(f.caveat)}</p>` : ''}
@@ -475,7 +478,9 @@ class BoardUI {
                 this.container.querySelector('#chronology-second')?.value, ids);
             const target = this.container.querySelector('#chronology-result');
             if (target) target.textContent = comparison
-                ? `${comparison.minutesApart === null ? 'Точный интервал не установлен.' : comparison.minutesApart + ' мин. между отметками.'} ${comparison.warning}`
+                ? `${comparison.temporalRelation === 'first_before_second' ? 'Первое окно раньше второго.' :
+                    comparison.temporalRelation === 'first_after_second' ? 'Первое окно позже второго.' :
+                    comparison.temporalRelation === 'overlap_possible' ? 'Временные окна пересекаются.' : 'Порядок событий не установлен.'} ${comparison.minutesApart === null ? '' : comparison.minutesApart + ' мин. между точными отметками. '} ${comparison.warning}`
                 : 'Выберите две разные доступные отметки.';
         });
     }
