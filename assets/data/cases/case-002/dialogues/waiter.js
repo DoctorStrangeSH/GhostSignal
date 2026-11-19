@@ -561,6 +561,20 @@ const DIALOGUE_WAITER = {
                         hiddenWhenUnavailable: true
                     },
                     {
+                        text: "Джо уже ответил на твою просьбу о сопровождении?",
+                        nextNode: "thomas_hears_joe_can_discuss_escort",
+                        tone: "calm",
+                        condition: "all:npc_received_escort_response:joe-replies-to-thomas-interview-request:available_to_discuss&not:has_visited_node:thomas_hears_joe_can_discuss_escort",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
+                        text: "Джо уже ответил на твою просьбу о сопровождении?",
+                        nextNode: "thomas_hears_joe_delayed_escort",
+                        tone: "calm",
+                        condition: "all:npc_received_escort_response:joe-replies-to-thomas-interview-request:propose_later&not:has_visited_node:thomas_hears_joe_delayed_escort",
+                        hiddenWhenUnavailable: true
+                    },
+                    {
                         text: "Томас, ты решил, на каких условиях говорить после письма Джо?",
                         nextNode: "thomas_requests_joe_at_interview",
                         tone: "calm",
@@ -609,6 +623,25 @@ const DIALOGUE_WAITER = {
                         condition: "all:npc_witness_work_decision:thomas-decides-work-after-protection-delay:document_help&not:hasInsight:thomas_family_protected&not:has_visited_node:thomas_prepares_supporting_documents",
                         hiddenWhenUnavailable: true
                     }
+                ]
+            },
+
+            thomas_hears_joe_can_discuss_escort: {
+                speaker: "npc",
+                text: "Да, Джо ответил мне напрямую: он готов обсудить присутствие на дополнительном интервью. Но время мы ещё не согласовали, а значит, встречи пока нет. Я не меняю решение о личных сведениях и готов отвечать на конкретные вопросы о собственных наблюдениях.",
+                mood: "cautious",
+                answers: [
+                    { text: "Уважу ваши условия. Начнём с того, что ты видел.", nextNode: "he_saw", tone: "calm" },
+                    { text: "Пусть вы сначала согласуете время.", nextNode: "end_waiter_guarded", tone: "reassuring" }
+                ]
+            },
+            thomas_hears_joe_delayed_escort: {
+                speaker: "npc",
+                text: "Джо написал, что сейчас занят и предлагает договориться позже. Я не стану считать это отказом навсегда, но проводить дополнительное интервью без него пока не хочу. Кратко уточнить собственные наблюдения я могу и сейчас. Адрес семьи к делу не относится.",
+                mood: "guarded",
+                answers: [
+                    { text: "Не буду настаивать на дополнительной беседе.", nextNode: "end_waiter_guarded", tone: "calm" },
+                    { text: "Уточним только то, что ты видел лично.", nextNode: "he_saw", tone: "procedural" }
                 ]
             },
 
