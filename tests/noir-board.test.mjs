@@ -70,6 +70,14 @@ test('chronology UI exposes explicit uncertainty windows and avoids exact-order 
     assert.match(ui, /Порядок событий не установлен\./);
     assert.match(css, /\.noir-timeline-uncertainty/);
 });
+test('alibi UI collects explicit timing uncertainty and displays route compatibility categories', () => {
+    const ui = read('assets/js/ui/boardUI.js');
+    assert.match(ui, /reviewAlibiRouteWindows/);
+    assert.match(ui, /name="uncertaintyMinutes"/);
+    assert.match(ui, /ВОЗМОЖНО/);
+    assert.match(ui, /НЕДОСТАТОЧНО ДАННЫХ/);
+    assert.match(ui, /ТРЕБУЕТ ПРОВЕРКИ/);
+});
 test('board cards escape evidence metadata and slot labels before rendering HTML', () => {
     const data = { id: 'photo', name: '<img src=x onerror=alert(1)>', icon: '<svg onload=alert(1)>' };
     const context = vm.createContext({
