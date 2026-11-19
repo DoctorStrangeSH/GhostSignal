@@ -141,3 +141,32 @@ test('an evidence-gated solved case never receives the unsolved ending when the 
     assert.equal(solved.condition, 'evidence_count_4');
     assert.notEqual(solved.title, 'Дело не раскрыто');
 });
+
+test('Mary confession alone cannot award a rescue before Blackwood location is disclosed', () => {
+    const registered = {};
+    const context = vm.createContext({
+        console,
+        registerData: (_type, data) => Object.assign(registered, data)
+    });
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/cases/case-001/endings.js'), 'utf8'), context);
+    const dialogue = readFileSync(resolve(root, 'assets/data/cases/case-001/dialogues/housekeeper.js'), 'utf8');
+    vm.runInContext(dialogue, context);
+    const locationNode = vm.runInContext('DIALOGUE_HOUSEKEEPER.tree.nodes.where_is_he', context);
+    assert.equal(locationNode.givesInsight, 'blackwood_location_revealed');
+
+    const { endings } = loadSystems();
+    endings.registerEnding('mary-perfect', registered['case-001-perfect']);
+    endings.registerEnding('mary-partial', registered['case-001-partial']);
+    endings.registerEnding('mary-failed', registered['case-001-failed']);
+    const inventory = insights => ({ hasInsight: id => insights.includes(id) });
+    const caseData = { id: 'case-001' };
+
+    const premature = endings.determineEnding(caseData, inventory(['mary_full_confession']), 6, { solved: true });
+    assert.equal(premature.id, 'case-001-partial');
+    assert.doesNotMatch(premature.text, /Блэквуд найден в подвале/);
+
+    const earned = endings.determineEnding(caseData,
+        inventory(['mary_full_confession', 'blackwood_location_revealed']), 6, { solved: true });
+    assert.equal(earned.id, 'case-001-perfect');
+    assert.match(earned.text, /полиция находит Блэквуда/);
+});
