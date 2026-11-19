@@ -119,7 +119,10 @@ try {
         await page.locator('#btn-reset-case').click();
         await page.locator('#screen-main-menu.active').waitFor();
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
-        await page.locator('#btn-continue.hidden').waitFor();
+        await page.locator('#btn-continue').waitFor({ state: 'attached' });
+        if (!await page.locator('#btn-continue').evaluate(button => button.classList.contains('hidden'))) {
+            throw new Error(`${name}: Continue remains available after case restart`);
+        }
 
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
