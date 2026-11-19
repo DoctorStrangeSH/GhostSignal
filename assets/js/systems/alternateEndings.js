@@ -31,6 +31,14 @@ class AlternateEndings {
             .sort((a, b) => Number(b.condition.split('_').pop()) - Number(a.condition.split('_').pop()))
             .find(ending => collectedCount >= Number(ending.condition.split('_').pop()));
         if (!selected && partial) selected = partial;
+        // A correct, evidence-gated deduction has already solved the case.
+        // An incomplete exploration score may limit the epilogue quality, but
+        // it must never turn a solved case into the authored failure ending.
+        if (!selected && socialContext?.solved) {
+            selected = configured
+                .filter(ending => ending.condition?.startsWith('evidence_count_'))
+                .sort((a, b) => Number(a.condition.split('_').pop()) - Number(b.condition.split('_').pop()))[0];
+        }
         if (!selected) selected = configured.find(ending => ending.condition === 'default') || this._getDefaultEnding(caseData);
 
         const summary = socialContext?.npcMemoryService?.getCaseSocialSummary?.(caseData?.id);

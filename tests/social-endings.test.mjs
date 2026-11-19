@@ -129,3 +129,15 @@ test('collecting many clues does not grant a perfect ending without the confessi
         { hasInsight: () => false }, 1);
     assert.equal(failed.id, 'default');
 });
+
+test('an evidence-gated solved case never receives the unsolved ending when the count is low', () => {
+    const { endings } = loadSystems();
+    const inventory = { hasInsight: () => false };
+    const unsolved = endings.determineEnding({ id: 'case-002' }, inventory, 2);
+    assert.equal(unsolved.id, 'default');
+
+    const solved = endings.determineEnding({ id: 'case-002' }, inventory, 2, { solved: true });
+    assert.equal(solved.id, 'partial');
+    assert.equal(solved.condition, 'evidence_count_4');
+    assert.notEqual(solved.title, 'Дело не раскрыто');
+});
