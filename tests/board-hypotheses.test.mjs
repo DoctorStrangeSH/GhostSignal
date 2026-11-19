@@ -602,13 +602,13 @@ test('alibi route window review respects explicit uncertainty and never treats u
         subject: 'Кейн', location: locationId, locationId, startMinute, endMinute, precision, uncertaintyMinutes, kind: 'statement', sourceId: 'w'
     }, context);
     add('bar', 600, 605, 'approximate', 3);
-    add('booth', 612, 617, 'approximate', 2);
+    add('booth', 610, 615, 'approximate', 2);
     const edges = [{ from: 'bar', to: 'alley', minutes: 5, bidirectional: true }, { from: 'alley', to: 'booth', minutes: 6, bidirectional: true }];
     const tight = board.reviewAlibiRouteWindows(edges, locations)[0];
     assert.equal(tight.status, 'route_time_tight');
     assert.equal(tight.estimatedMinutes, 11);
-    assert.equal(tight.availableMinutesMin, 2);
-    assert.equal(tight.availableMinutesMax, 12);
+    assert.equal(tight.availableMinutesMin, 0);
+    assert.equal(tight.availableMinutesMax, 10);
     assert.match(tight.reason, /альтернативный путь ещё не исключён/);
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(loaded.alibiClaims[0].uncertaintyMinutes, 3);
