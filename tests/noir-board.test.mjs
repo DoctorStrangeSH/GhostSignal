@@ -36,6 +36,14 @@ test('hypothesis board exposes alternative creation and clearly labels grouped v
     assert.match(css, /\.hypothesis-alternatives/);
     assert.match(css, /\.hypothesis-alternatives li\.is-current/);
 });
+test('hypothesis UI renders point-in-time history and explicitly avoids invented timestamps', () => {
+    const ui = read('assets/js/ui/boardUI.js');
+    const css = read('assets/css/components/board.css');
+    assert.match(ui, /getHypothesisHistory/);
+    assert.match(ui, /Состав версии на этот момент/);
+    assert.match(ui, /Точные даты и время не показываются/);
+    assert.match(css, /\.hypothesis-history-event/);
+});
 test('hypothesis UI renders shared, unique and pending material for alternative versions', () => {
     const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {}, emit() {} },
         getObjectById: id => ({ id, name: 'Улика ' + id }) });
