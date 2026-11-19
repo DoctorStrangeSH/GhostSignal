@@ -459,3 +459,15 @@
 .hypothesis-alternatives p { margin: 6px 0 0; color: var(--text-dim); font-size: 10px; line-height: 1.45; }
 .hypothesis-alternative { margin: 0 6px 8px 0; }
 @media (max-width: 520px) { .hypothesis-alternatives li { align-items: flex-start; flex-direction: column; gap: 3px; } }
+
+
+/* Side-by-side source comparison for alternative detective theories. */
+.hypothesis-comparison-detail { margin: 10px 0 0; padding: 10px; border: 1px solid rgba(212,160,23,.18); border-radius: var(--radius-md); background: rgba(0,0,0,.16); }
+.hypothesis-comparison-detail > strong { display:block; color:var(--accent-amber-glow); font-size:10px; letter-spacing:.06em; overflow-wrap:anywhere; }
+.hypothesis-comparison-detail p,.hypothesis-comparison-detail small { color:var(--text-dim); font-size:10px; line-height:1.5; }
+.hypothesis-comparison-detail ul { margin:6px 0; padding-left:18px; color:var(--text-secondary); font-size:11px; }
+.hypothesis-comparison-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:8px; }
+.hypothesis-comparison-columns > div { min-width:0; padding:8px; background:rgba(255,255,255,.025); border-radius:var(--radius-sm); }
+.hypothesis-comparison-columns b { color:var(--text-primary); font-size:10px; }
+.hypothesis-comparison-pending { border-left:2px solid var(--accent-amber-glow); padding-left:8px; }
+@media(max-width:520px){.hypothesis-comparison-columns{grid-template-columns:1fr;}}
