@@ -37,7 +37,7 @@ test('hypothesis board exposes alternative creation and clearly labels grouped v
     assert.match(css, /\.hypothesis-alternatives li\.is-current/);
 });
 test('hypothesis UI renders shared, unique and pending material for alternative versions', () => {
-    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {}, emit() {} },
         getObjectById: id => ({ id, name: 'Улика ' + id }) });
     vm.runInContext(read('assets/js/ui/boardUI.js'), context);
     const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
