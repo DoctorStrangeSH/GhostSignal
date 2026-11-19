@@ -126,6 +126,24 @@ test('source audit flags one witness, shared rumor and revised records without a
     assert.equal(board.reviewHypothesisSources('unknown'), null);
 });
 
+test('archived testimony remains visible but does not create active source-dependency warnings', () => {
+    const board = boardRuntime().create();
+    const id = board.addHypothesis('Проверка актуальности источников');
+    board.linkHypothesis(id, 'statement', 'current-a', 'for');
+    board.linkHypothesis(id, 'statement', 'current-b', 'for');
+    board.linkHypothesis(id, 'statement', 'archived', 'against');
+    const review = board.reviewHypothesisSources(id, [
+        { id: 'current-a', npcId: 'joe', status: 'active', corroboratesRumorIds: ['rumor-shared'] },
+        { id: 'current-b', npcId: 'thomas', status: 'active', referencesRumorIds: ['rumor-shared'] },
+        { id: 'archived', npcId: 'joe', status: 'superseded', corroboratesRumorIds: ['rumor-shared'] }
+    ]);
+    assert.ok(review.warnings.some(w => w.type === 'shared_rumor_reference' &&
+        w.ids.includes('current-a') && w.ids.includes('current-b')));
+    assert.ok(review.warnings.some(w => w.type === 'superseded' && w.ids.includes('archived')));
+    assert.equal(review.warnings.some(w => w.type === 'same_witness' && w.ids.includes('archived')), false);
+    assert.equal(review.warnings.some(w => w.type === 'shared_rumor_reference' && w.ids.includes('archived')), false);
+});
+
 test('rumor inquiry requires observed references, discovered leads and persists without a truth verdict', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
