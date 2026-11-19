@@ -50,7 +50,8 @@ test('hypothesis history reconstructs point-in-time wording and source links acr
     assert.equal(history[2].title, 'Кейн мог покинуть бар');
     assert.equal(history[2].previousTitle, 'Кейн был у бара');
     assert.equal(history[4].links.length, 1);
-    assert.equal(history[5].links.length, 0);
+    assert.equal(history[5].links.length, 1, 'abandoning a hypothesis preserves its evidence trail');
+    assert.equal(history[5].links[0].sourceId, 'joe-v1');
     assert.equal(history[5].status, 'abandoned');
     assert.equal('timestamp' in history[0], false);
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
