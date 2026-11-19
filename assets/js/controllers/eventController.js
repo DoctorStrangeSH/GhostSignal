@@ -278,7 +278,7 @@ class EventController {
                     caseData,
                     app.inventory,
                     app.caseManager?.evidenceFound || 0,
-                    { npcMemoryService: app.npcMemoryService }
+                    { npcMemoryService: app.npcMemoryService, solved: true }
                 );
                 if (ending) {
                     events.emit('ending:determined', { caseId, ending });
