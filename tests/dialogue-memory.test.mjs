@@ -627,12 +627,12 @@ test("DialogueEngine presents a manually prepared contradiction to the selected 
     const result = engine.presentPreparedContradiction();
     assert.equal(result.success, true);
     assert.equal(result.reaction, true);
-    assert.match(result.node.text, /сопоставили мои слова/i);
+    assert.match(result.node.text, /сопоставили моё алиби/i);
     assert.equal(inventory.hasInsight("kane_alibi_broken"), true);
     assert.equal(memory.hasConfronted("business_rival", "waiter-kane-at-poisoning", "kane-left-before-poisoning"), true);
     assert.equal(memory.getPreparedConfrontation("business_rival"), null);
     const availableAfterConfrontation = engine.getAvailableAnswers();
-    assert.ok(availableAfterConfrontation.some(answer => answer.text.includes("Томас видел") && answer.isAvailable));
+    assert.ok(availableAfterConfrontation.some(answer => answer.text.includes("Почему вы скрыли возвращение") && answer.isAvailable));
     assert.ok(availableAfterConfrontation.some(answer => answer.text.includes("Почему вы солгали") && answer.isAvailable));
     assert.equal(memory.hasExposedLie("business_rival", "kane-left-before-poisoning"), true);
     assert.equal(memory.getPressure("business_rival"), 25);
@@ -641,6 +641,28 @@ test("DialogueEngine presents a manually prepared contradiction to the selected 
     const repeated = engine.presentPreparedContradiction();
     assert.equal(repeated.success, false);
     assert.equal(repeated.reason, "no_prepared_confrontation");
+});
+
+test("Kane's scripted contradiction does not invent Thomas as a witness when Joe is the source", () => {
+    const { engine, memory, inventory } = createDialogueHarness();
+    memory.recordClaim('bartender', {
+        id: 'joe-sees-kane-return', topic: 'kane-presence-during-poisoning',
+        value: 'returned-to-bar', summary: 'Джо видел Кейна в зале', sourceName: 'Джо'
+    });
+    engine.startDialogue('dialogue-rival-full');
+    const prepared = memory.prepareConfrontation(
+        'joe-sees-kane-return', 'kane-left-before-poisoning', 'business_rival'
+    );
+    assert.equal(prepared.prepared, true);
+    const result = engine.presentPreparedContradiction();
+    assert.equal(result.success, true);
+    assert.equal(result.reaction, true);
+    assert.doesNotMatch(result.node.text, /Томас/);
+    assert.match(result.node.text, /вернулся в зал/);
+    assert.equal(inventory.hasInsight('kane_alibi_broken'), true);
+    const responses = engine.getAvailableAnswers();
+    assert.equal(responses.some(answer => answer.text.includes('Томас видел')), false);
+    assert.ok(responses.some(answer => answer.text.includes('Почему вы скрыли возвращение') && answer.isAvailable));
 });
 
 test("Unscripted contradiction responds to NPC distrust but does not invent a confession", () => {
