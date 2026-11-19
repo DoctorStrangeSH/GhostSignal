@@ -122,7 +122,7 @@ class InvestigationBoard {
                 (Number.isInteger(fact.minute) && fact.minute >= 0 && fact.minute < 1440)) &&
                 typeof fact.id === 'string' && typeof fact.label === 'string' && typeof fact.scope === 'string')
                 .map(fact => ({ evidenceId, id: fact.id, minute: fact.minute, label: fact.label,
-                    scope: fact.scope, certainty: fact.certainty || 'unknown', caveat: fact.caveat || '',
+                    scope: fact.scope, certainty: fact.certainty || 'recorded', caveat: fact.caveat || '',
                     uncertaintyMinutes: Number.isInteger(fact.uncertaintyMinutes) &&
                         fact.uncertaintyMinutes >= 0 && fact.uncertaintyMinutes <= 720
                         ? fact.uncertaintyMinutes : null }));
