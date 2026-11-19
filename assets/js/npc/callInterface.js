@@ -198,6 +198,13 @@ class CallInterface {
                 btn.textContent = answer.isAvailable ? answer.text : '🔒 ' + answer.text;
                 btn.disabled = !answer.isAvailable;
 
+                if (!answer.isAvailable && answer.lockReason) {
+                    const hint = document.createElement('span');
+                    hint.className = 'answer-lock-reason';
+                    hint.textContent = answer.lockReason;
+                    btn.appendChild(hint);
+                }
+
                 if (answer.isAvailable) {
                     btn.addEventListener('click', () => {
                         // Добавляем ответ игрока в сообщения
