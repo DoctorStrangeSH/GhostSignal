@@ -282,7 +282,7 @@ class InvestigationBoard {
     }
 
     // Проверить, сделаны ли правильные выводы
-    addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision }, context = {}) {
+    addAlibiClaim({ subject, location, locationId, startMinute, endMinute, kind, sourceId, precision, uncertaintyMinutes = null }, context = {}) {
         const who = String(subject ?? '').trim().slice(0, 100);
         const where = String(location ?? '').trim().slice(0, 120);
         const source = String(sourceId ?? '').trim().slice(0, 240);
@@ -290,7 +290,8 @@ class InvestigationBoard {
         if (locationId && !linkedLocation) return null;
         if (!who || !where || !source || !Number.isInteger(startMinute) || !Number.isInteger(endMinute) ||
             startMinute < 0 || endMinute >= 1440 || startMinute > endMinute ||
-            !['exact', 'approximate'].includes(precision)) return null;
+            !['exact', 'approximate'].includes(precision) ||
+            (uncertaintyMinutes !== null && (!Number.isInteger(uncertaintyMinutes) || uncertaintyMinutes < 0 || uncertaintyMinutes > 720))) return null;
         if (kind === 'statement' && !context.statements?.some(s => s.id === source && s.status !== 'superseded')) return null;
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return null;
         if (!['statement', 'evidence'].includes(kind) || this.alibiClaims.some(c =>
@@ -440,6 +441,69 @@ class InvestigationBoard {
                     routeLocationIds: estimate.locations, estimatedMinutes: estimate.minutes, availableMinutes,
                     reason: `Между ${names.get(earlier.locationId)} и ${names.get(later.locationId)} по известному маршруту оценка ${estimate.minutes} мин. (через ${estimate.locations.map(id => names.get(id)).join(' → ')}), а между версиями ${availableMinutes} мин. Проверьте точность времени и альтернативные пути: это не доказательство невозможности перемещения.` });
             }
+        }
+        return findings;
+    }
+
+
+    // Compare alibi windows against the shortest documented route. An unmodeled
+    // route may exist, so a tight estimate is never treated as proof of impossibility.
+    reviewAlibiRouteWindows(routeEdges = [], knownLocations = []) {
+        const locations = new Map((Array.isArray(knownLocations) ? knownLocations : [])
+            .filter(loc => loc && typeof loc.id === 'string').map(loc => [loc.id, loc]));
+        const graph = new Map();
+        for (const edge of Array.isArray(routeEdges) ? routeEdges : []) {
+            if (!edge || !locations.has(edge.from) || !locations.has(edge.to) || edge.from === edge.to ||
+                !Number.isInteger(edge.minutes) || edge.minutes <= 0 || edge.minutes > 180) continue;
+            const add = (from, to) => { if (!graph.has(from)) graph.set(from, []); graph.get(from).push({ to, minutes: edge.minutes }); };
+            add(edge.from, edge.to);
+            if (edge.bidirectional === true) add(edge.to, edge.from);
+        }
+        const shortestRoute = (from, to) => {
+            const distances = new Map([[from, 0]]), paths = new Map([[from, [from]]]), pending = new Set([from]);
+            while (pending.size) {
+                const current = [...pending].reduce((a, b) => distances.get(a) <= distances.get(b) ? a : b);
+                pending.delete(current);
+                if (current === to) return { minutes: distances.get(current), locations: paths.get(current) };
+                for (const edge of graph.get(current) || []) {
+                    const next = distances.get(current) + edge.minutes;
+                    if (next >= (distances.get(edge.to) ?? Infinity)) continue;
+                    distances.set(edge.to, next); paths.set(edge.to, [...paths.get(current), edge.to]); pending.add(edge.to);
+                }
+            }
+            return null;
+        };
+        const findings = [];
+        for (let i = 0; i < this.alibiClaims.length; i++) for (let j = i + 1; j < this.alibiClaims.length; j++) {
+            const a = this.alibiClaims[i], b = this.alibiClaims[j];
+            if (a.subject.toLocaleLowerCase() !== b.subject.toLocaleLowerCase() ||
+                !locations.has(a.locationId) || !locations.has(b.locationId) || a.locationId === b.locationId) continue;
+            const [earlier, later] = a.startMinute <= b.startMinute ? [a, b] : [b, a];
+            if (earlier.endMinute > later.startMinute) continue;
+            const route = shortestRoute(earlier.locationId, later.locationId);
+            if (!route) {
+                findings.push({ ids: [earlier.id, later.id], subject: a.subject, status: 'insufficient_data',
+                    reason: 'Для этой пары мест нет известного маршрута. Это недостаток карты, а не доказательство невозможности перемещения.' });
+                continue;
+            }
+            const earlyUncertainty = earlier.uncertaintyMinutes ?? (earlier.precision === 'exact' ? 0 : null);
+            const lateUncertainty = later.uncertaintyMinutes ?? (later.precision === 'exact' ? 0 : null);
+            if (earlyUncertainty === null || lateUncertainty === null) {
+                findings.push({ ids: [earlier.id, later.id], subject: a.subject, status: 'insufficient_data',
+                    routeLocationIds: route.locations, estimatedMinutes: route.minutes,
+                    reason: 'Маршрут известен, но для приблизительного времени не задана погрешность.' });
+                continue;
+            }
+            const availableMinutesMin = later.startMinute - lateUncertainty - (earlier.endMinute + earlyUncertainty);
+            const availableMinutesMax = later.startMinute + lateUncertainty - (earlier.endMinute - earlyUncertainty);
+            const common = { ids: [earlier.id, later.id], subject: a.subject, routeLocationIds: route.locations,
+                estimatedMinutes: route.minutes, availableMinutesMin, availableMinutesMax };
+            if (availableMinutesMax < route.minutes) findings.push({ ...common, status: 'route_time_tight',
+                reason: `Даже при наиболее благоприятной погрешности доступно до ${availableMinutesMax} мин., а кратчайший известный маршрут занимает ${route.minutes} мин. Неизвестный альтернативный путь ещё не исключён.` });
+            else if (availableMinutesMin >= route.minutes) findings.push({ ...common, status: 'plausible',
+                reason: `Даже при консервативной оценке доступно не менее ${availableMinutesMin} мин.; известный маршрут занимает ${route.minutes} мин. Это не доказывает, что персонаж им воспользовался.` });
+            else findings.push({ ...common, status: 'uncertain',
+                reason: `Диапазон доступного времени ${availableMinutesMin}–${availableMinutesMax} мин. пересекает оценку маршрута ${route.minutes} мин.` });
         }
         return findings;
     }
@@ -848,7 +912,8 @@ class InvestigationBoard {
                 c.startMinute <= c.endMinute).map(c => ({ id: c.id, subject: c.subject.slice(0, 100),
                 location: c.location.slice(0, 120), locationId: typeof c.locationId === 'string' ? c.locationId.slice(0, 120) : null,
                 sourceId: c.sourceId.slice(0, 240), kind: c.kind,
-                precision: c.precision, startMinute: c.startMinute, endMinute: c.endMinute })) : [];
+                precision: c.precision, startMinute: c.startMinute, endMinute: c.endMinute,
+                uncertaintyMinutes: Number.isInteger(c.uncertaintyMinutes) && c.uncertaintyMinutes >= 0 && c.uncertaintyMinutes <= 720 ? c.uncertaintyMinutes : null })) : [];
             board.routeQuestions = Array.isArray(json.routeQuestions) ? json.routeQuestions.filter(q =>
                 q && typeof q.npcId === 'string' && Array.isArray(q.ids) && q.ids.length === 2 &&
                 q.ids.every(id => typeof id === 'string' && board.alibiClaims.some(c => c.id === id)) &&
