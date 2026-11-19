@@ -124,6 +124,24 @@ try {
             throw new Error(`${name}: Continue remains available after case restart`);
         }
 
+        // A fresh investigation must remain playable after the first case was
+        // restarted; the previous case must not leak into the new save.
+        await page.locator('#btn-open-cases').click();
+        await page.locator('.case-btn[data-case-id="case-002"]').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+        await page.keyboard.press('Control+s');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-continue:not(.hidden)').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+        const resumedCase = await page.evaluate(() => window.app?.progress?.activeCase ?? null);
+        if (resumedCase !== 'case-002') {
+            throw new Error(`${name}: expected case-002 after resume, got ${resumedCase}`);
+        }
+
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
     }
