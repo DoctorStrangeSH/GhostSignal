@@ -73,6 +73,16 @@ const DIALOGUE_BARTENDER_CASE2 = {
             greeting: {
                 speaker: "npc",
                 text: "Снова вы, детектив. После того, что случилось... я думал закрыть бар. Но жизнь продолжается. Что я могу для вас сделать?",
+                priorCaseOpening: {
+                    harmed: {
+                        memoryTag: "player_threatened",
+                        text: "И ещё: я не забыл, как вы угрожали мне в прошлый раз. Сегодня я расскажу только то, что видел сам."
+                    },
+                    helped: {
+                        memoryTag: "player_reassured",
+                        text: "Я помню и то, как вы выслушали меня в прошлый раз. Надеюсь, теперь тоже обойдёмся без поспешных выводов."
+                    }
+                },
                 mood: "tired",
                 innerThought: "Он устал. Но хочет помочь.",
                 answers: [

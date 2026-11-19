@@ -335,6 +335,47 @@ test("DialogueEngine remembers how Joe was treated in the previous investigation
     assert.equal(engine._checkCondition("familiarity_at_least:2"), true);
 });
 
+test('Joe personally acknowledges a prior threat on first contact in case two', () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase('case-001');
+    memory.recordAnswerSelected('bartender', 'dialogue-bartender', 'greeting', {
+        text: 'Не заставляйте меня повторять.', tone: 'threatening',
+        memoryImportance: 4, memoryTags: ['player_threatened']
+    });
+    memory.setCase('case-002');
+
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.equal(engine.currentNode.id, 'greeting');
+    assert.match(engine.currentNode.text, /я не забыл, как вы угрожали/i);
+    engine.reset();
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.doesNotMatch(engine.currentNode.text, /я не забыл, как вы угрожали/i,
+        'the same personal introduction must not replay on every call');
+});
+
+test('Joe only acknowledges his own prior kindness, not another witness memory', () => {
+    const { engine, memory } = createDialogueHarness();
+    memory.setCase('case-001');
+    memory.recordAnswerSelected('waiter', 'hotel-chat', 'greeting', {
+        text: 'Спасибо за помощь.', tone: 'reassuring',
+        memoryTags: ['player_reassured'], memoryImportance: 3
+    });
+    memory.setCase('case-002');
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.doesNotMatch(engine.currentNode.text, /вы выслушали меня в прошлый раз/i);
+
+    engine.reset();
+    memory.setCase('case-001');
+    memory.recordAnswerSelected('bartender', 'dialogue-bartender', 'farewell', {
+        text: 'Спасибо за помощь.', tone: 'reassuring',
+        memoryTags: ['player_reassured'], memoryImportance: 3
+    });
+    memory.setCase('case-002');
+    memory.resetCase('case-002');
+    engine.startDialogue('dialogue-bartender-case2');
+    assert.match(engine.currentNode.text, /вы выслушали меня в прошлый раз/i);
+});
+
 test('Joe does not mistake a threat from the current case for an earlier investigation', () => {
     const { engine, memory, context } = createDialogueHarness();
     memory.recordAnswerSelected('bartender', 'dialogue-bartender-case2', 'current-threat', {
