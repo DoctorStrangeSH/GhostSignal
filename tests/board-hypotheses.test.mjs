@@ -786,6 +786,33 @@ test('hypothesis UI separates supporting, opposing and unchecked player assessme
     assert.match(html, /не подтверждает их автоматически/);
 });
 
+test('revised or missing testimony stops counting as current hypothesis support', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
+        getObjectById: id => ({ id, name: id }) });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.inventory = { evidence: [] };
+    ui.memoryService = { getStatements: () => [
+        { id: 'old', sourceName: 'Томас', summary: 'Первоначальная версия', status: 'superseded' },
+        { id: 'new', sourceName: 'Томас', summary: 'Уточнение', status: 'active' }
+    ] };
+    ui._renderSourceInquiries = () => '';
+    ui.board = { evidenceOnBoard: [], hypotheses: [{ id: 'h1', title: 'Проверка', status: 'open', history: [],
+        links: [
+            { kind: 'statement', sourceId: 'old', stance: 'for' },
+            { kind: 'statement', sourceId: 'deleted', stance: 'against' },
+            { kind: 'statement', sourceId: 'new', stance: 'pending' }
+        ] }], reviewHypothesisSources: () => ({ sources: [], warnings: [] }) };
+    const html = ui._renderHypotheses();
+    assert.match(html, /\+ 0 за/);
+    assert.match(html, /− 0 против/);
+    assert.match(html, /\? 1 проверить/);
+    assert.match(html, /2 архивных или недоступных показаний не учитываются/);
+    assert.match(html, /Первоначальная версия/);
+    assert.match(html, /Показание пересмотрено/);
+    assert.match(html, /Источник недоступен/);
+});
+
 test('hypothesis UI cautions about reused sources and escapes other theory titles', () => {
     const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
         getObjectById: id => ({ id, name: 'Улика ' + id }) });

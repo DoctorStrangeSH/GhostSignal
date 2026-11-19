@@ -567,15 +567,20 @@ class BoardUI {
                     <textarea id="hypothesis-new-text" class="terminal-input" maxlength="240" rows="2" required placeholder="Что, по-вашему, произошло?"></textarea>
                     <button type="submit" class="terminal-btn">ДОБАВИТЬ ВЕРСИЮ</button>
                 </form>
-                ${hypotheses.map(h => `
+                ${hypotheses.map(h => {
+                    const currentLinks = h.links.filter(link => link.kind !== 'statement' ||
+                        statements.some(item => item.id === link.sourceId && item.status !== 'superseded'));
+                    const outdatedCount = h.links.length - currentLinks.length;
+                    return `
                     <article class="testimony-entry hypothesis-entry" data-hypothesis-id="${this._escapeHTML(h.id)}" tabindex="-1">
                         <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
                             <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
                         <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">
-                            <span class="stance-for">+ ${h.links.filter(link => link.stance === 'for').length} за</span>
-                            <span class="stance-against">− ${h.links.filter(link => link.stance === 'against').length} против</span>
-                            <span class="stance-pending">? ${h.links.filter(link => link.stance === 'pending').length} проверить</span>
+                            <span class="stance-for">+ ${currentLinks.filter(link => link.stance === 'for').length} за</span>
+                            <span class="stance-against">− ${currentLinks.filter(link => link.stance === 'against').length} против</span>
+                            <span class="stance-pending">? ${currentLinks.filter(link => link.stance === 'pending').length} проверить</span>
                         </div>
+                        ${outdatedCount ? `<p class="hypothesis-stale-summary" role="status">⚠ ${outdatedCount} архивных или недоступных показаний не учитываются в текущей оценке. Проверьте новые версии ниже.</p>` : ''}
                         <div class="hypothesis-source-balance" aria-label="Типы прикреплённых источников, без оценки правдивости версии">
                             <span class="source-evidence">▣ Документы и улики: ${h.links.filter(link => link.kind === 'evidence').length}</span>
                             <span class="source-statement">◈ Показания: ${h.links.filter(link => link.kind === 'statement').length}</span>
@@ -640,7 +645,7 @@ class BoardUI {
                         ` : ''}
                         <details><summary>История изменений (${h.history.length})</summary><ol>${h.history.map(v => `<li>${this._escapeHTML(v.action)}${v.title ? ': ' + this._escapeHTML(v.title) : ''}${v.previous ? ' (было: ' + this._escapeHTML(v.previous) + ')' : ''}${v.sourceId ? ' — ' + this._escapeHTML(v.sourceId) : ''}</li>`).join('')}</ol></details>
                     </article>
-                `).join('')}
+                `; }).join('')}
             </section>
         `;
     }
