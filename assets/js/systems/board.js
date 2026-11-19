@@ -570,6 +570,34 @@ class InvestigationBoard {
         return entry.id;
     }
 
+    // Alternatives share a comparison group, but remain independent player-authored hypotheses.
+    // The group is organizational only: it never ranks or selects a "true" version.
+    createAlternativeHypothesis(id, text) {
+        const base = this.hypotheses.find(h => h.id === id);
+        const title = String(text ?? '').trim().slice(0, 240);
+        if (!base || base.status !== 'open' || !title) return null;
+        const groupId = base.alternativeGroupId || base.id;
+        if (!base.alternativeGroupId) {
+            base.alternativeGroupId = groupId;
+            base.history.push({ action: 'alternative_group_created', groupId });
+        }
+        const entryId = this.addHypothesis(title);
+        if (!entryId) return null;
+        const alternative = this.hypotheses.find(h => h.id === entryId);
+        alternative.alternativeGroupId = groupId;
+        alternative.history.push({ action: 'alternative_created', groupId, basedOn: base.id });
+        events.emit('board:updated', { action: 'hypothesis_alternative_created', id: entryId, groupId });
+        return entryId;
+    }
+
+    getHypothesisAlternatives(id) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry) return [];
+        const groupId = entry.alternativeGroupId || entry.id;
+        return this.hypotheses.filter(h => h.id === groupId || h.alternativeGroupId === groupId)
+            .map(h => ({ id: h.id, title: h.title, status: h.status, links: h.links.map(link => ({ ...link })) }));
+    }
+
     reviseHypothesis(id, text) {
         const entry = this.hypotheses.find(h => h.id === id);
         const title = String(text ?? '').trim().slice(0, 240);
@@ -743,6 +771,7 @@ class InvestigationBoard {
             board.caseId = typeof json.caseId === 'string' ? json.caseId : null;
             board.hypotheses = Array.isArray(json.hypotheses) ? json.hypotheses.filter(h => h && typeof h.id === 'string' && typeof h.title === 'string').map(h => ({
                 id: h.id, title: h.title, status: h.status === 'abandoned' ? 'abandoned' : 'open',
+                ...(typeof h.alternativeGroupId === 'string' && h.alternativeGroupId ? { alternativeGroupId: h.alternativeGroupId } : {}),
                 links: Array.isArray(h.links) ? h.links.filter(l => l && ['evidence', 'statement', 'assumption'].includes(l.kind) && ['for', 'against', 'pending'].includes(l.stance) && typeof l.sourceId === 'string') : [],
                 history: Array.isArray(h.history) ? h.history.filter(v => v && typeof v.action === 'string') : []
             })) : [];
