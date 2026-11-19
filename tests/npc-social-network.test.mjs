@@ -401,6 +401,7 @@ test("a dialogue-backed accusation retraction spreads as a new attributed event,
     const sourceEvent = { dialogueId: "dialogue-ex-wife", nodeId: "anna_withdrawal_statement", answerText: "Я принимаю ваш отказ от обвинения.", tone: "reassuring" };
     memory.recordAccusation(npcId, { id: accusationId, text: "Детектив обвинил Анну в краже." });
     assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "unverified_retraction");
+    memory.recordNodeVisited(npcId, sourceEvent.dialogueId, { id: sourceEvent.nodeId, text: sourceEvent.answerText });
     memory.recordAnswerSelected(npcId, sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: sourceEvent.tone });
     memory.resolveAccusation(npcId, accusationId, "retracted", "Детектив признал, что оснований недостаточно.");
     assert.equal(network.publishAccusationRetraction(npcId, accusationId,
