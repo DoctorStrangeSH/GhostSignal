@@ -1335,6 +1335,39 @@ test("a revised Thomas statement invalidates Kane's old confession shortcut unti
     assert.equal(engine.selectAnswer(independentRoute.index).id, "confession");
 });
 
+test("Kane cannot be confronted with Thomas's withdrawn eyewitness claim as if it were current", () => {
+    for (const revisedId of [
+        'waiter-kane-at-poisoning-v2',
+        'waiter-kane-at-poisoning-reconsidered'
+    ]) {
+        const { engine, memory, inventory } = createDialogueHarness();
+        inventory.insights.push('waiter_saw_poisoning');
+        memory.recordClaim('waiter', {
+            id: 'waiter-kane-at-poisoning', topic: 'kane-presence-during-poisoning',
+            value: 'saw-poisoning', summary: 'Томас первоначально сообщил об отравлении'
+        });
+        memory.recordClaim('waiter', {
+            id: revisedId, topic: 'kane-presence-during-poisoning',
+            value: 'saw-near-table', revisesClaimId: 'waiter-kane-at-poisoning',
+            summary: 'Томас уточнил, что не видел момента отравления'
+        });
+        engine.startDialogue('dialogue-rival-full');
+        const staleAccusation = engine.getAvailableAnswers().find(item =>
+            item.text.startsWith('Томас видел, как вы вернулись к столику')
+        );
+        assert.equal(staleAccusation?.isAvailable, false);
+        assert.equal(engine.selectAnswer(staleAccusation.index).error, 'Условие не выполнено');
+        assert.equal(inventory.hasInsight('kane_alibi_broken'), false);
+    }
+
+    const { engine, inventory } = createDialogueHarness();
+    inventory.insights.push('waiter_saw_poisoning');
+    engine.startDialogue('dialogue-rival-full');
+    assert.equal(engine.getAvailableAnswers().find(item =>
+        item.text.startsWith('Томас видел, как вы вернулись к столику')
+    )?.isAvailable, true, 'unchallenged eyewitness testimony remains usable');
+});
+
 test("Thomas's intimidation revision also prevents Kane's stale eyewitness confession route", () => {
     const { engine, memory, inventory } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");

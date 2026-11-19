@@ -85,7 +85,7 @@ const DIALOGUE_RIVAL_FULL = {
                     deception: { deliberate: true, motive: "self_preservation" }
                 },
                 answers: [
-                    { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "hasInsight:waiter_saw_poisoning" },
+                    { text: "Томас видел, как вы вернулись к столику и подсыпали порошок.", nextNode: "caught_in_lie", tone: "direct", condition: "all:hasInsight:waiter_saw_poisoning&not:case_has_claim:waiter:waiter-kane-at-poisoning-v2&not:case_has_claim:waiter:waiter-kane-at-poisoning-reconsidered" },
                     { text: "Я восстановил возможный маршрут и заметил нехватку времени. Как вы перемещались?", nextNode: "route_question_response", tone: "direct", condition: "route_question_prepared" },
                     { text: "Расскажите, зачем вы это сделали.", nextNode: "why", tone: "calm" },
                     {
