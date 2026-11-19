@@ -70,6 +70,42 @@ test("Case 001 provides evidence and a witness explanation for the locked-room c
     assert.match(endings, /condition: "evidence_count_6"/);
 });
 
+test('Mary does not disclose a secret relationship from an unsupported casual question', () => {
+    const context = vm.createContext({ console, registerData() {} });
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/cases/case-001/dialogues/housekeeper.js'), 'utf8'), context);
+    const dialogue = vm.runInContext('DIALOGUE_HOUSEKEEPER', context);
+    const nodes = dialogue.tree.nodes;
+    const reachable = hasPhoto => {
+        const visited = new Set();
+        const queue = [dialogue.tree.start];
+        while (queue.length) {
+            const nodeId = queue.shift();
+            if (visited.has(nodeId)) continue;
+            visited.add(nodeId);
+            for (const answer of nodes[nodeId]?.answers || []) {
+                const condition = answer.condition;
+                if (condition === 'hasItem:torn_photo' && !hasPhoto) continue;
+                if (condition === 'not:hasItem:torn_photo' && hasPhoto) continue;
+                // Other clues are unavailable in this minimal conversation.
+                if (condition && !['hasItem:torn_photo', 'not:hasItem:torn_photo'].includes(condition)) continue;
+                queue.push(answer.nextNode);
+            }
+        }
+        return visited;
+    };
+
+    const withoutPhoto = reachable(false);
+    assert.ok(withoutPhoto.has('no_alibi'));
+    assert.ok(withoutPhoto.has('conversations'));
+    assert.ok(withoutPhoto.has('insufficient_relationship_proof'));
+    assert.equal(withoutPhoto.has('truth_starts'), false);
+    assert.equal(withoutPhoto.has('mary_full_confession'), false);
+
+    const withPhoto = reachable(true);
+    assert.ok(withPhoto.has('truth_starts'), 'the photographed relationship must remain a viable lead');
+    assert.ok(withPhoto.has('timeline_match'));
+});
+
 test("Case 001 accusation requires reachable physical and independent evidence", () => {
     const registry = {};
     const context = vm.createContext({
