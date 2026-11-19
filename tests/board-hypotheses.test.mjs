@@ -224,6 +224,24 @@ test('document chronology uses discovered evidence only and does not infer an al
     assert.equal('contradiction' in approximate, false);
 });
 
+test('chronology refuses ambiguous fact IDs across discovered documents', () => {
+    const objects = {
+        first: [{ id: 'arrival', minute: 120, label: 'Arrival in the bar', scope: 'bar', certainty: 'recorded' }],
+        second: [{ id: 'arrival', minute: 135, label: 'Arrival at the station', scope: 'station', certainty: 'recorded' }],
+        exit: [{ id: 'exit', minute: 150, label: 'Departure', scope: 'street', certainty: 'recorded' }]
+    };
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id =>
+        objects[id] ? { isEvidence: true, timelineFacts: objects[id] } : null });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    const discovered = ['first', 'second', 'exit'];
+    assert.equal(board.getEvidenceChronology(discovered).filter(f => f.id === 'arrival').length, 2);
+    assert.equal(board.compareChronologyFacts('arrival', 'exit', discovered), null);
+    assert.equal(board.proposeChronologyOrder('arrival', 'exit', 'before', discovered), null);
+    assert.equal(board.proposeChronologyCause('arrival', 'exit', 'Возможная связь', '', discovered), null);
+    assert.equal(board.proposeChronologyOrder('arrival', 'exit', 'before', ['first', 'exit']).status, 'consistent');
+});
+
 test('player chronology proposals persist as sourced hypotheses without turning time order into guilt', () => {
     const context = vm.createContext({ events: { emit() {} }, getObjectById: id => ({ isEvidence: true,
         timelineFacts: id === 'photo' ? [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }] :
