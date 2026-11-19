@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import vm from "node:vm";
+import { validateDialogueReactionTargets } from './dialogue-reaction-validation.mjs';
 
 const root = resolve(".");
 const html = readFileSync(resolve(root, "index.html"), "utf8");
@@ -132,6 +133,7 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
     if (dialogue.id !== id) errors.push("Dialogue key/id mismatch: " + id);
     if (dialogue.npcId) checkRef(data.npcs, dialogue.npcId, "Dialogue " + id);
     const nodes = dialogue.tree?.nodes || {};
+    errors.push(...validateDialogueReactionTargets(dialogue));
     if (!dialogue.tree?.start || !nodes[dialogue.tree.start]) {
         errors.push("Dialogue has missing start node: " + id);
     }
