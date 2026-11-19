@@ -593,6 +593,41 @@ test('authored travel routes respect direction, visited stops and uncertain timi
         'directed edge must not imply travel in the opposite direction');
 });
 
+test('alibi route window review respects explicit uncertainty and never treats unknown paths as impossible', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const locations = [{ id: 'bar', name: 'Бар' }, { id: 'alley', name: 'Переулок' }, { id: 'booth', name: 'Будка' }, { id: 'unknown', name: 'Неизвестное место' }];
+    const context = { statements: [{ id: 'w', status: 'active' }], locations };
+    const add = (locationId, startMinute, endMinute, precision = 'exact', uncertaintyMinutes = null) => board.addAlibiClaim({
+        subject: 'Кейн', location: locationId, locationId, startMinute, endMinute, precision, uncertaintyMinutes, kind: 'statement', sourceId: 'w'
+    }, context);
+    add('bar', 600, 605, 'approximate', 3);
+    add('booth', 612, 617, 'approximate', 2);
+    const edges = [{ from: 'bar', to: 'alley', minutes: 5, bidirectional: true }, { from: 'alley', to: 'booth', minutes: 6, bidirectional: true }];
+    const tight = board.reviewAlibiRouteWindows(edges, locations)[0];
+    assert.equal(tight.status, 'route_time_tight');
+    assert.equal(tight.estimatedMinutes, 11);
+    assert.equal(tight.availableMinutesMin, 2);
+    assert.equal(tight.availableMinutesMax, 12);
+    assert.match(tight.reason, /альтернативный путь ещё не исключён/);
+    const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(loaded.alibiClaims[0].uncertaintyMinutes, 3);
+    assert.equal(loaded.reviewAlibiRouteWindows(edges, locations)[0].status, 'route_time_tight');
+    const plausible = runtime.create();
+    const addP = (locationId, startMinute, endMinute) => plausible.addAlibiClaim({ subject: 'Джо', location: locationId, locationId,
+        startMinute, endMinute, precision: 'exact', kind: 'statement', sourceId: 'w' }, context);
+    addP('bar', 600, 605); addP('booth', 630, 635);
+    assert.equal(plausible.reviewAlibiRouteWindows(edges, locations)[0].status, 'plausible');
+    const unknown = runtime.create();
+    const addU = (locationId, startMinute, endMinute) => unknown.addAlibiClaim({ subject: 'Анна', location: locationId, locationId,
+        startMinute, endMinute, precision: 'approximate', kind: 'statement', sourceId: 'w' }, context);
+    addU('bar', 600, 605); addU('booth', 612, 617);
+    assert.equal(unknown.reviewAlibiRouteWindows(edges, locations)[0].status, 'insufficient_data');
+    assert.equal(unknown.reviewAlibiRouteWindows([], locations)[0].status, 'insufficient_data');
+    const invalid = runtime.create();
+    assert.equal(invalid.addAlibiClaim({ subject: 'X', location: 'Бар', locationId: 'bar', startMinute: 1, endMinute: 2,
+        precision: 'exact', uncertaintyMinutes: 721, kind: 'statement', sourceId: 'w' }, context), null);
+});
 test('route follow-up requires a real pair of alibi claims and survives only its own case', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
