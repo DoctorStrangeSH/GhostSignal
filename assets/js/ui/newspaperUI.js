@@ -15,22 +15,23 @@ class NewspaperUI {
             this.pendingSolved.set(data.caseId, timer);
         });
 
-        events.on('ending:determined', ({ caseId }) => {
+        events.on('ending:determined', ({ caseId, ending }) => {
             const timer = this.pendingSolved.get(caseId);
             if (timer === undefined) return;
             clearTimeout(timer);
             this.pendingSolved.delete(caseId);
 
+            const newspaperId = ending?.newspaperId || caseId + '-solved';
             const modal = document.getElementById('universal-modal');
             if (!modal) {
-                this.showNewspaper(caseId + '-solved');
+                this.showNewspaper(newspaperId);
                 return;
             }
             // The report opens shortly after this event. Only queue the paper
             // after that specific report is shown and subsequently dismissed.
             modal.addEventListener('shown.bs.modal', () => {
                 modal.addEventListener('hidden.bs.modal', () => {
-                    this.showNewspaper(caseId + '-solved', 0);
+                    this.showNewspaper(newspaperId, 0);
                 }, { once: true });
             }, { once: true });
         });
