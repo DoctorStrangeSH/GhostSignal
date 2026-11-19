@@ -50,6 +50,17 @@ class DialogueEngine {
     }
 
     _personalizeNode(node) {
+        const npcId = this.currentDialogue?.npcId;
+        const opening = node?.priorCaseOpening;
+        if (opening && npcId && !this.memoryService?.hasVisitedNode(npcId, this.currentDialogue.id, node.id)) {
+            // Only the NPC's own long-term memories can color their greeting.
+            // Do not infer personal knowledge from a global case outcome.
+            const remembered = [opening.harmed, opening.helped].find(rule =>
+                rule?.memoryTag && rule.text &&
+                this.memoryService?.hasLongTermMemoryTagFromPriorCase(npcId, rule.memoryTag)
+            );
+            if (remembered) node = { ...node, text: `${node.text} ${remembered.text}` };
+        }
         if (!node?.rememberRepairFromNpcId || !this.currentDialogue?.npcId) return node;
         const remembered = this.relationshipService?.getLatestRepairRememberedBy?.(
             this.currentDialogue.npcId, node.rememberRepairFromNpcId
