@@ -25,6 +25,17 @@ test('noir board keeps live evidence slots, true connection state and keyboard a
     assert.match(ui, /Красная нить показывает соседство карточек, а не доказанную связь/);
 });
 
+test('hypothesis board exposes alternative creation and clearly labels grouped versions', () => {
+    const ui = read('assets/js/ui/boardUI.js');
+    const css = read('assets/css/components/board.css');
+    assert.match(ui, /hypothesis-alternative/);
+    assert.match(ui, /createAlternativeHypothesis\(current\.id, title\)/);
+    assert.match(ui, /getHypothesisAlternatives\?\.\(h\.id\)/);
+    assert.match(ui, /Версии независимы\. Общая группа не определяет, какая из них верна\./);
+    assert.match(ui, /prompt\('Сформулируйте альтернативную версию:'/);
+    assert.match(css, /\.hypothesis-alternatives/);
+    assert.match(css, /\.hypothesis-alternatives li\.is-current/);
+});
 test('board cards escape evidence metadata and slot labels before rendering HTML', () => {
     const data = { id: 'photo', name: '<img src=x onerror=alert(1)>', icon: '<svg onload=alert(1)>' };
     const context = vm.createContext({
