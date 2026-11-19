@@ -62,6 +62,14 @@ test('hypothesis UI renders shared, unique and pending material for alternative 
     assert.match(html, /не создаёт независимого подтверждения/);
     assert.match(html, /позиция детектива, а не установленное противоречие/);
 });
+test('chronology UI exposes explicit uncertainty windows and avoids exact-order wording for overlaps', () => {
+    const ui = read('assets/js/ui/boardUI.js');
+    const css = read('assets/css/components/board.css');
+    assert.match(ui, /ОКНО ±/);
+    assert.match(ui, /Временные окна пересекаются\./);
+    assert.match(ui, /Порядок событий не установлен\./);
+    assert.match(css, /\.noir-timeline-uncertainty/);
+});
 test('board cards escape evidence metadata and slot labels before rendering HTML', () => {
     const data = { id: 'photo', name: '<img src=x onerror=alert(1)>', icon: '<svg onload=alert(1)>' };
     const context = vm.createContext({
