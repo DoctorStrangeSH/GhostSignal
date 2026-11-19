@@ -60,6 +60,34 @@ test('solved-case newspaper waits for the ending report to be closed', () => {
     assert.match(papers[0].data.title, /case-002-solved/);
 });
 
+test('newspaper follows the selected partial ending instead of claiming a perfect solve', () => {
+    const h = createHarness();
+    h.emit('case:solved', { caseId: 'case-002' });
+    h.emit('ending:determined', {
+        caseId: 'case-002', ending: { id: 'case-002-partial', newspaperId: 'case-002-partial' }
+    });
+    h.modal.dispatchEvent(new Event('shown.bs.modal'));
+    h.modal.dispatchEvent(new Event('hidden.bs.modal'));
+    h.flush();
+    const papers = h.emitted.filter(e => e.name === 'modal:show');
+    assert.equal(papers.length, 1);
+    assert.match(papers[0].data.title, /case-002-partial/);
+});
+
+test('newspaper editions agree with the established outcomes of both cases', () => {
+    const context = vm.createContext({});
+    vm.runInContext(readFileSync(resolve(root, 'assets/data/narrative/newspapers.js'), 'utf8') +
+        '\n;globalThis.editions = NEWSPAPERS;', context);
+    const editions = context.editions;
+    for (const id of ['case-001-partial', 'case-002-partial']) {
+        assert.ok(editions[id], `${id} must have its own published article`);
+    }
+    assert.match(editions['case-002-solved'].headline, /КЕЙН/);
+    assert.match(editions['case-002-solved'].content, /Анна оправдана/);
+    assert.doesNotMatch(editions['case-002-solved'].headline, /ЖЕНА ПРИЗНАЛАСЬ/);
+    assert.match(editions['case-001-partial'].content, /Местонахождение Блэквуда остаётся неизвестным/);
+});
+
 test('solved case without a report still shows the newspaper', () => {
     const h = createHarness();
     h.emit('case:solved', { caseId: 'case-001' });
