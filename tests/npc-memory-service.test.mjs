@@ -134,6 +134,36 @@ test("NPCMemoryService ignores corroborating claims and contradictions from anot
     assert.equal(memory.getContradictions().length, 0);
 });
 
+test('a witness remembers a false accusation across cases without inheriting secret evidence', () => {
+    const NPCMemoryService = loadService();
+    const memory = new NPCMemoryService(null, 'case-001');
+    memory.recordClaim('waiter', {
+        id: 'private-hotel-clue', topic: 'hotel-basement', value: 'locked',
+        summary: 'A private observation in the hotel'
+    });
+    memory.recordEvidencePresented('waiter', 'hotel-interview', 'hidden_note');
+    memory.recordAccusation('waiter', { id: 'false-hotel-charge', text: 'Ложное обвинение.' });
+    memory.resolveAccusation('waiter', 'false-hotel-charge', 'false');
+    const priorTrust = memory.getLongTermProfile('waiter').trust;
+    assert.ok(priorTrust < 50);
+
+    const restored = NPCMemoryService.fromJSON(memory.toJSON(), 'case-002');
+    restored.setCase('case-002');
+    assert.equal(restored.getTrust('waiter'), priorTrust);
+    assert.equal(restored.hasLongTermMemoryTagFromPriorCase('waiter', 'false_accusation'), true);
+    assert.equal(restored.getMemory('waiter'), null, 'new case should not inherit witness claims');
+    assert.equal(restored.hasPresentedEvidence('waiter', 'hidden_note'), false);
+    assert.equal(restored.getContradictions().length, 0);
+
+    // Replaying the second case must not erase personal distrust, and the
+    // earlier investigation remains available only in its own case archive.
+    restored.resetCase('case-002');
+    assert.equal(restored.getTrust('waiter'), priorTrust);
+    restored.setCase('case-001');
+    assert.equal(restored.hasPresentedEvidence('waiter', 'hidden_note'), true);
+    assert.equal(restored.getMemory('waiter').claims.length, 1);
+});
+
 test("NPCMemoryService persists witness cooperation and applies promise outcomes", () => {
     const NPCMemoryService = loadService();
     const memory = new NPCMemoryService(null, "case-002");
