@@ -144,6 +144,7 @@ class NPCRelationshipService {
                     witnessDecisionPolicy: item.witnessDecisionPolicy === 'work_after_protection_delay' ? item.witnessDecisionPolicy : null,
                     leaveReviewPolicy: item.leaveReviewPolicy === 'after_temporary_leave' ? item.leaveReviewPolicy : null,
                     interviewDecisionPolicy: item.interviewDecisionPolicy === 'after_reputation_warning' ? item.interviewDecisionPolicy : null,
+                    escortResponsePolicy: item.escortResponsePolicy === 'on_witness_request' ? item.escortResponsePolicy : null,
                     investigatesRumorId: typeof item.investigatesRumorId === 'string' && item.investigatesRumorId === conditions.fromRumorId ? item.investigatesRumorId : null,
                     channel,
                     requiresSameLocation: item.requiresSameLocation !== false && channel === 'in_person',
@@ -181,6 +182,7 @@ class NPCRelationshipService {
                         requiresReceivedActionAgeMinutes: this._optionalClamp(conditions.requiresReceivedActionAgeMinutes, 0, 10080),
                         requiresWitnessWorkDecision: ['temporary_leave', 'document_help'].includes(conditions.requiresWitnessWorkDecision) ? conditions.requiresWitnessWorkDecision : null,
                         requiresLeaveReviewOutcome: ['return_to_work', 'extend_leave'].includes(conditions.requiresLeaveReviewOutcome) ? conditions.requiresLeaveReviewOutcome : null,
+                        requiresInterviewDecision: ['request_joe_present', 'private_with_boundaries'].includes(conditions.requiresInterviewDecision) ? conditions.requiresInterviewDecision : null,
                         // Reputation checks use only the acting NPC's own long-term memories.
                         fromLongTermPattern: ['repeated_pressure'].includes(conditions.fromLongTermPattern) ? conditions.fromLongTermPattern : null,
                         fromDialogueId: typeof conditions.fromDialogueId === 'string' ? conditions.fromDialogueId : null,
@@ -434,6 +436,9 @@ class NPCRelationshipService {
                     this._now() - prior.lastTriggeredAt < conditions.requiresReceivedActionAgeMinutes)) return false;
             if (conditions.requiresWitnessWorkDecision &&
                 prior.witnessWorkDecision !== conditions.requiresWitnessWorkDecision) return false;
+            if (conditions.requiresInterviewDecision &&
+                (received?.interviewDecisionPolicy !== 'after_reputation_warning' ||
+                    prior.interviewDecision !== conditions.requiresInterviewDecision)) return false;
             if (conditions.requiresLeaveReviewOutcome &&
                 (received?.leaveReviewPolicy !== 'after_temporary_leave' ||
                     prior.leaveReviewOutcome !== conditions.requiresLeaveReviewOutcome)) return false;
@@ -547,6 +552,24 @@ class NPCRelationshipService {
         return this.cases[this.currentCaseId]?.rules?.[ruleId]?.interviewDecision || null;
     }
 
+    // Reply is visible only to the sender after he actually responds.
+    getEscortResponse(npcId, ruleId) {
+        if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.fromNpcId === npcId
+        );
+        if (rule?.escortResponsePolicy !== 'on_witness_request') return null;
+        return this.cases[this.currentCaseId]?.rules?.[ruleId]?.escortResponse || null;
+    }
+
+    getReceivedEscortResponse(npcId, ruleId) {
+        const rule = this.caseConfig.autonomousInteractions.find(item =>
+            item.id === ruleId && item.toNpcId === npcId
+        );
+        if (!rule || !this.hasReceivedInteraction(npcId, ruleId)) return null;
+        return this.getEscortResponse(rule.fromNpcId, ruleId);
+    }
+
     // Saved once when Thomas reviews his leave; later changes in pressure cannot rewrite it.
     getWitnessLeaveReview(npcId, ruleId) {
         if (!this.hasCompletedInteraction(npcId, ruleId)) return null;
@@ -637,6 +660,13 @@ class NPCRelationshipService {
             state.rules[rule.id].interviewDecision =
                 (personalPattern?.repeatedPressure || personalPressure >= 40) && companionTrust >= 45
                     ? 'request_joe_present' : 'private_with_boundaries';
+        }
+        if (rule.escortResponsePolicy === 'on_witness_request' && !state.rules[rule.id].escortResponse) {
+            // The bartender checks his own current capacity; this is not a booked appointment.
+            const availability = this.npcManager?.isNPCAvailable?.(rule.fromNpcId);
+            const pressure = this.memoryService?.getPressure(rule.fromNpcId) ?? 0;
+            state.rules[rule.id].escortResponse = availability?.available && pressure < 55
+                ? 'available_to_discuss' : 'propose_later';
         }
         if (rule.leaveReviewPolicy === 'after_temporary_leave' && !state.rules[rule.id].leaveReviewOutcome) {
             // Pressure represents Thomas's current willingness to return, never the detective's order.

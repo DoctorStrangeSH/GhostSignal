@@ -604,6 +604,14 @@ class DialogueEngine {
         if (interviewDecision) {
             return Boolean(npcId && this.relationshipService?.getWitnessInterviewDecision?.(npcId, interviewDecision[1]) === interviewDecision[2].toLowerCase());
         }
+        const escortResponse = conditionStr.match(/^npc_received_escort_response:([a-z0-9_:-]{1,100}):(available_to_discuss|propose_later)$/i);
+        if (escortResponse) {
+            return Boolean(npcId && this.relationshipService?.getReceivedEscortResponse?.(npcId, escortResponse[1]) === escortResponse[2].toLowerCase());
+        }
+        const ownEscortResponse = conditionStr.match(/^npc_escort_response:([a-z0-9_:-]{1,100}):(available_to_discuss|propose_later)$/i);
+        if (ownEscortResponse) {
+            return Boolean(npcId && this.relationshipService?.getEscortResponse?.(npcId, ownEscortResponse[1]) === ownEscortResponse[2].toLowerCase());
+        }
         if (conditionStr.startsWith('npc_action_received:')) {
             const ruleId = conditionStr.slice('npc_action_received:'.length);
             return Boolean(npcId && this.relationshipService?.hasReceivedInteraction?.(npcId, ruleId));
