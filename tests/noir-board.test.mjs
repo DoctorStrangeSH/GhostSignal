@@ -36,6 +36,32 @@ test('hypothesis board exposes alternative creation and clearly labels grouped v
     assert.match(css, /\.hypothesis-alternatives/);
     assert.match(css, /\.hypothesis-alternatives li\.is-current/);
 });
+test('hypothesis UI renders shared, unique and pending material for alternative versions', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} },
+        getObjectById: id => ({ id, name: 'Улика ' + id }) });
+    vm.runInContext(read('assets/js/ui/boardUI.js'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    ui.inventory = { evidence: ['photo', 'station-log'] };
+    ui.memoryService = { getStatements: () => [] };
+    ui._renderSourceInquiries = () => '';
+    const { create } = boardRuntime();
+    ui.board = create();
+    const first = ui.board.addHypothesis('Кейн действовал один');
+    const second = ui.board.createAlternativeHypothesis(first, '<сообщник>');
+    ui.board.linkHypothesis(first, 'evidence', 'photo', 'for');
+    ui.board.linkHypothesis(first, 'assumption', 'Скрытый выход', 'pending');
+    ui.board.linkHypothesis(second, 'evidence', 'photo', 'against');
+    ui.board.linkHypothesis(second, 'evidence', 'station-log', 'for');
+    const html = ui._renderHypotheses();
+    assert.match(html, /СОПОСТАВЛЕНИЕ С «&lt;сообщник&gt;»/);
+    assert.match(html, /Общие источники: 1/);
+    assert.match(html, /оценки различаются/);
+    assert.match(html, /Только в этой версии/);
+    assert.match(html, /Только в альтернативе/);
+    assert.match(html, /Требуют проверки: Скрытый выход/);
+    assert.match(html, /не создаёт независимого подтверждения/);
+    assert.match(html, /позиция детектива, а не установленное противоречие/);
+});
 test('board cards escape evidence metadata and slot labels before rendering HTML', () => {
     const data = { id: 'photo', name: '<img src=x onerror=alert(1)>', icon: '<svg onload=alert(1)>' };
     const context = vm.createContext({
