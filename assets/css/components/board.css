@@ -471,3 +471,6 @@
 .hypothesis-comparison-columns b { color:var(--text-primary); font-size:10px; }
 .hypothesis-comparison-pending { border-left:2px solid var(--accent-amber-glow); padding-left:8px; }
 @media(max-width:520px){.hypothesis-comparison-columns{grid-template-columns:1fr;}}
+
+
+.noir-timeline-uncertainty { display:inline-flex; margin-top:4px; padding:2px 6px; border:1px solid rgba(212,160,23,.24); border-radius:3px; color:var(--accent-amber-glow); font-size:9px; letter-spacing:.05em; }
