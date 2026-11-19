@@ -499,7 +499,8 @@ class BoardUI {
             ...(this.board?.reviewAlibiClaims(CONFIG?.time?.costs?.travel) || []),
             ...(this.board?.reviewAlibiLocationHours(knownLocations) || []),
             ...(this.board?.reviewAlibiAccessRestrictions(knownLocations) || []),
-            ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
+            ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || []),
+            ...(this.board?.reviewAlibiRouteWindows(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
         ];
         const questionReady = this.board?.caseId === 'case-002' && this.board?.hasPreparedRouteQuestion('business_rival');
         const questionDiscussed = this.board?.caseId === 'case-002' && this.board?.hasDiscussedRouteQuestion?.('business_rival');
@@ -516,13 +517,14 @@ class BoardUI {
                 <label>С <input class="terminal-input" type="time" name="start" required></label>
                 <label>По <input class="terminal-input" type="time" name="end" required></label>
                 <select class="terminal-input" name="precision" aria-label="Точность"><option value="approximate">Время приблизительное</option><option value="exact">Время указано точно</option></select>
+                <label>Погрешность в минутах (если известна) <input class="terminal-input" type="number" name="uncertaintyMinutes" min="0" max="720" step="1" placeholder="Не указана"></label>
                 <select class="terminal-input" name="source" required aria-label="Источник"><option value="">Выберите обнаруженный источник</option>${sources.map(s => `<option value="${this._escapeHTML(s.id)}">${this._escapeHTML(s.label)}</option>`).join('')}</select>
                 <button class="terminal-btn btn-sm" type="submit">ДОБАВИТЬ В РЕКОНСТРУКЦИЮ</button>
             </form>
             <ol>${claims.map(c => `<li><strong>${this._escapeHTML(c.subject)}</strong>: ${fmt(c.startMinute)}–${fmt(c.endMinute)} · ${this._escapeHTML(c.location)}
                 (${c.precision === 'exact' ? 'точное' : 'приблизительное'} время, ${this._escapeHTML(c.sourceId)}${c.locationId ? ' · привязано к посещённой локации' : ''})
                 <button class="terminal-btn btn-sm alibi-remove" data-id="${this._escapeHTML(c.id)}" type="button" aria-label="Удалить версию">✕</button></li>`).join('') || '<li>Пока нет версий местонахождения.</li>'}</ol>
-            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li>${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}${
+            ${warnings.length ? `<div class="hypothesis-source-review"><strong>ТРЕБУЮТ ПРОВЕРКИ</strong><ul>${warnings.map(w => `<li><strong>${w.status === 'plausible' ? 'ВОЗМОЖНО' : w.status === 'uncertain' || w.status === 'insufficient_data' ? 'НЕДОСТАТОЧНО ДАННЫХ' : w.status === 'route_time_tight' ? 'ТРЕБУЕТ ПРОВЕРКИ' : ''}</strong> ${this._escapeHTML(w.subject)}: ${this._escapeHTML(w.reason)}${
                 w.status === 'route_time_tight' && this.board?.caseId === 'case-002' &&
                 ['кейн', 'виктор кейн'].includes(w.subject.trim().toLocaleLowerCase()) &&
                 !this.board.hasPreparedRouteQuestion('business_rival') && !this.board.hasDiscussedRouteQuestion?.('business_rival')
@@ -541,7 +543,9 @@ class BoardUI {
                 subject: form.elements.subject.value, location: form.elements.location.value,
                 locationId: form.elements.locationId.value || null,
                 startMinute: minutes(form.elements.start.value), endMinute: minutes(form.elements.end.value),
-                precision: form.elements.precision.value, kind, sourceId: sourceParts.join(':')
+                precision: form.elements.precision.value,
+                uncertaintyMinutes: form.elements.uncertaintyMinutes.value === '' ? null : Number(form.elements.uncertaintyMinutes.value),
+                kind, sourceId: sourceParts.join(':')
             }, { statements: this.memoryService?.getStatements?.() || [],
                 evidenceIds: [...new Set([...(this.inventory?.evidence || []), ...(this.board?.evidenceOnBoard || [])])],
                 locations: this._knownAlibiLocations() });
