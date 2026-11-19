@@ -392,7 +392,34 @@ test("forwarded rumors cannot be independently confirmed or refuted by their ori
     assert.equal(memory.getRumors("journalist")[0].status, "corroborated");
 });
 
-test("a dialogue-backed accusation retraction spreads as a new attributed event, not as deletion of the original accusation", () => {\n    const { memory, network, advance } = createHarness();\n    const npcId = "ex_wife";\n    const accusationId = "case-002-anna-suspected-theft";\n    const sourceEvent = { dialogueId: "dialogue-ex-wife", nodeId: "anna_withdrawal_statement", answerText: "Я принимаю ваш отказ от обвинения.", tone: "reassuring" };\n    memory.recordAccusation(npcId, { id: accusationId, text: "Детектив обвинил Анну в краже." });\n    assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "unverified_retraction");\n    memory.recordAnswerSelected(npcId, sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: sourceEvent.tone });\n    memory.resolveAccusation(npcId, accusationId, "retracted", "Детектив признал, что оснований недостаточно.");\n    const published = network.publishAccusationRetraction(npcId, accusationId, sourceEvent);\n    assert.equal(published.published, true);\n    assert.equal(published.queued, 1);\n    assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "already_published");\n    assert.equal(memory.getAccusations(npcId)[0].status, "retracted", "the original record remains in the case history");\n    advance(10);\n    const eva = memory.getRumors("woman_in_red").find(item => item.id === "accusation-retracted-case-002-ex_wife-" + accusationId);\n    assert.ok(eva);\n    assert.equal(eva.originalSourceNpcId, npcId);\n    assert.equal(eva.sourceDialogueId, sourceEvent.dialogueId);\n    assert.equal(eva.sourceNodeId, sourceEvent.nodeId);\n    assert.match(eva.text, /отозвал обвинение/);\n    assert.equal(memory.hasRumor("journalist", eva.id), false);\n    advance(30);\n    assert.equal(memory.hasRumor("journalist", eva.id), true, "the correction follows the existing Eva → Lora social edge");\n});\ntest("a recorded public accusation moves Anna → Eva → Lora with delays and verifiable provenance", () => {
+test("a dialogue-backed accusation retraction spreads as a new attributed event, not as deletion of the original accusation", () => {
+    const { memory, network, advance, availability } = createHarness();
+    availability.woman_in_red.available = true;
+    availability.journalist.available = true;
+    const npcId = "ex_wife";
+    const accusationId = "case-002-anna-suspected-theft";
+    const sourceEvent = { dialogueId: "dialogue-ex-wife", nodeId: "anna_withdrawal_statement", answerText: "Я принимаю ваш отказ от обвинения.", tone: "reassuring" };
+    memory.recordAccusation(npcId, { id: accusationId, text: "Детектив обвинил Анну в краже." });
+    assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "unverified_retraction");
+    memory.recordAnswerSelected(npcId, sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: sourceEvent.tone });
+    memory.resolveAccusation(npcId, accusationId, "retracted", "Детектив признал, что оснований недостаточно.");
+    const published = network.publishAccusationRetraction(npcId, accusationId, sourceEvent);
+    assert.equal(published.published, true);
+    assert.equal(published.queued, 1);
+    assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "already_published");
+    assert.equal(memory.getAccusations(npcId)[0].status, "retracted", "the original record remains in the case history");
+    advance(10);
+    const eva = memory.getRumors("woman_in_red").find(item => item.id === "accusation-retracted-case-002-ex_wife-" + accusationId);
+    assert.ok(eva);
+    assert.equal(eva.originalSourceNpcId, npcId);
+    assert.equal(eva.sourceDialogueId, sourceEvent.dialogueId);
+    assert.equal(eva.sourceNodeId, sourceEvent.nodeId);
+    assert.match(eva.text, /отозвал обвинение/);
+    assert.equal(memory.hasRumor("journalist", eva.id), false);
+    advance(30);
+    assert.equal(memory.hasRumor("journalist", eva.id), true, "the correction follows the existing Eva → Lora social edge");
+});
+test("a recorded public accusation moves Anna → Eva → Lora with delays and verifiable provenance", () => {
     const { memory, network, advance } = createHarness();
     const accusationId = "public-final-accusation:case-002:ex_wife";
     const rumorId = "public-accusation-case-002-ex_wife";
