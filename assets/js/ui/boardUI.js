@@ -500,7 +500,7 @@ class BoardUI {
             ...(this.board?.reviewAlibiLocationHours(knownLocations) || []),
             ...(this.board?.reviewAlibiAccessRestrictions(knownLocations) || []),
             ...(this.board?.reviewAlibiRoutes(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || []),
-            ...(this.board?.reviewAlibiRouteWindows(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations) || [])
+            ...(this.board?.reviewAlibiRouteWindows(this.locationManager?.activeCaseData?.alibiRoutes, knownLocations, evidenceIds) || [])
         ];
         const questionReady = this.board?.caseId === 'case-002' && this.board?.hasPreparedRouteQuestion('business_rival');
         const questionDiscussed = this.board?.caseId === 'case-002' && this.board?.hasDiscussedRouteQuestion?.('business_rival');

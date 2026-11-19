@@ -602,14 +602,21 @@ test('alibi route window review respects explicit uncertainty and never treats u
         subject: 'Кейн', location: locationId, locationId, startMinute, endMinute, precision, uncertaintyMinutes, kind: 'statement', sourceId: 'w'
     }, context);
     add('bar', 600, 605, 'approximate', 3);
-    add('booth', 610, 615, 'approximate', 2);
-    const edges = [{ from: 'bar', to: 'alley', minutes: 5, bidirectional: true }, { from: 'alley', to: 'booth', minutes: 6, bidirectional: true }];
+    add('booth', 618, 623, 'approximate', 2);
+    const edges = [{ from: 'bar', to: 'alley', minutes: 12, bidirectional: true }, { from: 'alley', to: 'booth', minutes: 13, bidirectional: true }];
     const tight = board.reviewAlibiRouteWindows(edges, locations)[0];
     assert.equal(tight.status, 'route_time_tight');
-    assert.equal(tight.estimatedMinutes, 11);
-    assert.equal(tight.availableMinutesMin, 0);
-    assert.equal(tight.availableMinutesMax, 10);
+    assert.equal(tight.estimatedMinutes, 25);
+    assert.equal(tight.availableMinutesMin, 8);
+    assert.equal(tight.availableMinutesMax, 18);
     assert.match(tight.reason, /альтернативный путь ещё не исключён/);
+    const hiddenShortcut = { from: 'bar', to: 'booth', minutes: 3, bidirectional: true, requiresEvidence: 'service_passage_plan' };
+    const beforeDiscovery = board.reviewAlibiRouteWindows([...edges, hiddenShortcut], locations, []);
+    assert.equal(beforeDiscovery[0].status, 'route_time_tight', 'undiscovered shortcut must not affect the reconstruction');
+    const afterDiscovery = board.reviewAlibiRouteWindows([...edges, hiddenShortcut], locations, ['service_passage_plan']);
+    assert.equal(afterDiscovery[0].status, 'plausible', 'discovered evidence unlocks the shorter route and revises the conclusion');
+    assert.deepEqual(Array.from(afterDiscovery[0].routeLocationIds), ['bar', 'booth']);
+    assert.equal(board.reviewAlibiRouteWindows([...edges, { ...hiddenShortcut, requiresEvidence: 'unknown_evidence' }], locations, ['service_passage_plan'])[0].status, 'route_time_tight');
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(loaded.alibiClaims[0].uncertaintyMinutes, 3);
     assert.equal(loaded.reviewAlibiRouteWindows(edges, locations)[0].status, 'route_time_tight');

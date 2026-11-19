@@ -448,12 +448,14 @@ class InvestigationBoard {
 
     // Compare alibi windows against the shortest documented route. An unmodeled
     // route may exist, so a tight estimate is never treated as proof of impossibility.
-    reviewAlibiRouteWindows(routeEdges = [], knownLocations = []) {
+    reviewAlibiRouteWindows(routeEdges = [], knownLocations = [], discoveredEvidenceIds = []) {
         const locations = new Map((Array.isArray(knownLocations) ? knownLocations : [])
             .filter(loc => loc && typeof loc.id === 'string').map(loc => [loc.id, loc]));
         const graph = new Map();
+        const discoveredEvidence = new Set(Array.isArray(discoveredEvidenceIds) ? discoveredEvidenceIds.filter(id => typeof id === 'string') : []);
         for (const edge of Array.isArray(routeEdges) ? routeEdges : []) {
-            if (!edge || !locations.has(edge.from) || !locations.has(edge.to) || edge.from === edge.to ||
+            if (!edge || (typeof edge.requiresEvidence === 'string' && !discoveredEvidence.has(edge.requiresEvidence)) ||
+                !locations.has(edge.from) || !locations.has(edge.to) || edge.from === edge.to ||
                 !Number.isInteger(edge.minutes) || edge.minutes <= 0 || edge.minutes > 180) continue;
             const add = (from, to) => { if (!graph.has(from)) graph.set(from, []); graph.get(from).push({ to, minutes: edge.minutes }); };
             add(edge.from, edge.to);
