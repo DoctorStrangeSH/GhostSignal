@@ -76,6 +76,31 @@ test('shared evidence and testimony are flagged across active hypotheses without
 });
 
 
+test('alternative comparison separates shared sources, unique sources and pending assumptions without ranking', () => {
+    const { create, restore } = boardRuntime();
+    const board = create();
+    const first = board.addHypothesis('Кейн действовал один');
+    const second = board.createAlternativeHypothesis(first, 'У Кейна был сообщник');
+    board.linkHypothesis(first, 'evidence', 'bar-photo', 'for');
+    board.linkHypothesis(first, 'statement', 'joe-v1', 'pending');
+    board.linkHypothesis(first, 'assumption', 'Скрытый выход', 'pending');
+    board.linkHypothesis(second, 'evidence', 'bar-photo', 'against');
+    board.linkHypothesis(second, 'evidence', 'station-log', 'for');
+    const comparison = board.compareHypothesisAlternatives(first);
+    assert.equal(comparison.length, 1);
+    assert.deepEqual(Array.from(comparison[0].sharedSources, item => [item.kind, item.sourceId, item.differingAssessment]),
+        [['evidence', 'bar-photo', true]]);
+    assert.deepEqual(Array.from(comparison[0].currentOnly, item => item.sourceId), ['joe-v1']);
+    assert.deepEqual(Array.from(comparison[0].otherOnly, item => item.sourceId), ['station-log']);
+    assert.deepEqual(Array.from(comparison[0].pendingAssumptions, item => [item.side, item.sourceId]), [['current', 'Скрытый выход']]);
+    assert.equal('score' in comparison[0], false);
+    assert.equal(board.compareHypothesisAlternatives(second).length, 1);
+    const loaded = restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.deepEqual(Array.from(loaded.compareHypothesisAlternatives(first)[0].sharedSources, item => item.sourceId), ['bar-photo']);
+    board.abandonHypothesis(second);
+    assert.equal(board.compareHypothesisAlternatives(first).length, 0);
+    assert.equal(board.compareHypothesisAlternatives('missing'), null);
+});
 test('boards keep hypotheses for a resumed case but clear them when a new case starts', () => {
     const runtime = boardRuntime();
     const board = runtime.create();

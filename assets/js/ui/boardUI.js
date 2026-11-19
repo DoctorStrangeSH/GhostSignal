@@ -602,6 +602,28 @@ class BoardUI {
                                     <small>${item.status === 'abandoned' ? 'Отклонена' : 'На проверке'} · ${item.links.length} связей</small>
                                 </li>`).join('')}</ul>
                                 <p>Версии независимы. Общая группа не определяет, какая из них верна.</p>
+                                ${(this.board.compareHypothesisAlternatives?.(h.id) || []).map(comparison => {
+                                    const sourceName = link => {
+                                        const object = link.kind === "evidence" ? getObjectById(link.sourceId) : null;
+                                        const statement = link.kind === "statement" ? statements.find(item => item.id === link.sourceId) : null;
+                                        return object?.name || (statement ? (statement.sourceName || statement.npcId) + ": " + (statement.summary || statement.value) : link.sourceId);
+                                    };
+                                    const shared = comparison.sharedSources.map(item => labels[item.kind] + ": " + sourceName(item) + (item.differingAssessment ? " — оценки различаются" : " — общий источник"));
+                                    const currentOnly = comparison.currentOnly.map(sourceName);
+                                    const otherOnly = comparison.otherOnly.map(sourceName);
+                                    const pending = comparison.pendingAssumptions.map(item => item.sourceId);
+                                    return `<div class="hypothesis-comparison-detail">
+                                        <strong>СОПОСТАВЛЕНИЕ С «${this._escapeHTML(comparison.title)}»</strong>
+                                        <p>Общие источники: ${shared.length}. Повторное использование не создаёт независимого подтверждения.</p>
+                                        ${shared.length ? "<ul>" + shared.map(item => "<li>" + this._escapeHTML(item) + "</li>").join("") + "</ul>" : "<small>Общих источников пока нет.</small>"}
+                                        <div class="hypothesis-comparison-columns">
+                                            <div><b>Только в этой версии</b><ul>${currentOnly.map(item => "<li>" + this._escapeHTML(item) + "</li>").join("") || "<li>Нет отдельных источников</li>"}</ul></div>
+                                            <div><b>Только в альтернативе</b><ul>${otherOnly.map(item => "<li>" + this._escapeHTML(item) + "</li>").join("") || "<li>Нет отдельных источников</li>"}</ul></div>
+                                        </div>
+                                        ${pending.length ? "<p class=\"hypothesis-comparison-pending\">Требуют проверки: " + this._escapeHTML(pending.join("; ")) + "</p>" : ""}
+                                        <small>Различие оценок — позиция детектива, а не установленное противоречие.</small>
+                                    </div>`;
+                                }).join("")}
                             </div>`;
                         })()}
                         <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">

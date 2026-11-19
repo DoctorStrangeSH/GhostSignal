@@ -598,6 +598,38 @@ class InvestigationBoard {
             .map(h => ({ id: h.id, title: h.title, status: h.status, links: h.links.map(link => ({ ...link })) }));
     }
 
+    // Compare active alternatives by source overlap and the detective's own assessments.
+    // Shared material is surfaced, never counted as independent corroboration or ranked.
+    compareHypothesisAlternatives(id) {
+        const current = this.hypotheses.find(h => h.id === id && h.status === 'open');
+        if (!current) return null;
+        const groupId = current.alternativeGroupId || current.id;
+        const peers = this.hypotheses.filter(h => h.id !== current.id && h.status === 'open' &&
+            (h.alternativeGroupId || h.id) === groupId);
+        const sourceKey = link => link.kind + ':' + link.sourceId;
+        return peers.map(peer => {
+            const currentMap = new Map(current.links.filter(link => ['evidence', 'statement'].includes(link.kind))
+                .map(link => [sourceKey(link), link]));
+            const peerMap = new Map(peer.links.filter(link => ['evidence', 'statement'].includes(link.kind))
+                .map(link => [sourceKey(link), link]));
+            const sharedSources = [];
+            for (const [key, link] of currentMap) {
+                const other = peerMap.get(key);
+                if (other) sharedSources.push({ kind: link.kind, sourceId: link.sourceId,
+                    currentStance: link.stance, otherStance: other.stance,
+                    differingAssessment: link.stance !== other.stance });
+            }
+            const currentOnly = current.links.filter(link => ['evidence', 'statement'].includes(link.kind) && !peerMap.has(sourceKey(link)))
+                .map(link => ({ ...link }));
+            const otherOnly = peer.links.filter(link => ['evidence', 'statement'].includes(link.kind) && !currentMap.has(sourceKey(link)))
+                .map(link => ({ ...link }));
+            const pendingAssumptions = [
+                ...current.links.filter(link => link.kind === 'assumption' && link.stance === 'pending').map(link => ({ side: 'current', sourceId: link.sourceId })),
+                ...peer.links.filter(link => link.kind === 'assumption' && link.stance === 'pending').map(link => ({ side: 'other', sourceId: link.sourceId }))
+            ];
+            return { hypothesisId: peer.id, title: peer.title, sharedSources, currentOnly, otherOnly, pendingAssumptions };
+        });
+    }
     reviseHypothesis(id, text) {
         const entry = this.hypotheses.find(h => h.id === id);
         const title = String(text ?? '').trim().slice(0, 240);
