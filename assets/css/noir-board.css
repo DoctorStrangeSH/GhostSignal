@@ -117,6 +117,27 @@
 .board-evidence-pool h4 { color: #efd6a4; letter-spacing: .04em; }
 .board-evidence-pool .evidence-pool-item { min-height: 44px; }
 .board-evidence-pool .evidence-pool-item[aria-pressed='true'] { border-color: #b4e1d8; }
+.board-quick-placement:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(194, 155, 94, .4);
+}
+.board-quick-placement label { flex-basis: 100%; color: #efd6a4; }
+.board-quick-placement select {
+    flex: 1 1 180px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    color: #e8eee9;
+    background: #14282d;
+    border: 1px solid #b39a70;
+    border-radius: 4px;
+}
+.board-quick-placement .terminal-btn { min-height: 44px; }
 @media (max-width: 680px) {
     .board-canvas { width: 620px; max-width: none; min-height: 300px; aspect-ratio: 3 / 2; }
     .board-canvas .board-slot { width: 100px; min-height: 92px; }
