@@ -128,9 +128,14 @@ class InvestigationBoard {
 
     compareChronologyFacts(firstId, secondId, discoveredIds = []) {
         const facts = this.getEvidenceChronology(discoveredIds);
-        const first = facts.find(f => f.id === firstId);
-        const second = facts.find(f => f.id === secondId);
-        if (!first || !second || first.id === second.id || first.minute === null || second.minute === null) return null;
+        const firstMatches = facts.filter(f => f.id === firstId);
+        const secondMatches = facts.filter(f => f.id === secondId);
+        // Fact IDs are only meaningful when unique among discovered evidence.
+        // Ambiguous references must not silently select whichever document sorts first.
+        if (firstMatches.length !== 1 || secondMatches.length !== 1) return null;
+        const [first] = firstMatches;
+        const [second] = secondMatches;
+        if (first.id === second.id || first.minute === null || second.minute === null) return null;
         const approximate = first.certainty === 'approximate' || second.certainty === 'approximate';
         return { first, second, minutesApart: approximate ? null : Math.abs(first.minute - second.minute),
             sameScope: first.scope === second.scope,
@@ -146,9 +151,11 @@ class InvestigationBoard {
     proposeChronologyOrder(firstId, secondId, relation, discoveredIds = []) {
         if (!['before', 'after'].includes(relation) || firstId === secondId) return null;
         const facts = this.getEvidenceChronology(discoveredIds);
-        const first = facts.find(f => f.id === firstId);
-        const second = facts.find(f => f.id === secondId);
-        if (!first || !second) return null;
+        const firstMatches = facts.filter(f => f.id === firstId);
+        const secondMatches = facts.filter(f => f.id === secondId);
+        if (firstMatches.length !== 1 || secondMatches.length !== 1) return null;
+        const [first] = firstMatches;
+        const [second] = secondMatches;
         const timed = first.minute !== null && second.minute !== null;
         const exact = timed && first.certainty === 'recorded' && second.certainty === 'recorded';
         const agrees = exact && (relation === 'before' ? first.minute < second.minute : first.minute > second.minute);
@@ -170,9 +177,11 @@ class InvestigationBoard {
         const reason = typeof explanation === 'string' ? explanation.trim().slice(0, 500) : '';
         if (!reason || causeId === effectId) return null;
         const facts = this.getEvidenceChronology(discoveredIds);
-        const cause = facts.find(f => f.id === causeId);
-        const effect = facts.find(f => f.id === effectId);
-        if (!cause || !effect) return null;
+        const causeMatches = facts.filter(f => f.id === causeId);
+        const effectMatches = facts.filter(f => f.id === effectId);
+        if (causeMatches.length !== 1 || effectMatches.length !== 1) return null;
+        const [cause] = causeMatches;
+        const [effect] = effectMatches;
         const support = supportEvidenceId ? String(supportEvidenceId) : '';
         if (support && (!discoveredIds.includes(support) || !getObjectById(support)?.isEvidence ||
             support === cause.evidenceId || support === effect.evidenceId)) return null;
