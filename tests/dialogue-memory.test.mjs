@@ -1039,6 +1039,27 @@ test("Kane cannot confess through a casual conversation without corroborating cl
     assert.equal(engine.selectAnswer(withEvidence.index).id, "confession");
 });
 
+test('locked dialogue options explain missing evidence without exposing secret IDs', () => {
+    const { engine, inventory } = createDialogueHarness();
+    engine.startDialogue('dialogue-rival-full');
+    const confessionLead = engine.getAvailableAnswers().find(answer =>
+        answer.nextNode === 'caught_in_lie'
+    );
+    assert.equal(confessionLead.isAvailable, false);
+    assert.equal(confessionLead.lockReason, 'Нужно подтвердить сведения');
+    assert.doesNotMatch(confessionLead.lockReason, /waiter_saw_poisoning|case_has_claim/);
+
+    inventory.insights.push('waiter_saw_poisoning');
+    const unlocked = engine.getAvailableAnswers().find(answer => answer.nextNode === 'caught_in_lie');
+    assert.equal(unlocked.isAvailable, true);
+    assert.equal(unlocked.lockReason, null);
+    assert.equal(engine._getAnswerLockReason('hasItem:bar_photo'), 'Нужна дополнительная улика');
+    assert.equal(engine._getAnswerLockReason('cooperation_at_least:70'),
+        'Пока недостаточно доверия или готовности говорить');
+    assert.equal(engine._getAnswerLockReason('not:hasInsight:secret'),
+        'Пока недостаточно оснований для этого вопроса');
+});
+
 test("Kane's vial confrontation leads to evidence assessment, not an instant detailed confession", () => {
     const { engine, inventory } = createDialogueHarness();
     inventory.insights.push("waiter_saw_poisoning", "kane_stole_vial");

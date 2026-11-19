@@ -305,6 +305,7 @@ body { background: #071014; }
 .answer-btn:not(:disabled)::before { content: '›'; position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #bda77f; font-size: 18px; }
 .answer-btn:hover { border-left-color: #9de5dd; background: #294148; }
 .answer-locked { opacity: .5; }
+.answer-lock-reason { display: block; margin-top: 5px; font: 600 10px var(--font-mono); letter-spacing: .04em; color: #d7c49f; }
 .call-controls { background: rgba(7,19,24,.8); border-top-color: rgba(189,167,127,.2); }
 .hangup-btn { border-radius: 5px; background: #5f3237 !important; }
 .hangup-btn:hover { background: #874349 !important; }

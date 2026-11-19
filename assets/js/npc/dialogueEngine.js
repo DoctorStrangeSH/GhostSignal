@@ -287,9 +287,24 @@ class DialogueEngine {
             .map((answer, index) => ({
                 ...answer,
                 index,
-                isAvailable: !answer.condition || this._checkCondition(answer.condition)
+                isAvailable: !answer.condition || this._checkCondition(answer.condition),
+                lockReason: answer.condition && !this._checkCondition(answer.condition)
+                    ? this._getAnswerLockReason(answer.condition) : null
             }))
             .filter(answer => !answer.hiddenWhenUnavailable || answer.isAvailable);
+    }
+
+    // Explain the kind of missing prerequisite without revealing hidden clues or NPC knowledge.
+    _getAnswerLockReason(condition) {
+        const unmet = condition?.startsWith('all:')
+            ? condition.slice(4).split('&').map(part => part.trim()).filter(part => !this._checkCondition(part))
+            : [condition];
+        if (unmet.some(part => part.startsWith('hasItem:'))) return 'Нужна дополнительная улика';
+        if (unmet.some(part => part.startsWith('hasInsight:') || part.startsWith('case_has_claim:') || part.startsWith('has_claim:')))
+            return 'Нужно подтвердить сведения';
+        if (unmet.some(part => /^(cooperation_|pressure_|trust_|long_term_trust_)/.test(part)))
+            return 'Пока недостаточно доверия или готовности говорить';
+        return 'Пока недостаточно оснований для этого вопроса';
     }
     
     // Сбросить диалог
