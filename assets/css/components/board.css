@@ -474,3 +474,13 @@
 
 
 .noir-timeline-uncertainty { display:inline-flex; margin-top:4px; padding:2px 6px; border:1px solid rgba(212,160,23,.24); border-radius:3px; color:var(--accent-amber-glow); font-size:9px; letter-spacing:.05em; }
+
+
+/* Point-in-time investigation history */
+.hypothesis-history-event{display:grid;gap:5px;padding:9px 0;border-bottom:1px solid rgba(212,160,23,.12)}
+.hypothesis-history-event>strong{color:var(--accent-amber-glow);font-size:10px;letter-spacing:.04em}
+.hypothesis-history-event>span{color:var(--text-primary);font-size:12px;overflow-wrap:anywhere}
+.hypothesis-history-event>small{color:var(--text-dim);font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.hypothesis-history-event details{margin:3px 0 0 8px;padding-left:8px;border-left:1px solid rgba(212,160,23,.18)}
+.hypothesis-history-event details summary{color:var(--text-secondary);font-size:10px;cursor:pointer}
+.hypothesis-history-event details ul{margin:6px 0;padding-left:16px;color:var(--text-dim);font-size:10px}

@@ -718,6 +718,36 @@ class InvestigationBoard {
             return { hypothesisId: peer.id, title: peer.title, sharedSources, currentOnly, otherOnly, pendingAssumptions };
         });
     }
+    // Rebuild a readable, point-in-time history from the persisted action log.
+    // No wall-clock timestamps are invented: order is the only guaranteed chronology.
+    getHypothesisHistory(id) {
+        const entry = this.hypotheses.find(h => h.id === id);
+        if (!entry) return null;
+        let title = '';
+        let links = [];
+        return (Array.isArray(entry.history) ? entry.history : []).map((item, index) => {
+            const action = item?.action || 'unknown';
+            if (action === 'created' && typeof item.title === 'string') title = item.title;
+            else if (action === 'revised' && typeof item.title === 'string') title = item.title;
+            else if (action === 'linked' && ['evidence', 'statement', 'assumption'].includes(item.kind) &&
+                typeof item.sourceId === 'string' && ['for', 'against', 'pending'].includes(item.stance)) {
+                if (!links.some(link => link.kind === item.kind && link.sourceId === item.sourceId))
+                    links.push({ kind: item.kind, sourceId: item.sourceId, stance: item.stance });
+            } else if (action === 'unlinked') {
+                const position = links.findIndex(link => link.kind === item.kind && link.sourceId === item.sourceId);
+                if (position >= 0) links.splice(position, 1);
+            }
+            const labels = { created: 'Версия сформулирована', revised: 'Формулировка изменена',
+                linked: 'Добавлен источник', unlinked: 'Источник откреплён', abandoned: 'Версия отложена',
+                alternative_group_created: 'Создана группа альтернатив', alternative_created: 'Добавлена альтернативная версия' };
+            return { index: index + 1, action, label: labels[action] || 'Изменение записи',
+                title: title || entry.title, previousTitle: typeof item.previous === 'string' ? item.previous : null,
+                source: typeof item.sourceId === 'string' ? item.sourceId : null,
+                kind: typeof item.kind === 'string' ? item.kind : null,
+                stance: ['for', 'against', 'pending'].includes(item.stance) ? item.stance : null,
+                links: links.map(link => ({ ...link })), status: action === 'abandoned' ? 'abandoned' : 'open' };
+        });
+    }
     reviseHypothesis(id, text) {
         const entry = this.hypotheses.find(h => h.id === id);
         const title = String(text ?? '').trim().slice(0, 240);
