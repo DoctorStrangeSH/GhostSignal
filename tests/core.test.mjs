@@ -444,6 +444,43 @@ test("InvestigationBoard returns clues when a slot is cleared or the board is re
     assert.equal(emitted.filter(event => event.name === "inventory:restore_evidence").length, 2);
 });
 
+test("placing a required clue on the board does not invalidate an accusation", () => {
+    const objects = {
+        hidden_note: { id: "hidden_note", name: "Записка", takeable: true, isEvidence: true, weight: 0 },
+        wire_fragment: { id: "wire_fragment", name: "Проволока", takeable: true, isEvidence: true, weight: 0 }
+    };
+    let inventory;
+    const events = { emit(name, id) {
+        if (name === "inventory:remove") inventory.removeFromEvidence(id);
+        if (name === "inventory:restore_evidence") inventory.addToEvidence(id);
+    } };
+    const getObjectById = id => objects[id] || null;
+    const getObjectsByIds = ids => ids.map(getObjectById).filter(Boolean);
+    const Inventory = loadClass("assets/js/systems/inventory.js", "Inventory", { events, getObjectById, getObjectsByIds });
+    const InvestigationBoard = loadClass("assets/js/systems/board.js", "InvestigationBoard", { events, getObjectById });
+    const CaseManager = loadClass("assets/js/systems/caseManager.js", "CaseManager", { events });
+    inventory = new Inventory();
+    inventory.addItem("hidden_note");
+    inventory.addItem("wire_fragment");
+    inventory.addInsight("victim_knew_danger");
+
+    const board = new InvestigationBoard();
+    assert.equal(board.placeEvidence("hidden_note", "slot-1"), true);
+    assert.equal(board.placeEvidence("wire_fragment", "slot-2"), true);
+    assert.equal(inventory.evidence.length, 0, "board clues leave the available evidence pool");
+    assert.equal(inventory.hasItem("hidden_note"), true, "ownership survives board placement");
+
+    const manager = new CaseManager(null, null, inventory);
+    manager.currentCase = {
+        id: "test-case",
+        proofRequirements: { requiredItems: ["hidden_note", "wire_fragment"], anyInsights: ["victim_knew_danger"] },
+        finalQuestion: { acceptableAnswers: ["мэри"], feedbackCorrect: { title: "Верно" }, feedbackIncorrect: { title: "Нет" } }
+    };
+    manager.caseState = "active";
+    assert.equal(manager.checkFinalAnswer("мэри").isCorrect, true);
+    assert.equal(manager.caseState, "solved");
+});
+
 test("StorageManager increments sync revision only when progress changes", () => {
     const values = new Map();
     const localStorage = {
