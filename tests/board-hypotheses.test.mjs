@@ -610,6 +610,13 @@ test('alibi route window review respects explicit uncertainty and never treats u
     assert.equal(tight.availableMinutesMin, 0);
     assert.equal(tight.availableMinutesMax, 10);
     assert.match(tight.reason, /альтернативный путь ещё не исключён/);
+    const hiddenShortcut = { from: 'bar', to: 'booth', minutes: 3, bidirectional: true, requiresEvidence: 'service_passage_plan' };
+    const beforeDiscovery = board.reviewAlibiRouteWindows([...edges, hiddenShortcut], locations, []);
+    assert.equal(beforeDiscovery[0].status, 'route_time_tight', 'undiscovered shortcut must not affect the reconstruction');
+    const afterDiscovery = board.reviewAlibiRouteWindows([...edges, hiddenShortcut], locations, ['service_passage_plan']);
+    assert.equal(afterDiscovery[0].status, 'plausible', 'discovered evidence unlocks the shorter route and revises the conclusion');
+    assert.deepEqual(Array.from(afterDiscovery[0].routeLocationIds), ['bar', 'booth']);
+    assert.equal(board.reviewAlibiRouteWindows([...edges, { ...hiddenShortcut, requiresEvidence: 'unknown_evidence' }], locations, ['service_passage_plan'])[0].status, 'route_time_tight');
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(loaded.alibiClaims[0].uncertaintyMinutes, 3);
     assert.equal(loaded.reviewAlibiRouteWindows(edges, locations)[0].status, 'route_time_tight');
