@@ -126,8 +126,14 @@ try {
 
         // A fresh investigation must remain playable after the first case was
         // restarted; the previous case must not leak into the new save.
+        // The reset reloads the entire app. Wait for the new controller and
+        // case list to finish binding before opening a different investigation.
+        await page.waitForFunction(() => Boolean(
+            window.app?.caseListUI && window.app?.navigationController &&
+            window.app?.progress?.activeCase === null
+        ));
         await page.locator('#btn-open-cases').click();
-        await page.locator('.case-btn[data-case-id="case-002"]').click();
+        await page.locator('#screen-cases.active .case-btn[data-case-id="case-002"]').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
         await page.keyboard.press('Control+s');
