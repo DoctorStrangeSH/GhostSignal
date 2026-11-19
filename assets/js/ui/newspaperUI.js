@@ -24,14 +24,14 @@ class NewspaperUI {
             const newspaperId = ending?.newspaperId || caseId + '-solved';
             const modal = document.getElementById('universal-modal');
             if (!modal) {
-                this.showNewspaper(newspaperId);
+                this.showNewspaper(newspaperId, 2000, ending);
                 return;
             }
             // The report opens shortly after this event. Only queue the paper
             // after that specific report is shown and subsequently dismissed.
             modal.addEventListener('shown.bs.modal', () => {
                 modal.addEventListener('hidden.bs.modal', () => {
-                    this.showNewspaper(newspaperId, 0);
+                    this.showNewspaper(newspaperId, 0, ending);
                 }, { once: true });
             }, { once: true });
         });
@@ -42,9 +42,12 @@ class NewspaperUI {
         });
     }
     
-    showNewspaper(newspaperId, delay = 2000) {
+    showNewspaper(newspaperId, delay = 2000, ending = null) {
         const newspaper = getNewspaper(newspaperId);
         if (!newspaper) return;
+        const publicScrutiny = ending?.outcomeQuality === 'compromised'
+            ? '<p class="editor-note">Редакция отмечает: несмотря на раскрытие преступления, действия детектива вызвали вопросы. Свидетели сообщают о нарушенных обещаниях или необоснованных обвинениях. Установленная вина преступника не отменяет ответственности следствия перед невиновными.</p>'
+            : '';
         
         // Задержка для драматического эффекта
         setTimeout(() => {
@@ -55,7 +58,7 @@ class NewspaperUI {
                         <div class="newspaper-date">${newspaper.date}</div>
                         <h2 class="newspaper-headline">${newspaper.headline}</h2>
                         <h3 class="newspaper-subtitle">${newspaper.subtitle}</h3>
-                        <div class="newspaper-content">${newspaper.content}</div>
+                        <div class="newspaper-content">${newspaper.content}${publicScrutiny}</div>
                     </div>
                 `,
                 footer: `<button class="terminal-btn" data-bs-dismiss="modal">ПРОДОЛЖИТЬ</button>`
