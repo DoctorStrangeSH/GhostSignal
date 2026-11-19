@@ -74,6 +74,35 @@ test('newspaper follows the selected partial ending instead of claiming a perfec
     assert.match(papers[0].data.title, /case-002-partial/);
 });
 
+test('a compromised confession triggers public scrutiny without changing the newspaper verdict', () => {
+    const h = createHarness();
+    h.emit('case:solved', { caseId: 'case-002' });
+    h.emit('ending:determined', {
+        caseId: 'case-002',
+        ending: { newspaperId: 'case-002-solved', outcomeQuality: 'compromised' }
+    });
+    h.modal.dispatchEvent(new Event('shown.bs.modal'));
+    h.modal.dispatchEvent(new Event('hidden.bs.modal'));
+    h.flush();
+    const paper = h.emitted.find(e => e.name === 'modal:show')?.data;
+    assert.match(paper.title, /case-002-solved/);
+    assert.match(paper.body, /действия детектива вызвали вопросы/);
+    assert.match(paper.body, /ответственности следствия перед невиновными/);
+});
+
+test('clean confession remains free of allegations in the newspaper', () => {
+    const h = createHarness();
+    h.emit('case:solved', { caseId: 'case-002' });
+    h.emit('ending:determined', {
+        caseId: 'case-002', ending: { newspaperId: 'case-002-solved' }
+    });
+    h.modal.dispatchEvent(new Event('shown.bs.modal'));
+    h.modal.dispatchEvent(new Event('hidden.bs.modal'));
+    h.flush();
+    assert.doesNotMatch(h.emitted.find(e => e.name === 'modal:show').data.body,
+        /действия детектива вызвали вопросы/);
+});
+
 test('newspaper editions agree with the established outcomes of both cases', () => {
     const context = vm.createContext({});
     vm.runInContext(readFileSync(resolve(root, 'assets/data/narrative/newspapers.js'), 'utf8') +
