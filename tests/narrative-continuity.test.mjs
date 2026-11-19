@@ -69,3 +69,36 @@ test("Case 001 provides evidence and a witness explanation for the locked-room c
     assert.match(caseIndex, /trigger: "evidence_count:6"/);
     assert.match(endings, /condition: "evidence_count_6"/);
 });
+
+test("Case 001 accusation requires reachable physical and independent evidence", () => {
+    const registry = {};
+    const context = vm.createContext({
+        console,
+        registerData(type, data) {
+            registry[type] = { ...(registry[type] || {}), ...data };
+        }
+    });
+    for (const path of [
+        "assets/data/cases/case-001/index.js",
+        "assets/data/cases/case-001/locations.js",
+        "assets/data/cases/case-001/objects.js"
+    ]) {
+        vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
+    }
+    const caseData = vm.runInContext("CASE_001", context);
+    const room = registry.location.hotel_room_304;
+    const objects = registry.object;
+    assert.equal(room.unlockedByDefault, true);
+    for (const [source, item] of [["bed_304", "hidden_note"], ["door_chain", "wire_fragment"]]) {
+        assert.ok(room.defaultItems.includes(source));
+        assert.equal(objects[source].interactions.examine.spawnsItem, item);
+        assert.equal(objects[item].isEvidence, true);
+        assert.equal(objects[item].takeable, true);
+        assert.ok(caseData.proofRequirements.requiredItems.includes(item));
+    }
+    assert.equal(objects.wardrobe.interactions.examine.spawnsItem, "small_key");
+    assert.equal(objects.mirror.interactions.examine.revealsObject, "wall_safe");
+    assert.equal(objects.wall_safe.interactions.unlock.spawnsItem, "victim_diary");
+    assert.equal(objects.victim_diary.interactions.examine.givesInsight, "victim_knew_danger");
+    assert.ok(caseData.proofRequirements.anyInsights.includes("victim_knew_danger"));
+});
