@@ -177,7 +177,8 @@ const DIALOGUE_HOUSEKEEPER = {
                 text: "Потому что вы бы не поверили мне! Потому что все думают, что это сделала я!",
                 mood: "desperate",
                 answers: [
-                    { text: "Расскажите правду, и я поверю.", nextNode: "truth_starts" }
+                    { text: "На фотографии вы рядом с Блэквудом. Какие отношения вас связывали?", nextNode: "truth_starts", condition: "hasItem:torn_photo" },
+                    { text: "Пока я не могу подтвердить ваши слова. Вернусь с фактами.", nextNode: "insufficient_relationship_proof", condition: "not:hasItem:torn_photo" }
                 ]
             },
 
@@ -195,7 +196,8 @@ const DIALOGUE_HOUSEKEEPER = {
                 text: "Я знаю. Но я говорю правду. Я не убивала его. Я бы никогда не смогла...",
                 mood: "sad",
                 answers: [
-                    { text: "Тогда помогите мне найти того, кто это сделал.", nextNode: "truth_starts" }
+                    { text: "У меня есть ваша совместная фотография. Вы скрываете отношения?", nextNode: "truth_starts", condition: "hasItem:torn_photo" },
+                    { text: "Я проверю алиби и перезвоню.", nextNode: "insufficient_relationship_proof", condition: "not:hasItem:torn_photo" }
                 ]
             },
 
@@ -214,8 +216,16 @@ const DIALOGUE_HOUSEKEEPER = {
                 text: "Он рассказывал о своей жене. О том, как она его не понимает. О том, как он устал от всего. Он казался... потерянным.",
                 mood: "sad",
                 answers: [
-                    { text: "И вы решили его спасти?", nextNode: "truth_starts" }
+                    { text: "На фотографии вы выглядите гораздо ближе, чем просто знакомые.", nextNode: "truth_starts", condition: "hasItem:torn_photo" },
+                    { text: "Спасибо, Мэри. Я проверю ваши слова.", nextNode: "insufficient_relationship_proof", condition: "not:hasItem:torn_photo" }
                 ]
+            },
+
+            insufficient_relationship_proof: {
+                speaker: "npc",
+                text: "Мне нечего добавить, детектив. Если у вас появятся конкретные вопросы, позвоните снова.",
+                mood: "guarded",
+                endDialogue: true
             },
 
             end_call_arrest: {
