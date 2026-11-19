@@ -34,6 +34,30 @@ test('player can propose, challenge, revise and abandon a hypothesis without aut
     assert.ok(runtime.emissions.some(([event]) => event === 'board:updated'));
 });
 
+test('hypothesis history reconstructs point-in-time wording and source links across revisions', () => {
+    const runtime = boardRuntime();
+    const board = runtime.create();
+    const id = board.addHypothesis('Кейн был у бара');
+    board.linkHypothesis(id, 'evidence', 'bar-photo', 'pending');
+    board.reviseHypothesis(id, 'Кейн мог покинуть бар');
+    board.linkHypothesis(id, 'statement', 'joe-v1', 'against');
+    board.unlinkHypothesis(id, 0);
+    board.abandonHypothesis(id);
+    const history = board.getHypothesisHistory(id);
+    assert.deepEqual(Array.from(history, item => item.label), ['Версия сформулирована', 'Добавлен источник', 'Формулировка изменена', 'Добавлен источник', 'Источник откреплён', 'Версия отложена']);
+    assert.equal(history[1].title, 'Кейн был у бара');
+    assert.equal(history[1].links.length, 1);
+    assert.equal(history[2].title, 'Кейн мог покинуть бар');
+    assert.equal(history[2].previousTitle, 'Кейн был у бара');
+    assert.equal(history[4].links.length, 1);
+    assert.equal(history[5].links.length, 0);
+    assert.equal(history[5].status, 'abandoned');
+    assert.equal('timestamp' in history[0], false);
+    const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.deepEqual(Array.from(loaded.getHypothesisHistory(id), item => [item.title, item.links.length, item.status]),
+        Array.from(history, item => [item.title, item.links.length, item.status]));
+    assert.equal(loaded.getHypothesisHistory('missing'), null);
+});
 test('legacy board saves load, and hypothesis history survives save/load', () => {
     const runtime = boardRuntime();
     const legacy = runtime.restore({ slots: [], evidenceOnBoard: [] });
