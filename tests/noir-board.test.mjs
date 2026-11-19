@@ -44,8 +44,8 @@ test('hypothesis UI renders shared, unique and pending material for alternative 
     ui.inventory = { evidence: ['photo', 'station-log'] };
     ui.memoryService = { getStatements: () => [] };
     ui._renderSourceInquiries = () => '';
-    const { create } = boardRuntime();
-    ui.board = create();
+    vm.runInContext(read('assets/js/systems/board.js'), context);
+    ui.board = vm.runInContext('new InvestigationBoard()', context);
     const first = ui.board.addHypothesis('Кейн действовал один');
     const second = ui.board.createAlternativeHypothesis(first, '<сообщник>');
     ui.board.linkHypothesis(first, 'evidence', 'photo', 'for');
