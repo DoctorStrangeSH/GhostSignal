@@ -704,7 +704,22 @@ class BoardUI {
                             <button type="button" class="terminal-btn btn-sm hypothesis-revise" data-id="${this._escapeHTML(h.id)}">ИЗМЕНИТЬ ТЕКСТ</button>
                             <button type="button" class="terminal-btn btn-sm hypothesis-abandon" data-id="${this._escapeHTML(h.id)}">ОТКЛОНИТЬ ВЕРСИЮ</button>
                         ` : ''}
-                        <details><summary>История изменений (${h.history.length})</summary><ol>${h.history.map(v => `<li>${this._escapeHTML(v.action)}${v.title ? ': ' + this._escapeHTML(v.title) : ''}${v.previous ? ' (было: ' + this._escapeHTML(v.previous) + ')' : ''}${v.sourceId ? ' — ' + this._escapeHTML(v.sourceId) : ''}</li>`).join('')}</ol></details>
+                        ${(() => {
+                            const history = this.board.getHypothesisHistory?.(h.id) || [];
+                            if (!history.length) return '';
+                            const stanceLabels = { for: 'Поддерживает', against: 'Противоречит', pending: 'Требует проверки' };
+                            const kindLabels = { evidence: 'Улика', statement: 'Показание', assumption: 'Допущение' };
+                            return '<details class="hypothesis-history"><summary>История версии (' + history.length + ' изменений)</summary>' +
+                                '<p class="hypothesis-help">Порядок действий сохранён. Точные даты и время не показываются, поскольку журнал их не фиксирует.</p><ol>' +
+                                history.map(item => '<li class="hypothesis-history-event"><strong>' + item.index + '. ' + this._escapeHTML(item.label) + '</strong>' +
+                                    '<span>' + this._escapeHTML(item.title) + '</span>' +
+                                    (item.previousTitle ? '<small>Предыдущая формулировка: ' + this._escapeHTML(item.previousTitle) + '</small>' : '') +
+                                    (item.source ? '<small>' + this._escapeHTML(kindLabels[item.kind] || item.kind || 'Источник') + ': ' + this._escapeHTML(item.source) + ' · ' + this._escapeHTML(stanceLabels[item.stance] || '') + '</small>' : '') +
+                                    '<small>Состояние после действия: ' + (item.status === 'abandoned' ? 'версия отложена' : 'рабочая версия') + '</small>' +
+                                    '<details><summary>Состав версии на этот момент (' + item.links.length + ' связей)</summary><ul>' +
+                                    (item.links.map(link => '<li>' + this._escapeHTML(kindLabels[link.kind] || link.kind) + ': ' + this._escapeHTML(link.sourceId) + ' — ' + this._escapeHTML(stanceLabels[link.stance] || link.stance) + '</li>').join('') || '<li>Источников ещё нет</li>') +
+                                    '</ul></details></li>').join('') + '</ol></details>';
+                        })()}
                     </article>
                 `; }).join('')}
             </section>
