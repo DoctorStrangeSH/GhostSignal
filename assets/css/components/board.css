@@ -446,3 +446,16 @@
 .hypothesis-overlap-review strong { color: #a9c7d9; font-size: 9px; letter-spacing: .7px; }
 .hypothesis-overlap-review p, .hypothesis-overlap-review li { color: var(--text-secondary); font-size: 10px; line-height: 1.5; margin: 6px 0; }
 .hypothesis-overlap-review ul { margin-bottom: 0; padding-left: 17px; }
+
+
+/* Alternative investigation versions stay grouped without implying a verdict. */
+.hypothesis-alternatives { margin: 10px 0; padding: 10px 12px; border: 1px solid rgba(212, 160, 23, .24); border-radius: var(--radius-md); background: rgba(212, 160, 23, .035); }
+.hypothesis-alternatives > strong { color: var(--accent-amber-glow); font-size: 10px; letter-spacing: .08em; }
+.hypothesis-alternatives ul { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.hypothesis-alternatives li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 9px; border-left: 2px solid rgba(212, 160, 23, .25); background: rgba(0, 0, 0, .12); }
+.hypothesis-alternatives li.is-current { border-left-color: var(--accent-amber-glow); background: rgba(212, 160, 23, .08); }
+.hypothesis-alternatives li span { min-width: 0; overflow-wrap: anywhere; color: var(--text-primary); }
+.hypothesis-alternatives li small { flex: 0 0 auto; color: var(--text-dim); }
+.hypothesis-alternatives p { margin: 6px 0 0; color: var(--text-dim); font-size: 10px; line-height: 1.45; }
+.hypothesis-alternative { margin: 0 6px 8px 0; }
+@media (max-width: 520px) { .hypothesis-alternatives li { align-items: flex-start; flex-direction: column; gap: 3px; } }

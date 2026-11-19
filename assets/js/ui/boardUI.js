@@ -592,6 +592,18 @@ class BoardUI {
                     <article class="testimony-entry hypothesis-entry" data-hypothesis-id="${this._escapeHTML(h.id)}" tabindex="-1">
                         <div class="testimony-entry-heading"><strong>${this._escapeHTML(h.title)}</strong>
                             <span>${h.status === 'abandoned' ? 'ОТКЛОНЕНА' : 'НА ПРОВЕРКЕ'}</span></div>
+                        ${(() => {
+                            const alternatives = this.board.getHypothesisAlternatives?.(h.id) || [];
+                            if (alternatives.length < 2) return '';
+                            return `<div class="hypothesis-alternatives" aria-label="Альтернативные версии">
+                                <strong>СРАВНЕНИЕ ВЕРСИЙ</strong>
+                                <ul>${alternatives.map(item => `<li class="${item.id === h.id ? 'is-current' : ''}">
+                                    <span>${this._escapeHTML(item.title)}</span>
+                                    <small>${item.status === 'abandoned' ? 'Отклонена' : 'На проверке'} · ${item.links.length} связей</small>
+                                </li>`).join('')}</ul>
+                                <p>Версии независимы. Общая группа не определяет, какая из них верна.</p>
+                            </div>`;
+                        })()}
                         <div class="hypothesis-stance-summary" aria-label="Оценки игрока, а не подтверждённые выводы">
                             <span class="stance-for">+ ${currentLinks.filter(link => link.stance === 'for').length} за</span>
                             <span class="stance-against">− ${currentLinks.filter(link => link.stance === 'against').length} против</span>
@@ -657,6 +669,7 @@ class BoardUI {
                                 <select class="terminal-input hypothesis-stance" aria-label="Оценка"><option value="for">Поддерживает</option><option value="against">Противоречит</option><option value="pending">Требует проверки</option></select>
                                 <button class="terminal-btn btn-sm" type="submit">ПРИКРЕПИТЬ</button>
                             </form>
+                            <button type="button" class="terminal-btn btn-sm hypothesis-alternative" data-id="${this._escapeHTML(h.id)}">СОЗДАТЬ АЛЬТЕРНАТИВУ</button>
                             <button type="button" class="terminal-btn btn-sm hypothesis-revise" data-id="${this._escapeHTML(h.id)}">ИЗМЕНИТЬ ТЕКСТ</button>
                             <button type="button" class="terminal-btn btn-sm hypothesis-abandon" data-id="${this._escapeHTML(h.id)}">ОТКЛОНИТЬ ВЕРСИЮ</button>
                         ` : ''}
@@ -767,6 +780,15 @@ class BoardUI {
             this.board?.unlinkHypothesis(button.dataset.id, Number(button.dataset.index))));
         this.container.querySelectorAll('.hypothesis-abandon').forEach(button => button.addEventListener('click', () => {
             if (confirm('Отклонить версию? История останется в журнале.')) this.board?.abandonHypothesis(button.dataset.id);
+        }));
+        this.container.querySelectorAll('.hypothesis-alternative').forEach(button => button.addEventListener('click', () => {
+            const current = this.board?.hypotheses.find(h => h.id === button.dataset.id);
+            if (!current || current.status !== 'open') return;
+            const title = prompt('Сформулируйте альтернативную версию:', '');
+            if (title === null) return;
+            if (!this.board.createAlternativeHypothesis(current.id, title)) {
+                events.emit('notification:show', { message: 'Введите название альтернативной версии (до 240 символов).', type: 'warning', duration: 3000 });
+            }
         }));
         this.container.querySelectorAll('.hypothesis-revise').forEach(button => button.addEventListener('click', () => {
             const current = this.board?.hypotheses.find(h => h.id === button.dataset.id);
