@@ -403,6 +403,8 @@ test("a dialogue-backed accusation retraction spreads as a new attributed event,
     assert.equal(network.publishAccusationRetraction(npcId, accusationId, sourceEvent).reason, "unverified_retraction");
     memory.recordAnswerSelected(npcId, sourceEvent.dialogueId, sourceEvent.nodeId, { text: sourceEvent.answerText, tone: sourceEvent.tone });
     memory.resolveAccusation(npcId, accusationId, "retracted", "Детектив признал, что оснований недостаточно.");
+    assert.equal(network.publishAccusationRetraction(npcId, accusationId,
+        { dialogueId: "dialogue-ex-wife", nodeId: "unvisited-node" }).reason, "unverified_retraction");
     const published = network.publishAccusationRetraction(npcId, accusationId, sourceEvent);
     assert.equal(published.published, true);
     assert.equal(published.queued, 1);
