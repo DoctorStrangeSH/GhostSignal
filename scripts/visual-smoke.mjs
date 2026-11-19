@@ -99,6 +99,31 @@ try {
         if (investigationOverflow > 2) {
             throw new Error(`${name}: investigation has horizontal page overflow of ${investigationOverflow}px`);
         }
+
+        // Exercise the real browser lifecycle as well as the first render:
+        // persistence across a full reload, resume, and isolated case restart.
+        await page.keyboard.press('Control+s');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-continue:not(.hidden)').waitFor();
+        await page.locator('#btn-continue').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+
+        await page.keyboard.press('Escape');
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-options').click();
+        await page.locator('#btn-reset-case').waitFor();
+        page.once('dialog', dialog => dialog.accept());
+        await page.locator('#btn-reset-case').click();
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#btn-continue').waitFor({ state: 'attached' });
+        if (!await page.locator('#btn-continue').evaluate(button => button.classList.contains('hidden'))) {
+            throw new Error(`${name}: Continue remains available after case restart`);
+        }
+
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
     }
