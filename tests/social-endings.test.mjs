@@ -74,6 +74,22 @@ test('unresolved accusations prevent a flawless label even when the suspect conf
     assert.match(ending.title, /ПОСЛЕДСТВИЯМИ/);
 });
 
+test('a compromised perfect ending explains harm to an NPC without a custom ending paragraph', () => {
+    const { memory, endings } = loadSystems();
+    memory.recordAccusation('ex_wife', { id: 'public-anna', text: 'Детектив публично обвинил Анну.' });
+    memory.resolveAccusation('ex_wife', 'public-anna', 'false', 'Ошибка подтверждена.');
+
+    const ending = endings.determineEnding({ id: 'case-002' },
+        { hasInsight: id => id === 'full_confession_kane' }, 6,
+        { npcMemoryService: memory });
+
+    assert.equal(ending.id, 'perfect');
+    assert.equal(ending.outcomeQuality, 'compromised');
+    assert.match(ending.text, /доверие к детективу подорвано/);
+    assert.match(ending.text, /необоснованные обвинения/);
+    assert.equal(ending.socialConsequencesApplied, 1);
+});
+
 test('a broken promise affects the quality of a solved case without changing the convicted suspect', () => {
     const { memory, endings } = loadSystems();
     memory.recordPromise('waiter', { id: 'family', text: 'Защитить семью',

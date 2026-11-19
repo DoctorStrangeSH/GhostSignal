@@ -60,6 +60,9 @@ class AlternateEndings {
         const isPerfect = ending.condition && ending.condition !== 'default' &&
             !ending.condition.startsWith('evidence_count_');
         if (!paragraphs.length && !(compromised && isPerfect)) return ending;
+        if (compromised && isPerfect && !paragraphs.length) {
+            paragraphs.push('Расследование раскрыто, но доверие к детективу подорвано: остались нарушенные обещания или необоснованные обвинения. Последствия этих решений нельзя отменить правильной разгадкой.');
+        }
         return {
             ...ending,
             // Correct deduction and ethical conduct are separate judgments.
