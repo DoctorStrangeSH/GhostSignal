@@ -299,7 +299,7 @@ class InvestigationBoard {
             c.endMinute === endMinute && c.kind === kind && c.sourceId === source &&
             (c.locationId || null) === (linkedLocation?.id || null))) return null;
         const entry = { id: 'alibi-' + this.nextAlibiId++, subject: who, location: where,
-            locationId: linkedLocation?.id || null, startMinute, endMinute, precision, kind, sourceId: source };
+            locationId: linkedLocation?.id || null, startMinute, endMinute, precision, kind, sourceId: source, uncertaintyMinutes };
         this.alibiClaims.push(entry);
         events.emit('board:updated', { action: 'alibi_claim_added', id: entry.id });
         return entry.id;
