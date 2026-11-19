@@ -260,6 +260,25 @@ test('chronology refuses ambiguous fact IDs across discovered documents', () => 
     assert.equal(board.proposeChronologyOrder('arrival', 'exit', 'before', ['first', 'exit']).status, 'consistent');
 });
 
+test('alternative investigation versions remain separate, grouped and non-ranking across saves', () => {
+    const { create } = boardRuntime();
+    const board = create();
+    const first = board.addHypothesis('Кейн действовал один');
+    board.linkHypothesis(first, 'evidence', 'powder-residue', 'for');
+    const second = board.createAlternativeHypothesis(first, 'Кейну помог сообщник');
+    assert.ok(second);
+    board.linkHypothesis(second, 'statement', 'joe-statement', 'pending');
+    const alternatives = board.getHypothesisAlternatives(first);
+    assert.deepEqual(Array.from(alternatives, item => item.id), [first, second]);
+    assert.equal(alternatives[0].links[0].stance, 'for');
+    assert.equal(alternatives[1].links[0].stance, 'pending');
+    assert.equal('score' in alternatives[0], false);
+    assert.equal(board.createAlternativeHypothesis('missing', 'Неизвестная версия'), null);
+    const restored = boardRuntime().restore(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.deepEqual(Array.from(restored.getHypothesisAlternatives(second), item => item.id), [first, second]);
+    assert.equal(restored.getHypothesisAlternatives(first)[1].status, 'open');
+});
+
 test('player chronology proposals persist as sourced hypotheses without turning time order into guilt', () => {
     const context = vm.createContext({ events: { emit() {} }, getObjectById: id => ({ isEvidence: true,
         timelineFacts: id === 'photo' ? [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }] :
