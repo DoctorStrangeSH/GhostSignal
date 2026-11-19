@@ -182,7 +182,12 @@ class DialogueEngine {
                 });
             }
             if (answer.resolveAccusation) {
-                this.memoryService.resolveAccusation(this.currentDialogue.npcId, answer.resolveAccusation.id, answer.resolveAccusation.outcome, answer.resolveAccusation.reason);
+                const resolution = this.memoryService.resolveAccusation(this.currentDialogue.npcId, answer.resolveAccusation.id, answer.resolveAccusation.outcome, answer.resolveAccusation.reason);
+                if (resolution?.resolved && answer.resolveAccusation.outcome === 'retracted') {
+                    const published = this.socialNetwork?.publishAccusationRetraction(this.currentDialogue.npcId,
+                        answer.resolveAccusation.id, { dialogueId: this.currentDialogue.id, nodeId: this.currentNode.id });
+                    if (published?.published) events.emit('npc:social_network_changed', { reason: 'accusation_retracted', npcId: this.currentDialogue.npcId });
+                }
             }
             if (answer.report?.id && answer.report.networkPropagation && this.socialNetwork) {
                 this.socialNetwork.publish(this.currentDialogue.npcId, answer.report, {
