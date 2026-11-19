@@ -59,6 +59,9 @@ class BoardUI {
     
     render() {
         if (!this.container || !this.board) return;
+        if (this._selectedEvidenceId && !this.board.getAvailableEvidence(this.inventory?.evidence || []).includes(this._selectedEvidenceId)) {
+            this._selectedEvidenceId = null;
+        }
         
         this.container.innerHTML = `
             <div class="board-header">
@@ -81,6 +84,14 @@ class BoardUI {
                 <h4>Картотека / доступные улики</h4>
                 <p class="board-selection-help" id="board-selection-help" role="status" aria-live="polite">Выберите улику, затем нажмите на место на доске. Перетаскивание мышью тоже работает.</p>
                 <div class="evidence-pool-items" id="evidence-pool">${this._renderEvidencePool()}</div>
+                <div class="board-quick-placement" id="board-quick-placement" ${this._selectedEvidenceId ? '' : 'hidden'}>
+                    <label for="board-quick-slot">Место для выбранной улики</label>
+                    <select id="board-quick-slot">
+                        <option value="">Выберите место</option>
+                        ${this.board.slots.map(slot => `<option value="${this._escapeHTML(slot.id)}">${this._escapeHTML(slot.label)}${slot.evidenceId ? ' (заменить улику)' : ''}</option>`).join('')}
+                    </select>
+                    <button type="button" class="terminal-btn" id="board-quick-place">РАЗМЕСТИТЬ</button>
+                </div>
             </div>
 
             <div class="board-tool-list" aria-label="Инструменты расследования">
@@ -202,6 +213,10 @@ class BoardUI {
                 this._draggedEvidence = null;
             });
         });
+        this.container.querySelector('#board-quick-place')?.addEventListener('click', () => {
+            const slotId = this.container.querySelector('#board-quick-slot')?.value;
+            this._placeSelectedEvidence(slotId);
+        });
         
         // Слоты принимают улики
         this.container.querySelectorAll('.board-slot').forEach(slot => {
@@ -281,8 +296,10 @@ class BoardUI {
         });
         const help = this.container?.querySelector('#board-selection-help');
         if (help) help.textContent = this._selectedEvidenceId
-            ? 'Улика выбрана. Нажмите на место на доске, чтобы разместить или заменить её.'
+            ? 'Улика выбрана. Укажите место ниже или нажмите на место на доске.'
             : 'Выберите улику, затем нажмите на место на доске. Перетаскивание мышью тоже работает.';
+        const quickPlacement = this.container?.querySelector('#board-quick-placement');
+        if (quickPlacement) quickPlacement.hidden = !this._selectedEvidenceId;
     }
 
     _placeSelectedEvidence(slotId) {

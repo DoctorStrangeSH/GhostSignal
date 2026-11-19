@@ -726,8 +726,9 @@ test('board UI supports select-and-place without dragging and rejects unavailabl
     const item = { dataset: { evidenceId: 'letter' }, classList: { toggle(name, value) { states.push([name, value]); } },
         setAttribute(name, value) { states.push([name, value]); } };
     const help = { textContent: '' };
+    const quickPlacement = { hidden: true };
     ui.container = { querySelectorAll: selector => selector === '.evidence-pool-item' ? [item] : [],
-        querySelector: selector => selector === '#board-selection-help' ? help : null };
+        querySelector: selector => selector === '#board-selection-help' ? help : selector === '#board-quick-placement' ? quickPlacement : null };
     ui.inventory = { evidence: ['letter'] };
     let placed = null;
     ui.board = { getAvailableEvidence: ids => ids, placeEvidence(evidence, slot) { placed = [evidence, slot]; return true; } };
@@ -736,11 +737,50 @@ test('board UI supports select-and-place without dragging and rejects unavailabl
     ui._selectEvidence('letter');
     assert.equal(ui._selectedEvidenceId, 'letter');
     assert.match(help.textContent, /Улика выбрана/);
+    assert.equal(quickPlacement.hidden, false);
+    ui._selectEvidence('letter');
+    assert.equal(quickPlacement.hidden, true);
+    ui._selectEvidence('letter');
     assert.equal(ui._placeSelectedEvidence('slot-1'), true);
     assert.deepEqual(placed, ['letter', 'slot-1']);
     assert.equal(ui._selectedEvidenceId, null);
     assert.equal(ui._placeSelectedEvidence('slot-2'), false);
     assert.ok(states.some(([key, value]) => key === 'aria-pressed' && value === 'true'));
+});
+
+test('board quick placement offers labeled slots without inserting raw slot metadata', () => {
+    const context = vm.createContext({ document: { getElementById: () => null }, events: { on() {} } });
+    vm.runInContext(readFileSync(resolve('assets/js/ui/boardUI.js'), 'utf8'), context);
+    const ui = vm.runInContext('Object.create(BoardUI.prototype)', context);
+    const listeners = new Map();
+    ui.container = {
+        innerHTML: '',
+        querySelectorAll: () => [],
+        querySelector: selector => selector === '#board-quick-place'
+            ? { addEventListener: (type, fn) => listeners.set(type, fn) }
+            : selector === '#board-quick-slot' ? { value: 'slot-1' } : null
+    };
+    ui.board = { slots: [{ id: 'slot-1', label: '<Свидетель>', evidenceId: null }],
+        connections: [], getAvailableEvidence: evidence => evidence };
+    ui.inventory = { evidence: ['letter'] };
+    ui._selectedEvidenceId = 'letter';
+    ui._renderSlots = () => '';
+    ui._renderEvidencePool = () => '';
+    ui._renderInvestigationChecklist = () => '';
+    ui._renderHypotheses = () => '';
+    ui._renderChronology = () => '';
+    ui._renderAlibiReconstruction = () => '';
+    ui._renderTestimonyJournal = () => '';
+    ui._drawConnections = () => {};
+    context.setTimeout = () => {};
+    ui.render();
+    assert.match(ui.container.innerHTML, /<select id="board-quick-slot">/);
+    assert.match(ui.container.innerHTML, /&lt;Свидетель&gt;/);
+    assert.doesNotMatch(ui.container.innerHTML, /<option[^>]*><Свидетель>/);
+    let placedSlot;
+    ui._placeSelectedEvidence = slot => { placedSlot = slot; };
+    listeners.get('click')();
+    assert.equal(placedSlot, 'slot-1');
 });
 
 test('board layout reports occupied neighbors without calling them confirmed evidence links', () => {
