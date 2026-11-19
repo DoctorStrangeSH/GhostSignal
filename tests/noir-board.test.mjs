@@ -72,7 +72,7 @@ test('chronology UI exposes explicit uncertainty windows and avoids exact-order 
 });
 test('alibi UI collects explicit timing uncertainty and displays route compatibility categories', () => {
     const ui = read('assets/js/ui/boardUI.js');
-    assert.match(ui, /reviewAlibiRouteWindows/);
+    assert.match(ui, /reviewAlibiRouteWindows\(this\.locationManager\?\.activeCaseData\?\.alibiRoutes, knownLocations, evidenceIds\)/);
     assert.match(ui, /name="uncertaintyMinutes"/);
     assert.match(ui, /ВОЗМОЖНО/);
     assert.match(ui, /НЕДОСТАТОЧНО ДАННЫХ/);
