@@ -637,9 +637,12 @@ class InvestigationBoard {
             if (source.status === 'missing') warnings.push({ type: 'missing', ids: [source.id] });
             if (source.status === 'superseded') warnings.push({ type: 'superseded', ids: [source.id] });
         }
-        for (let i = 0; i < sources.length; i++) {
-            for (let j = i + 1; j < sources.length; j++) {
-                const a = sources[i], b = sources[j];
+        // Archived or missing records remain visible in the audit, but they
+        // must not create fresh dependency warnings between current sources.
+        const activeSources = sources.filter(source => source.status === 'active');
+        for (let i = 0; i < activeSources.length; i++) {
+            for (let j = i + 1; j < activeSources.length; j++) {
+                const a = activeSources[i], b = activeSources[j];
                 if (a.npcId && a.npcId === b.npcId) warnings.push({ type: 'same_witness', ids: [a.id, b.id] });
                 const sharedRumors = a.linkedRumorIds.filter(rumor => b.linkedRumorIds.includes(rumor));
                 if (sharedRumors.length) warnings.push({ type: 'shared_rumor_reference', ids: [a.id, b.id], rumorIds: sharedRumors });
