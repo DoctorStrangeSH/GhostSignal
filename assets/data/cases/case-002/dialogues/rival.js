@@ -5,11 +5,11 @@ const DIALOGUE_RIVAL_FULL = {
 
     contradictionReactions: {
         "kane-presence-during-poisoning": {
-            text: "Вы сопоставили мои слова с показаниями Томаса. Хорошо, я вернулся в зал после короткого выхода в коридор. Но это ещё не доказывает, что я подходил к столику Блэквуда. Томас мог видеть только то, что хотел увидеть.",
+            text: "Вы сопоставили моё алиби с показаниями о том вечере. Хорошо, я вернулся в зал после короткого выхода в коридор. Но одно моё присутствие не доказывает, что я подходил к столику Блэквуда или отравил его.",
             mood: "defensive",
             givesInsight: "kane_alibi_broken",
             answers: [
-                { text: "Томас видел, как вы подсыпали порошок в стакан.", nextNode: "caught_in_lie", tone: "direct", condition: "lie_exposed:kane-left-before-poisoning" },
+                { text: "Почему вы скрыли возвращение в зал?", nextNode: "why", tone: "direct", condition: "lie_exposed:kane-left-before-poisoning" },
                 { text: "Почему вы солгали о том, что уехали из бара?", nextNode: "why", tone: "direct", condition: "pressure_at_least:20" },
                 { text: "Я проверю ваши слова. Продолжим.", nextNode: "why", tone: "calm" }
             ]
