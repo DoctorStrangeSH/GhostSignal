@@ -349,6 +349,7 @@ body { background: #071014; }
 .hypothesis-source-balance .source-statement { color: #abe0d9; border-left: 3px solid #7dc4bd; }
 .hypothesis-source-balance .source-assumption { color: #dcb3a8; border-left: 3px solid #b78579; }
 .hypothesis-source-disclaimer { margin: 5px 0 12px; color: #aebdb5; font-size: 11px; line-height: 1.55; }
+.hypothesis-stale-summary { margin: 8px 0; padding: 9px 11px; color: #f0d3a0; background: rgba(110, 61, 36, .28); border-left: 3px solid #d3a96d; border-radius: 3px; font-size: 11px; line-height: 1.55; }
 .hypothesis-links li { padding: 9px 10px; border: 1px solid rgba(189,167,127,.12); background: rgba(255,255,255,.022); font-size: 11px; line-height: 1.5; }
 .hypothesis-source-review { border-color: rgba(125,196,189,.32); border-left: 3px solid #7dc4bd; background: rgba(18,64,65,.15); padding: 12px; }
 .hypothesis-overlap-review { padding: 12px; border-left-color: #d4ab74; background: rgba(102,75,42,.18); }
