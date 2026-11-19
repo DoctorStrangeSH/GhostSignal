@@ -117,6 +117,29 @@ test('newspaper editions agree with the established outcomes of both cases', () 
     assert.match(editions['case-001-partial'].content, /Местонахождение Блэквуда остаётся неизвестным/);
 });
 
+test('every authored ending points to a real newspaper edition', () => {
+    const endings = {};
+    const context = vm.createContext({
+        console: { log() {} },
+        registerData(type, records) {
+            if (type === 'ending') Object.assign(endings, records);
+        }
+    });
+    for (const path of [
+        'assets/data/cases/case-001/endings.js',
+        'assets/data/cases/case-002/endings.js',
+        'assets/data/narrative/newspapers.js'
+    ]) {
+        vm.runInContext(readFileSync(resolve(root, path), 'utf8'), context, { filename: path });
+    }
+    const editions = vm.runInContext('NEWSPAPERS', context);
+    for (const [id, ending] of Object.entries(endings)) {
+        assert.ok(ending.newspaperId, `${id} needs a newspaper reference`);
+        assert.ok(editions[ending.newspaperId], `${id} needs existing edition ${ending.newspaperId}`);
+    }
+    assert.match(editions['case-002-failed'].headline, /НЕРАСКРЫТЫМ/);
+});
+
 test('solved case without a report still shows the newspaper', () => {
     const h = createHarness();
     h.emit('case:solved', { caseId: 'case-001' });
