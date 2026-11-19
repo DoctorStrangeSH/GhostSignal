@@ -245,6 +245,7 @@ class CallInterface {
             ? allItems.filter(item => item.isEvidence)
             : (this.dialogueEngine.inventory?.getEvidence?.() || []);
         const prepared = this.dialogueEngine.memoryService?.getPreparedConfrontation?.(this.currentNPC?.id);
+        const causalQuestion = this.dialogueEngine.investigationBoard?.getPreparedCausalQuestion?.(this.currentNPC?.id);
         const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[char]);
@@ -273,6 +274,15 @@ class CallInterface {
                     <button id="btn-present-contradiction" class="terminal-btn" type="button">ПРЕДЪЯВИТЬ ПРОТИВОРЕЧИЕ</button>
                 </div>
             `);
+        }
+
+        if (causalQuestion) {
+            sections.push(`<div class="prepared-contradiction">
+                <div class="prepared-contradiction-kicker">ВОПРОС ПО ГИПОТЕЗЕ</div>
+                <p>${escapeHTML(causalQuestion.title)}</p>
+                <p>Найдены возражения против этой версии. Попросите свидетеля прояснить обстоятельства.</p>
+                <button id="btn-present-causal-question" class="terminal-btn" type="button">УТОЧНИТЬ ПРОТИВОРЕЧИЕ</button>
+            </div>`);
         }
 
         container.innerHTML = sections.join('');
@@ -315,6 +325,12 @@ class CallInterface {
                     : 'Сначала подготовьте противоречие на доске расследования';
                 events.emit('notification:show', { message, type: 'warning', duration: 2800 });
             }
+        });
+        document.getElementById('btn-present-causal-question')?.addEventListener('click', () => {
+            const previousMessage = document.getElementById('dialogue-messages')?.lastElementChild;
+            const result = this.dialogueEngine.presentPreparedCausalQuestion();
+            if (result.success) this._appendPlayerStatement('Есть независимая улика, противоречащая моей версии. Помогите уточнить, что вы действительно знаете.', previousMessage);
+            else events.emit('notification:show', { message: 'Этот вопрос уже задан или не подготовлен.', type: 'warning', duration: 2600 });
         });
     }
 

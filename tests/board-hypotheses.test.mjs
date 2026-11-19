@@ -315,6 +315,32 @@ test('independent causal evidence assessments preserve both sides without declar
     assert.equal(restored.assessChronologyCause(id, 'hidden', 'for', 'Too late', ['photo', 'log', 'hidden']), null);
 });
 
+test('causal follow-up question is gated by contrary evidence, tied to a witness and persists once discussed', () => {
+    const objects = { photo: [{ id: 'photo-event', minute: null, label: 'Photo', scope: 'bar' }],
+        log: [{ id: 'log-event', minute: 1338, label: 'Log', scope: 'station' }], counter: [] };
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id =>
+        objects[id] ? { isEvidence: true, timelineFacts: objects[id] } : null });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    const id = board.proposeChronologyCause('photo-event', 'log-event', 'Maybe', '', ['photo', 'log']).id;
+    const statements = [{ npcId: 'waiter', id: 'statement-1', status: 'active' },
+        { npcId: 'rival', id: 'statement-2', status: 'superseded' }];
+    assert.equal(board.prepareCausalQuestion(id, 'waiter', statements), false);
+    assert.ok(board.assessChronologyCause(id, 'counter', 'against', 'It may be unrelated', ['photo', 'log', 'counter']));
+    assert.equal(board.prepareCausalQuestion(id, 'rival', statements), false);
+    assert.equal(board.prepareCausalQuestion(id, 'waiter', statements), true);
+    assert.equal(board.prepareCausalQuestion(id, 'waiter', statements), false);
+    assert.equal(board.getPreparedCausalQuestion('rival'), null);
+    assert.equal(board.getPreparedCausalQuestion('waiter').hypothesisId, id);
+    const restored = vm.runInContext('InvestigationBoard.fromJSON', context)(JSON.parse(JSON.stringify(board.toJSON())));
+    assert.equal(restored.getPreparedCausalQuestion('waiter').hypothesisId, id);
+    assert.equal(restored.discussCausalQuestion('waiter'), true);
+    assert.equal(restored.discussCausalQuestion('waiter'), false);
+    assert.equal(restored.getPreparedCausalQuestion('waiter'), null);
+    assert.equal(vm.runInContext('InvestigationBoard.fromJSON', context)(JSON.parse(JSON.stringify(restored.toJSON())))
+        .getPreparedCausalQuestion('waiter'), null);
+});
+
 test('alibi reconstructions flag overlapping locations without deciding whether the witness lied', () => {
     const runtime = boardRuntime();
     const board = runtime.create();
