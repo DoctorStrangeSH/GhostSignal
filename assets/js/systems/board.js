@@ -122,7 +122,10 @@ class InvestigationBoard {
                 (Number.isInteger(fact.minute) && fact.minute >= 0 && fact.minute < 1440)) &&
                 typeof fact.id === 'string' && typeof fact.label === 'string' && typeof fact.scope === 'string')
                 .map(fact => ({ evidenceId, id: fact.id, minute: fact.minute, label: fact.label,
-                    scope: fact.scope, certainty: fact.certainty || 'unknown', caveat: fact.caveat || '' }));
+                    scope: fact.scope, certainty: fact.certainty || 'recorded', caveat: fact.caveat || '',
+                    uncertaintyMinutes: Number.isInteger(fact.uncertaintyMinutes) &&
+                        fact.uncertaintyMinutes >= 0 && fact.uncertaintyMinutes <= 720
+                        ? fact.uncertaintyMinutes : null }));
         }).sort((a, b) => (a.minute === null ? Infinity : a.minute) - (b.minute === null ? Infinity : b.minute) || a.id.localeCompare(b.id));
     }
 
@@ -136,14 +139,33 @@ class InvestigationBoard {
         const [first] = firstMatches;
         const [second] = secondMatches;
         if (first.id === second.id || first.minute === null || second.minute === null) return null;
-        const approximate = first.certainty === 'approximate' || second.certainty === 'approximate';
-        return { first, second, minutesApart: approximate ? null : Math.abs(first.minute - second.minute),
-            sameScope: first.scope === second.scope,
-            warning: approximate
-                ? 'Хотя записи имеют временные ориентиры, одна из них приблизительна: точный интервал вычислять нельзя. Совпадение времени не доказывает связь событий.'
-                : first.scope === second.scope
-                ? 'Записи относятся к одному объекту, но сами по себе не устанавливают непрерывное состояние между отметками.'
-                : 'Записи относятся к разным объектам. Совпадение времени не устанавливает их связь, личность участника или противоречие.' };
+        const windowFor = fact => {
+            if (fact.certainty === 'recorded') {
+                const margin = fact.uncertaintyMinutes ?? 0;
+                return { start: fact.minute - margin, end: fact.minute + margin };
+            }
+            if (fact.certainty !== 'approximate' || fact.uncertaintyMinutes === null) return null;
+            return { start: fact.minute - fact.uncertaintyMinutes, end: fact.minute + fact.uncertaintyMinutes };
+        };
+        const firstWindow = windowFor(first);
+        const secondWindow = windowFor(second);
+        const validWindow = window => window && window.start >= 0 && window.end < 1440;
+        const windowsKnown = validWindow(firstWindow) && validWindow(secondWindow);
+        const temporalRelation = !windowsKnown ? 'unknown'
+            : firstWindow.end < secondWindow.start ? 'first_before_second'
+            : firstWindow.start > secondWindow.end ? 'first_after_second' : 'overlap_possible';
+        const exact = first.certainty === 'recorded' && second.certainty === 'recorded' &&
+            (first.uncertaintyMinutes ?? 0) === 0 && (second.uncertaintyMinutes ?? 0) === 0;
+        const warning = !windowsKnown
+            ? 'Для одной из записей нельзя безопасно построить временное окно. Уточните точность источника.'
+            : temporalRelation === 'overlap_possible'
+                ? 'Временные окна пересекаются или соприкасаются: порядок событий по этим данным не установлен.'
+                : temporalRelation === 'first_before_second'
+                    ? 'С учётом указанной погрешности первое событие определённо раньше второго. Это само по себе не доказывает причинную связь.'
+                    : 'С учётом указанной погрешности первое событие определённо позже второго. Это само по себе не доказывает причинную связь.';
+        return { first, second, firstWindow, secondWindow, temporalRelation,
+            minutesApart: exact ? Math.abs(first.minute - second.minute) : null,
+            sameScope: first.scope === second.scope, warning };
     }
 
     // A player-authored order is a hypothesis, not a factual verdict. In

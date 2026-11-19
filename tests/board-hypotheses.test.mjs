@@ -244,7 +244,7 @@ test('document chronology uses discovered evidence only and does not infer an al
         ] : id === 'photo' ? [
             { id: 'photo-undated', minute: null, label: 'Exposure', scope: 'bar', certainty: 'unknown' }
         ] : id === 'tram' ? [
-            { id: 'tram-stop', minute: 1335, label: 'Tram near bar', scope: 'stop', certainty: 'approximate' }
+            { id: 'tram-stop', minute: 1335, label: 'Tram near bar', scope: 'stop', certainty: 'approximate', uncertaintyMinutes: 10 }
         ] : []
     }) });
     vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
@@ -263,10 +263,37 @@ test('document chronology uses discovered evidence only and does not infer an al
     assert.equal(board.compareChronologyFacts('photo-undated', 'request', ['photo', 'exchange']), null);
     const approximate = board.compareChronologyFacts('tram-stop', 'request', ['tram', 'exchange']);
     assert.equal(approximate.minutesApart, null);
-    assert.match(approximate.warning, /приблизительна/);
+    assert.equal(approximate.temporalRelation, 'overlap_possible');
+    assert.match(approximate.warning, /пересекаются/);
     assert.equal('contradiction' in approximate, false);
 });
 
+test('chronology compares explicit uncertainty windows without inventing precision', () => {
+    const facts = {
+        first: [{ id: 'first-event', minute: 120, label: 'First', scope: 'street', certainty: 'approximate', uncertaintyMinutes: 5 }],
+        second: [{ id: 'second-event', minute: 140, label: 'Second', scope: 'station', certainty: 'recorded', uncertaintyMinutes: 2 }],
+        overlap: [{ id: 'overlap-event', minute: 130, label: 'Overlap', scope: 'bar', certainty: 'approximate', uncertaintyMinutes: 15 }],
+        unknown: [{ id: 'unknown-event', minute: 130, label: 'Unknown', scope: 'bar', certainty: 'approximate' }],
+        invalid: [{ id: 'invalid-window', minute: 5, label: 'Invalid edge', scope: 'bar', certainty: 'approximate', uncertaintyMinutes: 10 }]
+    };
+    const context = vm.createContext({ events: { emit() {} }, getObjectById: id =>
+        facts[id] ? { isEvidence: true, timelineFacts: facts[id] } : null });
+    vm.runInContext(readFileSync(resolve('assets/js/systems/board.js'), 'utf8'), context);
+    const board = vm.runInContext('new InvestigationBoard()', context);
+    const ordered = board.compareChronologyFacts('first-event', 'second-event', ['first', 'second']);
+    assert.deepEqual({ ...ordered.firstWindow }, { start: 115, end: 125 });
+    assert.deepEqual({ ...ordered.secondWindow }, { start: 138, end: 142 });
+    assert.equal(ordered.temporalRelation, 'first_before_second');
+    assert.equal(ordered.minutesApart, null);
+    const overlapping = board.compareChronologyFacts('first-event', 'overlap-event', ['first', 'overlap']);
+    assert.equal(overlapping.temporalRelation, 'overlap_possible');
+    assert.equal(overlapping.minutesApart, null);
+    const unknown = board.compareChronologyFacts('unknown-event', 'second-event', ['unknown', 'second']);
+    assert.equal(unknown.temporalRelation, 'unknown');
+    const invalid = board.compareChronologyFacts('invalid-window', 'second-event', ['invalid', 'second']);
+    assert.equal(invalid.temporalRelation, 'unknown');
+    assert.equal('contradiction' in ordered, false);
+});
 test('chronology refuses ambiguous fact IDs across discovered documents', () => {
     const objects = {
         first: [{ id: 'arrival', minute: 120, label: 'Arrival in the bar', scope: 'bar', certainty: 'recorded' }],
