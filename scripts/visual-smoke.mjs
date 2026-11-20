@@ -40,7 +40,7 @@ try {
             element.scrollWidth - element.clientWidth
         );
         if (achievementOverflow > 2) {
-            throw new Error(`${name: achievement collection has horizontal overflow of ${achievementOverflow}px`);
+            throw new Error(`${name}: achievement collection has horizontal overflow of ${achievementOverflow}px`);
         }
         await page.locator('[data-achievement-back]').click();
         await page.locator('#screen-main-menu.active').waitFor();
