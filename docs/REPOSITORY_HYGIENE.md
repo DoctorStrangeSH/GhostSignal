@@ -27,7 +27,8 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [ ] Review all 129 branch refs against merged PRs and unique commits.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
 - [x] Complete source-level asset reference audit for the current art inventory; all 26 art files have confirmed uses after checking the dynamic evidence-photo viewer.
-- [ ] Complete a clean install/build/test run from the documented setup.
+- [x] Remove unpinned runtime/dev server dependencies and replace them with a Node.js built-in static server.
+- [ ] Complete the full build/test and browser smoke on the latest server implementation.
 - [x] Add a regression guard: cloud upload is aborted when the preceding local save fails; the new test is running in CI.
 
 ## Branch cleanup rules
@@ -60,8 +61,8 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 
 ## Reproducible dependency installation
 
-- `package-lock.json` is currently absent. The quality workflow does not install npm dependencies, while the visual workflow installs a pinned Playwright version with lockfile generation disabled.
-- Before release, decide whether to add and commit a lockfile for the runtime/development dependency set, then use `npm ci` in workflows that install project dependencies. Do not generate or claim a lockfile until it has been produced and validated with the project's Node/npm version.
+- The application package has no third-party npm dependencies after replacing `serve`/`live-server` with a Node.js built-in static server. A project `package-lock.json` is therefore unnecessary at this stage.
+- The Visual smoke workflow installs its pinned Playwright test runner ephemerally with lockfile generation disabled; it is CI tooling, not an application dependency.
 
 ## Art-reference audit (2026-11-20)
 
@@ -80,4 +81,14 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Added a regression test proving that local write failure returns false and performs zero cloud writes.
 - [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 510/510 tests passed.
 - [ ] Confirm Visual smoke on the same commit.
-- [ ] Generate and validate a real `package-lock.json` with Node 20/npm; do not hand-author dependency resolution metadata.
+- [x] Remove the need for a project lockfile by eliminating third-party app dependencies; document Node.js 20+ as the only local runtime requirement.
+
+
+## Dependency-free local server (2026-11-20)
+
+- [x] Replaced `npx serve` and `npx live-server` package scripts with `scripts/dev-server.mjs`, using only Node.js built-ins.
+- [x] Updated README startup instructions: no `npm install` is required; `npm start` serves on 4173 and `npm run dev` serves on 3000.
+- [x] Server supports GET/HEAD, MIME types, directory index files, 404/405 responses, path traversal protection and symlink containment checks.
+- [x] Hidden files/directories (including `.git` and `.env`) are denied to avoid exposing repository metadata or local secrets.
+- [x] Added automated tests for normal serving, MIME, HEAD, missing files, unsupported methods, traversal, hidden paths and symlink escapes.
+- [ ] Verify the server tests and complete Visual smoke on the newest commit.
