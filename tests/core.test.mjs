@@ -576,7 +576,7 @@ test("ProgressTracker records each replay once while counting a case only once f
 
     const restored = ProgressTracker.fromJSON(tracker.toJSON());
     assert.equal(restored.stats.totalSolvedRuns, 2);
-    assert.deepEqual(restored.stats.casesHistory.map(record => record.runId), [
+    assert.deepEqual(Array.from(restored.stats.casesHistory, record => record.runId), [
         "case-002:run-1", "case-002:run-2"
     ]);
 });
