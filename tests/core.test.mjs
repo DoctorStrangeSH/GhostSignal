@@ -546,3 +546,37 @@ test("SyncManager preserves an active local case when cloud progress is newer", 
     assert.equal(state.cloud_conflict_backup, undefined);
     assert.ok(emitted.some(event => event.name === "sync:reload_needed"));
 });
+
+
+test("ProgressTracker records each replay once while counting a case only once for rank", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }, { name: "ДЕТЕКТИВ", minSolved: 1 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    const caseData = { id: "case-002", title: "Последний заказ" };
+
+    tracker.startCase(caseData.id, "case-002:run-1");
+    tracker.caseStartTime = Date.now() - 120000;
+    const first = tracker.caseSolved(caseData, "case-002:run-1");
+    const duplicate = tracker.caseSolved(caseData, "case-002:run-1");
+
+    assert.equal(duplicate, first, "the same run cannot be counted twice");
+    assert.equal(tracker.stats.totalCasesSolved, 1, "unique solved cases drive rank progression");
+    assert.equal(tracker.stats.totalSolvedRuns, 1);
+    assert.equal(tracker.stats.casesHistory.length, 1);
+
+    tracker.startCase(caseData.id, "case-002:run-2");
+    tracker.caseHintsUsed = 2;
+    const replay = tracker.caseSolved(caseData, "case-002:run-2");
+    assert.equal(replay.runId, "case-002:run-2");
+    assert.equal(tracker.stats.totalCasesSolved, 1, "replaying a solved case does not farm rank");
+    assert.equal(tracker.stats.totalSolvedRuns, 2);
+    assert.equal(tracker.stats.casesHistory.length, 2);
+    assert.equal(tracker.getSolveRate(), 100);
+
+    const restored = ProgressTracker.fromJSON(tracker.toJSON());
+    assert.equal(restored.stats.totalSolvedRuns, 2);
+    assert.deepEqual(restored.stats.casesHistory.map(record => record.runId), [
+        "case-002:run-1", "case-002:run-2"
+    ]);
+});
