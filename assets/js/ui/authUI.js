@@ -174,7 +174,14 @@ class AuthUI {
         if (!modalBody || !modalTitle || !modalFooter) return;
         
         const user = this.authManager.getUser();
-        const hasConflict = Boolean(storage.get('cloud_conflict_backup'));
+        const conflictDetails = window.app?.syncManager?.getConflictDetails?.();
+        const hasConflict = Boolean(conflictDetails || storage.get('cloud_conflict_backup'));
+        const describeSave = (label, details) => {
+            if (!details) return '<p><strong>' + label + ':</strong> детали старой копии недоступны; сама копия сохранена.</p>';
+            const caseName = details.activeCase || 'Нет активного дела';
+            const savedAt = details.updatedAt ? new Date(details.updatedAt).toLocaleString('ru-RU') : 'Время неизвестно';
+            return '<div class="auth-conflict-version"><strong>' + label + '</strong><br>Дело: ' + caseName + '<br>Завершено дел: ' + details.solvedCases + '<br>Последнее изменение: ' + savedAt + '<br>Ревизия: ' + (details.revision ?? '—') + '</div>';
+        };
 
         modalTitle.textContent = '👤 АККАУНТ';
         modalBody.innerHTML = `
@@ -182,8 +189,10 @@ class AuthUI {
             <p style="font-size: 12px; color: var(--text-dim);">Прогресс синхронизируется автоматически.</p>
             ${hasConflict ? `
                 <div class="auth-error" role="status">
-                    Обнаружены две версии сохранения. Текущий локальный прогресс не перезаписан.
-                    Выберите, какую версию оставить.
+                    Обнаружены две версии сохранения. Обе копии сохранены отдельно.
+                    Сравните их и выберите, какую версию использовать.
+                    ${describeSave('ЛОКАЛЬНАЯ КОПИЯ', conflictDetails?.local)}
+                    ${describeSave('ОБЛАЧНАЯ КОПИЯ', conflictDetails?.cloud)}
                 </div>
             ` : ''}
         `;
