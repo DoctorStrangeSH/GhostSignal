@@ -54,5 +54,8 @@ test('request path resolver rejects traversal and malformed encoding', () => {
     const root = resolve('/tmp/ghost-signal-root');
     assert.equal(resolvePublicFile(root, '/index.html'), join(root, 'index.html'));
     assert.equal(resolvePublicFile(root, '/%2e%2e/secret.txt'), null);
+    assert.equal(resolvePublicFile(root, '/.env'), null);
+    assert.equal(resolvePublicFile(root, '/.git/config'), null);
+    assert.equal(resolvePublicFile(root, '/..\\\\secret.txt'), null);
     assert.equal(resolvePublicFile(root, '/%E0%A4%A'), null);
 });
