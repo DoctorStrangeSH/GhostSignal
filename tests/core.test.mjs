@@ -987,7 +987,7 @@ test("AchievementSystem awards social detective only after every case participan
     events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
     events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
     events.emit("dialogue:completed", { npcId: "unknown", dialogueId: "unknown_intro" });
-    assert.deepEqual(progress.activeCaseDialogueNpcIds, ["porter"]);
+    assert.deepEqual(Array.from(progress.activeCaseDialogueNpcIds), ["porter"]);
     assert.equal(system.unlocked.includes("social_detective"), false);
 
     events.emit("dialogue:completed", { npcId: "bartender", dialogueId: "bartender_intro" });
