@@ -32,6 +32,19 @@ try {
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.screenshot({ path: `${output}/${name}-menu.png`, fullPage: true });
 
+        await page.locator('#btn-achievements').click();
+        await page.locator('#screen-achievements.active .achievement-screen-header h2').waitFor();
+        await page.locator('#screen-achievements .achievement-entry').first().waitFor();
+        await page.screenshot({ path: `${output}/${name}-achievements.png`, fullPage: true });
+        const achievementOverflow = await page.locator('#screen-achievements .achievement-screen').evaluate(element =>
+            element.scrollWidth - element.clientWidth
+        );
+        if (achievementOverflow > 2) {
+            throw new Error(`${name: achievement collection has horizontal overflow of ${achievementOverflow}px`);
+        }
+        await page.locator('[data-achievement-back]').click();
+        await page.locator('#screen-main-menu.active').waitFor();
+
         await page.locator('#btn-open-cases').click();
         await page.locator('#screen-cases.active .case-card').first().waitFor();
         await page.screenshot({ path: `${output}/${name}-cases.png`, fullPage: true });
