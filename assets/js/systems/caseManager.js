@@ -72,7 +72,7 @@ class CaseManager {
             caseData.locations.forEach(locId => {
                 const location = getLocationById(locId);
                 if (location?.unlockedByDefault !== false) {
-                    this.locationManager.unlockLocation(locId);
+                    this._unlockCaseLocation(locId);
                 }
             });
         }
@@ -275,12 +275,19 @@ class CaseManager {
         events.emit('case:ready_for_final', true);
     }
 
+    _unlockCaseLocation(locationId) {
+        if (typeof this.locationManager?.unlockCaseLocation === 'function') {
+            return this.locationManager.unlockCaseLocation(locationId);
+        }
+        return this.locationManager?.unlockLocation?.(locationId) || false;
+    }
+
     _checkUnlockConditions() {
         if (!this.currentCase?.unlockConditions) return;
         
         this.currentCase.unlockConditions.forEach(condition => {
             if (this.inventory.hasItem(condition.requiresItem)) {
-                const unlocked = this.locationManager.unlockLocation(condition.locationId);
+                const unlocked = this._unlockCaseLocation(condition.locationId);
                 if (unlocked && condition.message) {
                     events.emit('notification:show', {
                         message: condition.message,
