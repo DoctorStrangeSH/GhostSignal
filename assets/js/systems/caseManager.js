@@ -153,7 +153,7 @@ class CaseManager {
         if (!this.currentCase?.finalQuestion) return null;
         // A closed investigation cannot accept another verdict. This protects
         // failed/solved runs even if a stale UI callback fires after closure.
-        if (this.caseState !== 'active') {
+        if (this.caseState === 'failed' || this.caseState === 'solved') {
             return {
                 isCorrect: false,
                 caseClosed: true,
