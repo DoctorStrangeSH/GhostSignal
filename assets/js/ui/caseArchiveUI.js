@@ -10,6 +10,7 @@ class CaseArchiveUI {
         this.filter = 'all';
         this.query = '';
         this.selectedRunId = null;
+        this.view = 'history';
     }
 
     setProgress(progress) {
@@ -44,6 +45,10 @@ class CaseArchiveUI {
         const solved = records.filter(record => record.result === 'solved').length;
         const failed = records.filter(record => record.result === 'failed').length;
         const selected = records.find(record => record.runId === this.selectedRunId) || null;
+        if (this.view === 'endings') {
+            this._renderEndings(records);
+            return;
+        }
 
         this.container.innerHTML = `
             <div class="case-archive">
@@ -53,7 +58,11 @@ class CaseArchiveUI {
                         <h2>АРХИВ РАССЛЕДОВАНИЙ</h2>
                         <p>Каждая попытка оставляет след. Даже если истина так и не была найдена.</p>
                     </div>
-                    <button class="terminal-btn" data-archive-back>← В ТЕРМИНАЛ</button>
+                    <div class="case-archive-header-actions">
+                        <button class="terminal-btn active" data-archive-view="history">ИСТОРИЯ ДЕЛ</button>
+                        <button class="terminal-btn" data-archive-view="endings">КОЛЛЕКЦИЯ КОНЦОВОК</button>
+                        <button class="terminal-btn" data-archive-back>← В ТЕРМИНАЛ</button>
+                    </div>
                 </header>
                 <div class="case-archive-summary">
                     <div><strong>${records.length}</strong><span>ВСЕГО ПОПЫТОК</span></div>
@@ -92,6 +101,10 @@ class CaseArchiveUI {
             </div>`;
 
         this.container.querySelector('[data-archive-back]')?.addEventListener('click', () => events.emit('navigation:go', 'screen-main-menu'));
+        this.container.querySelectorAll('[data-archive-view]').forEach(button => button.addEventListener('click', () => {
+            this.view = button.dataset.archiveView;
+            this.render();
+        }));
         this.container.querySelector('[data-archive-search]')?.addEventListener('input', event => {
             this.query = event.target.value;
             const cursor = this.query.length;
@@ -112,6 +125,67 @@ class CaseArchiveUI {
             const caseId = event.currentTarget.dataset.archiveReplay;
             if (caseId) events.emit('case:replay', caseId);
         });
+    }
+
+
+    _renderEndings(records) {
+        const discovered = new Map();
+        records.filter(record => record.result === 'solved' && record.endingId).forEach(record => {
+            if (!discovered.has(record.endingId)) discovered.set(record.endingId, record);
+        });
+        const registry = typeof window !== 'undefined' && window.ENDINGS ? Object.values(window.ENDINGS) : [];
+        const known = new Map(registry.map(ending => [ending.id, ending]));
+        // Keep historical endings visible even if their data pack was removed or renamed.
+        discovered.forEach((record, id) => {
+            if (!known.has(id)) known.set(id, {
+                id, caseId: record.caseId, title: record.endingTitle || 'Сохранённая концовка',
+                text: record.endingText || ''
+            });
+        });
+        const endings = [...known.values()].sort((a, b) =>
+            String(a.caseId || '').localeCompare(String(b.caseId || ''), 'ru') ||
+            String(a.id || '').localeCompare(String(b.id || ''), 'ru')
+        );
+        const found = endings.filter(ending => discovered.has(ending.id));
+        this.container.innerHTML = `
+            <div class="case-archive case-ending-codex">
+                <header class="case-archive-header">
+                    <div>
+                        <span class="case-archive-kicker">ЛИЧНОЕ ДОСЬЕ · ЗАПЕЧАТАННЫЕ ПРОТОКОЛЫ</span>
+                        <h2>КОЛЛЕКЦИЯ КОНЦОВОК</h2>
+                        <p>Не все истины открываются с первого раза. Каждая найденная развязка остаётся в архиве.</p>
+                    </div>
+                    <div class="case-archive-header-actions">
+                        <button class="terminal-btn" data-archive-view="history">ИСТОРИЯ ДЕЛ</button>
+                        <button class="terminal-btn active" data-archive-view="endings">КОЛЛЕКЦИЯ КОНЦОВОК</button>
+                        <button class="terminal-btn" data-archive-back>← В ТЕРМИНАЛ</button>
+                    </div>
+                </header>
+                <div class="case-archive-summary">
+                    <div><strong>${found.length}</strong><span>ОТКРЫТО</span></div>
+                    <div><strong>${endings.length}</strong><span>ИЗВЕСТНО В ИГРЕ</span></div>
+                    <div><strong>${Math.max(0, endings.length - found.length)}</strong><span>ЕЩЁ СКРЫТО</span></div>
+                </div>
+                <div class="case-ending-grid">
+                    ${endings.length ? endings.map(ending => {
+                        const record = discovered.get(ending.id);
+                        const unlocked = Boolean(record);
+                        return `
+                            <article class="case-ending-card ${unlocked ? 'is-discovered' : 'is-hidden'}">
+                                <span class="case-ending-status">${unlocked ? '◈ ЗАПИСЬ ВОССТАНОВЛЕНА' : '▧ ПРОТОКОЛ ЗАПЕЧАТАН'}</span>
+                                <h3>${unlocked ? this._escape(record.endingTitle || ending.title || 'Без названия') : 'НЕИЗВЕСТНАЯ КОНЦОВКА'}</h3>
+                                <span class="case-ending-case">${unlocked ? this._escape(record.caseId || ending.caseId || 'Дело') : 'Данные скрыты до обнаружения'}</span>
+                                <p>${unlocked ? this._escape(record.endingText || ending.text || 'Текст концовки не сохранён.') : 'Завершите расследование и найдите эту развязку, чтобы открыть запись.'}</p>
+                                ${unlocked ? '<span class="case-ending-stamp">ДОКАЗАНО</span>' : '<span class="case-ending-lock">ДОСТУП ЗАКРЫТ</span>'}
+                            </article>`;
+                    }).join('') : '<div class="case-archive-empty">Реестр концовок пока пуст.</div>'}
+                </div>
+            </div>`;
+        this.container.querySelector('[data-archive-back]')?.addEventListener('click', () => events.emit('navigation:go', 'screen-main-menu'));
+        this.container.querySelectorAll('[data-archive-view]').forEach(button => button.addEventListener('click', () => {
+            this.view = button.dataset.archiveView;
+            this.render();
+        }));
     }
 
     _renderDetail(record) {
