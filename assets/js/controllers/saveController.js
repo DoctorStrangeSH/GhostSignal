@@ -43,6 +43,7 @@ class SaveController {
         // the last known-good in-memory progress and persisted save stay intact.
         let snapshot;
         try {
+            const dialogueState = app.dialogueEngine?.toJSON();
             snapshot = {
                 gameTime: app.gameTime?.toJSON(),
                 locationData: app.locationManager?.toJSON(),
@@ -61,8 +62,8 @@ class SaveController {
                 npcMemoryData: app.npcMemoryService?.toJSON(),
                 npcSocialData: app.npcSocialNetwork?.toJSON(),
                 npcRelationshipData: app.npcRelationshipService?.toJSON(),
-                dialogueData: app.dialogueEngine?.toJSON()
-                    ? { ...app.dialogueEngine.toJSON(), caseId: app.progress.activeCase || null }
+                dialogueData: dialogueState
+                    ? { ...dialogueState, caseId: app.progress.activeCase || null }
                     : null
             };
         } catch (error) {
