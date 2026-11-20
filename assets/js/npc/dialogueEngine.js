@@ -165,6 +165,12 @@ class DialogueEngine {
         if (answer.condition && !this._checkCondition(answer.condition)) {
             return { error: 'Условие не выполнено' };
         }
+
+        this.dialogueHistory.push({
+            nodeId: this.currentNode.id,
+            speaker: 'player',
+            text: String(answer.text || '')
+        });
         
         if (this.memoryService && this.currentDialogue?.npcId) {
             this.memoryService.recordAnswerSelected(
