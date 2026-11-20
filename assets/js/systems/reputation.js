@@ -3,6 +3,8 @@ class ReputationSystem {
         this.reputation = 50;        // 0-100 (старт: нейтрально)
         this.npcRelations = {};      // Отношения с каждым NPC: -10 до 10
         this.actions = [];           // История действий
+        this.factionReputation = { police: 50, press: 50, residents: 50, witnesses: 50, underworld: 50 };
+        this.factionActionIds = [];
         this.title = this._getTitle();
     }
     
@@ -136,13 +138,51 @@ class ReputationSystem {
         return bonuses;
     }
     
+    // === РЕПУТАЦИЯ СРЕДИ СООБЩЕСТВ ===
+    getFactionReputation(factionId) {
+        return Number.isFinite(this.factionReputation[factionId]) ? this.factionReputation[factionId] : null;
+    }
+
+    getFactionStanding(factionId) {
+        const score = this.getFactionReputation(factionId);
+        if (score === null) return null;
+        if (score >= 80) return { score, status: 'trusted', label: 'Высокое доверие' };
+        if (score >= 60) return { score, status: 'favorable', label: 'Хорошая репутация' };
+        if (score >= 40) return { score, status: 'neutral', label: 'Нейтральное отношение' };
+        if (score >= 20) return { score, status: 'wary', label: 'Настороженность' };
+        return { score, status: 'hostile', label: 'Плохая репутация' };
+    }
+
+    changeFactionReputation(factionId, amount, reason = '', eventId = null) {
+        const validFactions = ['police', 'press', 'residents', 'witnesses', 'underworld'];
+        if (!validFactions.includes(factionId) || !Number.isFinite(amount) || amount === 0) return { changed: false, reason: 'invalid_change' };
+        if (eventId !== null && (typeof eventId !== 'string' || !eventId.trim())) return { changed: false, reason: 'invalid_event_id' };
+        if (eventId && this.factionActionIds.includes(eventId)) return { changed: false, reason: 'already_applied' };
+        const previous = this.factionReputation[factionId];
+        const current = Math.max(0, Math.min(100, previous + amount));
+        const applied = current - previous;
+        if (eventId) { this.factionActionIds.push(eventId); this.factionActionIds = this.factionActionIds.slice(-500); }
+        if (applied === 0) return { changed: false, reason: 'at_limit', score: current };
+        this.factionReputation[factionId] = current;
+        const action = { type: 'faction_rep', factionId, amount: applied, reason: String(reason || '').slice(0, 240), eventId };
+        this.actions.push(action);
+        if (typeof events !== 'undefined' && events?.emit) events.emit('reputation:faction_changed', { factionId, previous, reputation: current, change: applied, standing: this.getFactionStanding(factionId) });
+        return { changed: true, previous, score: current, change: applied, standing: this.getFactionStanding(factionId) };
+    }
+
+    getFactionSummary() {
+        return Object.fromEntries(Object.keys(this.factionReputation).map(id => [id, this.getFactionStanding(id)]));
+    }
     // === СЕРИАЛИЗАЦИЯ ===
     
     toJSON() {
         return {
             reputation: this.reputation,
             npcRelations: { ...this.npcRelations },
-            title: this.title
+            title: this.title,
+            factionReputation: { ...this.factionReputation },
+            factionActionIds: [...this.factionActionIds],
+            actions: this.actions.map(action => ({ ...action }))
         };
     }
     
@@ -152,6 +192,13 @@ class ReputationSystem {
             system.reputation = json.reputation || 50;
             system.npcRelations = json.npcRelations || {};
             system.title = system._getTitle();
+            const factions = json.factionReputation && typeof json.factionReputation === 'object' ? json.factionReputation : {};
+            for (const id of Object.keys(system.factionReputation)) {
+                if (Number.isFinite(factions[id])) system.factionReputation[id] = Math.max(0, Math.min(100, factions[id]));
+            }
+            system.factionActionIds = Array.isArray(json.factionActionIds)
+                ? [...new Set(json.factionActionIds.filter(id => typeof id === 'string' && id.trim()).slice(-500))] : [];
+            system.actions = Array.isArray(json.actions) ? json.actions.slice(-500).map(action => ({ ...action })) : [];
         }
         return system;
     }
