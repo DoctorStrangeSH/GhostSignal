@@ -19,6 +19,7 @@ class NavigationController {
         });
         document.getElementById('btn-stats')?.addEventListener('click', () => {
             app.statsScreen.setTracker(app.progressTracker);
+            app.statsScreen.setReputation(app.reputationSystem);
             app.statsScreen.render();
             app.navigateTo('screen-stats');
         });
