@@ -135,6 +135,39 @@ test("Case 002 runtime routes the bartender, exposes the crime-scene clue and un
     assert.equal(perfect.id, "case-002-perfect");
 });
 
+test("Both case packs select only their own failed, partial, and perfect endings", () => {
+    const { context, systems } = createRuntime();
+    const { endings } = systems;
+    const caseOne = vm.runInContext('getCaseById("case-001")', context);
+    const caseTwo = vm.runInContext('getCaseById("case-002")', context);
+    const clues = (ids = []) => ({
+        items: ids,
+        hasInsight(id) { return ids.includes(id); }
+    });
+
+    // Case 001: the confession is not enough without the independently disclosed location.
+    assert.equal(endings.determineEnding(caseOne, clues(), 0).id, "case-001-failed");
+    assert.equal(endings.determineEnding(caseOne, clues(), 6).id, "case-001-partial");
+    assert.equal(endings.determineEnding(caseOne,
+        clues(["mary_full_confession"]), 6, { solved: true }).id, "case-001-partial");
+    assert.equal(endings.determineEnding(caseOne,
+        clues(["mary_full_confession", "blackwood_location_revealed"]), 6, { solved: true }).id,
+    "case-001-perfect");
+
+    // Case 002: a large evidence count cannot substitute for the confession.
+    assert.equal(endings.determineEnding(caseTwo, clues(), 0).id, "case-002-failed");
+    assert.equal(endings.determineEnding(caseTwo, clues(), 4).id, "case-002-partial");
+    assert.equal(endings.determineEnding(caseTwo, clues(), 99).id, "case-002-partial");
+    assert.equal(endings.determineEnding(caseTwo,
+        clues(["full_confession_kane"]), 4, { solved: true }).id, "case-002-perfect");
+
+    // A case must never borrow another investigation's ending records.
+    assert.notEqual(endings.determineEnding(caseOne, clues(["full_confession_kane"]), 99).id,
+        "case-002-perfect");
+    assert.notEqual(endings.determineEnding(caseTwo, clues(["mary_full_confession", "blackwood_location_revealed"]), 99).id,
+        "case-001-perfect");
+});
+
 test('opening another case clears previously visited places', () => {
     const { systems } = createRuntime();
     const { caseManager, locationManager } = systems;
