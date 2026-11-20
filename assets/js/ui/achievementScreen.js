@@ -8,6 +8,11 @@ class AchievementScreen {
         this.achievementSystem = achievementSystem;
         this.filter = 'all';
         this.bound = false;
+        this.onBack = null;
+    }
+
+    setOnBack(handler) {
+        this.onBack = typeof handler === 'function' ? handler : null;
     }
 
     setSystem(system) {
@@ -55,7 +60,7 @@ class AchievementScreen {
                         <h2>АРХИВ ДОСТИЖЕНИЙ</h2>
                         <p>Каждая раскрытая тайна оставляет след. Некоторые награды ещё предстоит обнаружить.</p>
                     </div>
-                    <button class="terminal-btn btn-back" data-screen="screen-main-menu">← В МЕНЮ</button>
+                    <button class="terminal-btn btn-back" data-achievement-back>← В МЕНЮ</button>
                 </header>
 
                 <section class="achievement-overview" aria-label="Общий прогресс достижений">
@@ -100,6 +105,8 @@ class AchievementScreen {
                     }).join('') : '<div class="achievement-empty">В этой категории пока нет записей.</div>'}
                 </div>
             </div>`;
+
+        this.container.querySelector('[data-achievement-back]')?.addEventListener('click', () => this.onBack?.());
 
         if (!this.bound) {
             this.container.addEventListener('click', event => {
