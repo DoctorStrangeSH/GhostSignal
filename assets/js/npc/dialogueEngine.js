@@ -247,6 +247,11 @@ class DialogueEngine {
             }
             
             if (this.onNodeChange) this.onNodeChange(this.currentNode);
+            events.emit('dialogue:completed', {
+                npcId: this.currentDialogue.npcId,
+                dialogueId: this.currentDialogue.id,
+                finalNodeId: this.currentNode?.id || answer.nextNode
+            });
             return { ...this.currentNode, endDialogue: true };
         }
         
