@@ -4,10 +4,12 @@
  * their own achievements on CASE_XXX.achievements without changing this module.
  */
 class AchievementSystem {
-    constructor(progress = null, eventBus = typeof events !== 'undefined' ? events : null) {
+    constructor(progress = null, eventBus = typeof events !== 'undefined' ? events : null, services = {}) {
         this.progress = progress;
         this.events = eventBus;
+        this.services = services || {};
         this.achievements = [];
+        this.caseDefinitions = new Map();
         this.unlocked = [];
         this.records = {};
         this._defineAchievements();
@@ -38,8 +40,8 @@ class AchievementSystem {
                 icon: '📖', rarity: 'common', criteria: { type: 'ending' }
             },
             {
-                id: 'all_evidence', name: 'Коллекционер улик', description: 'Найдите все улики в деле',
-                icon: '📦', rarity: 'common', criteria: { type: 'manual' }
+                id: 'all_evidence', name: 'Коллекционер улик', description: 'Соберите все улики одного расследования',
+                icon: '📦', rarity: 'common', criteria: { type: 'all_case_evidence' }
             },
             {
                 id: 'night_owl', name: 'Полуночник', description: 'Проведите расследование глубокой ночью',
@@ -51,7 +53,7 @@ class AchievementSystem {
             },
             {
                 id: 'speedy', name: 'Быстрый детектив', description: 'Раскройте дело менее чем за 30 игровых минут',
-                icon: '⚡', rarity: 'epic', criteria: { type: 'manual' }
+                icon: '⚡', rarity: 'epic', criteria: { type: 'under_game_minutes', minutes: 30 }
             },
             {
                 id: 'board_master', name: 'Мастер доски', description: 'Заполните все слоты на доске расследования',
@@ -71,6 +73,37 @@ class AchievementSystem {
     _bindGameplayEvents() {
         if (!this.events?.on) return;
         this._eventUnsubscribers = [
+            this.events.on('case:started', data => {
+                const caseId = data?.caseId || data?.caseData?.id;
+                if (!caseId) return;
+                this.progress.activeCase = caseId;
+                const time = this.services.gameTime?.toJSON?.() || this.progress.gameTime || data.caseData?.startTime;
+                const absolute = this._absoluteGameMinute(time);
+                this.progress.activeRunStartedGameMinute = absolute;
+                this._syncProgress();
+            }),
+            this.events.on('inventory:changed', data => {
+                if (data?.action !== 'add' || !this.progress?.activeCase) return;
+                this._checkAllCaseEvidence(this.progress.activeCase);
+            }),
+            this.events.on('case:solved', data => {
+                const caseId = data?.caseId || data?.caseData?.id || this.progress?.activeCase;
+                const start = Number(this.progress?.activeRunStartedGameMinute);
+                const current = this._absoluteGameMinute(
+                    this.services.gameTime?.toJSON?.() || this.progress?.gameTime
+                );
+                if (caseId && Number.isFinite(start) && Number.isFinite(current)) {
+                    const elapsed = current - start;
+                    if (elapsed >= 0 && elapsed < 30) {
+                        this.unlock('speedy', {
+                            caseData: { id: caseId },
+                            context: 'fast_investigation',
+                            elapsedGameMinutes: elapsed
+                        });
+                    }
+                }
+                if (this.progress) this.progress.activeRunStartedGameMinute = null;
+            }),
             this.events.on('time:changed', data => {
                 if (!this.progress?.activeCase) return;
                 const hour = Number(data?.hour);
@@ -94,6 +127,25 @@ class AchievementSystem {
         ].filter(Boolean);
     }
 
+    _absoluteGameMinute(time) {
+        if (!time || !Number.isFinite(Number(time.hour)) || !Number.isFinite(Number(time.minute))) return null;
+        const day = Number.isFinite(Number(time.day)) ? Math.max(1, Number(time.day)) : 1;
+        return (day - 1) * 1440 + Number(time.hour) * 60 + Number(time.minute);
+    }
+
+    _checkAllCaseEvidence(caseId) {
+        const caseData = this.caseDefinitions.get(caseId);
+        const required = caseData?.evidenceIds;
+        const items = this.services.inventory?.items;
+        if (!Array.isArray(required) || required.length === 0 || !Array.isArray(items)) return false;
+        if (!required.every(id => items.includes(id))) return false;
+        return Boolean(this.unlock('all_evidence', {
+            caseData: { id: caseId },
+            context: 'all_case_evidence_collected',
+            evidenceCount: required.length
+        }));
+    }
+
     dispose() {
         for (const unsubscribe of this._eventUnsubscribers || []) {
             if (typeof unsubscribe === 'function') unsubscribe();
@@ -103,6 +155,7 @@ class AchievementSystem {
 
     registerCases(cases = []) {
         for (const caseData of cases) {
+            if (caseData?.id) this.caseDefinitions.set(caseData.id, caseData);
             for (const definition of caseData?.achievements || []) {
                 this.register({
                     ...definition,
