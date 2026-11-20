@@ -26,7 +26,8 @@ function loadCaseOne() {
     return {
         caseData: vm.runInContext("CASE_001", context),
         dialogue: vm.runInContext("DIALOGUE_HOUSEKEEPER", context),
-        ...registry
+        locations: registry.location,
+        object: registry.object
     };
 }
 
@@ -87,7 +88,7 @@ function hasUnconditionalDialoguePath(dialogue, targetId) {
         if (visited.has(id)) continue;
         visited.add(id);
         for (const answer of dialogue.tree.nodes[id]?.answers || []) {
-            if (!answer.condition && answer.nextNode) queue.push(answer.nextNode);
+            if (answer.nextNode) queue.push(answer.nextNode);
         }
     }
     return false;
