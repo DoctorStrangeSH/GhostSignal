@@ -4,9 +4,12 @@ This document describes the current Ghost Signal 1.0 case-data architecture. It 
 
 ## Package layout
 
-Each investigation owns a folder under `assets/data/cases/`:
+Recurring world characters live in `assets/data/shared/` and are loaded once, immediately after `core-init.js`. Each investigation owns a folder under `assets/data/cases/`:
 
 ```text
+shared/
+  npcs.js              # recurring NPC profiles used by multiple investigations
+
 case-XXX/
   index.js          # CASE_XXX metadata and gameplay configuration
   locations.js      # locations registered by this case
@@ -21,7 +24,7 @@ case-XXX/
 
 The current runtime still loads classic scripts from `index.html`. Add a new pack's scripts after `assets/data/core-init.js` and before `assets/data/cases/case-index.js`. Preserve dependency order:
 
-1. `locations.js`, `npcs.js`, and `objects.js`
+1. `assets/data/shared/npcs.js` once, before any case pack; then each case's `locations.js`, `npcs.js`, and `objects.js`
 2. `evidence.js` and `endings.js`
 3. `story.js` and all dialogue files
 4. The pack's `index.js` declaring `CASE_XXX`
@@ -40,9 +43,9 @@ The existing packs are the reference for exact data shapes. Do not load the temp
 - Case-specific dialogue selection belongs in `CASE_XXX.npcDialogueOverrides`. The key must be an NPC listed in that case; the value must identify a dialogue authored for that same NPC. Do not add a `case:case-XXX` special condition to an NPC definition owned by another investigation.
 - Use existing per-case state namespaces and serializers. Never clear or replace long-term player/NPC profiles when starting a new case.
 
-## Shared-character migration note
+## Shared-character rules
 
-The bartender and sergeant are recurring characters used by both existing investigations. Their base NPC profiles are still physically declared in the legacy `case-001/npcs.js` file, although case 2 also uses them. This is a known ownership debt, not a pattern for new packs. Extracting recurring world characters and truly shared dialogue into a dedicated shared-data folder is a separate compatibility-sensitive step; until then, reuse the existing profiles and put case-specific dialogue in the consuming case's `npcDialogueOverrides`.
+The bartender and sergeant are recurring characters used by both existing investigations. Their canonical base profiles live in `assets/data/shared/npcs.js` and are loaded once before both case packs. Case-specific dialogue, reactions, and evidence remain owned by the consuming case and belong in that case's data. Never redeclare a shared NPC inside an individual case pack.
 
 ## Validation before a case is accepted
 
