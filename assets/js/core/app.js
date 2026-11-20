@@ -80,11 +80,23 @@ class App {
 
     _afterLoad() {
         console.log('📂 Загрузка данных...');
-        const loadedProgress = storage.loadProgress() || this._defaultProgress();
+        const storedProgress = storage.loadProgress();
+        const loadedProgress = storedProgress || this._defaultProgress();
         const migrationManager = new SaveMigrationManager(SAVE_SCHEMA_VERSION);
+        const sourceVersion = Number.isInteger(loadedProgress.schemaVersion) && loadedProgress.schemaVersion >= 0
+            ? loadedProgress.schemaVersion : 0;
+        const needsMigration = Boolean(storedProgress) && sourceVersion < SAVE_SCHEMA_VERSION;
+        const backupReady = !needsMigration || migrationManager.createBackup(storage, loadedProgress);
         const migration = migrationManager.migrate(loadedProgress);
-        this.saveBlocked = !migration.ok;
-        if (!migration.ok) {
+        this.saveBlocked = !migration.ok || !backupReady;
+        if (!backupReady) {
+            console.error('Save migration blocked: backup could not be written.');
+            events.emit('notification:show', {
+                message: '⚠️ Не удалось создать резервную копию сохранения. Запись отключена, исходный прогресс сохранён.',
+                type: 'warning', duration: 10000
+            });
+            this.progress = { ...this._defaultProgress(), ...loadedProgress };
+        } else if (!migration.ok) {
             console.error('Save migration could not be completed:', migration.reason);
             events.emit('notification:show', {
                 message: '⚠️ Сохранение создано более новой версией игры или требует обновления. Исходные данные сохранены без изменений.',
@@ -95,6 +107,10 @@ class App {
             this.progress = { ...this._defaultProgress(), ...migration.data };
             if (migration.applied.length) {
                 console.info('Save schema migrated:', migration.fromVersion, '->', migration.toVersion);
+                events.emit('notification:show', {
+                    message: 'Резервная копия сохранения создана перед обновлением формата.',
+                    type: 'system', duration: 5000
+                });
             }
         }
 
