@@ -4,6 +4,7 @@ class DialogueEngine {
         this.gameTime = gameTime;
         this.currentDialogue = null;
         this.currentNode = null;
+        this.currentStableNodeId = null;
         this.dialogueHistory = [];
         this.onNodeChange = null;
         this.memoryService = null;
@@ -124,6 +125,7 @@ class DialogueEngine {
             return false;
         }
 
+        this.currentStableNodeId = startId;
         this.currentNode = this._personalizeNode({
             id: startId,
             ...startNode
@@ -262,6 +264,7 @@ class DialogueEngine {
             return { error: 'Узел не найден' };
         }
         
+        this.currentStableNodeId = answer.nextNode;
         this.currentNode = this._personalizeNode({ id: answer.nextNode, ...nextNode });
         
         this.dialogueHistory.push({
@@ -321,7 +324,85 @@ class DialogueEngine {
     reset() {
         this.currentDialogue = null;
         this.currentNode = null;
+        this.currentStableNodeId = null;
         this.dialogueHistory = [];
+    }
+
+    // Persist only identifiers and presentation history. Answers are rebuilt
+    // from trusted dialogue data during restore, never from local-save payloads.
+    toJSON() {
+        if (!this.currentDialogue?.id || !this.currentNode?.id) return null;
+        return {
+            dialogueId: this.currentDialogue.id,
+            npcId: this.currentDialogue.npcId || null,
+            nodeId: this.currentNode.id,
+            stableNodeId: this.currentStableNodeId || this.currentNode.id,
+            nodeText: typeof this.currentNode.text === 'string' ? this.currentNode.text : '',
+            nodeMood: this.currentNode.mood || null,
+            history: this.dialogueHistory.slice(-100).map(entry => ({
+                nodeId: entry.nodeId,
+                speaker: entry.speaker === 'player' ? 'player' : 'npc',
+                text: String(entry.text || '').slice(0, 5000)
+            }))
+        };
+    }
+
+    // Restore without replaying dialogue effects, advancing time, or recording
+    // another visit in NPC memory. The active node's answers come from game data.
+    restoreFromJSON(snapshot) {
+        if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot) ||
+            typeof snapshot.dialogueId !== 'string' || typeof snapshot.nodeId !== 'string' ||
+            typeof snapshot.stableNodeId !== 'string') return false;
+
+        const dialogue = getDialogueById(snapshot.dialogueId);
+        if (!dialogue?.tree?.nodes || (snapshot.npcId && dialogue.npcId !== snapshot.npcId)) return false;
+        const nodes = dialogue.tree.nodes;
+        const stableNode = nodes[snapshot.stableNodeId];
+        if (!stableNode) return false;
+
+        let node = nodes[snapshot.nodeId];
+        if (!node) {
+            let answers = stableNode.answers || [];
+            if (snapshot.nodeId.startsWith('evidence_')) {
+                const evidenceId = snapshot.nodeId.slice('evidence_'.length);
+                if (!evidenceId || typeof getObjectById !== 'function' || !getObjectById(evidenceId)?.isEvidence) return false;
+                answers = dialogue.evidenceReactions?.[evidenceId]?.answers || answers;
+            } else if (snapshot.nodeId.startsWith('contradiction_')) {
+                const topic = snapshot.nodeId.slice('contradiction_'.length);
+                if (!topic) return false;
+                answers = dialogue.contradictionReactions?.[topic]?.answers || answers;
+            } else if (!snapshot.nodeId.startsWith('causal_question_')) {
+                return false;
+            }
+            node = {
+                id: snapshot.nodeId,
+                speaker: 'npc',
+                text: typeof snapshot.nodeText === 'string' ? snapshot.nodeText : '',
+                mood: snapshot.nodeMood || 'neutral',
+                answers
+            };
+        } else {
+            node = { id: snapshot.nodeId, ...node };
+            if (typeof snapshot.nodeText === 'string') node.text = snapshot.nodeText;
+            if (snapshot.nodeMood) node.mood = snapshot.nodeMood;
+        }
+
+        const history = Array.isArray(snapshot.history) ? snapshot.history.slice(-100).filter(entry =>
+            entry && typeof entry.nodeId === 'string' && typeof entry.text === 'string'
+        ).map(entry => ({
+            nodeId: entry.nodeId,
+            speaker: entry.speaker === 'player' ? 'player' : 'npc',
+            text: entry.text.slice(0, 5000)
+        })) : [];
+        if (!history.length || history[history.length - 1].nodeId !== snapshot.nodeId) {
+            history.push({ nodeId: snapshot.nodeId, speaker: 'npc', text: node.text || '' });
+        }
+
+        this.currentDialogue = dialogue;
+        this.currentStableNodeId = snapshot.stableNodeId;
+        this.currentNode = node;
+        this.dialogueHistory = history;
+        return true;
     }
     
     // Получить историю диалога
