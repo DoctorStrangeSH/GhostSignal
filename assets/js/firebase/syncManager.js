@@ -24,6 +24,49 @@ class SyncManager {
         });
     }
 
+    _readConflict() {
+        const stored = this.storage.get('cloud_conflict_backup');
+        if (!stored) return null;
+        if (stored.version === 1 && stored.cloud) return stored;
+        return { version: 1, reason: 'legacy_conflict', createdAt: null, local: null, cloud: stored };
+    }
+
+    _saveConflict(localData, cloudData, reason = 'different_progress') {
+        const existing = this._readConflict();
+        if (existing) {
+            this.hasConflict = true;
+            return existing;
+        }
+        let conflict;
+        try {
+            conflict = {
+                version: 1, reason, createdAt: Date.now(),
+                local: localData ? JSON.parse(JSON.stringify(localData)) : null,
+                cloud: JSON.parse(JSON.stringify(cloudData))
+            };
+        } catch (error) { return null; }
+        if (!this.storage.set('cloud_conflict_backup', conflict)) return null;
+        this.hasConflict = true;
+        return conflict;
+    }
+
+    getConflictDetails() {
+        const conflict = this._readConflict();
+        if (!conflict) return null;
+        const describe = data => data ? ({
+            activeCase: data.activeCase || null,
+            solvedCases: Array.isArray(data.solvedCases) ? data.solvedCases.length : 0,
+            updatedAt: Number(data._sync?.updatedAt) || null,
+            revision: Number(data._sync?.revision) || null,
+            schemaVersion: Number.isInteger(data.schemaVersion) ? data.schemaVersion : 0
+        }) : null;
+        return {
+            reason: conflict.reason, createdAt: conflict.createdAt,
+            local: describe(conflict.local || this.storage.loadProgress()),
+            cloud: describe(conflict.cloud)
+        };
+    }
+
     // Синхронизация с сохранением обеих версий при конфликте.
     async syncFromCloud() {
         if (this.syncInProgress || this.writesBlocked()) return;
@@ -39,31 +82,24 @@ class SyncManager {
             const localData = this.storage.loadProgress();
 
             if (cloudData && !this._isSaveCompatible(cloudData)) {
-                this.storage.set('cloud_conflict_backup', cloudData);
-                this.hasConflict = true;
-                events.emit('sync:conflict', { reason: 'unsupported_cloud_schema' });
+                const conflict = this._saveConflict(localData, cloudData, 'unsupported_cloud_schema');
+                if (conflict) events.emit('sync:conflict', this.getConflictDetails());
                 return;
             }
 
             if (cloudData) {
-                if (!localData || this._isCloudNewer(cloudData, localData)) {
-                    // Не перезаписываем активное расследование автоматически.
-                    if (localData?.activeCase) {
-                        this.storage.set('cloud_conflict_backup', cloudData);
-                        this.hasConflict = true;
-                        events.emit('sync:conflict', { activeCase: localData.activeCase });
-                    } else {
-                        this.storage.saveProgress(cloudData);
+                if (!localData) {
+                    const saved = this.storage.saveProgress(cloudData);
+                    if (saved) {
                         events.emit('notification:show', {
-                            message: 'Прогресс загружен из облака',
-                            type: 'success',
-                            duration: 3000
+                            message: 'Прогресс загружен из облака', type: 'success', duration: 3000
                         });
                         events.emit('sync:reload_needed');
                     }
-                } else if (!this.hasConflict) {
-                    await this.cloudStorage.saveToCloud(localData);
-                    console.log('💾→☁️ Данные отправлены в облако');
+                } else if (this._areSavesDifferent(localData, cloudData)) {
+                    const reason = this._isCloudNewer(cloudData, localData) ? 'cloud_newer' : 'local_newer_or_diverged';
+                    const conflict = this._saveConflict(localData, cloudData, reason);
+                    if (conflict) events.emit('sync:conflict', this.getConflictDetails());
                 }
             } else if (localData && !this.hasConflict) {
                 await this.cloudStorage.saveToCloud(localData);
@@ -91,15 +127,23 @@ class SyncManager {
         return true;
     }
 
+    _areSavesDifferent(first, second) {
+        const normalize = data => { const copy = { ...data }; delete copy._sync; return JSON.stringify(copy); };
+        return normalize(first) !== normalize(second);
+    }
+
     // Пользователь явно выбирает, какую версию оставить.
     async resolveConflict(strategy) {
         if (this.writesBlocked()) return false;
-        const cloudBackup = this.storage.get('cloud_conflict_backup');
-        if (!cloudBackup) return false;
+        const conflict = this._readConflict();
+        if (!conflict) return false;
+        const cloudBackup = conflict.cloud;
+        if (!this._isSaveCompatible(cloudBackup)) return false;
         if (strategy === 'local' && !this._isSaveCompatible(this.storage.loadProgress())) return false;
 
         if (strategy === 'cloud') {
-            this.storage.saveProgress(cloudBackup);
+            const saved = this.storage.saveProgress(cloudBackup);
+            if (!saved) return false;
             this.storage.remove('cloud_conflict_backup');
             this.hasConflict = false;
             events.emit('sync:reload_needed');
