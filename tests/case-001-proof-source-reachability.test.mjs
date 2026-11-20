@@ -123,11 +123,12 @@ test("case one accusation evidence has playable sources in locations available t
 });
 
 test("the perfect ending's independent rescue-location insight is reachable in the housekeeper dialogue", () => {
-    const { dialogue } = loadCaseOne();
-    const locationNode = dialogue.tree.nodes.where_is_he;
+    const { dialogues } = loadCaseOne();
+    const housekeeper = dialogues.find(dialogue => dialogue.npcId === "housekeeper");
+    const locationNode = housekeeper.tree.nodes.where_is_he;
 
     assert.equal(locationNode.givesInsight, "blackwood_location_revealed");
-    assert.equal(hasUnconditionalDialoguePath(dialogue, "where_is_he"), true);
+    assert.equal(hasUnconditionalDialoguePath(housekeeper, "where_is_he"), true);
 });
 
 
