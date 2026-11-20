@@ -144,3 +144,18 @@ test("reset clears all serializable active dialogue state", () => {
     assert.equal(engine.currentStableNodeId, null);
     assert.deepEqual(Array.from(engine.getHistory()), []);
 });
+
+
+test("player answers are retained in the dialogue transcript for reload", () => {
+    const { engine, dialogue } = createEngineHarness();
+    engine.currentDialogue = dialogue;
+    engine.currentStableNodeId = "greeting";
+    engine.currentNode = { id: "greeting", ...dialogue.tree.nodes.greeting };
+
+    const next = engine.selectAnswer(0);
+    assert.equal(next.id, "time_question");
+    const transcript = JSON.parse(JSON.stringify(engine.getHistory()));
+    assert.deepEqual(transcript.map(entry => entry.speaker), ["player", "npc"]);
+    assert.equal(transcript[0].text, "Спросить о времени");
+    assert.equal(transcript[1].nodeId, "time_question");
+});
