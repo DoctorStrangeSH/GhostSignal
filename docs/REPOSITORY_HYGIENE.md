@@ -5,7 +5,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 ## Verified baseline (2026-11-20)
 
 - Default branch: `main`.
-- Repository tree inspected on `feat/save-schema-migrations`: 230 tracked files.
+- Repository tree inspected on `feat/save-schema-migrations`: 232 tracked files.
 - Branch inventory: 129 branch refs (10 `design/*`, 75 `feat/*`, 31 `fix/*`, 11 `test/*`, plus `main` and `refactor/*`).
 - Pull requests: 128 total. 125 are merged, #128 is open, and #123 plus #61 are closed without merge. The 125 merged PR head branches are cleanup candidates; preserve the two closed-but-unmerged branches and the open PR branch.
 - No tracked `node_modules`, generated build directories, coverage output, Playwright output or local environment files were found in the inspected tree.
@@ -53,6 +53,7 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 ## Latest CI confirmation
 
 - Commit `b94d0498792ce2305ee7fc94ebfed43a926eb516`: Quality checks — PASS; Visual smoke — PASS.
+- Documentation-only follow-up commit `3a82e7fdec9872c4b3d30922e7a0aa9159a2a2d6`: Quality checks — PASS; Visual smoke was still running at the time of this audit update.
 - The modal-queue smoke test now waits for the queue and Bootstrap backdrop/body state to settle instead of relying on a fixed number of dismissals.
 
 
