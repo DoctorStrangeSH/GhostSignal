@@ -114,3 +114,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Removed the old case-001 dialogue script tags and files; case-specific Joe dialogue for case-002 remains in case-002.
 - [x] Case runtime tests load the shared data before case packs.
 - [ ] Confirm full quality and browser visual checks after the shared dialogue move.
+
+
+## Location progression ownership (2026-11-20)
+
+- [x] Separate permanent reward unlocks from case-scoped evidence and warrant gates.
+- [x] Persist both ownership sets and restore visited locations from the location snapshot.
+- [x] Preserve all ambiguous unlocks in legacy saves rather than deleting progress during migration.
+- [x] Add regression coverage for new-case isolation, permanent ending rewards, and legacy-save compatibility.
+- [x] Quality checks: 516/516 tests passed; JavaScript syntax and game-data validation passed.
