@@ -73,6 +73,16 @@ class EventController {
         const events = this.events;
         const on = (name, handler) => this._subscribe(name, handler);
 
+        on('dialogue:state_changed', () => {
+            if (app.progress && !app.saveBlocked) app._quickSave();
+        });
+        on('dialogue:ended', () => {
+            if (!app.progress) return;
+            app.progress.dialogueData = null;
+            if (!app.saveBlocked) app._quickSave();
+        });
+
+
         // Модальные окна показываем последовательно: Bootstrap игнорирует show()
         // во время перехода предыдущего окна, оставляя backdrop без владельца.
         this.modalElement = typeof document !== 'undefined' ? document.getElementById('universal-modal') : null;
@@ -109,6 +119,9 @@ class EventController {
         on('case:load', (id) => app.loadCase(id));
 
         on('case:started', (data) => {
+            app.progress.dialogueData = null;
+            app.dialogueEngine?.reset();
+
             const caseId = data.caseData.id;
             // This event marks a NEW playthrough, never a resume. Keep people's
             // long-term profiles but discard run-specific claims and rumors.
