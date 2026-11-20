@@ -147,3 +147,75 @@ test("migrateWithBackup stores the source snapshot before applying migrations", 
     assert.equal(storage.backup.data.schemaVersion, 1);
     assert.equal(result.data.schemaVersion, 2);
 });
+
+function createSaveController({ failAt = null, saveResult = true, saveBlocked = false } = {}) {
+    const emitted = [];
+    const calls = { storageSaves: 0, serializers: [] };
+    const eventBus = { emit: (name, data) => emitted.push({ name, data }) };
+    const storage = {
+        saveProgress(data) {
+            calls.storageSaves++;
+            calls.persisted = JSON.parse(JSON.stringify(data));
+            return saveResult;
+        }
+    };
+    const names = [
+        ["gameTime", "gameTime"], ["locationManager", "locationData"],
+        ["inventory", "inventoryData"], ["caseManager", "caseData"],
+        ["npcManager", "npcData"], ["investigationBoard", "boardData"],
+        ["notesManager", "notesData"], ["progressTracker", "trackerData"],
+        ["reputationSystem", "reputationData"], ["stakeoutSystem", "stakeoutData"],
+        ["evidenceChainSystem", "chainData"], ["weatherSystem", "weatherData"],
+        ["interrogationSystem", "interrogationData"], ["npcMemoryService", "npcMemoryData"],
+        ["npcSocialNetwork", "npcSocialData"], ["npcRelationshipService", "npcRelationshipData"]
+    ];
+    const app = { progress: { activeCase: "case-001", customField: "keep" }, saveBlocked };
+    for (const [property, field] of names) {
+        app[property] = {
+            toJSON() {
+                calls.serializers.push(property);
+                if (failAt === property) throw new Error("serializer failed: " + property);
+                return { owner: property, field };
+            }
+        };
+    }
+    const context = vm.createContext({ console, events: eventBus, SAVE_SCHEMA_VERSION: 1 });
+    const source = readFileSync(resolve(root, "assets/js/controllers/saveController.js"), "utf8");
+    vm.runInContext(source + "\\nglobalThis.SaveControllerExport = SaveController;", context);
+    return { controller: new context.SaveControllerExport(app, storage, eventBus), app, calls, emitted, names };
+}
+
+test("quickSave serializes every persistent gameplay subsystem into one complete snapshot", () => {
+    const { controller, app, calls, names } = createSaveController();
+    assert.equal(controller.quickSave(), true);
+    assert.equal(calls.storageSaves, 1);
+    assert.deepEqual(calls.serializers, names.map(([property]) => property));
+    for (const [, field] of names) assert.ok(app.progress[field], field + " should be captured");
+    assert.equal(app.progress.schemaVersion, 1);
+    assert.equal(app.progress.activeCase, "case-001");
+    assert.equal(app.progress.customField, "keep");
+});
+
+test("a serializer failure does not partially mutate the last known-good progress", () => {
+    const { controller, app, calls, emitted } = createSaveController({ failAt: "npcMemoryService" });
+    const before = JSON.stringify(app.progress);
+    assert.equal(controller.quickSave(), false);
+    assert.equal(JSON.stringify(app.progress), before);
+    assert.equal(calls.storageSaves, 0);
+    assert.ok(emitted.some(event => event.name === "notification:show" &&
+        event.data.message.includes("Предыдущая копия не изменена")));
+});
+
+test("quickSave does not call serializers or storage while migration protection blocks writes", () => {
+    const { controller, calls } = createSaveController({ saveBlocked: true });
+    assert.equal(controller.quickSave(), false);
+    assert.deepEqual(calls.serializers, []);
+    assert.equal(calls.storageSaves, 0);
+});
+
+test("storage write failures are returned to the caller after a complete snapshot is built", () => {
+    const { controller, calls } = createSaveController({ saveResult: false });
+    assert.equal(controller.quickSave(), false);
+    assert.equal(calls.serializers.length, 16);
+    assert.equal(calls.storageSaves, 1);
+});
