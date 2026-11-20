@@ -83,6 +83,7 @@ class App {
         const loadedProgress = storage.loadProgress() || this._defaultProgress();
         const migrationManager = new SaveMigrationManager(SAVE_SCHEMA_VERSION);
         const migration = migrationManager.migrate(loadedProgress);
+        this.saveBlocked = !migration.ok;
         if (!migration.ok) {
             console.error('Save migration could not be completed:', migration.reason);
             events.emit('notification:show', {
