@@ -632,3 +632,29 @@ test("CaseArchiveUI sorts saved runs and escapes untrusted archive text", () => 
     assert.deepEqual(Array.from(archive._records(), record => record.runId), ["newer", "older"]);
     assert.equal(archive._escape('<img src=x onerror="x">'), '&lt;img src=x onerror=&quot;x&quot;&gt;');
 });
+
+
+test("Case archive ending codex reveals only endings present in completed-run history", () => {
+    const container = {
+        innerHTML: "",
+        querySelector: () => null,
+        querySelectorAll: () => []
+    };
+    const CaseArchiveUI = loadClass("assets/js/ui/caseArchiveUI.js", "CaseArchiveUI", {
+        document: { getElementById: () => container },
+        window: { ENDINGS: {
+            ending_found: { id: "ending_found", caseId: "case-001", title: "Истина раскрыта", text: "Скрытый текст найден." },
+            ending_hidden: { id: "ending_hidden", caseId: "case-001", title: "Секретная развязка", text: "Секрет." }
+        } },
+        events: { emit() {} }
+    });
+    const archive = new CaseArchiveUI("archive");
+    archive._renderEndings([
+        { runId: "run-1", caseId: "case-001", result: "solved", endingId: "ending_found", endingTitle: "Истина раскрыта", endingText: "Скрытый текст найден." }
+    ]);
+
+    assert.match(container.innerHTML, /Истина раскрыта/);
+    assert.match(container.innerHTML, /НЕИЗВЕСТНАЯ КОНЦОВКА/);
+    assert.doesNotMatch(container.innerHTML, /Секретная развязка/);
+    assert.match(container.innerHTML, /ОТКРЫТО/);
+});
