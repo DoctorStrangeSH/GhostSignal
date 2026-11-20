@@ -9,6 +9,9 @@ Recurring world characters live in `assets/data/shared/` and are loaded once, im
 ```text
 shared/
   npcs.js              # recurring NPC profiles used by multiple investigations
+  dialogues/
+    bartender.js       # default dialogue for Joe
+    sergeant.js        # default dialogue for Mills
 
 case-XXX/
   index.js          # CASE_XXX metadata and gameplay configuration
@@ -24,7 +27,7 @@ case-XXX/
 
 The current runtime still loads classic scripts from `index.html`. Add a new pack's scripts after `assets/data/core-init.js` and before `assets/data/cases/case-index.js`. Preserve dependency order:
 
-1. `assets/data/shared/npcs.js` once, before any case pack; then each case's `locations.js`, `npcs.js`, and `objects.js`
+1. `assets/data/shared/npcs.js` and `assets/data/shared/dialogues/*.js` once, before any case pack; then each case's `locations.js`, `npcs.js`, and `objects.js`
 2. `evidence.js` and `endings.js`
 3. `story.js` and all dialogue files
 4. The pack's `index.js` declaring `CASE_XXX`
@@ -45,7 +48,7 @@ The existing packs are the reference for exact data shapes. Do not load the temp
 
 ## Shared-character rules
 
-The bartender and sergeant are recurring characters used by both existing investigations. Their canonical base profiles live in `assets/data/shared/npcs.js` and are loaded once before both case packs. Case-specific dialogue, reactions, and evidence remain owned by the consuming case and belong in that case's data. Never redeclare a shared NPC inside an individual case pack.
+The bartender and sergeant are recurring characters used by both existing investigations. Their canonical profiles live in `assets/data/shared/npcs.js`; their default dialogues live in `assets/data/shared/dialogues/`. These files load once before both case packs. Case-specific dialogue, reactions, and evidence remain owned by the consuming case and belong in that case's data. Never redeclare a shared NPC or duplicate a shared default dialogue inside an individual case pack.
 
 ## Validation before a case is accepted
 
