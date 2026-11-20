@@ -75,7 +75,7 @@ class EventController {
 
         // Модальные окна показываем последовательно: Bootstrap игнорирует show()
         // во время перехода предыдущего окна, оставляя backdrop без владельца.
-        this.modalElement = document.getElementById('universal-modal');
+        this.modalElement = typeof document !== 'undefined' ? document.getElementById('universal-modal') : null;
         if (this.modalElement && !this.modalHiddenHandler) {
             this.modalHideHandler = () => { this.modalIsHiding = true; };
             this.modalHiddenHandler = () => {
@@ -89,7 +89,7 @@ class EventController {
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
         }
         on('modal:show', (data) => {
-            if (!this.modalElement) this.modalElement = document.getElementById('universal-modal');
+            if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
             if (!this.modalElement) return;
             if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
                 // Keep the newest request. Its contents are applied only after
