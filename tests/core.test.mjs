@@ -753,3 +753,43 @@ test("SaveController includes achievement unlock records in the same durable sna
     assert.deepEqual(snapshots[0].achievementData, achievementData);
     assert.deepEqual(app.progress.achievementData, achievementData);
 });
+
+
+test("AchievementScreen renders progress, hides secret requirements and filters the collection", () => {
+    let clickHandler = null;
+    const container = {
+        innerHTML: "",
+        addEventListener: (name, handler) => { if (name === "click") clickHandler = handler; }
+    };
+    const AchievementScreen = loadClass("assets/js/ui/achievementScreen.js", "AchievementScreen", {
+        document: { getElementById: id => id === "screen-achievements" ? container : null },
+        Intl,
+        Date
+    });
+    const system = {
+        records: { unlocked_one: { unlockedAt: "2026-11-20T10:00:00.000Z" } },
+        getAll: () => [
+            { id: "unlocked_one", name: "Первое дело", description: "Раскройте первое дело", icon: "🔍", rarity: "common", unlocked: true },
+            { id: "secret_one", name: "Скрытая разгадка", description: "Секретное условие", icon: "◆", rarity: "epic", secret: true, unlocked: false },
+            { id: "locked_one", name: "Опытный сыщик", description: "Три дела", icon: "⭐", rarity: "rare", unlocked: false }
+        ],
+        getSummary: () => ({ total: 3, unlocked: 1, percent: 33 })
+    };
+    const screen = new AchievementScreen("screen-achievements", system);
+    screen.render();
+
+    assert.match(container.innerHTML, /1 \/ 3/);
+    assert.match(container.innerHTML, /33%/);
+    assert.match(container.innerHTML, /Первое дело/);
+    assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+    assert.doesNotMatch(container.innerHTML, /Скрытая разгадка|Секретное условие/);
+    assert.equal(typeof clickHandler, "function");
+
+    clickHandler({ target: { closest: () => ({ dataset: { achievementFilter: "unlocked" } }) } });
+    assert.match(container.innerHTML, /Первое дело/);
+    assert.doesNotMatch(container.innerHTML, /Опытный сыщик|СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+
+    clickHandler({ target: { closest: () => ({ dataset: { achievementFilter: "secret" } }) } });
+    assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+    assert.doesNotMatch(container.innerHTML, /Первое дело/);
+});
