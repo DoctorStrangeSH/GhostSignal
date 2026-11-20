@@ -1,0 +1,77 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import vm from "node:vm";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function loadManager() {
+    const context = vm.createContext({});
+    const source = readFileSync(resolve(root, "assets/js/core/saveMigrations.js"), "utf8");
+    vm.runInContext(source + "\n;globalThis.__Manager = SaveMigrationManager; globalThis.__VERSION = SAVE_SCHEMA_VERSION;", context);
+    return { Manager: context.__Manager, version: context.__VERSION };
+}
+
+test("legacy saves migrate to the current schema without losing gameplay data", () => {
+    const { Manager, version } = loadManager();
+    const legacy = { solvedCases: ["case-001"], activeCase: "case-002", customExtension: { flag: true } };
+    const result = new Manager(version).migrate(legacy);
+    assert.equal(result.ok, true);
+    assert.equal(result.fromVersion, 0);
+    assert.equal(result.toVersion, 1);
+    assert.deepEqual(Array.from(result.applied), [1]);
+    assert.equal(result.data.schemaVersion, 1);
+    assert.deepEqual(Array.from(result.data.solvedCases), ["case-001"]);
+    assert.equal(result.data.customExtension.flag, true);
+    assert.equal(legacy.schemaVersion, undefined, "migration must not mutate the original save");
+});
+
+test("migrating an already current save is idempotent", () => {
+    const { Manager, version } = loadManager();
+    const manager = new Manager(version);
+    const first = manager.migrate({ schemaVersion: version, solvedCases: ["case-001"] });
+    const second = manager.migrate(first.data);
+    assert.equal(first.ok, true);
+    assert.equal(first.reason, "current");
+    assert.equal(second.ok, true);
+    assert.equal(second.reason, "current");
+    assert.deepEqual(Array.from(second.applied), []);
+    assert.deepEqual(JSON.parse(JSON.stringify(second.data)), JSON.parse(JSON.stringify(first.data)));
+});
+
+test("future save schemas are preserved and never downgraded", () => {
+    const { Manager, version } = loadManager();
+    const future = { schemaVersion: version + 2, solvedCases: ["case-future"], newSystemData: { value: 42 } };
+    const result = new Manager(version).migrate(future);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "newer_schema");
+    assert.equal(result.data.schemaVersion, version + 2);
+    assert.equal(result.data.newSystemData.value, 42);
+});
+
+test("missing intermediate migrations fail safely without partial writes", () => {
+    const { Manager } = loadManager();
+    const manager = new Manager(3);
+    manager.register(1, save => ({ ...save, schemaVersion: 1 }));
+    manager.register(3, save => ({ ...save, schemaVersion: 3 }));
+    const source = { solvedCases: ["case-001"] };
+    const result = manager.migrate(source);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "missing_migration");
+    assert.equal(result.toVersion, 1);
+    assert.equal(source.schemaVersion, undefined);
+});
+
+test("future versions can be added as isolated sequential migrations", () => {
+    const { Manager } = loadManager();
+    const manager = new Manager(3);
+    manager.register(2, save => ({ ...save, newFeatureData: { enabled: false } }));
+    manager.register(3, save => ({ ...save, newFeatureData: { ...save.newFeatureData, enabled: true } }));
+    const result = manager.migrate({ schemaVersion: 1, solvedCases: ["case-002"] });
+    assert.equal(result.ok, true);
+    assert.deepEqual(Array.from(result.applied), [2, 3]);
+    assert.equal(result.data.newFeatureData.enabled, true);
+    assert.equal(result.data.schemaVersion, 3);
+});
