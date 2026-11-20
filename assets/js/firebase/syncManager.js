@@ -114,8 +114,12 @@ class SyncManager {
     // Сохранить локально; облако обновляется только если нет неразрешённого конфликта.
     async saveEverywhere(progressData) {
         if (this.writesBlocked() || !this._isSaveCompatible(progressData)) return false;
-        this.storage.saveProgress(progressData);
+        // Never upload a snapshot that failed to persist locally. Otherwise a
+        // quota/storage error could still publish stale or missing local data.
+        const localSaved = this.storage.saveProgress(progressData);
+        if (localSaved !== true) return false;
         const localData = this.storage.loadProgress();
+        if (!localData) return false;
 
         if (this.hasConflict || this.storage.get('cloud_conflict_backup')) {
             return false;
