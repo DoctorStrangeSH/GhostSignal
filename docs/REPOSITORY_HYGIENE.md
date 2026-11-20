@@ -28,6 +28,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
 - [x] Complete source-level asset reference audit for the current art inventory; all 26 art files have confirmed uses after checking the dynamic evidence-photo viewer.
 - [ ] Complete a clean install/build/test run from the documented setup.
+- [x] Add a regression guard: cloud upload is aborted when the preceding local save fails; the new test is running in CI.
 
 ## Branch cleanup rules
 
@@ -70,3 +71,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - `assets/art/evidence/bar-contact-print.webp` is confirmed in active runtime use by `assets/js/ui/inventoryUI.js` (`_renderBarPhotoStudy`, line 193), shown when the player inspects `bar_photo`. It is not an orphan and must be retained.
 - All 26 art resources in `assets/art/` now have confirmed direct or dynamic references; no art file is currently approved for deletion.
 - No art resources were deleted or recompressed in this audit. The objective is to identify genuinely unused files without degrading the visual direction.
+
+
+## Save/sync integrity follow-up (2026-11-20)
+
+- [x] Found and fixed a failure path in `SyncManager.saveEverywhere()`: previously it could proceed to cloud upload even if `storage.saveProgress()` returned false.
+- [x] Cloud upload now stops immediately when local persistence fails or the persisted snapshot cannot be read back.
+- [x] Added a regression test proving that local write failure returns false and performs zero cloud writes.
+- [ ] Confirm the new regression test and browser smoke on commit `dde279b4198d6bd7049f4b847011c266d060af50`.
+- [ ] Generate and validate a real `package-lock.json` with Node 20/npm; do not hand-author dependency resolution metadata.
