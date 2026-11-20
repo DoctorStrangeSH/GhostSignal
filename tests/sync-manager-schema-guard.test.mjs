@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function createSyncManager({ local = null, cloud = null } = {}) {
+function createSyncManager({ local = null, cloud = null, writesBlocked = () => false } = {}) {
     const values = {};
     const calls = { cloudLoads: 0, cloudSaves: 0, localSaves: 0 };
     const storage = {
@@ -27,7 +27,7 @@ function createSyncManager({ local = null, cloud = null } = {}) {
     const migrationSource = readFileSync(resolve(root, "assets/js/core/saveMigrations.js"), "utf8");
     const syncSource = readFileSync(resolve(root, "assets/js/firebase/syncManager.js"), "utf8");
     vm.runInContext(migrationSource + "\n" + syncSource + "\nglobalThis.SyncManagerExport = SyncManager;", context);
-    return { manager: new context.SyncManagerExport(auth, cloudStorage, storage), calls, values };
+    return { manager: new context.SyncManagerExport(auth, cloudStorage, storage, writesBlocked), calls, values };
 }
 
 test("cloud sync pauses when the local save requires an unavailable migration", async () => {
@@ -55,4 +55,19 @@ test("saveEverywhere refuses to upload a save with an unsupported schema", async
     assert.equal(result, false);
     assert.equal(calls.localSaves, 0);
     assert.equal(calls.cloudSaves, 0);
+});
+
+
+test("cloud sync and conflict resolution stay disabled when backup creation blocks writes", async () => {
+    const { manager, calls } = createSyncManager({
+        local: { schemaVersion: 0, activeCase: "case-001" },
+        cloud: { schemaVersion: 1, activeCase: null },
+        writesBlocked: () => true
+    });
+    await manager.syncFromCloud();
+    assert.equal(calls.cloudLoads, 0);
+    assert.equal(calls.cloudSaves, 0);
+    assert.equal(calls.localSaves, 0);
+    assert.equal(await manager.saveEverywhere({ schemaVersion: 1 }), false);
+    assert.equal(await manager.resolveConflict("cloud"), false);
 });
