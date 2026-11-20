@@ -185,6 +185,7 @@ class App {
         this.progressTracker = ProgressTracker.fromJSON(this.progress.trackerData);
         this.statsScreen = new StatsScreen('screen-stats');
         this.caseArchiveUI = new CaseArchiveUI('screen-case-archive');
+        this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
         this.caseArchiveUI.setProgress(this.progress);
 
         this.reputationSystem = ReputationSystem.fromJSON(this.progress.reputationData);
