@@ -151,6 +151,16 @@ class CaseManager {
     // Проверить финальный ответ
     checkFinalAnswer(answer) {
         if (!this.currentCase?.finalQuestion) return null;
+        // A closed investigation cannot accept another verdict. This protects
+        // failed/solved runs even if a stale UI callback fires after closure.
+        if (this.caseState !== 'active') {
+            return {
+                isCorrect: false,
+                caseClosed: true,
+                title: 'ДЕЛО УЖЕ ЗАКРЫТО',
+                text: 'Это расследование уже завершено. Начните новое прохождение, чтобы вынести вердикт.'
+            };
+        }
         
         const proof = assessAccusationEvidence(this.currentCase, this.inventory);
         if (!proof.sufficient) {
