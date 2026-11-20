@@ -2,21 +2,27 @@ class ProgressTracker {
     constructor() {
         this.stats = {
             totalCasesSolved: 0,
+            totalSolvedRuns: 0,
             totalCasesFailed: 0,
             totalHintsUsed: 0,
             totalTimeSpent: 0,       // В минутах
             totalAttempts: 0,
-            casesHistory: []          // История каждого дела
+            casesHistory: [],         // История каждого прохождения
+            solvedCaseIds: []
         };
         
         this.caseStartTime = null;
+        this.activeCaseId = null;
+        this.activeRunId = null;
         this.caseHintsUsed = 0;
         this.caseAttempts = 0;
     }
     
     // Начать отслеживание дела
-    startCase(caseId) {
+    startCase(caseId, runId = null) {
         this.caseStartTime = Date.now();
+        this.activeCaseId = caseId || null;
+        this.activeRunId = runId || `${caseId || 'case'}:${this.caseStartTime}:${this.stats.casesHistory.length + 1}`;
         this.caseHintsUsed = 0;
         this.caseAttempts = 0;
     }
@@ -34,13 +40,24 @@ class ProgressTracker {
     }
     
     // Дело раскрыто
-    caseSolved(caseData) {
+    caseSolved(caseData, runId = this.activeRunId) {
+        const id = runId || `${caseData.id}:legacy:${this.stats.casesHistory.length + 1}`;
+        const existing = this.stats.casesHistory.find(record => record.runId === id);
+        if (existing) return existing;
         const timeSpent = this._calculateTimeSpent();
         this.caseStartTime = null;
+        this.activeCaseId = null;
+        this.activeRunId = null;
         this.stats.totalTimeSpent += timeSpent;
-        this.stats.totalCasesSolved++;
+        this.stats.totalSolvedRuns = (this.stats.totalSolvedRuns || 0) + 1;
+        this.stats.solvedCaseIds = Array.isArray(this.stats.solvedCaseIds) ? this.stats.solvedCaseIds : [];
+        if (!this.stats.solvedCaseIds.includes(caseData.id)) {
+            this.stats.solvedCaseIds.push(caseData.id);
+            this.stats.totalCasesSolved++;
+        }
         
         const record = {
+            runId: id,
             caseId: caseData.id,
             title: caseData.title,
             result: 'solved',
@@ -58,13 +75,19 @@ class ProgressTracker {
     }
     
     // Дело провалено
-    caseFailed(caseData) {
+    caseFailed(caseData, runId = this.activeRunId) {
+        const id = runId || `${caseData.id}:legacy:${this.stats.casesHistory.length + 1}`;
+        const existing = this.stats.casesHistory.find(record => record.runId === id);
+        if (existing) return existing;
         const timeSpent = this._calculateTimeSpent();
         this.caseStartTime = null;
+        this.activeCaseId = null;
+        this.activeRunId = null;
         this.stats.totalTimeSpent += timeSpent;
         this.stats.totalCasesFailed++;
         
         const record = {
+            runId: id,
             caseId: caseData.id,
             title: caseData.title,
             result: 'failed',
@@ -124,7 +147,7 @@ class ProgressTracker {
     
     // Процент раскрытия
     getSolveRate() {
-        const total = this.stats.totalCasesSolved + this.stats.totalCasesFailed;
+        const total = (this.stats.totalSolvedRuns || this.stats.totalCasesSolved) + this.stats.totalCasesFailed;
         if (total === 0) return 0;
         return Math.round((this.stats.totalCasesSolved / total) * 100);
     }
@@ -168,6 +191,8 @@ class ProgressTracker {
         return {
             stats: JSON.parse(JSON.stringify(this.stats)),
             caseStartTime: this.caseStartTime,
+            activeCaseId: this.activeCaseId,
+            activeRunId: this.activeRunId,
             caseHintsUsed: this.caseHintsUsed,
             caseAttempts: this.caseAttempts
         };
@@ -177,9 +202,18 @@ class ProgressTracker {
     static fromJSON(json) {
         const tracker = new ProgressTracker();
         if (json?.stats) {
-            tracker.stats = json.stats;
+            tracker.stats = { ...tracker.stats, ...json.stats };
+            tracker.stats.casesHistory = Array.isArray(json.stats.casesHistory) ? json.stats.casesHistory : [];
+            tracker.stats.solvedCaseIds = Array.isArray(json.stats.solvedCaseIds)
+                ? json.stats.solvedCaseIds
+                : [...new Set(tracker.stats.casesHistory.filter(record => record.result === 'solved').map(record => record.caseId))];
+            tracker.stats.totalSolvedRuns = Number.isFinite(json.stats.totalSolvedRuns)
+                ? json.stats.totalSolvedRuns
+                : tracker.stats.casesHistory.filter(record => record.result === 'solved').length;
         }
         tracker.caseStartTime = Number.isFinite(json?.caseStartTime) ? json.caseStartTime : null;
+        tracker.activeCaseId = json?.activeCaseId || null;
+        tracker.activeRunId = json?.activeRunId || null;
         tracker.caseHintsUsed = Number.isFinite(json?.caseHintsUsed) ? json.caseHintsUsed : 0;
         tracker.caseAttempts = Number.isFinite(json?.caseAttempts) ? json.caseAttempts : 0;
         return tracker;
