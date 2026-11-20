@@ -155,3 +155,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Start nodes, explicit entry points, and all answer targets must resolve to existing nodes.
 - [x] Quality checks: 522/522 tests passed; JavaScript syntax and game-data validation passed.
 - [ ] Full browser playthrough is still required to verify gated paths under actual evidence, relationship, and save-state conditions.
+
+
+## Case 002 dialogue graph validation (2026-11-20)
+
+- [x] Added graph regression coverage for all 14 dialogue assets used by case 002, including its case-specific bartender dialogue and shared sergeant dialogue.
+- [x] Validates start nodes, explicit entry points, all answer targets, and special evidence/contradiction reaction paths.
+- [x] Every declared dialogue node must be reachable from a start, explicit entry point, or special reaction entry.
+- [x] Quality checks: 524/524 tests passed; JavaScript syntax and game-data validation passed.
+- [ ] Browser playthrough remains required for gated branches under actual evidence, relationship, and save-state conditions.
