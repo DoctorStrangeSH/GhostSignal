@@ -102,7 +102,10 @@
     border-radius: 999px;
     background: rgba(255,255,255,.025);
     color: var(--text-dim, #a39d90);
-    font: 600 10px/1.2 inherit;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
     letter-spacing: 1px;
     cursor: pointer;
     transition: .2s ease;
