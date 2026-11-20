@@ -32,6 +32,7 @@ class App {
         this.answerChecker = null;
         this.progressTracker = null;
         this.statsScreen = null;
+        this.caseArchiveUI = null;
         this.reputationSystem = null;
         this.stakeoutSystem = null;
         this.evidenceChainSystem = null;
@@ -183,6 +184,8 @@ class App {
         this.answerChecker = new AnswerChecker();
         this.progressTracker = ProgressTracker.fromJSON(this.progress.trackerData);
         this.statsScreen = new StatsScreen('screen-stats');
+        this.caseArchiveUI = new CaseArchiveUI('screen-case-archive');
+        this.caseArchiveUI.setProgress(this.progress);
 
         this.reputationSystem = ReputationSystem.fromJSON(this.progress.reputationData);
         this.newspaperUI = new NewspaperUI();
