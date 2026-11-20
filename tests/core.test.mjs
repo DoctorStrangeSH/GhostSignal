@@ -411,7 +411,8 @@ test("Starting a different case resets only case-scoped location unlocks and vis
         advance(minutes) { this.minute += minutes; }
     };
     const locationManager = new LocationManager(gameTime);
-    locationManager.unlockedLocations.add("case_one_secret");
+    locationManager.unlockCaseLocation("case_one_secret");
+    locationManager.unlockLocation("train_station");
     locationManager.visitedLocations.add("case_one_secret");
     locationManager.currentLocation = "case_one_secret";
     const manager = new CaseManager(gameTime, locationManager, { hasItem: () => false });
@@ -419,6 +420,10 @@ test("Starting a different case resets only case-scoped location unlocks and vis
     assert.equal(manager.loadCase("case-002"), true);
     assert.equal(locationManager.unlockedLocations.has("case_one_secret"), false);
     assert.equal(locationManager.unlockedLocations.has("case_two_public"), true);
+    assert.equal(locationManager.unlockedLocations.has("train_station"), true,
+        "permanent ending rewards must survive a new investigation");
+    assert.equal(locationManager.caseUnlockedLocations.has("case_two_public"), true);
+    assert.equal(locationManager.permanentUnlockedLocations.has("train_station"), true);
     assert.deepEqual(Array.from(locationManager.visitedLocations), ["case_two_public"]);
     assert.equal(locationManager.currentLocation, "case_two_public");
     assert.equal(locationManager.activeCaseData.id, "case-002");
@@ -429,6 +434,20 @@ test("Starting a different case resets only case-scoped location unlocks and vis
     locationManager.setActiveCase(cases["case-002"]);
     assert.equal(locationManager.unlockedLocations.has("case_two_saved_unlock"), true);
     assert.equal(locationManager.visitedLocations.has("case_two_saved_unlock"), true);
+
+    const snapshot = locationManager.toJSON();
+    const restored = LocationManager.fromJSON(snapshot, gameTime);
+    assert.equal(restored.unlockedLocations.has("train_station"), true);
+    assert.equal(restored.permanentUnlockedLocations.has("train_station"), true);
+    assert.equal(restored.caseUnlockedLocations.has("case_two_public"), true);
+
+    const legacy = LocationManager.fromJSON({
+        unlockedLocations: ["train_station", "legacy_case_unlock"]
+    }, gameTime);
+    legacy.beginCase({ id: "case-003" });
+    assert.equal(legacy.unlockedLocations.has("train_station"), true,
+        "legacy saves preserve ambiguous unlocks rather than deleting progress");
+    assert.equal(legacy.unlockedLocations.has("legacy_case_unlock"), true);
 });
 
 test("LocationManager adds active case scene objects without duplicating base items", () => {
