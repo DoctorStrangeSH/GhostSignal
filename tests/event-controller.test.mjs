@@ -581,3 +581,54 @@ test("unrelated NPC promises do not change community reputation", () => {
     ]);
     assert.equal(changes.length, 0);
 });
+
+
+test("duplicate solve events never duplicate ending, rewards, statistics or promise settlement", () => {
+    const bus = createEventBus();
+    const calls = [];
+    const app = {
+        progress: { activeCase: "case-002", solvedCases: [], failedCases: [] },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Последний заказ" },
+            caseState: "active",
+            evidenceFound: 6,
+            toJSON() { return { caseState: this.caseState, currentCaseId: "case-002" }; }
+        },
+        npcMemoryService: {
+            settlePromisesForCase(id, outcome) { calls.push("promises:" + id + ":" + outcome); return []; },
+            toJSON() { return { settled: true }; }
+        },
+        alternateEndings: {
+            determineEnding() { calls.push("ending"); return { title: "Полная правда", bonusReputation: 5, unlocks: ["archive"] }; }
+        },
+        progressTracker: { caseSolved() { calls.push("stats"); }, toJSON: () => ({ solved: 1 }) },
+        reputationSystem: { caseSolved() { calls.push("reputation"); }, addReputation() { calls.push("bonus"); }, toJSON: () => ({ reputation: 55 }) },
+        locationManager: { unlockLocation(id) { calls.push("unlock:" + id); } },
+        achievementSystem: { checkAll() { calls.push("achievements"); } },
+        caseListUI: { setProgress() {} },
+        _updateMainMenu() {},
+        _quickSave() { calls.push("save"); }
+    };
+    const Controller = loadEventController({
+        document: { getElementById: () => null },
+        setTimeout(callback) { callback(); },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new Controller(app, bus);
+    controller.bind();
+
+    bus.emit("case:solved", { caseId: "case-002" });
+    bus.emit("case:solved", { caseId: "case-002" });
+
+    assert.equal(app.progress.activeCase, null);
+    assert.deepEqual([...app.progress.solvedCases], ["case-002"]);
+    for (const once of ["ending", "stats", "reputation", "bonus", "unlock:archive"]) {
+        assert.equal(calls.filter(call => call === once).length, 1, once + " is applied once");
+    }
+    assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 2,
+        "promise settlement may be revisited, but its service guarantees idempotency");
+    assert.equal(calls.filter(call => call === "save").length, 2,
+        "both terminal snapshots remain persisted");
+    controller.dispose();
+});
