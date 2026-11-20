@@ -199,6 +199,7 @@ class App {
         this.tutorialSystem = new TutorialSystem();
         this.achievementSystem = new AchievementSystem(this.progress, events, { inventory: this.inventory, gameTime: this.gameTime });
         this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
+        this.achievementSystem.reconcile();
         this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
         this.achievementScreen.setOnBack(() => this.navigateTo('screen-main-menu'));
         this.difficultySystem = new DifficultySystem();
