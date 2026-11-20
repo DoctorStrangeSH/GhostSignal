@@ -45,7 +45,7 @@ test("unsupported cloud saves are preserved as conflicts, not written over local
     await manager.syncFromCloud();
     assert.equal(calls.localSaves, 0);
     assert.equal(calls.cloudSaves, 0);
-    assert.deepEqual(values.cloud_conflict_backup, cloud);
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.cloud), JSON.stringify(cloud));
     assert.equal(manager.hasConflict, true);
 });
 
@@ -80,8 +80,8 @@ test("different local and cloud saves are preserved together even when local has
     await manager.syncFromCloud();
     assert.equal(calls.localSaves, 0);
     assert.equal(calls.cloudSaves, 0);
-    assert.deepEqual(values.cloud_conflict_backup.local, local);
-    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.local), JSON.stringify(local));
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.cloud), JSON.stringify(cloud));
     assert.equal(values.cloud_conflict_backup.version, 1);
     assert.equal(manager.hasConflict, true);
     assert.equal(manager.getConflictDetails().local.solvedCases, 1);
