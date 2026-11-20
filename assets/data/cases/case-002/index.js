@@ -69,6 +69,14 @@ const CASE_002 = {
         "line_technician"
     ],
 
+    // Dialogue selection belongs to this investigation, not to the shared
+    // bartender profile declared by another case pack.
+    npcDialogueOverrides: {
+        bartender: "dialogue-bartender-case2"
+    },
+
+    
+
     // === СОЦИАЛЬНАЯ СЕТЬ NPC ===
     // Связи направленные: сведения передаются только по явно заданным отношениям.
     socialNetwork: {
