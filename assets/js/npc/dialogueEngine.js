@@ -238,6 +238,7 @@ class DialogueEngine {
             
             const endNode = this.currentDialogue.tree.nodes[answer.nextNode];
             if (endNode) {
+                this.currentStableNodeId = answer.nextNode;
                 this.currentNode = this._personalizeNode({ id: answer.nextNode, ...endNode });
                 this.dialogueHistory.push({
                     nodeId: answer.nextNode,
