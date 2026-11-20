@@ -422,6 +422,13 @@ test("Starting a different case resets only case-scoped location unlocks and vis
     assert.deepEqual(Array.from(locationManager.visitedLocations), ["case_two_public"]);
     assert.equal(locationManager.currentLocation, "case_two_public");
     assert.equal(locationManager.activeCaseData.id, "case-002");
+
+    // Restoring a save must not invoke the fresh-run reset or discard map progress.
+    locationManager.unlockedLocations.add("case_two_saved_unlock");
+    locationManager.visitedLocations.add("case_two_saved_unlock");
+    locationManager.setActiveCase(cases["case-002"]);
+    assert.equal(locationManager.unlockedLocations.has("case_two_saved_unlock"), true);
+    assert.equal(locationManager.visitedLocations.has("case_two_saved_unlock"), true);
 });
 
 test("LocationManager adds active case scene objects without duplicating base items", () => {
