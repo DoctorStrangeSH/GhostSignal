@@ -12,7 +12,8 @@ class SaveController {
     }
 
     saveProgress() {
-        if (!this.app.progress) return false;
+        if (!this.app.progress || this.app.saveBlocked) return false;
+        this.app.progress.schemaVersion = SAVE_SCHEMA_VERSION;
         let saved = false;
         try {
             saved = this.storage.saveProgress(this.app.progress) === true;
