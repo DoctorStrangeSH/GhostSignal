@@ -1,8 +1,9 @@
 class SyncManager {
-    constructor(authManager, cloudStorage, storageManager) {
+    constructor(authManager, cloudStorage, storageManager, writesBlocked = () => false) {
         this.authManager = authManager;
         this.cloudStorage = cloudStorage;
         this.storage = storageManager;
+        this.writesBlocked = writesBlocked;
         this.syncInProgress = false;
         this.hasConflict = Boolean(this.storage.get('cloud_conflict_backup'));
         this._bindEvents();
@@ -25,7 +26,7 @@ class SyncManager {
 
     // Синхронизация с сохранением обеих версий при конфликте.
     async syncFromCloud() {
-        if (this.syncInProgress) return;
+        if (this.syncInProgress || this.writesBlocked()) return;
         const existingLocal = this.storage.loadProgress();
         if (existingLocal && !this._isSaveCompatible(existingLocal)) {
             console.warn('Cloud sync paused: local save requires an unavailable migration.');
@@ -76,7 +77,7 @@ class SyncManager {
 
     // Сохранить локально; облако обновляется только если нет неразрешённого конфликта.
     async saveEverywhere(progressData) {
-        if (!this._isSaveCompatible(progressData)) return false;
+        if (this.writesBlocked() || !this._isSaveCompatible(progressData)) return false;
         this.storage.saveProgress(progressData);
         const localData = this.storage.loadProgress();
 
@@ -92,6 +93,7 @@ class SyncManager {
 
     // Пользователь явно выбирает, какую версию оставить.
     async resolveConflict(strategy) {
+        if (this.writesBlocked()) return false;
         const cloudBackup = this.storage.get('cloud_conflict_backup');
         if (!cloudBackup) return false;
         if (strategy === 'local' && !this._isSaveCompatible(this.storage.loadProgress())) return false;
