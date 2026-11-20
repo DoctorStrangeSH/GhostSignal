@@ -43,3 +43,18 @@
 .case-archive-empty strong{font:11px var(--font-mono);letter-spacing:1.5px;color:var(--accent-amber)}
 .case-archive-empty p{margin:0;max-width:240px}
 @media(max-width:760px){.case-archive-header,.case-archive-toolbar{align-items:stretch;flex-direction:column}.case-archive-header .terminal-btn{align-self:flex-start}.case-archive-search{max-width:none}.case-archive-layout{grid-template-columns:1fr}.case-archive-list{max-height:380px}.case-archive-detail{position:static}.case-archive-summary strong{font-size:21px}.case-archive-summary span{font-size:8px}}
+
+.case-archive-header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+.case-archive-header-actions .terminal-btn{font-size:9px;padding:8px 10px;white-space:nowrap}
+.case-archive-header-actions .terminal-btn.active{border-color:var(--accent-amber);color:var(--accent-amber-glow);background:rgba(212,160,23,.1)}
+.case-ending-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.case-ending-card{position:relative;display:flex;flex-direction:column;min-height:210px;padding:18px;background:linear-gradient(145deg,rgba(19,27,31,.94),rgba(8,13,16,.94));border:1px solid rgba(212,160,23,.18);border-radius:7px;overflow:hidden}
+.case-ending-card.is-discovered{border-color:rgba(212,160,23,.36)}
+.case-ending-card.is-hidden{border-style:dashed;opacity:.7}
+.case-ending-status{color:var(--accent-amber);font:9px var(--font-mono);letter-spacing:1.4px}
+.case-ending-card h3{margin:14px 0 5px;color:var(--text-bright);font:700 18px var(--font-serif)}
+.case-ending-case{color:var(--text-dim);font:10px var(--font-mono)}
+.case-ending-card p{margin:12px 0 18px;color:var(--text-secondary);font:13px/1.6 var(--font-serif);white-space:pre-line}
+.case-ending-stamp,.case-ending-lock{margin-top:auto;align-self:flex-start;padding:5px 9px;border:1px solid rgba(212,160,23,.28);color:var(--accent-amber-glow);font:9px var(--font-mono);letter-spacing:1.2px}
+.case-ending-lock{border-color:rgba(160,160,160,.18);color:var(--text-dim)}
+@media(max-width:760px){.case-archive-header-actions{justify-content:flex-start}.case-archive-header-actions .terminal-btn{font-size:8px}}
