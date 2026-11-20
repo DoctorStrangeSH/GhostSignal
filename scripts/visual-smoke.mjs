@@ -95,16 +95,24 @@ try {
 
         await page.locator('#scene-container .scene-sublocation-btn').filter({ hasText: 'Номер 304' }).click();
         await page.waitForFunction(() => window.app?.sceneRenderer?.currentScene?.id === 'hotel_room_304');
-        // Time/location events may enqueue a narrative modal during travel.
-        // Close any such window through its real close control before examining
-        // the room, then verify Bootstrap has released the interaction layer.
-        const travelModal = page.locator('#universal-modal.show');
-        if (await travelModal.isVisible()) {
+        // Location introductions are intentionally delayed after travel.
+        // Wait for that event-driven window, then dismiss every queued narrative
+        // through the actual UI control before examining room objects.
+        await page.waitForTimeout(850);
+        for (let index = 0; index < 5; index++) {
+            const travelModal = page.locator('#universal-modal.show');
+            if (!await travelModal.isVisible()) break;
             const close = travelModal.locator('[data-bs-dismiss="modal"], .btn-close').first();
-            if (await close.count()) await close.click();
+            if (!await close.count()) break;
+            await close.click();
+            await page.locator('#universal-modal').waitFor({ state: 'hidden' });
+            await page.waitForTimeout(200);
         }
         await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-        await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
+        await page.waitForFunction(() =>
+            document.querySelectorAll('.modal-backdrop').length === 0 &&
+            document.querySelectorAll('.modal.show').length === 0
+        );
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Кровать' }).click();
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await page.locator('#universal-modal').waitFor({ state: 'hidden' });
