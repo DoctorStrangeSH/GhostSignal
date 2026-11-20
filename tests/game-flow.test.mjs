@@ -16,7 +16,7 @@ function createRuntime() {
             path.startsWith("assets/data/cases/case-001/") ||
             path.startsWith("assets/data/cases/case-002/"));
 
-    const context = vm.createContext({ console: quietConsole, window: {} });
+    const context = vm.createContext({ console: quietConsole, window: {}, storage: { set() { return true; } } });
     const scripts = [
         "assets/js/core/config.js",
         "assets/js/core/eventBus.js",
@@ -27,6 +27,7 @@ function createRuntime() {
         "assets/js/systems/caseManager.js",
         "assets/js/systems/evidenceChain.js",
         "assets/js/systems/alternateEndings.js",
+        "assets/js/systems/achievements.js",
         "assets/js/npc/npcManager.js"
     ];
 
@@ -42,7 +43,9 @@ function createRuntime() {
         const npcManager = new NPCManager(gameTime, inventory);
         const evidenceChains = new EvidenceChainSystem(inventory);
         const endings = new AlternateEndings();
-        return { gameTime, locationManager, inventory, caseManager, npcManager, evidenceChains, endings };
+        const progress = { activeCase: null, achievementData: null };
+        const achievements = new AchievementSystem(progress, events, { inventory, gameTime });
+        return { gameTime, locationManager, inventory, caseManager, npcManager, evidenceChains, endings, progress, achievements };
     })()`, context);
 
     const events = vm.runInContext("events", context);
@@ -67,7 +70,7 @@ function createRuntime() {
         if (examine?.givesInsight) systems.inventory.addInsight(examine.givesInsight);
     });
 
-    return { context, systems, events };
+    return { context, systems, events, progress: systems.progress, achievements: systems.achievements };
 }
 
 test("Case 001 runtime loads its authored scenes, contacts, clue chains and endings", () => {
@@ -141,4 +144,35 @@ test('opening another case clears previously visited places', () => {
     assert.equal(caseManager.loadCase('case-001'), true);
     assert.deepEqual(Array.from(locationManager.visitedLocations), ['police_station']);
     assert.equal(locationManager.activeCaseData.id, 'case-001');
+});
+
+
+test("case 002 gameplay events unlock the complete-evidence achievement and survive achievement reload", () => {
+    const { systems, achievements, progress } = createRuntime();
+    const { caseManager, inventory } = systems;
+    assert.equal(caseManager.loadCase("case-002"), true);
+    assert.equal(progress.activeCase, "case-002");
+
+    const caseData = systems.context.CASES_INDEX?.["case-002"] ||
+        vm.runInContext('getCaseById("case-002")', systems.context);
+    assert.equal(caseData.evidenceIds.length, 14);
+
+    for (const evidenceId of caseData.evidenceIds) {
+        assert.equal(inventory.addItem(evidenceId), true, "case evidence should be obtainable: " + evidenceId);
+    }
+    assert.equal(achievements.unlocked.includes("all_evidence"), true);
+    assert.equal(achievements.records.all_evidence.caseId, "case-002");
+    assert.equal(inventory.items.filter(id => caseData.evidenceIds.includes(id)).length, 14);
+
+    const savedAchievements = JSON.parse(JSON.stringify(achievements.toJSON()));
+    achievements.dispose();
+    const AchievementSystem = vm.runInContext("AchievementSystem", systems.context);
+    const restored = new AchievementSystem(progress, systems.events, { inventory, gameTime: systems.gameTime });
+    restored.load(savedAchievements);
+    const before = restored.getSummary().unlocked;
+    restored.reconcile();
+
+    assert.equal(restored.getSummary().unlocked, before, "resume must not duplicate or re-award an existing achievement");
+    assert.equal(restored.records.all_evidence.caseId, "case-002");
+    restored.dispose();
 });
