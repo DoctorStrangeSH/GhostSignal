@@ -95,6 +95,12 @@ class EventController {
             // board first so replaying the same investigation starts blank.
             if (app.investigationBoard?.caseId === caseId) app.investigationBoard.setCase(null);
             app.progress.activeCase = app.caseManager.currentCase?.id;
+            app.progress.playthroughSequence = (Number.isInteger(app.progress.playthroughSequence) ? app.progress.playthroughSequence : 0) + 1;
+            const runId = caseId + ':' + Date.now() + ':' + app.progress.playthroughSequence;
+            app.progress.activeRunId = runId;
+            app.progressTracker?.startCase(caseId, runId);
+            app.progress.trackerData = app.progressTracker?.toJSON() || app.progress.trackerData;
+            app.progress.completedRunIds = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
             app.investigationBoard?.setCase(caseId);
             app.progress.boardData = app.investigationBoard?.toJSON();
             app.boardUI?.render();
@@ -114,7 +120,6 @@ class EventController {
             app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
             app.progress.caseData = app.caseManager.toJSON();
             app._saveProgress();
-            app.progressTracker.startCase(data.caseData.id);
             app.npcManager.loadNPCsForCase(data.caseData);
             app.npcListUI.render();
             app.evidenceChainSystem?.loadChainsForCase(data.caseData);
@@ -306,52 +311,54 @@ class EventController {
         on('case:solved', (data = {}) => {
             const caseData = app.caseManager?.currentCase || getCaseById(data.caseId) || data;
             const caseId = caseData?.id || data.caseId;
-            if (!caseId) return;
+            if (!caseId || !app.progress) return;
+
+            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || (caseId + ':legacy');
+            const completedRuns = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
+            if (completedRuns.includes(runId)) return;
 
             this._notifyPromiseChanges(app.npcMemoryService?.settlePromisesForCase(caseId, 'solved'));
 
             const solvedCases = Array.isArray(app.progress.solvedCases) ? app.progress.solvedCases : [];
             const isFirstSolve = !solvedCases.includes(caseId);
+            completedRuns.push(runId);
+            app.progress.completedRunIds = completedRuns;
 
             if (app.caseManager) app.caseManager.caseState = 'solved';
             app.progress.activeCase = null;
+            app.progress.activeRunId = null;
             app.progress.caseData = app.caseManager?.toJSON() || app.progress.caseData;
 
-            // Повторная отправка события не должна повторно начислять статистику и репутацию.
-            if (isFirstSolve) {
-                const ending = app.alternateEndings?.determineEnding(
-                    caseData,
-                    app.inventory,
-                    app.caseManager?.evidenceFound || 0,
-                    { npcMemoryService: app.npcMemoryService, solved: true }
-                );
-                if (ending) {
-                    events.emit('ending:determined', { caseId, ending });
-                    const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-                    })[char]);
-                    const quality = ending.outcomeQuality === 'compromised' ? 'consequences' :
-                        !ending.condition || ending.condition === 'default' ? 'limited' :
-                        ending.condition?.startsWith('evidence_count_') ? 'partial' : 'complete';
-                    setTimeout(() => events.emit('modal:show', {
-                        title: ending.title || 'Дело завершено',
-                        body: `<div class="ending-report ending-report--${quality}"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено.')}</p></div>`,
-                        footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
-                    }), 350);
-                }
+            // Every distinct playthrough gets its own ending and history record.
+            // Permanent progression rewards remain first-clear only.
+            const ending = app.alternateEndings?.determineEnding(
+                caseData, app.inventory, app.caseManager?.evidenceFound || 0,
+                { npcMemoryService: app.npcMemoryService, solved: true }
+            );
+            if (ending) {
+                events.emit('ending:determined', { caseId, runId, ending });
+                const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[char]);
+                const quality = ending.outcomeQuality === 'compromised' ? 'consequences' :
+                    !ending.condition || ending.condition === 'default' ? 'limited' :
+                    ending.condition?.startsWith('evidence_count_') ? 'partial' : 'complete';
+                setTimeout(() => events.emit('modal:show', {
+                    title: ending.title || 'Дело завершено',
+                    body: `<div class="ending-report ending-report--${quality}"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено.')}</p></div>`,
+                    footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
+                }), 350);
+            }
 
+            if (isFirstSolve) {
                 app.progress.solvedCases = [...solvedCases, caseId];
-                app.progressTracker?.caseSolved(caseData);
                 app.reputationSystem?.caseSolved(caseData);
-                if (ending?.bonusReputation) {
-                    app.reputationSystem?.addReputation(ending.bonusReputation, 'Бонус концовки: ' + (ending.title || caseId));
-                }
-                for (const locationId of ending?.unlocks || []) {
-                    app.locationManager?.unlockLocation(locationId);
-                }
+                if (ending?.bonusReputation) app.reputationSystem?.addReputation(ending.bonusReputation, 'Бонус концовки: ' + (ending.title || caseId));
+                for (const locationId of ending?.unlocks || []) app.locationManager?.unlockLocation(locationId);
                 app.ttsEngine?.playSuccessSound();
             }
 
+            app.progressTracker?.caseSolved(caseData, runId);
             app.progress.trackerData = app.progressTracker?.toJSON() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON() || app.progress.reputationData;
             app.achievementSystem?.checkAll();
@@ -376,7 +383,13 @@ class EventController {
             if (!failedCases.includes(caseId)) app.progress.failedCases = [...failedCases, caseId];
 
             const caseData = app.caseManager?.currentCase || getCaseById(caseId) || { id: caseId, title: caseId };
-            app.progressTracker?.caseFailed(caseData);
+            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || (caseId + ':legacy');
+            const completedRuns = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
+            if (completedRuns.includes(runId)) return;
+            completedRuns.push(runId);
+            app.progress.completedRunIds = completedRuns;
+            app.progress.activeRunId = null;
+            app.progressTracker?.caseFailed(caseData, runId);
             app.reputationSystem?.caseFailed(data);
             app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
