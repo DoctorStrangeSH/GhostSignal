@@ -205,7 +205,7 @@ class App {
 
         this.authManager = new AuthManager();
         this.cloudStorage = new CloudStorage(this.authManager);
-        this.syncManager = new SyncManager(this.authManager, this.cloudStorage, storage);
+        this.syncManager = new SyncManager(this.authManager, this.cloudStorage, storage, () => this.saveBlocked);
         this.authUI = new AuthUI(this.authManager);
 
         this.detectiveThoughts = new DetectiveThoughts();
