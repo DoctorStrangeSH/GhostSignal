@@ -25,7 +25,10 @@ const dialogueFixtures = [
 ];
 
 function loadDialogues() {
-    const context = vm.createContext({ console: { log() {} } });
+    const context = vm.createContext({
+        console: { log() {} },
+        registerData() {}
+    });
     for (const [path] of dialogueFixtures) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
