@@ -312,6 +312,11 @@ class EventController {
         on('note:collected', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
         on('fragment:saved', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
 
+        on('achievement:progress_changed', () => {
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
+            app._saveProgress?.();
+        });
+
         on('achievement:unlocked', () => {
             app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
             app._saveProgress?.();
