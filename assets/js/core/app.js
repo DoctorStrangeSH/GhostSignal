@@ -197,7 +197,7 @@ class App {
         this.jukebox = new Jukebox();
         this.ambianceDetails = new AmbianceDetails(this.gameTime, this.weatherSystem);
         this.tutorialSystem = new TutorialSystem();
-        this.achievementSystem = new AchievementSystem(this.progress);
+        this.achievementSystem = new AchievementSystem(this.progress, events, { inventory: this.inventory, gameTime: this.gameTime });
         this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
         this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
         this.achievementScreen.setOnBack(() => this.navigateTo('screen-main-menu'));
@@ -241,7 +241,7 @@ class App {
         return {
             schemaVersion: SAVE_SCHEMA_VERSION,
             solvedCases: [], failedCases: [], totalHintsUsed: 0, totalTimeSpent: 0, activeCase: null,
-            activeRunId: null, lastCompletedRunId: null, playthroughSequence: 0, completedRunIds: [],
+            activeRunId: null, activeRunStartedGameMinute: null, lastCompletedRunId: null, playthroughSequence: 0, completedRunIds: [],
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
             boardData: null, notesData: null, trackerData: null, reputationData: null,
