@@ -11,6 +11,9 @@ class EventController {
         this.intervals = [];
         this.bound = false;
         this.pageHideHandler = null;
+        this.pendingModalData = null;
+        this.modalElement = null;
+        this.modalHiddenHandler = null;
     }
 
     _subscribe(name, handler) {
@@ -68,16 +71,28 @@ class EventController {
         const events = this.events;
         const on = (name, handler) => this._subscribe(name, handler);
 
-        // Модалка
+        // Модальные окна показываем последовательно: Bootstrap игнорирует show()
+        // во время перехода предыдущего окна, оставляя backdrop без владельца.
+        this.modalElement = document.getElementById('universal-modal');
+        if (this.modalElement && !this.modalHiddenHandler) {
+            this.modalHiddenHandler = () => {
+                if (!this.pendingModalData) return;
+                const next = this.pendingModalData;
+                this.pendingModalData = null;
+                this._showModal(next);
+            };
+            this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
+        }
         on('modal:show', (data) => {
-            const body = document.getElementById('modal-body');
-            const title = document.getElementById('modal-title');
-            const footer = document.getElementById('modal-footer');
-            if (!body || !title || !footer) return;
-            title.innerHTML = data.title || '';
-            body.innerHTML = data.body || '';
-            footer.innerHTML = data.footer || '';
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('universal-modal')).show();
+            if (!this.modalElement) this.modalElement = document.getElementById('universal-modal');
+            if (!this.modalElement) return;
+            if (this.modalElement.classList.contains('show')) {
+                // Keep the newest request. Its contents are applied only after
+                // the current Bootstrap hide transition has fully completed.
+                this.pendingModalData = data;
+                return;
+            }
+            this._showModal(data);
         });
 
         on('navigation:go', (id) => { app.navigateTo(id); if (id === 'screen-map') app.mapRenderer?.render(); });
@@ -462,7 +477,24 @@ class EventController {
         }, 30000));
     }
 
+    _showModal(data) {
+        const body = document.getElementById('modal-body');
+        const title = document.getElementById('modal-title');
+        const footer = document.getElementById('modal-footer');
+        if (!body || !title || !footer || !this.modalElement) return;
+        title.innerHTML = data.title || '';
+        body.innerHTML = data.body || '';
+        footer.innerHTML = data.footer || '';
+        bootstrap.Modal.getOrCreateInstance(this.modalElement).show();
+    }
+
     dispose() {
+        if (this.modalElement && this.modalHiddenHandler) {
+            this.modalElement.removeEventListener('hidden.bs.modal', this.modalHiddenHandler);
+        }
+        this.modalHiddenHandler = null;
+        this.pendingModalData = null;
+        this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.pageHideHandler);
             this.pageHideHandler = null;
