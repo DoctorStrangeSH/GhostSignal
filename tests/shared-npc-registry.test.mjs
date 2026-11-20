@@ -35,8 +35,8 @@ test("recurring NPC profiles load once from shared data before both case packs",
     const sharedProfiles = ["bartender", "sergeant"];
     for (const id of sharedProfiles) {
         assert.equal(sandbox.window.NPCS_INDEX[id]?.id, id);
-        assert.ok(sandbox.CASES_INDEX["case-001"].npcs.includes(id));
-        assert.ok(sandbox.CASES_INDEX["case-002"].npcs.includes(id));
+        assert.ok(vm.runInContext(`CASES_INDEX["case-001"].npcs.includes("${id}")`, sandbox));
+        assert.ok(vm.runInContext(`CASES_INDEX["case-002"].npcs.includes("${id}")`, sandbox));
     }
     assert.equal(Object.keys(sandbox.window.NPCS_INDEX).filter(id => sharedProfiles.includes(id)).length, 2);
 });
