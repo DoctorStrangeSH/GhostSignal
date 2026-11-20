@@ -417,6 +417,11 @@ test("a false public accusation harms Anna once and survives a memory reload", (
         "\n;globalThis.TestEventController = EventController;",
         context
     );
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/js/systems/reputation.js"), "utf8") +
+        "\n;globalThis.TestReputationSystem = ReputationSystem;",
+        context
+    );
     const memory = new context.TestMemoryService(null, "case-002");
     const caseData = {
         id: "case-002",
@@ -430,6 +435,7 @@ test("a false public accusation harms Anna once and survives a memory reload", (
         inventory: { proofReady: false },
         caseManager: { currentCase: caseData },
         npcMemoryService: memory,
+        reputationSystem: new context.TestReputationSystem(),
         npcSocialNetwork: {
             publishPublicAccusation(npcId, id) {
                 published.push({ npcId, id });
@@ -456,11 +462,21 @@ test("a false public accusation harms Anna once and survives a memory reload", (
     eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
     const after = memory.getTrust("ex_wife");
     assert.equal(memory.getAccusationStatus("ex_wife", "public-final-accusation:case-002:ex_wife"), "false");
+    assert.equal(app.reputationSystem.getFactionReputation("residents"), 42,
+        "a proven false public accusation damages residents' confidence once");
+    assert.equal(app.reputationSystem.getFactionReputation("witnesses"), 40,
+        "witnesses become less willing to trust the detective");
+    assert.deepEqual(app.progress.reputationData.factionReputation, {
+        police: 50, press: 50, residents: 42, witnesses: 40, underworld: 50
+    }, "the faction consequences are included in the next save");
     assert.ok(after < 50, "Anna's current trust decreases");
     assert.ok(memory.getLongTermProfile("ex_wife").trust < baseline, "long-term trust decreases");
     const stored = memory.toJSON();
     eventBus.emit("deduction:public_accusation", { caseId: "case-002", suspectId: "ex_wife" });
     assert.equal(memory.getTrust("ex_wife"), after, "repeating the declaration cannot stack penalties");
+    assert.equal(app.reputationSystem.getFactionReputation("residents"), 42);
+    assert.equal(app.reputationSystem.getFactionReputation("witnesses"), 40,
+        "repeating the same public accusation cannot stack faction penalties");
     assert.equal(memory.getAccusations("ex_wife").length, 1);
     assert.equal(published.length, 1, "only the verified and first accusation seeds a rumor");
     assert.equal(published[0].npcId, "ex_wife");
