@@ -3,6 +3,8 @@ class ReputationSystem {
         this.reputation = 50;        // 0-100 (старт: нейтрально)
         this.npcRelations = {};      // Отношения с каждым NPC: -10 до 10
         this.actions = [];           // История действий
+        this.factionReputation = { police: 50, press: 50, residents: 50, witnesses: 50, underworld: 50 };
+        this.factionActionIds = [];
         this.title = this._getTitle();
     }
     
@@ -181,7 +183,10 @@ class ReputationSystem {
         return {
             reputation: this.reputation,
             npcRelations: { ...this.npcRelations },
-            title: this.title
+            title: this.title,
+            factionReputation: { ...this.factionReputation },
+            factionActionIds: [...this.factionActionIds],
+            actions: this.actions.map(action => ({ ...action }))
         };
     }
     
