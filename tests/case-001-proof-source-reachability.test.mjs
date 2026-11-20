@@ -20,7 +20,10 @@ function loadCaseOne() {
         "assets/data/cases/case-001/locations.js",
         "assets/data/cases/case-001/objects.js",
         "assets/data/cases/case-001/dialogues/housekeeper.js",
-        "assets/data/cases/case-001/dialogues/porter.js"
+        "assets/data/cases/case-001/dialogues/porter.js",
+        "assets/data/cases/case-001/dialogues/coroner.js",
+        "assets/data/cases/case-001/dialogues/elias.js",
+        "assets/data/cases/case-001/dialogues/wife.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
@@ -28,7 +31,10 @@ function loadCaseOne() {
         caseData: vm.runInContext("CASE_001", context),
         dialogues: [
             vm.runInContext("DIALOGUE_HOUSEKEEPER", context),
-            vm.runInContext("DIALOGUE_PORTER", context)
+            vm.runInContext("DIALOGUE_PORTER", context),
+            vm.runInContext("DIALOGUE_CORONER", context),
+            vm.runInContext("DIALOGUE_ELIAS", context),
+            vm.runInContext("DIALOGUE_WIFE", context)
         ],
         locations: registry.location,
         object: registry.object
@@ -173,4 +179,71 @@ test("case one dialogue prerequisites always reference obtainable evidence or an
             }
         }
     }
+});
+
+
+function reachableDialogueNodes(dialogue) {
+    const nodes = dialogue.tree?.nodes || {};
+    const queue = [dialogue.tree?.start];
+    for (const rule of dialogue.tree?.entryRules || []) {
+        if (rule?.nodeId) queue.push(rule.nodeId);
+    }
+    for (const collection of ["evidenceReactions", "contradictionReactions"]) {
+        for (const reaction of Object.values(dialogue[collection] || {})) {
+            for (const answer of reaction?.answers || []) {
+                if (answer?.nextNode) queue.push(answer.nextNode);
+            }
+        }
+    }
+
+    const visited = new Set();
+    while (queue.length) {
+        const nodeId = queue.shift();
+        if (!nodeId || visited.has(nodeId) || !nodes[nodeId]) continue;
+        visited.add(nodeId);
+        for (const answer of nodes[nodeId].answers || []) {
+            if (answer?.nextNode && !visited.has(answer.nextNode)) queue.push(answer.nextNode);
+        }
+    }
+    return visited;
+}
+
+test("every case one dialogue node is reachable from its start or an explicit entry point", () => {
+    const { dialogues } = loadCaseOne();
+    const unreachable = [];
+
+    for (const dialogue of dialogues) {
+        const reachable = reachableDialogueNodes(dialogue);
+        for (const nodeId of Object.keys(dialogue.tree?.nodes || {})) {
+            if (!reachable.has(nodeId)) unreachable.push(`${dialogue.id}/${nodeId}`);
+        }
+    }
+
+    assert.deepEqual(unreachable, [],
+        `Case-one dialogue contains nodes with no route from a start/entry point: ${unreachable.join(", ")}`);
+});
+
+test("case one dialogue entry points and answer targets all resolve to existing nodes", () => {
+    const { dialogues } = loadCaseOne();
+    const errors = [];
+
+    for (const dialogue of dialogues) {
+        const nodes = dialogue.tree?.nodes || {};
+        const targets = [
+            ...(dialogue.tree?.entryRules || []).map(rule => rule?.nodeId),
+            ...Object.values(nodes).flatMap(node => (node.answers || []).map(answer => answer?.nextNode)),
+            ...["evidenceReactions", "contradictionReactions"].flatMap(collection =>
+                Object.values(dialogue[collection] || {}).flatMap(reaction =>
+                    (reaction?.answers || []).map(answer => answer?.nextNode)
+                )
+            )
+        ];
+
+        if (!nodes[dialogue.tree?.start]) errors.push(`${dialogue.id} has a missing start node`);
+        for (const target of targets) {
+            if (target && !nodes[target]) errors.push(`${dialogue.id} points to missing node ${target}`);
+        }
+    }
+
+    assert.deepEqual(errors, []);
 });
