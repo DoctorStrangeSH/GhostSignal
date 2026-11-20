@@ -34,31 +34,17 @@ class LocationIntro {
     }
 
     _showIntro(location, intro) {
-        const modalBody = document.getElementById('modal-body');
-        const modalTitle = document.getElementById('modal-title');
-        const modalFooter = document.getElementById('modal-footer');
-
-        if (!modalBody || !modalTitle || !modalFooter) return;
-
-        modalTitle.innerHTML = `${location.icon || '📍'} ${location.name}`;
-        modalBody.innerHTML = `
-            <p style="font-family: var(--font-serif); font-size: 15px; line-height: 1.8; font-style: italic; color: var(--text-primary);">
-                ${intro}
-            </p>
-        `;
-        modalFooter.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ОСМОТРЕТЬСЯ</button>';
-
-        const modalElement = document.getElementById('universal-modal');
-        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-        modal.show();
-
-        // При закрытии — убираем затемнение
-        modalElement.addEventListener('hidden.bs.modal', () => {
-            document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        }, { once: true });
+        // Use the shared modal pipeline so location intros respect the same
+        // transition queue as dialogue, evidence and narrative windows.
+        events.emit('modal:show', {
+            title: `${location.icon || '📍'} ${location.name}`,
+            body: `
+                <p style="font-family: var(--font-serif); font-size: 15px; line-height: 1.8; font-style: italic; color: var(--text-primary);">
+                    ${intro}
+                </p>
+            `,
+            footer: '<button class="terminal-btn" data-bs-dismiss="modal">ОСМОТРЕТЬСЯ</button>'
+        });
     }
 
     _getIntro(locationId) {
