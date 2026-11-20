@@ -929,8 +929,8 @@ Next: implement an explicit, case-authored route graph (edges with travel minute
 - `DialogueEngine` serializes the current node and transcript and restores only if the dialogue/NPC/node identifiers resolve against authored game data. Dynamic evidence and contradiction reactions rebuild their answer lists from trusted dialogue definitions.
 - Restore does not re-run dialogue effects, duplicate NPC memory visits, or advance game time. CallInterface restores the connected conversation UI without ringing.
 - Player answers and evidence/contradiction prompts are included in the transcript. NPC call/chat now resolves case-specific dialogue overrides, including case-002's bartender.
-- Automated validation: **531/531 tests PASS**, syntax 110 JS files PASS, game-data validation PASS. Latest Quality checks run: `44801778381` for the previous dialogue transcript commit; the follow-up graph-history correction is awaiting its own CI run.
-- Visual smoke is still running for the latest code; browser reload scenarios remain a manual verification item.
+- Automated validation: **531/531 tests PASS**, syntax 110 JS files PASS, game-data validation PASS (Quality checks run `44801778381`).
+- Visual smoke: PASS (run `44801778067`). Browser reload scenarios remain a manual verification item.
 - Work remains on branch `feat/save-schema-migrations`; PR #128 remains open; `main` is untouched.
 
 Next: finish CI/Visual smoke, then manually verify reload during a normal question, an evidence reaction, and case-002 bartender dialogue. After that, proceed to cross-case state isolation and save migration recovery checks.
