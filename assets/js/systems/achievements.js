@@ -48,8 +48,8 @@ class AchievementSystem {
                 icon: '🦉', rarity: 'common', criteria: { type: 'night_time', startHour: 0, endHour: 5 }
             },
             {
-                id: 'social_detective', name: 'Душа компании', description: 'Поговорите со всеми свидетелями дела',
-                icon: '💬', rarity: 'uncommon', criteria: { type: 'manual' }
+                id: 'social_detective', name: 'Душа компании', description: 'Поговорите с каждым участником расследования',
+                icon: '💬', rarity: 'uncommon', criteria: { type: 'all_case_npcs_interviewed' }
             },
             {
                 id: 'speedy', name: 'Быстрый детектив', description: 'Раскройте дело менее чем за 30 игровых минут',
@@ -77,10 +77,29 @@ class AchievementSystem {
                 const caseId = data?.caseId || data?.caseData?.id;
                 if (!caseId) return;
                 this.progress.activeCase = caseId;
+                this.progress.activeCaseDialogueNpcIds = [];
                 const time = this.services.gameTime?.toJSON?.() || this.progress.gameTime || data.caseData?.startTime;
                 const absolute = this._absoluteGameMinute(time);
                 this.progress.activeRunStartedGameMinute = absolute;
                 this._syncProgress();
+            }),
+            this.events.on('dialogue:completed', data => {
+                const caseId = this.progress?.activeCase;
+                const caseData = caseId && this.caseDefinitions.get(caseId);
+                const npcId = data?.npcId;
+                const roster = Array.isArray(caseData?.npcs) ? caseData.npcs : [];
+                if (!caseId || !npcId || !roster.includes(npcId)) return;
+                const completed = Array.isArray(this.progress.activeCaseDialogueNpcIds)
+                    ? this.progress.activeCaseDialogueNpcIds : [];
+                if (!completed.includes(npcId)) {
+                    completed.push(npcId);
+                    this.progress.activeCaseDialogueNpcIds = completed;
+                    this._syncProgress();
+                    this.events?.emit('achievement:progress_changed', {
+                        caseId, dialogueNpcIds: [...completed]
+                    });
+                }
+                this._checkAllCaseNpcConversations(caseId);
             }),
             this.events.on('inventory:changed', data => {
                 if (data?.action !== 'add' || !this.progress?.activeCase) return;
@@ -143,6 +162,8 @@ class AchievementSystem {
         }
         const evidence = this._checkAllCaseEvidence(caseId);
         if (evidence) unlocked.push(this.records.all_evidence);
+        const conversations = this._checkAllCaseNpcConversations(caseId);
+        if (conversations) unlocked.push(this.records.social_detective);
         return unlocked;
     }
 
@@ -150,6 +171,19 @@ class AchievementSystem {
         if (!time || !Number.isFinite(Number(time.hour)) || !Number.isFinite(Number(time.minute))) return null;
         const day = Number.isFinite(Number(time.day)) ? Math.max(1, Number(time.day)) : 1;
         return (day - 1) * 1440 + Number(time.hour) * 60 + Number(time.minute);
+    }
+
+    _checkAllCaseNpcConversations(caseId) {
+        const caseData = this.caseDefinitions.get(caseId);
+        const roster = Array.isArray(caseData?.npcs) ? caseData.npcs : [];
+        const completed = Array.isArray(this.progress?.activeCaseDialogueNpcIds)
+            ? this.progress.activeCaseDialogueNpcIds : [];
+        if (roster.length === 0 || !roster.every(id => completed.includes(id))) return false;
+        return Boolean(this.unlock('social_detective', {
+            caseData: { id: caseId },
+            context: 'all_case_characters_interviewed',
+            interviewedNpcIds: [...completed]
+        }));
     }
 
     _checkAllCaseEvidence(caseId) {
