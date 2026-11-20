@@ -23,10 +23,10 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 
 ## In progress
 
-- [ ] Obtain a passing Visual smoke run after the modal-queue test update.
+- [x] Obtain passing Quality checks and Visual smoke runs on the updated branch HEAD.
 - [ ] Review all 129 branch refs against merged PRs and unique commits.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
-- [ ] Review asset usage and duplicate/obsolete documentation before deleting anything.
+- [ ] Complete source-level asset reference audit and review duplicate/obsolete documentation before deleting anything.
 - [ ] Complete a clean install/build/test run from the documented setup.
 
 ## Branch cleanup rules
@@ -39,7 +39,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 
 ## Follow-up
 
-After the Visual smoke run is green, perform branch pruning and the deeper asset/documentation audit as separate, reviewable cleanup steps. Update this checklist with exact counts and links rather than marking unverified work complete.
+With both CI workflows green, continue branch pruning and the deeper asset/documentation audit as separate, reviewable cleanup steps. Update this checklist with exact counts and links rather than marking unverified work complete.
 
 ## Asset and content inventory (2026-11-20)
 
@@ -54,3 +54,9 @@ After the Visual smoke run is green, perform branch pruning and the deeper asset
 
 - Commit `b94d0498792ce2305ee7fc94ebfed43a926eb516`: Quality checks — PASS; Visual smoke — PASS.
 - The modal-queue smoke test now waits for the queue and Bootstrap backdrop/body state to settle instead of relying on a fixed number of dismissals.
+
+
+## Reproducible dependency installation
+
+- `package-lock.json` is currently absent. The quality workflow does not install npm dependencies, while the visual workflow installs a pinned Playwright version with lockfile generation disabled.
+- Before release, decide whether to add and commit a lockfile for the runtime/development dependency set, then use `npm ci` in workflows that install project dependencies. Do not generate or claim a lockfile until it has been produced and validated with the project's Node/npm version.
