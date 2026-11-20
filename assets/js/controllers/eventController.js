@@ -14,6 +14,8 @@ class EventController {
         this.pendingModalData = null;
         this.modalElement = null;
         this.modalHiddenHandler = null;
+        this.modalHideHandler = null;
+        this.modalIsHiding = false;
     }
 
     _subscribe(name, handler) {
@@ -75,18 +77,21 @@ class EventController {
         // во время перехода предыдущего окна, оставляя backdrop без владельца.
         this.modalElement = document.getElementById('universal-modal');
         if (this.modalElement && !this.modalHiddenHandler) {
+            this.modalHideHandler = () => { this.modalIsHiding = true; };
             this.modalHiddenHandler = () => {
+                this.modalIsHiding = false;
                 if (!this.pendingModalData) return;
                 const next = this.pendingModalData;
                 this.pendingModalData = null;
                 this._showModal(next);
             };
+            this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
         }
         on('modal:show', (data) => {
             if (!this.modalElement) this.modalElement = document.getElementById('universal-modal');
             if (!this.modalElement) return;
-            if (this.modalElement.classList.contains('show')) {
+            if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
                 // Keep the newest request. Its contents are applied only after
                 // the current Bootstrap hide transition has fully completed.
                 this.pendingModalData = data;
@@ -489,10 +494,15 @@ class EventController {
     }
 
     dispose() {
+        if (this.modalElement && this.modalHideHandler) {
+            this.modalElement.removeEventListener('hide.bs.modal', this.modalHideHandler);
+        }
         if (this.modalElement && this.modalHiddenHandler) {
             this.modalElement.removeEventListener('hidden.bs.modal', this.modalHiddenHandler);
         }
+        this.modalHideHandler = null;
         this.modalHiddenHandler = null;
+        this.modalIsHiding = false;
         this.pendingModalData = null;
         this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
