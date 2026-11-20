@@ -163,3 +163,18 @@ test("SaveController never overwrites an unsupported future save", () => {
     assert.equal(progress.schemaVersion, 7);
     assert.equal(writes, 0);
 });
+
+
+test("SaveController skips snapshot serialization while migration recovery is required", () => {
+    let serialized = 0;
+    let writes = 0;
+    const app = {
+        progress: { activeCase: "case-001" },
+        saveBlocked: true,
+        gameTime: { toJSON() { serialized++; return {}; } }
+    };
+    const controller = new (loadSaveController())(app, { saveProgress() { writes++; return true; } });
+    assert.equal(controller.quickSave(), false);
+    assert.equal(serialized, 0);
+    assert.equal(writes, 0);
+});
