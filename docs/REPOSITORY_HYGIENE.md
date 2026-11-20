@@ -78,5 +78,6 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Found and fixed a failure path in `SyncManager.saveEverywhere()`: previously it could proceed to cloud upload even if `storage.saveProgress()` returned false.
 - [x] Cloud upload now stops immediately when local persistence fails or the persisted snapshot cannot be read back.
 - [x] Added a regression test proving that local write failure returns false and performs zero cloud writes.
-- [ ] Confirm the new regression test and browser smoke on commit `dde279b4198d6bd7049f4b847011c266d060af50`.
+- [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 510/510 tests passed.
+- [ ] Confirm Visual smoke on the same commit.
 - [ ] Generate and validate a real `package-lock.json` with Node 20/npm; do not hand-author dependency resolution metadata.
