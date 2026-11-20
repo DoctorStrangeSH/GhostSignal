@@ -74,3 +74,47 @@ test("future versions can be added as isolated sequential migrations", () => {
     assert.equal(result.data.newFeatureData.enabled, true);
     assert.equal(result.data.schemaVersion, 3);
 });
+
+
+test("migration backup preserves the exact legacy snapshot before conversion", () => {
+    const { Manager, version } = loadManager();
+    const original = { solvedCases: ["case-001"], activeCase: "case-002", extensionData: { keep: true } };
+    let stored = null;
+    const storage = { set(key, value) { assert.equal(key, "save_migration_backup"); stored = value; return true; } };
+    const manager = new Manager(version);
+    assert.equal(manager.createBackup(storage, original), true);
+    const migrated = manager.migrate(original);
+    assert.equal(migrated.ok, true);
+    assert.equal(stored.schemaVersion, 0);
+    assert.deepEqual(JSON.parse(JSON.stringify(stored.data)), original);
+    assert.equal(original.schemaVersion, undefined);
+});
+
+test("migration backup failure is reported and can block applying a migration", () => {
+    const { Manager, version } = loadManager();
+    const manager = new Manager(version);
+    const original = { solvedCases: ["case-001"] };
+    const storage = { set() { return false; } };
+    assert.equal(manager.createBackup(storage, original), false);
+    assert.equal(original.schemaVersion, undefined);
+});
+
+test("latest migration backup can restore the previous save without mutating the backup", () => {
+    const { Manager } = loadManager();
+    const original = { schemaVersion: 0, activeCase: "case-001", customData: { note: "keep" } };
+    const backup = { schemaVersion: 0, createdAt: 123, data: original };
+    let restored = null;
+    const storage = {
+        get(key) { assert.equal(key, "save_migration_backup"); return backup; },
+        saveProgress(data) { restored = data; return true; }
+    };
+    assert.equal(new Manager(1).restoreBackup(storage), true);
+    assert.deepEqual(JSON.parse(JSON.stringify(restored)), original);
+    assert.deepEqual(backup.data, original);
+});
+
+test("restore refuses missing or malformed backups", () => {
+    const { Manager } = loadManager();
+    const storage = { get() { return { data: [] }; }, saveProgress() { throw new Error("must not write"); } };
+    assert.equal(new Manager(1).restoreBackup(storage), false);
+});
