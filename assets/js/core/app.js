@@ -196,7 +196,8 @@ class App {
         this.jukebox = new Jukebox();
         this.ambianceDetails = new AmbianceDetails(this.gameTime, this.weatherSystem);
         this.tutorialSystem = new TutorialSystem();
-        this.achievementSystem = new AchievementSystem(); this.achievementSystem.load();
+        this.achievementSystem = new AchievementSystem(this.progress);
+        this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
         this.difficultySystem = new DifficultySystem();
         this.interrogationSystem = InterrogationSystem.fromJSON(this.progress.interrogationData);
         this.alternateEndings = new AlternateEndings();
@@ -241,7 +242,8 @@ class App {
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
             boardData: null, notesData: null, trackerData: null, reputationData: null,
-            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null
+            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null,
+            achievementData: { version: 1, unlocked: [], records: [] }
         };
     }
 
@@ -301,7 +303,7 @@ class App {
             <hr><h4>📖 Обучение</h4><button id="btn-restart-tutorial" class="terminal-btn">🔄 ПРОЙТИ ЗАНОВО</button>
             <hr><h4>🔄 Сброс</h4><button id="btn-reset-case" class="terminal-btn" style="border-color:var(--accent-red-bright);">🗑️ ДЕЛО ЗАНОВО</button>
             <button id="btn-reset-all" class="terminal-btn" style="border-color:var(--accent-red-bright);">💀 СБРОСИТЬ ВСЁ</button>
-            <hr><h4>🏆 Достижения</h4><div class="achievements-grid">${this.achievementSystem.getAll().map(a => `<div class="achievement-card ${a.unlocked?'unlocked':'locked'}"><span class="achievement-icon">${a.unlocked?a.icon:'🔒'}</span><div class="achievement-info"><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.description}</div></div><span class="achievement-rarity rarity-${a.rarity}">${a.rarity}</span></div>`).join('')}</div>
+            <hr><h4>🏆 Достижения · ${this.achievementSystem.getSummary().unlocked}/${this.achievementSystem.getSummary().total}</h4><div class="achievements-grid">${this.achievementSystem.getAll().map(a => `<div class="achievement-card ${a.unlocked?'unlocked':'locked'}"><span class="achievement-icon">${a.unlocked?a.icon:'🔒'}</span><div class="achievement-info"><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.description}</div></div><span class="achievement-rarity rarity-${a.rarity}">${a.rarity}</span></div>`).join('')}</div>
         `;
         footer.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ</button>';
         const modal = new bootstrap.Modal(document.getElementById('universal-modal')); modal.show();
