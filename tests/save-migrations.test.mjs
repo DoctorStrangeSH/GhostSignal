@@ -181,7 +181,7 @@ function createSaveController({ failAt = null, saveResult = true, saveBlocked = 
     }
     const context = vm.createContext({ console, events: eventBus, SAVE_SCHEMA_VERSION: 1 });
     const source = readFileSync(resolve(root, "assets/js/controllers/saveController.js"), "utf8");
-    vm.runInContext(source + "\\nglobalThis.SaveControllerExport = SaveController;", context);
+    vm.runInContext(source + "\nglobalThis.SaveControllerExport = SaveController;", context);
     return { controller: new context.SaveControllerExport(app, storage, eventBus), app, calls, emitted, names };
 }
 
