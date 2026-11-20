@@ -54,12 +54,7 @@ registerData('npc', {
         canGiveEvidence: ["matchbox"],
         canGiveInsights: ["bar_meeting_details", "suspicious_couple", "blackwood_wanted_to_disappear"],
         specialConditions: [
-            {
-                id: "case_two_bartender_dialogue",
-                condition: "case:case-002",
-                dialogueId: "dialogue-bartender-case2"
-            },
-            {
+{
                 id: "after_finding_note",
                 condition: "hasItem:hidden_note",
                 dialogueId: "dialogue-bartender"
