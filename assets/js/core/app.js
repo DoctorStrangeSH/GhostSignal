@@ -237,6 +237,19 @@ class App {
 
         this._bindEvents();
 
+        // Restore an interrupted conversation only after all case systems and
+        // event listeners are ready. A snapshot from another case is discarded.
+        if (this.progress.dialogueData) {
+            const savedDialogue = this.progress.dialogueData;
+            const sameCase = savedDialogue.caseId === (this.progress.activeCase || null);
+            const restored = sameCase && this.callInterface?.restoreActiveDialogue(savedDialogue);
+            if (!restored) {
+                this.progress.dialogueData = null;
+                this._quickSave();
+            }
+        }
+
+
         // Reconcile already-collected clues after listeners are attached.
         if (this.caseManager?.currentCase) this.evidenceChainSystem?.checkChains();
 
@@ -252,7 +265,7 @@ class App {
             activeRunId: null, activeRunStartedGameMinute: null, activeCaseDialogueNpcIds: [], lastCompletedRunId: null, playthroughSequence: 0, completedRunIds: [],
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
-            boardData: null, notesData: null, trackerData: null, reputationData: null,
+            boardData: null, notesData: null, trackerData: null, reputationData: null, dialogueData: null,
             stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null,
             achievementData: { version: 1, unlocked: [], records: [] }
         };
