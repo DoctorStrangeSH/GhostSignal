@@ -54,9 +54,15 @@ function reachableCaseObjects(caseData, locations, objects) {
                 : object.interactions?.unlock;
             for (const result of [examine, unlock]) {
                 if (!result) continue;
-                if (result.spawnsItem && !items.has(result.spawnsItem)) {
-                    items.add(result.spawnsItem);
-                    changed = true;
+                if (result.spawnsItem) {
+                    if (!items.has(result.spawnsItem)) {
+                        items.add(result.spawnsItem);
+                        changed = true;
+                    }
+                    if (objects[result.spawnsItem] && !reachable.has(result.spawnsItem)) {
+                        reachable.add(result.spawnsItem);
+                        changed = true;
+                    }
                 }
                 if (result.revealsObject && !reachable.has(result.revealsObject)) {
                     reachable.add(result.revealsObject);
