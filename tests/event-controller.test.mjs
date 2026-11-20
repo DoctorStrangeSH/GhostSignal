@@ -674,3 +674,64 @@ test("a replay gets a new run ID and ending while permanent rewards remain first
     assert.deepEqual([...app.progress.completedRunIds], ["case-002:run-2"]);
     controller.dispose();
 });
+
+
+test("EventController queues a second narrative modal until the first Bootstrap transition is hidden", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const modalElement = {
+        classList: {
+            contains(name) { return classes.has(name); },
+            add(name) { classes.add(name); },
+            remove(name) { classes.delete(name); }
+        },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name).add(handler);
+        },
+        removeEventListener(name, handler) { listeners.get(name)?.delete(handler); },
+        dispatch(name) {
+            for (const handler of listeners.get(name) || []) handler();
+        }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    let showCalls = 0;
+    const EventController = loadEventController({
+        document: { getElementById: id => elements[id] || null },
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    return { show() { showCalls++; classes.add("show"); } };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", { title: "Первое окно", body: "Текст 1", footer: "Закрыть" });
+    assert.equal(showCalls, 1);
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    eventBus.emit("modal:show", { title: "Второе окно", body: "Текст 2", footer: "Продолжить" });
+    assert.equal(showCalls, 1, "Bootstrap must not be asked to show a modal while another is open");
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+    assert.equal(showCalls, 2);
+    assert.equal(classes.has("show"), true);
+    assert.equal(elements["modal-title"].innerHTML, "Второе окно");
+    assert.equal(elements["modal-body"].innerHTML, "Текст 2");
+
+    controller.dispose();
+    assert.equal(listeners.get("hidden.bs.modal").size, 0);
+});
