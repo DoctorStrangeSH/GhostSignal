@@ -173,7 +173,7 @@ class ProgressTracker {
     
     // Среднее время на дело
     _getAverageTime() {
-        const total = this.stats.totalCasesSolved + this.stats.totalCasesFailed;
+        const total = (this.stats.totalSolvedRuns || this.stats.totalCasesSolved) + this.stats.totalCasesFailed;
         if (total === 0) return 0;
         return Math.floor(this.stats.totalTimeSpent / total);
     }
