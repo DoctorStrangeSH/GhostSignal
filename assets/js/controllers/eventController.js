@@ -58,7 +58,7 @@ class EventController {
             }
         }
 
-        app.progress.reputationData = reputation.toJSON?.() || app.progress.reputationData;
+        if (app.progress) app.progress.reputationData = reputation.toJSON?.() || app.progress.reputationData;
     }
 
     bind() {
