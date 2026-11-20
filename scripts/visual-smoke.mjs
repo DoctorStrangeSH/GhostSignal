@@ -81,6 +81,22 @@ try {
         await page.locator('#notifications-container .notification').first()
             .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
+        // Exercise a real investigation path through rendered scene objects.
+        // The clue must enter the inventory and grant its authored insight;
+        // examining the bed in room 304 must reveal a second, spawned clue.
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('hotel_grand'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Журнал регистрации' }).click();
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('guest_book') &&
+            window.app?.inventory?.hasInsight('missing_page'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await page.locator('#universal-modal.show').waitFor({ state: 'detached' });
+
+        await page.locator('#scene-container .scene-sublocation-btn').filter({ hasText: 'Номер 304' }).click();
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Кровать' }).click();
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
+
         for (const [tabId, filename, contentSelector] of [
             ['tab-npcs', 'contacts', '#tab-npcs.active .npc-card'],
             ['tab-board', 'board', '#tab-board.active .board-canvas'],
