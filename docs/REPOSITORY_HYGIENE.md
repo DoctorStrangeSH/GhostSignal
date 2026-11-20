@@ -7,7 +7,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - Default branch: `main`.
 - Repository tree inspected on `feat/save-schema-migrations`: 230 tracked files.
 - Branch inventory: 129 branch refs (10 `design/*`, 75 `feat/*`, 31 `fix/*`, 11 `test/*`, plus `main` and `refactor/*`).
-- Pull requests: #128 is open; the reviewed recent PR history contains merged feature, design, fix and test work. Closed-but-unmerged PRs #123 and #61 must not be treated as merged.
+- Pull requests: 128 total. 125 are merged, #128 is open, and #123 plus #61 are closed without merge. The 125 merged PR head branches are cleanup candidates; preserve the two closed-but-unmerged branches and the open PR branch.
 - No tracked `node_modules`, generated build directories, coverage output, Playwright output or local environment files were found in the inspected tree.
 - No large tracked blobs over 1 MB were found.
 - `main` was not modified during this audit. Cleanup and CI work is being staged on `feat/save-schema-migrations`.
