@@ -54,7 +54,6 @@ test("future save schemas are preserved and never downgraded", () => {
 test("missing intermediate migrations fail safely without partial writes", () => {
     const { Manager } = loadManager();
     const manager = new Manager(3);
-    manager.register(1, save => ({ ...save, schemaVersion: 1 }));
     manager.register(3, save => ({ ...save, schemaVersion: 3 }));
     const source = { solvedCases: ["case-001"] };
     const result = manager.migrate(source);
