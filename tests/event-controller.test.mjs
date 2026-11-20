@@ -587,7 +587,7 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
     const bus = createEventBus();
     const calls = [];
     const app = {
-        progress: { activeCase: "case-002", solvedCases: [], failedCases: [] },
+        progress: { activeCase: "case-002", activeRunId: "case-002:run-1", solvedCases: [], failedCases: [] },
         caseManager: {
             currentCase: { id: "case-002", title: "Последний заказ" },
             caseState: "active",
@@ -601,7 +601,7 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
         alternateEndings: {
             determineEnding() { calls.push("ending"); return { title: "Полная правда", bonusReputation: 5, unlocks: ["archive"] }; }
         },
-        progressTracker: { caseSolved() { calls.push("stats"); }, toJSON: () => ({ solved: 1 }) },
+        progressTracker: { activeRunId: "case-002:run-1", caseSolved() { calls.push("stats"); this.activeRunId = null; }, toJSON: () => ({ solved: 1 }) },
         reputationSystem: { caseSolved() { calls.push("reputation"); }, addReputation() { calls.push("bonus"); }, toJSON: () => ({ reputation: 55 }) },
         locationManager: { unlockLocation(id) { calls.push("unlock:" + id); } },
         achievementSystem: { checkAll() { calls.push("achievements"); } },
