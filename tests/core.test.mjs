@@ -724,3 +724,32 @@ test("AchievementSystem rejects malformed case achievement definitions", () => {
     assert.equal(system.register({ id: "valid", name: "Updated", criteria: { type: "case_solved", caseId: "case-x" } }), true);
     assert.equal(system.getAll().filter(item => item.id === "valid").length, 1);
 });
+
+
+test("SaveController includes achievement unlock records in the same durable snapshot", () => {
+    const snapshots = [];
+    const SaveController = loadClass("assets/js/controllers/saveController.js", "SaveController", {});
+    const achievementData = {
+        version: 1,
+        unlocked: ["first_case"],
+        records: [{ id: "first_case", unlockedAt: "2026-11-20T10:00:00.000Z", caseId: "case-001", runId: "run-1" }]
+    };
+    const app = {
+        progress: { activeCase: null },
+        saveBlocked: false,
+        gameTime: { toJSON: () => ({ hour: 8 }) },
+        achievementSystem: { toJSON: () => achievementData }
+    };
+    const storage = {
+        saveProgress(snapshot) {
+            snapshots.push(JSON.parse(JSON.stringify(snapshot)));
+            return true;
+        },
+        loadProgress: () => null
+    };
+    const controller = new SaveController(app, storage);
+
+    assert.equal(controller.quickSave(), true);
+    assert.deepEqual(snapshots[0].achievementData, achievementData);
+    assert.deepEqual(app.progress.achievementData, achievementData);
+});
