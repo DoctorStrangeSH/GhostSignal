@@ -534,8 +534,8 @@ test("SyncManager preserves an active local case when cloud progress is newer", 
     await manager.syncFromCloud();
 
     assert.equal(state.progress.activeCase, "case-001");
-    assert.deepEqual(state.cloud_conflict_backup.cloud, cloudData);
-    assert.deepEqual(state.cloud_conflict_backup.local, { activeCase: "case-001", solvedCases: [], _sync: { revision: 2, updatedAt: 100 } });
+    assert.equal(JSON.stringify(state.cloud_conflict_backup.cloud), JSON.stringify(cloudData));
+    assert.equal(JSON.stringify(state.cloud_conflict_backup.local), JSON.stringify({ activeCase: "case-001", solvedCases: [], _sync: { revision: 2, updatedAt: 100 } }));
     assert.equal(manager.hasConflict, true);
     assert.equal(cloudWrites, 0);
     assert.ok(emitted.some(event => event.name === "sync:conflict"));
