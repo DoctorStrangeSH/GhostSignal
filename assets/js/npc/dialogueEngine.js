@@ -464,8 +464,6 @@ class DialogueEngine {
         };
 
         this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: `Прошу взглянуть на улику: ${object?.name || evidenceId}.` });
-        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.' });
-        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Есть независимая улика, противоречащая моей версии. Помогите уточнить, что вы действительно знаете.' });
         this.currentNode = node;
         this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
         this._recordNodeMemory(node);
@@ -506,6 +504,7 @@ class DialogueEngine {
             answers: reaction?.answers || this.currentNode?.answers || []
         };
 
+        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.' });
         this.currentNode = node;
         this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
         this._recordNodeMemory(node);
@@ -535,6 +534,7 @@ class DialogueEngine {
         const node = { id: `causal_question_${prepared.hypothesisId}`, speaker: 'npc',
             text: `Вы спрашиваете, как объяснить факты, не согласующиеся с версией «${prepared.title}». ${fallback.text} Мне нужно уточнить обстоятельства; одно совпадение ещё не говорит, что события связаны.`,
             mood: fallback.mood, answers: this.currentNode?.answers || [] };
+        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Есть независимая улика, противоречащая моей версии. Помогите уточнить, что вы действительно знаете.' });
         this.currentNode = node;
         this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
         this._recordNodeMemory(node);
