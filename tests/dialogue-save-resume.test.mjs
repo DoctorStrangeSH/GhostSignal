@@ -134,6 +134,7 @@ test("invalid, unknown, and cross-NPC dialogue snapshots are rejected without pa
 
 test("reset clears all serializable active dialogue state", () => {
     const { engine, dialogue } = createEngineHarness();
+    engine.memoryService = null;
     engine.currentDialogue = dialogue;
     engine.currentStableNodeId = "greeting";
     engine.currentNode = { id: "greeting", text: "Привет." };
