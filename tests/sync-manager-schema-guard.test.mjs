@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function createSyncManager({ local = null, cloud = null, writesBlocked = () => false } = {}) {
+function createSyncManager({ local = null, cloud = null, writesBlocked = () => false, cloudSaveResult = true, localSaveResult = true } = {}) {
     const values = {};
     const calls = { cloudLoads: 0, cloudSaves: 0, localSaves: 0 };
     const storage = {
@@ -15,13 +15,13 @@ function createSyncManager({ local = null, cloud = null, writesBlocked = () => f
         set(key, value) { values[key] = value; return true; },
         remove(key) { delete values[key]; },
         loadProgress() { return local; },
-        saveProgress(value) { calls.localSaves++; local = value; return true; }
+        saveProgress(value) { calls.localSaves++; if (!localSaveResult) return false; local = value; return true; }
     };
     const events = { on() {}, emit() {} };
     const auth = { isUserLoggedIn: () => true };
     const cloudStorage = {
         async loadFromCloud() { calls.cloudLoads++; return cloud; },
-        async saveToCloud() { calls.cloudSaves++; return true; }
+        async saveToCloud(value) { calls.cloudSaves++; calls.lastCloudSave = value; return cloudSaveResult; }
     };
     const context = vm.createContext({ console, events, SAVE_SCHEMA_VERSION: 1 });
     const migrationSource = readFileSync(resolve(root, "assets/js/core/saveMigrations.js"), "utf8");
@@ -70,4 +70,51 @@ test("cloud sync and conflict resolution stay disabled when backup creation bloc
     assert.equal(calls.localSaves, 0);
     assert.equal(await manager.saveEverywhere({ schemaVersion: 1 }), false);
     assert.equal(await manager.resolveConflict("cloud"), false);
+});
+
+
+test("different local and cloud saves are preserved together even when local has no active case", async () => {
+    const local = { schemaVersion: 1, activeCase: null, solvedCases: ["case-a"], _sync: { revision: 2, updatedAt: 100 } };
+    const cloud = { schemaVersion: 1, activeCase: null, solvedCases: ["case-b"], _sync: { revision: 3, updatedAt: 200 } };
+    const { manager, calls, values } = createSyncManager({ local, cloud });
+    await manager.syncFromCloud();
+    assert.equal(calls.localSaves, 0);
+    assert.equal(calls.cloudSaves, 0);
+    assert.deepEqual(values.cloud_conflict_backup.local, local);
+    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+    assert.equal(values.cloud_conflict_backup.version, 1);
+    assert.equal(manager.hasConflict, true);
+    assert.equal(manager.getConflictDetails().local.solvedCases, 1);
+    assert.equal(manager.getConflictDetails().cloud.solvedCases, 1);
+});
+
+test("failed cloud upload keeps both save versions and the conflict unresolved", async () => {
+    const local = { schemaVersion: 1, activeCase: "case-local" };
+    const cloud = { schemaVersion: 1, activeCase: "case-cloud" };
+    const { manager, values } = createSyncManager({ local, cloud, cloudSaveResult: false });
+    await manager.syncFromCloud();
+    assert.equal(await manager.resolveConflict("local"), false);
+    assert.equal(manager.hasConflict, true);
+    assert.deepEqual(values.cloud_conflict_backup.local, local);
+    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+});
+
+test("failed local restore does not clear the conflict backup", async () => {
+    const local = { schemaVersion: 1, activeCase: "case-local" };
+    const cloud = { schemaVersion: 1, activeCase: "case-cloud" };
+    const { manager, values } = createSyncManager({ local, cloud, localSaveResult: false });
+    await manager.syncFromCloud();
+    assert.equal(await manager.resolveConflict("cloud"), false);
+    assert.equal(manager.hasConflict, true);
+    assert.deepEqual(values.cloud_conflict_backup.local, local);
+    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+});
+
+test("legacy cloud-only conflict backups remain resolvable", async () => {
+    const { manager, values } = createSyncManager({ local: { schemaVersion: 1 } });
+    values.cloud_conflict_backup = { schemaVersion: 1, activeCase: "legacy-cloud" };
+    manager.hasConflict = true;
+    assert.equal(manager.getConflictDetails().cloud.activeCase, "legacy-cloud");
+    assert.equal(await manager.resolveConflict("cloud"), true);
+    assert.equal(manager.hasConflict, false);
 });
