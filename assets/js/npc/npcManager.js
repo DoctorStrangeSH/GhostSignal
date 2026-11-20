@@ -167,6 +167,12 @@ class NPCManager {
         const npc = getNPCById(npcId);
         if (!npc) return null;
 
+        // Case-specific dialogue belongs to the case pack, not to a shared
+        // NPC definition authored by another investigation.
+        const caseData = this.currentCaseId ? getCaseById(this.currentCaseId) : null;
+        const caseDialogue = caseData?.npcDialogueOverrides?.[npcId];
+        if (typeof caseDialogue === 'string' && caseDialogue) return caseDialogue;
+
         if (npc.specialConditions) {
             for (const condition of npc.specialConditions) {
                 if (this._checkCondition(condition.condition) && condition.dialogueId) {
