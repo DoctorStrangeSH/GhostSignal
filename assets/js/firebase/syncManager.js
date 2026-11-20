@@ -5,6 +5,11 @@ class SyncManager {
         this.storage = storageManager;
         this.syncInProgress = false;
         this.hasConflict = Boolean(this.storage.get('cloud_conflict_backup'));
+    }
+
+    _isSaveCompatible(data) {
+        if (typeof SaveMigrationManager === 'undefined' || typeof SAVE_SCHEMA_VERSION === 'undefined') return true;
+        return new SaveMigrationManager(SAVE_SCHEMA_VERSION).migrate(data).ok;
 
         this._bindEvents();
     }
@@ -22,11 +27,23 @@ class SyncManager {
     // Синхронизация с сохранением обеих версий при конфликте.
     async syncFromCloud() {
         if (this.syncInProgress) return;
+        const existingLocal = this.storage.loadProgress();
+        if (existingLocal && !this._isSaveCompatible(existingLocal)) {
+            console.warn('Cloud sync paused: local save requires an unavailable migration.');
+            return;
+        }
         this.syncInProgress = true;
 
         try {
             const cloudData = await this.cloudStorage.loadFromCloud();
             const localData = this.storage.loadProgress();
+
+            if (cloudData && !this._isSaveCompatible(cloudData)) {
+                this.storage.set('cloud_conflict_backup', cloudData);
+                this.hasConflict = true;
+                events.emit('sync:conflict', { reason: 'unsupported_cloud_schema' });
+                return;
+            }
 
             if (cloudData) {
                 if (!localData || this._isCloudNewer(cloudData, localData)) {
@@ -60,6 +77,7 @@ class SyncManager {
 
     // Сохранить локально; облако обновляется только если нет неразрешённого конфликта.
     async saveEverywhere(progressData) {
+        if (!this._isSaveCompatible(progressData)) return false;
         this.storage.saveProgress(progressData);
         const localData = this.storage.loadProgress();
 
@@ -77,6 +95,7 @@ class SyncManager {
     async resolveConflict(strategy) {
         const cloudBackup = this.storage.get('cloud_conflict_backup');
         if (!cloudBackup) return false;
+        if (strategy === 'local' && !this._isSaveCompatible(this.storage.loadProgress())) return false;
 
         if (strategy === 'cloud') {
             this.storage.saveProgress(cloudBackup);
