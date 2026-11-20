@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -47,7 +47,14 @@ export function createStaticServer(rootDirectory = process.cwd()) {
             return;
         }
 
-        const pathname = new URL(request.url || '/', 'http://localhost').pathname;
+        let pathname;
+        try {
+            pathname = new URL(request.url || '/', 'http://localhost').pathname;
+        } catch {
+            response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+            response.end('Bad request');
+            return;
+        }
         const filePath = resolvePublicFile(root, pathname);
         if (!filePath) {
             response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -56,9 +63,18 @@ export function createStaticServer(rootDirectory = process.cwd()) {
         }
 
         try {
-            const body = await readFile(filePath);
+            const info = await stat(filePath);
+            const targetPath = info.isDirectory() ? resolve(filePath, 'index.html') : filePath;
+            const [realRoot, realTarget] = await Promise.all([realpath(root), realpath(targetPath)]);
+            const fromRoot = relative(realRoot, realTarget);
+            if (fromRoot === '..' || fromRoot.startsWith('..' + sep) || isAbsolute(fromRoot)) {
+                response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+                response.end('Forbidden');
+                return;
+            }
+            const body = await readFile(realTarget);
             response.writeHead(200, {
-                'Content-Type': MIME_TYPES.get(extname(filePath).toLowerCase()) || 'application/octet-stream',
+                'Content-Type': MIME_TYPES.get(extname(realTarget).toLowerCase()) || 'application/octet-stream',
                 'Content-Length': body.length,
                 'X-Content-Type-Options': 'nosniff',
                 'Cache-Control': 'no-cache'
