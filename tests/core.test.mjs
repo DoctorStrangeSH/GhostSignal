@@ -123,26 +123,31 @@ test("NPCManager selects and restores the correct case-specific bartender dialog
         id: "bartender",
         name: "Joe",
         dialogueId: "dialogue-bartender",
-        specialConditions: [{
-            id: "case-two-dialogue",
-            condition: "case:case-002",
-            dialogueId: "dialogue-bartender-case2"
-        }]
+        specialConditions: []
+    };
+    const cases = {
+        "case-001": { id: "case-001", npcs: ["bartender"] },
+        "case-002": {
+            id: "case-002",
+            npcs: ["bartender"],
+            npcDialogueOverrides: { bartender: "dialogue-bartender-case2" }
+        }
     };
     const getNPCById = id => id === "bartender" ? bartender : null;
+    const getCaseById = id => cases[id] || null;
     const events = { emit() {} };
     const inventory = { hasItem: () => false, hasInsight: () => false, evidence: [] };
     const gameTime = { hour: 20, getFormatted: () => "20:00" };
-    const NPCManager = loadClass("assets/js/npc/npcManager.js", "NPCManager", { getNPCById, events });
+    const NPCManager = loadClass("assets/js/npc/npcManager.js", "NPCManager", { getNPCById, getCaseById, events });
     const manager = new NPCManager(gameTime, inventory);
 
-    manager.loadNPCsForCase({ id: "case-002", npcs: ["bartender"] });
+    manager.loadNPCsForCase(cases["case-002"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
     const restored = NPCManager.fromJSON(manager.toJSON(), gameTime, inventory);
     assert.equal(restored.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
-    restored.loadNPCsForCase({ id: "case-001", npcs: ["bartender"] });
+    restored.loadNPCsForCase(cases["case-001"]);
     assert.equal(restored.getDialogueForNPC("bartender"), "dialogue-bartender");
 });
 
