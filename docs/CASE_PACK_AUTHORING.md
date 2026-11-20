@@ -45,6 +45,7 @@ The existing packs are the reference for exact data shapes. Do not load the temp
 - Keep evidence chains and endings case-owned: each registered chain and ending must carry the matching `caseId`.
 - Case-specific dialogue selection belongs in `CASE_XXX.npcDialogueOverrides`. The key must be an NPC listed in that case; the value must identify a dialogue authored for that same NPC. Do not add a `case:case-XXX` special condition to an NPC definition owned by another investigation.
 - Use existing per-case state namespaces and serializers. Never clear or replace long-term player/NPC profiles when starting a new case.
+- A fresh run must call `LocationManager.beginCase(caseData)`, which resets case-only unlocks and visited locations before applying the new case's default locations. Save restoration must use `setActiveCase()` instead, so the saved map state is preserved.
 
 ## Shared-character rules
 
