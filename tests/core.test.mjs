@@ -801,3 +801,52 @@ test("AchievementScreen renders progress, hides secret requirements and filters 
     assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
     assert.doesNotMatch(container.innerHTML, /Первое дело/);
 });
+
+
+test("AchievementSystem unlocks night and full-board achievements only from real gameplay events", () => {
+    const listeners = new Map();
+    const emitted = [];
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            emitted.push({ name, payload });
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, achievementData: null };
+    const storage = { set() {} };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem(progress, events);
+
+    events.emit("time:changed", { hour: 2, minute: 10 });
+    assert.equal(system.unlocked.includes("night_owl"), false, "time outside an active case must not award the achievement");
+
+    progress.activeCase = "case-001";
+    events.emit("time:changed", { hour: 5, minute: 0 });
+    assert.equal(system.unlocked.includes("night_owl"), false, "dawn is outside the midnight window");
+    events.emit("time:changed", { hour: 2, minute: 10 });
+    assert.equal(system.unlocked.includes("night_owl"), true);
+    assert.equal(system.records.night_owl.caseId, "case-001");
+
+    events.emit("board:updated", {
+        action: "place", caseId: "case-001", filledSlots: 5, totalSlots: 6
+    });
+    assert.equal(system.unlocked.includes("board_master"), false, "a partially filled board is not complete");
+    events.emit("board:updated", {
+        action: "place", caseId: "case-001", filledSlots: 6, totalSlots: 6
+    });
+    assert.equal(system.unlocked.includes("board_master"), true);
+    assert.equal(progress.achievementData.unlocked.length, 2);
+
+    system.dispose();
+    progress.activeCase = "case-002";
+    events.emit("time:changed", { hour: 1, minute: 0 });
+    assert.equal(system.records.night_owl.caseId, "case-001", "disposed listeners must not react to future events");
+});
