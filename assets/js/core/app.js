@@ -80,7 +80,22 @@ class App {
 
     _afterLoad() {
         console.log('📂 Загрузка данных...');
-        this.progress = storage.loadProgress() || this._defaultProgress();
+        const loadedProgress = storage.loadProgress() || this._defaultProgress();
+        const migrationManager = new SaveMigrationManager(SAVE_SCHEMA_VERSION);
+        const migration = migrationManager.migrate(loadedProgress);
+        if (!migration.ok) {
+            console.error('Save migration could not be completed:', migration.reason);
+            events.emit('notification:show', {
+                message: '⚠️ Сохранение создано более новой версией игры или требует обновления. Исходные данные сохранены без изменений.',
+                type: 'warning', duration: 10000
+            });
+            this.progress = { ...this._defaultProgress(), ...loadedProgress };
+        } else {
+            this.progress = { ...this._defaultProgress(), ...migration.data };
+            if (migration.applied.length) {
+                console.info('Save schema migrated:', migration.fromVersion, '->', migration.toVersion);
+            }
+        }
 
         this._initGameTime();
         this._bindNavigation();
@@ -204,6 +219,7 @@ class App {
 
     _defaultProgress() {
         return {
+            schemaVersion: SAVE_SCHEMA_VERSION,
             solvedCases: [], failedCases: [], totalHintsUsed: 0, totalTimeSpent: 0, activeCase: null,
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
