@@ -20,7 +20,45 @@ class EventController {
 
     _notifyPromiseChanges(changes) {
         if (!Array.isArray(changes) || changes.length === 0) return;
+        this._applyPromiseReputation(changes);
         this.events.emit('npc:memory_changed', { reason: 'promise_resolution', changes });
+    }
+
+    _applyPromiseReputation(changes) {
+        const app = this.app;
+        const memory = app.npcMemoryService;
+        const reputation = app.reputationSystem;
+        if (!memory?.getPromises || !reputation?.changeFactionReputation) return;
+
+        for (const change of changes) {
+            if (change?.npcId !== 'waiter' || change.promiseId !== 'thomas-family-protection' ||
+                !['fulfilled', 'broken'].includes(change.status)) continue;
+
+            const promise = memory.getPromises(change.npcId)
+                .find(item => item.id === change.promiseId);
+            if (promise?.fulfillment?.type !== 'insight_gained' ||
+                promise.fulfillment.insightId !== 'thomas_family_protected') continue;
+
+            const fulfilled = change.status === 'fulfilled';
+            const eventId = 'thomas-family-protection:' + change.status;
+            const effects = fulfilled
+                ? [
+                    ['witnesses', 5, 'Защита семьи свидетеля выполнена'],
+                    ['residents', 3, 'Детектив выполнил обещание о защите семьи']
+                ]
+                : [
+                    ['witnesses', -8, 'Обещанная защита семьи свидетеля не обеспечена'],
+                    ['residents', -5, 'Детектив не выполнил обещание о защите семьи']
+                ];
+
+            for (const [factionId, amount, reason] of effects) {
+                reputation.changeFactionReputation(
+                    factionId, amount, reason, eventId + ':' + factionId
+                );
+            }
+        }
+
+        app.progress.reputationData = reputation.toJSON?.() || app.progress.reputationData;
     }
 
     bind() {
