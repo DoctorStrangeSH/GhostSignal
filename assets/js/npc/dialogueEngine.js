@@ -463,6 +463,9 @@ class DialogueEngine {
             answers: reaction?.answers || this.currentNode?.answers || []
         };
 
+        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: `Прошу взглянуть на улику: ${object?.name || evidenceId}.` });
+        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Я сопоставил ваши слова с другим свидетельским показанием. Объясните это противоречие.' });
+        this.dialogueHistory.push({ nodeId: this.currentNode?.id || '', speaker: 'player', text: 'Есть независимая улика, противоречащая моей версии. Помогите уточнить, что вы действительно знаете.' });
         this.currentNode = node;
         this.dialogueHistory.push({ nodeId: node.id, speaker: node.speaker, text: node.text });
         this._recordNodeMemory(node);
