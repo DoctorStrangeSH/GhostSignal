@@ -124,8 +124,15 @@ class App {
         this.locationManager = new LocationManager(this.gameTime);
         if (this.progress.locationData) {
             const s = this.progress.locationData;
-            this.locationManager.unlockedLocations = new Set(s.unlockedLocations || []);
+            this.locationManager.unlockedLocations = new Set(s.unlockedLocations || this.locationManager.defaultUnlockedLocations);
+            // Keep legacy unlocks intact: old saves cannot tell case gates from permanent rewards.
+            this.locationManager.permanentUnlockedLocations = new Set(
+                s.permanentUnlockedLocations ||
+                (!Array.isArray(s.caseUnlockedLocations) ? s.unlockedLocations || [] : [])
+            );
+            this.locationManager.caseUnlockedLocations = new Set(s.caseUnlockedLocations || []);
             this.locationManager.currentLocation = s.currentLocation || null;
+            this.locationManager.visitedLocations = new Set(s.visitedLocations || []);
         }
 
         this.inventory = Inventory.fromJSON(this.progress.inventoryData);
