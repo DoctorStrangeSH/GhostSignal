@@ -136,3 +136,5 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Confirmed the housekeeper dialogue graph contains the `blackwood_location_revealed` node required for the perfect ending.
 - [x] Quality checks: 519/519 tests passed; JavaScript syntax and game-data validation passed.
 - [ ] Browser playthrough still required for the actual key → wall safe → diary interaction sequence and all final routes.
+
+- [x] Visual smoke passed on runtime commit `51709079cdc09d668cc322861e232b5038e3b3c8`; subsequent commits changed only regression tests and documentation.
