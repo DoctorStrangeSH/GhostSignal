@@ -24,6 +24,31 @@ class SaveMigrationManager {
         return this;
     }
 
+    createBackup(storage, input) {
+        if (!storage || typeof storage.set !== 'function') return false;
+        try {
+            const data = JSON.parse(JSON.stringify(input));
+            return storage.set('save_migration_backup', {
+                createdAt: Date.now(),
+                schemaVersion: Number.isInteger(data.schemaVersion) ? data.schemaVersion : 0,
+                data
+            }) === true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    restoreBackup(storage) {
+        if (!storage || typeof storage.get !== 'function' || typeof storage.saveProgress !== 'function') return false;
+        const backup = storage.get('save_migration_backup');
+        if (!backup || !backup.data || typeof backup.data !== 'object' || Array.isArray(backup.data)) return false;
+        try {
+            return storage.saveProgress(JSON.parse(JSON.stringify(backup.data))) === true;
+        } catch (error) {
+            return false;
+        }
+    }
+
     migrate(input) {
         const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
         let data;
