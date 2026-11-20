@@ -30,7 +30,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [x] Remove unpinned runtime/dev server dependencies and replace them with a Node.js built-in static server.
 - [x] Complete Quality checks on the case-dialogue architecture changes: 515/515 tests passed; data validation and syntax checks passed.
 - [x] Extract recurring NPC profiles and their default dialogues into `assets/data/shared/`; update script load order and integration coverage.
-- [ ] Complete Visual smoke on the latest documentation HEAD.
+- [x] Visual smoke passed on the latest runtime-code HEAD; only documentation updates followed.
 - [x] Add a regression guard: cloud upload is aborted when the preceding local save fails; the new test is running in CI.
 
 ## Branch cleanup rules
@@ -113,7 +113,7 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Moved their base dialogue trees to `assets/data/shared/dialogues/`.
 - [x] Removed the old case-001 dialogue script tags and files; case-specific Joe dialogue for case-002 remains in case-002.
 - [x] Case runtime tests load the shared data before case packs.
-- [ ] Confirm full quality and browser visual checks after the shared dialogue move.
+- [x] Quality checks and Visual smoke passed after the shared dialogue move.
 
 
 ## Location progression ownership (2026-11-20)
@@ -123,3 +123,6 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Preserve all ambiguous unlocks in legacy saves rather than deleting progress during migration.
 - [x] Add regression coverage for new-case isolation, permanent ending rewards, and legacy-save compatibility.
 - [x] Quality checks: 516/516 tests passed; JavaScript syntax and game-data validation passed.
+
+
+- [x] Case-scoped location unlock ownership changes passed Quality checks (516/516) and Visual smoke on runtime commit `1f667492b24028fbcfeabbe5d0c768324edb79f7`; later commits only updated documentation.
