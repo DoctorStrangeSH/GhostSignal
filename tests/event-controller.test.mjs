@@ -626,9 +626,51 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
     for (const once of ["ending", "stats", "reputation", "bonus", "unlock:archive"]) {
         assert.equal(calls.filter(call => call === once).length, 1, once + " is applied once");
     }
-    assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 2,
-        "promise settlement may be revisited, but its service guarantees idempotency");
+    assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 1,
+        "a duplicate completion event must not settle promises twice");
     assert.equal(calls.filter(call => call === "save").length, 2,
         "both terminal snapshots remain persisted");
+    controller.dispose();
+});
+
+
+test("a replay gets a new run ID and ending while permanent rewards remain first-clear only", () => {
+    const bus = createEventBus();
+    const endings = [];
+    const trackerRuns = [];
+    const rewards = [];
+    const app = {
+        progress: { activeCase: "case-002", solvedCases: ["case-002"], completedRunIds: [], activeRunId: "case-002:run-2" },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Последний заказ" },
+            caseState: "active",
+            evidenceFound: 5,
+            toJSON() { return { caseState: this.caseState }; }
+        },
+        npcMemoryService: { settlePromisesForCase() { return []; } },
+        alternateEndings: { determineEnding() { endings.push("ending"); return { id: "perfect", bonusReputation: 10, unlocks: ["secret_archive"] }; } },
+        progressTracker: { activeRunId: "case-002:run-2", caseSolved(_data, runId) { trackerRuns.push(runId); }, toJSON: () => ({ history: trackerRuns }) },
+        reputationSystem: { caseSolved() { rewards.push("first-clear"); }, addReputation() { rewards.push("bonus"); }, toJSON: () => ({}) },
+        locationManager: { unlockLocation() { rewards.push("unlock"); } },
+        achievementSystem: { checkAll() {} },
+        caseListUI: { setProgress() {} },
+        _updateMainMenu() {},
+        _quickSave() {}
+    };
+    const Controller = loadEventController({
+        document: { getElementById: () => null },
+        setTimeout(callback) { callback(); },
+        setInterval: () => 1, clearInterval() {}
+    });
+    const controller = new Controller(app, bus);
+    controller.bind();
+
+    bus.emit("case:solved", { caseId: "case-002" });
+    bus.emit("case:solved", { caseId: "case-002" });
+
+    assert.deepEqual(endings, ["ending"], "one ending is generated for the new playthrough");
+    assert.deepEqual(trackerRuns, ["case-002:run-2"], "the run is recorded exactly once");
+    assert.deepEqual(rewards, [], "first-clear progression rewards are not farmable on replay");
+    assert.deepEqual([...app.progress.completedRunIds], ["case-002:run-2"]);
     controller.dispose();
 });
