@@ -381,6 +381,49 @@ test("CaseManager uses the evidence threshold declared by each case", () => {
     assert.ok(emitted.some(event => event.name === "case:ready_for_final" && event.data === true));
 });
 
+test("Starting a different case resets only case-scoped location unlocks and visits", () => {
+    const locations = {
+        police_station: { id: "police_station", unlockedByDefault: true, hours: { open: 0, close: 24 } },
+        case_one_secret: { id: "case_one_secret", unlockedByDefault: false, hours: { open: 0, close: 24 } },
+        case_two_public: { id: "case_two_public", unlockedByDefault: true, hours: { open: 0, close: 24 } }
+    };
+    const cases = {
+        "case-002": {
+            id: "case-002",
+            title: "Second investigation",
+            startTime: { hour: 10, minute: 0, day: 1 },
+            locations: ["case_two_public"],
+            startLocation: "case_two_public",
+            events: []
+        }
+    };
+    const emitted = [];
+    const events = { emit: (name, data) => emitted.push({ name, data }) };
+    const getLocationById = id => locations[id] || null;
+    const getCaseById = id => cases[id] || null;
+    const globals = { events, getLocationById, getCaseById, CONFIG: { time: { costs: { travel: 15 } } }, window: {} };
+    const LocationManager = loadClass("assets/js/systems/locationManager.js", "LocationManager", globals);
+    const CaseManager = loadClass("assets/js/systems/caseManager.js", "CaseManager", globals);
+    const gameTime = {
+        hour: 3, minute: 20, day: 2,
+        setTime(hour, minute, day) { this.hour = hour; this.minute = minute; this.day = day; },
+        getFormatted() { return "10:00"; },
+        advance(minutes) { this.minute += minutes; }
+    };
+    const locationManager = new LocationManager(gameTime);
+    locationManager.unlockedLocations.add("case_one_secret");
+    locationManager.visitedLocations.add("case_one_secret");
+    locationManager.currentLocation = "case_one_secret";
+    const manager = new CaseManager(gameTime, locationManager, { hasItem: () => false });
+
+    assert.equal(manager.loadCase("case-002"), true);
+    assert.equal(locationManager.unlockedLocations.has("case_one_secret"), false);
+    assert.equal(locationManager.unlockedLocations.has("case_two_public"), true);
+    assert.deepEqual(Array.from(locationManager.visitedLocations), ["case_two_public"]);
+    assert.equal(locationManager.currentLocation, "case_two_public");
+    assert.equal(locationManager.activeCaseData.id, "case-002");
+});
+
 test("LocationManager adds active case scene objects without duplicating base items", () => {
     const locations = {
         bar_joe: { id: "bar_joe", defaultItems: ["bar_counter", "jukebox"], nightOnlyItems: ["hidden_suitcase"] }
