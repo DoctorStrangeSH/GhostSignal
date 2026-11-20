@@ -358,8 +358,17 @@ class EventController {
                 app.ttsEngine?.playSuccessSound();
             }
 
-            app.progressTracker?.caseSolved(caseData, runId);
-            app.progress.trackerData = app.progressTracker?.toJSON() || app.progress.trackerData;
+            if (app.progressTracker?.stats && Array.isArray(app.progress.solvedCases)) {
+                const knownSolved = Array.isArray(app.progressTracker.stats.solvedCaseIds)
+                    ? app.progressTracker.stats.solvedCaseIds : [];
+                app.progressTracker.stats.solvedCaseIds = [...new Set([...knownSolved, ...app.progress.solvedCases])];
+                app.progressTracker.stats.totalCasesSolved = Math.max(
+                    Number(app.progressTracker.stats.totalCasesSolved) || 0,
+                    app.progressTracker.stats.solvedCaseIds.length
+                );
+            }
+            app.progressTracker?.caseSolved?.(caseData, runId);
+            app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON() || app.progress.reputationData;
             app.achievementSystem?.checkAll();
             app.caseListUI?.setProgress(app.progress);
