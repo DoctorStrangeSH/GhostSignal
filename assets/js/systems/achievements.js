@@ -37,6 +37,26 @@ class AchievementSystem {
                 icon: '📖', rarity: 'common', criteria: { type: 'ending' }
             },
             {
+                id: 'all_evidence', name: 'Коллекционер улик', description: 'Найдите все улики в деле',
+                icon: '📦', rarity: 'common', criteria: { type: 'manual' }
+            },
+            {
+                id: 'night_owl', name: 'Полуночник', description: 'Проведите расследование глубокой ночью',
+                icon: '🦉', rarity: 'common', criteria: { type: 'manual' }
+            },
+            {
+                id: 'social_detective', name: 'Душа компании', description: 'Поговорите со всеми свидетелями дела',
+                icon: '💬', rarity: 'uncommon', criteria: { type: 'manual' }
+            },
+            {
+                id: 'speedy', name: 'Быстрый детектив', description: 'Раскройте дело менее чем за 30 игровых минут',
+                icon: '⚡', rarity: 'epic', criteria: { type: 'manual' }
+            },
+            {
+                id: 'board_master', name: 'Мастер доски', description: 'Заполните все слоты на доске расследования',
+                icon: '📋', rarity: 'uncommon', criteria: { type: 'manual' }
+            },
+            {
                 id: 'two_endings', name: 'Две стороны правды', description: 'Откройте две разные концовки',
                 icon: '⚖️', rarity: 'epic', criteria: { type: 'unique_endings', count: 2 }
             },
@@ -180,8 +200,9 @@ class AchievementSystem {
     }
 
     getSummary() {
-        return { total: this.achievements.length, unlocked: this.unlocked.length,
-            percent: this.achievements.length ? Math.round(this.unlocked.length / this.achievements.length * 100) : 0 };
+        const unlocked = this.achievements.filter(item => this.unlocked.includes(item.id)).length;
+        return { total: this.achievements.length, unlocked,
+            percent: this.achievements.length ? Math.round(unlocked / this.achievements.length * 100) : 0 };
     }
 
     toJSON() {
