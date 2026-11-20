@@ -433,8 +433,14 @@ test("InvestigationBoard returns clues when a slot is cleared or the board is re
     const getObjectById = id => id === "evidence_note" ? { id, isEvidence: true } : null;
     const InvestigationBoard = loadClass("assets/js/systems/board.js", "InvestigationBoard", { events, getObjectById });
     const board = new InvestigationBoard();
+    board.setCase("case-001");
 
     assert.equal(board.placeEvidence("evidence_note", "slot-1"), true);
+    const placement = emitted.find(event => event.name === "board:updated" && event.data.action === "place");
+    assert.deepEqual(
+        { caseId: placement.data.caseId, filledSlots: placement.data.filledSlots, totalSlots: placement.data.totalSlots },
+        { caseId: "case-001", filledSlots: 1, totalSlots: 6 }
+    );
     assert.equal(board.removeEvidence("slot-1"), "evidence_note");
     assert.ok(emitted.some(event => event.name === "inventory:restore_evidence" && event.data === "evidence_note"));
 
