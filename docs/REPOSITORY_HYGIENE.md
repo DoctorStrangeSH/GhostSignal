@@ -28,7 +28,8 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
 - [x] Complete source-level asset reference audit for the current art inventory; all 26 art files have confirmed uses after checking the dynamic evidence-photo viewer.
 - [x] Remove unpinned runtime/dev server dependencies and replace them with a Node.js built-in static server.
-- [ ] Complete the full build/test and browser smoke on the latest server implementation.
+- [x] Complete Quality checks on the case-dialogue architecture changes: 514/514 tests passed; data validation and syntax checks passed.
+- [ ] Complete Visual smoke on the latest documentation HEAD.
 - [x] Add a regression guard: cloud upload is aborted when the preceding local save fails; the new test is running in CI.
 
 ## Branch cleanup rules
@@ -79,7 +80,7 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Found and fixed a failure path in `SyncManager.saveEverywhere()`: previously it could proceed to cloud upload even if `storage.saveProgress()` returned false.
 - [x] Cloud upload now stops immediately when local persistence fails or the persisted snapshot cannot be read back.
 - [x] Added a regression test proving that local write failure returns false and performs zero cloud writes.
-- [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 512/512 tests passed on commit `c2a66969b90f3003a7670bb1a31bc3ab6670c2d4`.
+- [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 514/514 tests passed on commit `8e3a979b43c38fa159fce2c2a380f785e341c9d2`.
 - [ ] Confirm Visual smoke on the same commit.
 - [x] Remove the need for a project lockfile by eliminating third-party app dependencies; document Node.js 20+ as the only local runtime requirement.
 
@@ -93,3 +94,13 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Added automated tests for normal serving, MIME, HEAD, missing files, unsupported methods, traversal, hidden paths and symlink escapes.
 - [x] Verify the server implementation and tests: 512/512 tests passed on commit `c2a66969b90f3003a7670bb1a31bc3ab6670c2d4`.
 - [ ] Complete Visual smoke on the newest server implementation.
+
+
+## Case-pack ownership pass (2026-11-20)
+
+- [x] Moved case-002's bartender dialogue selection out of the case-001 NPC profile and into `CASE_002.npcDialogueOverrides`.
+- [x] NPCManager resolves case-owned overrides from the active case data and restores that data when loading a saved NPC manager.
+- [x] Validator checks that each override targets an active NPC and a dialogue authored for that NPC; dialogue-link validation runs after case packs are inspected.
+- [x] Regression coverage added for switching between case-001 and case-002 without mutating the shared bartender profile.
+- [x] Updated the new-case template and added `docs/CASE_PACK_AUTHORING.md`.
+- [ ] Extract recurring bartender/sergeant profiles and shared dialogue from the legacy case-001 folder into a shared-data pack before case-003 is created.
