@@ -23,7 +23,9 @@ function loadCaseOne() {
         "assets/data/cases/case-001/dialogues/porter.js",
         "assets/data/cases/case-001/dialogues/coroner.js",
         "assets/data/cases/case-001/dialogues/elias.js",
-        "assets/data/cases/case-001/dialogues/wife.js"
+        "assets/data/cases/case-001/dialogues/wife.js",
+        "assets/data/shared/dialogues/bartender.js",
+        "assets/data/shared/dialogues/sergeant.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
@@ -34,7 +36,9 @@ function loadCaseOne() {
             vm.runInContext("DIALOGUE_PORTER", context),
             vm.runInContext("DIALOGUE_CORONER", context),
             vm.runInContext("DIALOGUE_ELIAS", context),
-            vm.runInContext("DIALOGUE_WIFE", context)
+            vm.runInContext("DIALOGUE_WIFE", context),
+            vm.runInContext("DIALOGUE_BARTENDER", context),
+            vm.runInContext("DIALOGUE_SERGEANT", context)
         ],
         locations: registry.location,
         object: registry.object
