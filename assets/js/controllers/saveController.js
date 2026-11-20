@@ -37,7 +37,7 @@ class SaveController {
 
     quickSave() {
         const app = this.app;
-        if (!app.progress) return false;
+        if (!app.progress || app.saveBlocked) return false;
 
         app.progress.gameTime = app.gameTime?.toJSON();
         app.progress.locationData = app.locationManager?.toJSON();
