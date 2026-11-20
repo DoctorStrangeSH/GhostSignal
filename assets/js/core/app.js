@@ -83,13 +83,9 @@ class App {
         const storedProgress = storage.loadProgress();
         const loadedProgress = storedProgress || this._defaultProgress();
         const migrationManager = new SaveMigrationManager(SAVE_SCHEMA_VERSION);
-        const sourceVersion = Number.isInteger(loadedProgress.schemaVersion) && loadedProgress.schemaVersion >= 0
-            ? loadedProgress.schemaVersion : 0;
-        const needsMigration = Boolean(storedProgress) && sourceVersion < SAVE_SCHEMA_VERSION;
-        const backupReady = !needsMigration || migrationManager.createBackup(storage, loadedProgress);
-        const migration = migrationManager.migrate(loadedProgress);
-        this.saveBlocked = !migration.ok || !backupReady;
-        if (!backupReady) {
+        const migration = migrationManager.migrateWithBackup(loadedProgress, storage, Boolean(storedProgress));
+        this.saveBlocked = !migration.ok;
+        if (migration.reason === 'backup_failed') {
             console.error('Save migration blocked: backup could not be written.');
             events.emit('notification:show', {
                 message: '⚠️ Не удалось создать резервную копию сохранения. Запись отключена, исходный прогресс сохранён.',
