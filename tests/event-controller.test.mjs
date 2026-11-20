@@ -490,3 +490,94 @@ test("a false public accusation harms Anna once and survives a memory reload", (
     assert.ok(eventBus.emitted.some(event =>
         event.name === "npc:memory_changed" && event.payload?.reason === "public_false_accusation"));
 });
+
+
+test("keeping the witness-protection promise improves witness and resident reputation once", () => {
+    const eventBus = createEventBus();
+    const changes = [];
+    const app = {
+        progress: {},
+        npcMemoryService: {
+            getPromises(npcId) {
+                return npcId === "waiter" ? [{
+                    id: "thomas-family-protection",
+                    fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+                }] : [];
+            }
+        },
+        reputationSystem: {
+            applied: new Set(),
+            changeFactionReputation(...args) {
+                if (this.applied.has(args[3])) return { changed: false, reason: "already_applied" };
+                this.applied.add(args[3]);
+                changes.push(args);
+                return { changed: true };
+            },
+            toJSON() { return { saved: true }; }
+        }
+    };
+    const EventController = loadEventController();
+    const controller = new EventController(app, eventBus);
+    const resolved = [{ npcId: "waiter", promiseId: "thomas-family-protection", status: "fulfilled" }];
+    controller._notifyPromiseChanges(resolved);
+    controller._notifyPromiseChanges(resolved);
+
+    assert.equal(changes.length, 2, "duplicate notification must not reapply consequences");
+    assert.equal(changes[0][0], "witnesses");
+    assert.equal(changes[0][1], 5);
+    assert.equal(changes[0][3], "thomas-family-protection:fulfilled:witnesses");
+    assert.equal(changes[1][0], "residents");
+    assert.equal(changes[1][1], 3);
+    assert.deepEqual(app.progress.reputationData, { saved: true });
+    assert.equal(eventBus.emitted.filter(item => item.name === "npc:memory_changed").length, 2);
+});
+
+test("breaking the witness-protection promise harms witness and resident reputation", () => {
+    const eventBus = createEventBus();
+    const changes = [];
+    const app = {
+        progress: {},
+        npcMemoryService: {
+            getPromises: () => [{
+                id: "thomas-family-protection",
+                fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" }
+            }]
+        },
+        reputationSystem: {
+            applied: new Set(),
+            changeFactionReputation(...args) {
+                if (this.applied.has(args[3])) return { changed: false, reason: "already_applied" };
+                this.applied.add(args[3]);
+                changes.push(args);
+                return { changed: true };
+            },
+            toJSON: () => ({ saved: true })
+        }
+    };
+    const EventController = loadEventController();
+    const controller = new EventController(app, eventBus);
+    controller._notifyPromiseChanges([
+        { npcId: "waiter", promiseId: "thomas-family-protection", status: "broken" }
+    ]);
+
+    assert.equal(changes.length, 2);
+    assert.deepEqual(changes.map(change => [change[0], change[1]]), [
+        ["witnesses", -8], ["residents", -5]
+    ]);
+});
+
+test("unrelated NPC promises do not change community reputation", () => {
+    const eventBus = createEventBus();
+    const changes = [];
+    const app = {
+        progress: {},
+        npcMemoryService: { getPromises: () => [] },
+        reputationSystem: { changeFactionReputation(...args) { changes.push(args); } }
+    };
+    const EventController = loadEventController();
+    new EventController(app, eventBus)._notifyPromiseChanges([
+        { npcId: "journalist", promiseId: "publish-the-truth", status: "fulfilled" },
+        { npcId: "waiter", promiseId: "thomas-family-protection", status: "pending" }
+    ]);
+    assert.equal(changes.length, 0);
+});
