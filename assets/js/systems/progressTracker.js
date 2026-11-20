@@ -149,7 +149,7 @@ class ProgressTracker {
     getSolveRate() {
         const total = (this.stats.totalSolvedRuns || this.stats.totalCasesSolved) + this.stats.totalCasesFailed;
         if (total === 0) return 0;
-        return Math.round((this.stats.totalCasesSolved / total) * 100);
+        return Math.round(((this.stats.totalSolvedRuns || this.stats.totalCasesSolved) / total) * 100);
     }
     
     // Получить всю статистику
