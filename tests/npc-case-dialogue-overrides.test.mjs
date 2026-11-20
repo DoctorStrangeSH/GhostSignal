@@ -29,28 +29,29 @@ function createManager() {
         getCaseById: id => cases[id] || null
     });
     vm.runInContext(source + "\n;globalThis.__NPCManager = NPCManager;", context);
-    return new context.__NPCManager({}, {});
+    return { manager: new context.__NPCManager({}, {}), cases };
 }
 
 test("NPC dialogue overrides are resolved by the active case pack", () => {
-    const manager = createManager();
+    const { manager, cases } = createManager();
 
-    manager.currentCaseId = "case-001";
+    manager.loadNPCsForCase(cases["case-001"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender");
 
-    manager.currentCaseId = "case-002";
+    manager.loadNPCsForCase(cases["case-002"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
+    manager.currentCaseData = null;
     manager.currentCaseId = null;
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender");
 });
 
 test("case-specific dialogue override does not change the shared NPC profile", () => {
-    const manager = createManager();
+    const { manager, cases } = createManager();
 
-    manager.currentCaseId = "case-002";
+    manager.loadNPCsForCase(cases["case-002"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
-    manager.currentCaseId = "case-001";
+    manager.loadNPCsForCase(cases["case-001"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender");
 });
