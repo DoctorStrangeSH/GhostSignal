@@ -40,3 +40,17 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 ## Follow-up
 
 After the Visual smoke run is green, perform branch pruning and the deeper asset/documentation audit as separate, reviewable cleanup steps. Update this checklist with exact counts and links rather than marking unverified work complete.
+
+## Asset and content inventory (2026-11-20)
+
+- The inspected tree contains 172 files under `assets/`: 26 authored art files and the remaining application styles, scripts and data.
+- Art inventory: 20 WebP, 6 SVG and 1 PNG? Correction: the complete art directory has 20 WebP, 6 SVG and 1 PNG? The current tree reports 26 art files in total; verify exact extension counts before using this breakdown.
+- Ten art files exceed 250 KB; the largest is the city map at approximately 727 KB. These are not automatically cleanup targets: visual quality and actual rendering use must be checked before recompression or replacement.
+- Repeated basenames in separate case folders (for example `case-001/evidence.js` and `case-002/evidence.js`) are intentional case-pack boundaries, not duplicate files.
+- `assets/data/narrative/notes.js` and `assets/js/systems/notes.js` have the same basename but different responsibilities (authored note content vs. runtime note system); do not merge based on filename alone.
+- No asset was deleted during this pass. A source-level reference audit is still required before declaring any art file unused.
+
+## Latest CI confirmation
+
+- Commit `b94d0498792ce2305ee7fc94ebfed43a926eb516`: Quality checks — PASS; Visual smoke — PASS.
+- The modal-queue smoke test now waits for the queue and Bootstrap backdrop/body state to settle instead of relying on a fixed number of dismissals.
