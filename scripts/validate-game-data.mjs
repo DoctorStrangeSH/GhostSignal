@@ -207,7 +207,6 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         if (!reachableNodes.has(nodeId)) errors.push("Dialogue " + id + " contains unreachable node: " + nodeId);
     }
 
-    if (!dialogueReferences.has(id)) errors.push("Dialogue is not linked to any NPC: " + id);
 
     for (const [nodeId, node] of Object.entries(nodes)) {
         if (node.givesEvidence) {
@@ -622,6 +621,10 @@ for (const [id, ending] of Object.entries(data.endings || {})) {
 
 for (const [id, newspaper] of Object.entries(data.newspapers || {})) {
     if (newspaper.id !== id) errors.push("Newspaper key/id mismatch: " + id);
+}
+
+for (const id of Object.keys(data.dialogues || {})) {
+    if (!dialogueReferences.has(id)) errors.push("Dialogue is not linked to any NPC: " + id);
 }
 
 if (errors.length) {
