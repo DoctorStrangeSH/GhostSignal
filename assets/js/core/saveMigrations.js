@@ -49,6 +49,24 @@ class SaveMigrationManager {
         }
     }
 
+    migrateWithBackup(input, storage, backupRequired = true) {
+        const sourceVersion = input && Number.isInteger(input.schemaVersion) && input.schemaVersion >= 0
+            ? input.schemaVersion : 0;
+        const shouldBackup = backupRequired && sourceVersion < this.currentVersion;
+        if (shouldBackup && !this.createBackup(storage, input)) {
+            return {
+                ok: false,
+                reason: 'backup_failed',
+                data: input,
+                fromVersion: sourceVersion,
+                toVersion: sourceVersion,
+                applied: [],
+                backupCreated: false
+            };
+        }
+        return { ...this.migrate(input), backupCreated: shouldBackup };
+    }
+
     migrate(input) {
         const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
         let data;
