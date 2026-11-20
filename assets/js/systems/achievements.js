@@ -12,6 +12,7 @@ class AchievementSystem {
         this.records = {};
         this._defineAchievements();
         this.registerCases(typeof CASES_INDEX !== 'undefined' ? Object.values(CASES_INDEX) : []);
+        this._bindGameplayEvents();
     }
 
     _defineAchievements() {
@@ -42,7 +43,7 @@ class AchievementSystem {
             },
             {
                 id: 'night_owl', name: 'Полуночник', description: 'Проведите расследование глубокой ночью',
-                icon: '🦉', rarity: 'common', criteria: { type: 'manual' }
+                icon: '🦉', rarity: 'common', criteria: { type: 'night_time', startHour: 0, endHour: 5 }
             },
             {
                 id: 'social_detective', name: 'Душа компании', description: 'Поговорите со всеми свидетелями дела',
@@ -54,7 +55,7 @@ class AchievementSystem {
             },
             {
                 id: 'board_master', name: 'Мастер доски', description: 'Заполните все слоты на доске расследования',
-                icon: '📋', rarity: 'uncommon', criteria: { type: 'manual' }
+                icon: '📋', rarity: 'uncommon', criteria: { type: 'board_full' }
             },
             {
                 id: 'two_endings', name: 'Две стороны правды', description: 'Откройте две разные концовки',
@@ -65,6 +66,39 @@ class AchievementSystem {
                 icon: '👑', rarity: 'legendary', criteria: { type: 'reputation', value: 90 }
             }
         ];
+    }
+
+    _bindGameplayEvents() {
+        if (!this.events?.on) return;
+        this._eventUnsubscribers = [
+            this.events.on('time:changed', data => {
+                if (!this.progress?.activeCase) return;
+                const hour = Number(data?.hour);
+                if (Number.isInteger(hour) && hour >= 0 && hour < 5) {
+                    this.unlock('night_owl', {
+                        caseData: { id: this.progress.activeCase },
+                        context: 'night_investigation',
+                        hour
+                    });
+                }
+            }),
+            this.events.on('board:updated', data => {
+                if (data?.action !== 'place' || !this.progress?.activeCase) return;
+                if (Number(data.filledSlots) >= Number(data.totalSlots) && Number(data.totalSlots) > 0) {
+                    this.unlock('board_master', {
+                        caseData: { id: data.caseId || this.progress.activeCase },
+                        context: 'completed_investigation_board'
+                    });
+                }
+            })
+        ].filter(Boolean);
+    }
+
+    dispose() {
+        for (const unsubscribe of this._eventUnsubscribers || []) {
+            if (typeof unsubscribe === 'function') unsubscribe();
+        }
+        this._eventUnsubscribers = [];
     }
 
     registerCases(cases = []) {
