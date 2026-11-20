@@ -580,3 +580,24 @@ test("ProgressTracker records each replay once while counting a case only once f
         "case-002:run-1", "case-002:run-2"
     ]);
 });
+
+
+test("ProgressTracker keeps failed replay attempts separate and deduplicates the same failed run", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    const caseData = { id: "case-001", title: "Номер 304" };
+
+    tracker.startCase(caseData.id, "case-001:failed-run-1");
+    const first = tracker.caseFailed(caseData, "case-001:failed-run-1");
+    assert.equal(tracker.caseFailed(caseData, "case-001:failed-run-1"), first);
+    tracker.startCase(caseData.id, "case-001:failed-run-2");
+    tracker.caseFailed(caseData, "case-001:failed-run-2");
+
+    assert.equal(tracker.stats.totalCasesFailed, 2);
+    assert.equal(tracker.stats.casesHistory.filter(record => record.result === "failed").length, 2);
+    assert.equal(tracker.stats.casesHistory[0].runId, "case-001:failed-run-1");
+    assert.equal(tracker.stats.casesHistory[1].runId, "case-001:failed-run-2");
+    assert.equal(tracker.getSolveRate(), 0);
+});
