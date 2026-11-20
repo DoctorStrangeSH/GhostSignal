@@ -931,3 +931,31 @@ test("AchievementSystem awards speedy from elapsed in-game minutes, with a stric
     system.dispose();
     exactSystem.dispose();
 });
+
+
+test("AchievementSystem reconciles collected evidence when resuming an active investigation", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: "case-002", achievementData: null };
+    const inventory = { items: ["clue-a", "clue-b"] };
+    const caseData = { id: "case-002", evidenceIds: ["clue-a", "clue-b"] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-002": caseData }
+    });
+    const system = new AchievementSystem(progress, events, { inventory });
+    system.load(null);
+    const unlocked = system.reconcile();
+    assert.ok(unlocked.some(record => record.id === "all_evidence"));
+    assert.equal(system.records.all_evidence.caseId, "case-002");
+    system.dispose();
+});
