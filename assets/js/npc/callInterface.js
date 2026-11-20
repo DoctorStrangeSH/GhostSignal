@@ -137,23 +137,65 @@ class CallInterface {
 
         // Запускаем диалог
         if (this.dialogueEngine) {
-            this.dialogueEngine.onNodeChange = (node) => {
-                this._updateDialogueUI(node);
-
-                // Озвучиваем реплику NPC
-                if (node.speaker === 'npc' && node.text) {
-                    events.emit('tts:speak', {
-                        text: node.text,
-                        mood: node.mood || 'neutral'
-                    });
-                }
-            };
-
+            this._bindDialogueUpdates();
             this.dialogueEngine.startDialogue(dialogueId);
         }
 
         // Запускаем таймер звонка
         this._startCallTimer();
+    }
+
+    _bindDialogueUpdates() {
+        if (!this.dialogueEngine) return;
+        this.dialogueEngine.onNodeChange = (node) => {
+            this._updateDialogueUI(node);
+            if (node.speaker === 'npc' && node.text) {
+                events.emit('tts:speak', { text: node.text, mood: node.mood || 'neutral' });
+            }
+            events.emit('dialogue:state_changed', this.dialogueEngine.toJSON());
+        };
+    }
+
+    // Resume without ringing, charging time, or replaying dialogue effects.
+    restoreActiveDialogue(snapshot) {
+        if (!snapshot || !this.dialogueEngine || !this.dialogueEngine.restoreFromJSON(snapshot)) return false;
+        const npc = typeof getNPCById === 'function' ? getNPCById(snapshot.npcId) : null;
+        if (!npc) {
+            this.dialogueEngine.reset();
+            return false;
+        }
+
+        this.currentNPC = npc;
+        this.isCallActive = true;
+        this._showCallingScreen(npc);
+        const status = document.getElementById('call-status');
+        status.textContent = 'СОЕДИНЁН';
+        status.classList.add('connected');
+        const waveAnim = this.callModal?.querySelector('.call-wave-animation');
+        if (waveAnim) waveAnim.style.display = 'none';
+
+        this._bindDialogueUpdates();
+        const history = this.dialogueEngine.getHistory();
+        for (const entry of history.slice(0, -1)) {
+            if (entry.speaker === 'player') {
+                this._appendPlayerStatement(entry.text);
+            } else {
+                const message = document.createElement('div');
+                message.className = 'dialogue-message npc-message';
+                const speaker = document.createElement('span');
+                speaker.className = 'message-speaker';
+                speaker.textContent = `${npc.name || 'Свидетель'}:`;
+                const body = document.createElement('span');
+                body.className = 'message-text';
+                body.textContent = entry.text;
+                message.append(speaker, body);
+                document.getElementById('dialogue-messages')?.appendChild(message);
+            }
+        }
+        this._updateDialogueUI(this.dialogueEngine.currentNode);
+        this._startCallTimer();
+        events.emit('call:connected', { npcId: npc.id, resumed: true });
+        return true;
     }
 
     _updateDialogueUI(node) {
@@ -434,10 +476,10 @@ class CallInterface {
             this.callModal.classList.add('hidden');
         }
 
-        // Сбрасываем диалог
-        if (this.dialogueEngine) {
-            this.dialogueEngine.reset();
-        }
+        // Сбрасываем диалог и удаляем его активный autosave snapshot.
+        const endedNpcId = this.currentNPC?.id || this.dialogueEngine?.currentDialogue?.npcId || null;
+        if (this.dialogueEngine) this.dialogueEngine.reset();
+        if (endedNpcId) events.emit('dialogue:ended', { npcId: endedNpcId });
 
         this.currentNPC = null;
         this._callStartTime = null;
