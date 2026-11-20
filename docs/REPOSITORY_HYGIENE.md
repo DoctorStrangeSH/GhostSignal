@@ -146,3 +146,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Added regression coverage for every `hasInsight` and `hasItem` prerequisite in the housekeeper and porter dialogue trees.
 - [x] Quality checks: 520/520 tests passed; syntax validation and game-data validation passed.
 - [ ] Browser playthrough still required to confirm the follow-up question appears immediately after the red-scarf clue is received.
+
+
+## Case 001 dialogue graph coverage (2026-11-20)
+
+- [x] Added graph reachability coverage for all seven NPC dialogues available in case 001: housekeeper, porter, coroner, Elias, wife, shared bartender, and sergeant.
+- [x] Every node must be reachable from the dialogue start or an explicit entry point; normal answers and special evidence/contradiction reaction entry paths are included.
+- [x] Start nodes, explicit entry points, and all answer targets must resolve to existing nodes.
+- [x] Quality checks: 522/522 tests passed; JavaScript syntax and game-data validation passed.
+- [ ] Full browser playthrough is still required to verify gated paths under actual evidence, relationship, and save-state conditions.
