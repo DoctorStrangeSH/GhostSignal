@@ -90,11 +90,12 @@ try {
         await page.waitForFunction(() => window.app?.inventory?.hasItem('guest_book') &&
             window.app?.inventory?.hasInsight('missing_page'));
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-        await page.locator('#universal-modal.show').waitFor({ state: 'hidden' });
+        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
 
         await page.locator('#scene-container .scene-sublocation-btn').filter({ hasText: 'Номер 304' }).click();
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Кровать' }).click();
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
         await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
 
         for (const [tabId, filename, contentSelector] of [
