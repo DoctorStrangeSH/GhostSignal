@@ -83,7 +83,7 @@ test("active dialogue snapshot restores the exact node and trusted answer defini
     assert.equal(restored.currentNode.id, "time_question");
     assert.equal(restored.currentNode.text, "Я ушёл до полуночи.");
     assert.equal(restored.currentNode.answers[0].nextNode, "clarification");
-    assert.deepEqual(JSON.parse(JSON.stringify(restored.getHistory())), snapshot.history);
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.getHistory())), JSON.parse(JSON.stringify(snapshot.history)));
     assert.equal(memoryWrites, 0, "loading must not record another visit or conversation");
 });
 
