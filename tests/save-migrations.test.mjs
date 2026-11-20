@@ -118,3 +118,32 @@ test("restore refuses missing or malformed backups", () => {
     const storage = { get() { return { data: [] }; }, saveProgress() { throw new Error("must not write"); } };
     assert.equal(new Manager(1).restoreBackup(storage), false);
 });
+
+
+test("migrateWithBackup refuses to run transformations when the backup cannot be stored", () => {
+    const { Manager } = loadManager();
+    const manager = new Manager(2);
+    let migrationCalls = 0;
+    manager.register(2, save => { migrationCalls++; return { ...save, migrated: true }; });
+    const original = { schemaVersion: 1, activeCase: "case-001" };
+    const result = manager.migrateWithBackup(original, { set() { return false; } });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "backup_failed");
+    assert.equal(result.backupCreated, false);
+    assert.equal(migrationCalls, 0);
+    assert.deepEqual(original, { schemaVersion: 1, activeCase: "case-001" });
+});
+
+test("migrateWithBackup stores the source snapshot before applying migrations", () => {
+    const { Manager } = loadManager();
+    const manager = new Manager(2);
+    const order = [];
+    manager.register(2, save => { order.push("migration"); return { ...save, upgraded: true }; });
+    const storage = { set(key, value) { order.push("backup"); this.backup = value; return true; } };
+    const result = manager.migrateWithBackup({ schemaVersion: 1, activeCase: "case-002" }, storage);
+    assert.equal(result.ok, true);
+    assert.equal(result.backupCreated, true);
+    assert.deepEqual(order, ["backup", "migration"]);
+    assert.equal(storage.backup.data.schemaVersion, 1);
+    assert.equal(result.data.schemaVersion, 2);
+});
