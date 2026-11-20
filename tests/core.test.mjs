@@ -601,3 +601,34 @@ test("ProgressTracker keeps failed replay attempts separate and deduplicates the
     assert.equal(tracker.stats.casesHistory[1].runId, "case-001:failed-run-2");
     assert.equal(tracker.getSolveRate(), 0);
 });
+
+
+test("ProgressTracker preserves the ending reached in each solved playthrough", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    tracker.startCase("case-001", "case-001:ending-run");
+    const ending = { id: "truth", title: "Полная правда", text: "Кейн признался." };
+    const record = tracker.caseSolved({ id: "case-001", title: "Номер 304" }, "case-001:ending-run", ending);
+
+    assert.equal(record.endingId, "truth");
+    assert.equal(record.endingTitle, "Полная правда");
+    assert.equal(record.endingText, "Кейн признался.");
+    const restored = ProgressTracker.fromJSON(tracker.toJSON());
+    assert.equal(restored.stats.casesHistory[0].endingTitle, "Полная правда");
+});
+
+test("CaseArchiveUI sorts saved runs and escapes untrusted archive text", () => {
+    const CaseArchiveUI = loadClass("assets/js/ui/caseArchiveUI.js", "CaseArchiveUI", {
+        document: { getElementById: () => null }
+    });
+    const archive = new CaseArchiveUI("archive");
+    archive.setProgress({ trackerData: { stats: { casesHistory: [
+        { runId: "older", caseId: "case-001", title: "Старое дело", result: "failed", date: "2026-01-01T00:00:00.000Z" },
+        { runId: "newer", caseId: "case-002", title: "<script>alert(1)</script>", result: "solved", date: "2026-02-01T00:00:00.000Z" }
+    ] } } });
+
+    assert.deepEqual(Array.from(archive._records(), record => record.runId), ["newer", "older"]);
+    assert.equal(archive._escape('<img src=x onerror="x">'), '&lt;img src=x onerror=&quot;x&quot;&gt;');
+});
