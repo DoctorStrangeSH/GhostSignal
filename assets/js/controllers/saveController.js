@@ -39,23 +39,38 @@ class SaveController {
         const app = this.app;
         if (!app.progress || app.saveBlocked) return false;
 
-        app.progress.gameTime = app.gameTime?.toJSON();
-        app.progress.locationData = app.locationManager?.toJSON();
-        app.progress.inventoryData = app.inventory?.toJSON();
-        app.progress.caseData = app.caseManager?.toJSON();
-        app.progress.npcData = app.npcManager?.toJSON();
-        app.progress.boardData = app.investigationBoard?.toJSON();
-        app.progress.notesData = app.notesManager?.toJSON();
-        app.progress.trackerData = app.progressTracker?.toJSON();
-        app.progress.reputationData = app.reputationSystem?.toJSON();
-        app.progress.stakeoutData = app.stakeoutSystem?.toJSON();
-        app.progress.chainData = app.evidenceChainSystem?.toJSON();
-        app.progress.weatherData = app.weatherSystem?.toJSON();
-        app.progress.interrogationData = app.interrogationSystem?.toJSON();
-        app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
-        app.progress.npcSocialData = app.npcSocialNetwork?.toJSON();
-        app.progress.npcRelationshipData = app.npcRelationshipService?.toJSON();
+        // Build the complete snapshot off to the side. If any serializer fails,
+        // the last known-good in-memory progress and persisted save stay intact.
+        let snapshot;
+        try {
+            snapshot = {
+                gameTime: app.gameTime?.toJSON(),
+                locationData: app.locationManager?.toJSON(),
+                inventoryData: app.inventory?.toJSON(),
+                caseData: app.caseManager?.toJSON(),
+                npcData: app.npcManager?.toJSON(),
+                boardData: app.investigationBoard?.toJSON(),
+                notesData: app.notesManager?.toJSON(),
+                trackerData: app.progressTracker?.toJSON(),
+                reputationData: app.reputationSystem?.toJSON(),
+                stakeoutData: app.stakeoutSystem?.toJSON(),
+                chainData: app.evidenceChainSystem?.toJSON(),
+                weatherData: app.weatherSystem?.toJSON(),
+                interrogationData: app.interrogationSystem?.toJSON(),
+                npcMemoryData: app.npcMemoryService?.toJSON(),
+                npcSocialData: app.npcSocialNetwork?.toJSON(),
+                npcRelationshipData: app.npcRelationshipService?.toJSON()
+            };
+        } catch (error) {
+            console.error('Unable to build investigation snapshot:', error);
+            this.eventBus?.emit('notification:show', {
+                message: '⚠️ Не удалось подготовить сохранение. Предыдущая копия не изменена.',
+                type: 'error', duration: 10000
+            });
+            return false;
+        }
 
+        Object.assign(app.progress, snapshot);
         return this.saveProgress();
     }
 }
