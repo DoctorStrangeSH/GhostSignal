@@ -118,3 +118,15 @@ test("legacy cloud-only conflict backups remain resolvable", async () => {
     assert.equal(await manager.resolveConflict("cloud"), true);
     assert.equal(manager.hasConflict, false);
 });
+
+
+test("an existing unresolved conflict is never replaced by a later cloud snapshot", async () => {
+    const local = { schemaVersion: 1, activeCase: "case-local" };
+    const firstCloud = { schemaVersion: 1, activeCase: "case-cloud-first" };
+    const { manager, values } = createSyncManager({ local, cloud: firstCloud });
+    await manager.syncFromCloud();
+    const preserved = values.cloud_conflict_backup;
+    manager.cloudStorage.loadFromCloud = async () => ({ schemaVersion: 1, activeCase: "case-cloud-second" });
+    await manager.syncFromCloud();
+    assert.deepEqual(values.cloud_conflict_backup, preserved);
+});
