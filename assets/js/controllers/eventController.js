@@ -313,7 +313,7 @@ class EventController {
             const caseId = caseData?.id || data.caseId;
             if (!caseId || !app.progress) return;
 
-            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || (caseId + ':legacy');
+            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || app.progress.lastCompletedRunId || (caseId + ':legacy');
             const completedRuns = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
             if (completedRuns.includes(runId)) return;
 
@@ -323,6 +323,7 @@ class EventController {
             const isFirstSolve = !solvedCases.includes(caseId);
             completedRuns.push(runId);
             app.progress.completedRunIds = completedRuns;
+            app.progress.lastCompletedRunId = runId;
 
             if (app.caseManager) app.caseManager.caseState = 'solved';
             app.progress.activeCase = null;
@@ -397,6 +398,7 @@ class EventController {
             if (completedRuns.includes(runId)) return;
             completedRuns.push(runId);
             app.progress.completedRunIds = completedRuns;
+            app.progress.lastCompletedRunId = runId;
             app.progress.activeRunId = null;
             app.progressTracker?.caseFailed(caseData, runId);
             app.reputationSystem?.caseFailed(data);
