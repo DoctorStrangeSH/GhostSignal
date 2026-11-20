@@ -64,6 +64,9 @@ class ProgressTracker {
             timeSpent: timeSpent,
             hintsUsed: this.caseHintsUsed,
             attempts: this.caseAttempts,
+            endingId: ending?.id || null,
+            endingTitle: ending?.title || null,
+            endingText: ending?.text || null,
             date: new Date().toISOString()
         };
         
