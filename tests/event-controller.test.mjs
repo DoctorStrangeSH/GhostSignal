@@ -628,8 +628,8 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
     }
     assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 1,
         "a duplicate completion event must not settle promises twice");
-    assert.equal(calls.filter(call => call === "save").length, 2,
-        "both terminal snapshots remain persisted");
+    assert.equal(calls.filter(call => call === "save").length, 1,
+        "a duplicate completion event does not write a second snapshot");
     controller.dispose();
 });
 
