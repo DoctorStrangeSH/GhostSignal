@@ -778,7 +778,7 @@ test("AchievementScreen renders progress, hides secret requirements and filters 
     const screen = new AchievementScreen("screen-achievements", system);
     screen.render();
 
-    assert.match(container.innerHTML, /1 \/ 3/);
+    assert.match(container.innerHTML, /data-achievement-count>1<\/span> \/ 3/);
     assert.match(container.innerHTML, /33%/);
     assert.match(container.innerHTML, /Первое дело/);
     assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
