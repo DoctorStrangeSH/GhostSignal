@@ -60,7 +60,10 @@ class SaveController {
                 interrogationData: app.interrogationSystem?.toJSON(),
                 npcMemoryData: app.npcMemoryService?.toJSON(),
                 npcSocialData: app.npcSocialNetwork?.toJSON(),
-                npcRelationshipData: app.npcRelationshipService?.toJSON()
+                npcRelationshipData: app.npcRelationshipService?.toJSON(),
+                dialogueData: app.dialogueEngine?.toJSON()
+                    ? { ...app.dialogueEngine.toJSON(), caseId: app.progress.activeCase || null }
+                    : null
             };
         } catch (error) {
             console.error('Unable to build investigation snapshot:', error);
