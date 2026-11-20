@@ -242,7 +242,9 @@ class App {
         if (this.progress.dialogueData) {
             const savedDialogue = this.progress.dialogueData;
             const sameCase = savedDialogue.caseId === (this.progress.activeCase || null);
-            const restored = sameCase && this.callInterface?.restoreActiveDialogue(savedDialogue);
+            const expectedDialogueId = this.npcManager?.getDialogueForNPC?.(savedDialogue.npcId);
+            const belongsToActiveCase = expectedDialogueId === savedDialogue.dialogueId;
+            const restored = sameCase && belongsToActiveCase && this.callInterface?.restoreActiveDialogue(savedDialogue);
             if (!restored) {
                 this.progress.dialogueData = null;
                 this._quickSave();
