@@ -8,8 +8,8 @@ const CASE_001 = {
     difficulty: 1,
     description: "Мистер Блэквуд, постоялец отеля «Гранд», исчез из запертого номера 304. Дверь закрыта изнутри, окно не открывали. Признаков взлома нет. Администрация отеля просит провести расследование.",
     achievements: [
-        { id: "case_001_full_truth", name: "Человек найден", description: "Добейтесь идеального раскрытия исчезновения в отеле «Гранд».", icon: "🗝️", rarity: "epic", criteria: { type: "ending_id", endingId: "case-001-perfect" } },
-        { id: "case_001_clean_work", name: "Без лишнего шума", description: "Раскройте исчезновение в отеле без подсказок.", icon: "🕯️", rarity: "rare", criteria: { type: "case_no_hints", caseId: "case-001" } }
+        { id: "case_001_full_truth", name: "Человек найден", description: "Добейтесь идеального раскрытия исчезновения в отеле «Гранд».", icon: "🗝️", rarity: "epic", secret: true, criteria: { type: "ending_id", endingId: "case-001-perfect" } },
+        { id: "case_001_clean_work", name: "Без лишнего шума", description: "Раскройте исчезновение в отеле без подсказок.", icon: "🕯️", rarity: "rare", secret: true, criteria: { type: "case_no_hints", caseId: "case-001" } }
     ],
     
     // === ВРЕМЯ СТАРТА ===
