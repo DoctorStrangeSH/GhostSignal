@@ -176,9 +176,10 @@ class AuthUI {
         const user = this.authManager.getUser();
         const conflictDetails = window.app?.syncManager?.getConflictDetails?.();
         const hasConflict = Boolean(conflictDetails || storage.get('cloud_conflict_backup'));
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
         const describeSave = (label, details) => {
             if (!details) return '<p><strong>' + label + ':</strong> детали старой копии недоступны; сама копия сохранена.</p>';
-            const caseName = details.activeCase || 'Нет активного дела';
+            const caseName = escapeHtml(details.activeCase || 'Нет активного дела');
             const savedAt = details.updatedAt ? new Date(details.updatedAt).toLocaleString('ru-RU') : 'Время неизвестно';
             return '<div class="auth-conflict-version"><strong>' + label + '</strong><br>Дело: ' + caseName + '<br>Завершено дел: ' + details.solvedCases + '<br>Последнее изменение: ' + savedAt + '<br>Ревизия: ' + (details.revision ?? '—') + '</div>';
         };
