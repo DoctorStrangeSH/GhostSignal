@@ -8,8 +8,8 @@ const CASE_002 = {
     difficulty: 2,
     description: "Джонатан Блэквуд найден без сознания после отравления в баре. В стакане обнаружен яд. Бывшая жена и деловой конкурент становятся первыми версиями следствия, а неизвестная женщина в красном может оказаться важным свидетелем.",
     achievements: [
-        { id: "case_002_kane_confession", name: "Признание Кейна", description: "Добейтесь полного признания Виктора Кейна.", icon: "⚖️", rarity: "epic", criteria: { type: "ending_id", endingId: "case-002-perfect" } },
-        { id: "case_002_no_hints", name: "Ни одной подсказки", description: "Раскройте дело об отравлении без подсказок.", icon: "🧪", rarity: "rare", criteria: { type: "case_no_hints", caseId: "case-002" } }
+        { id: "case_002_kane_confession", name: "Признание Кейна", description: "Добейтесь полного признания Виктора Кейна.", icon: "⚖️", rarity: "epic", secret: true, criteria: { type: "ending_id", endingId: "case-002-perfect" } },
+        { id: "case_002_no_hints", name: "Ни одной подсказки", description: "Раскройте дело об отравлении без подсказок.", icon: "🧪", rarity: "rare", secret: true, criteria: { type: "case_no_hints", caseId: "case-002" } }
     ],
     
     // === ВРЕМЯ СТАРТА ===
