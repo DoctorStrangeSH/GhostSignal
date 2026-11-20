@@ -409,6 +409,15 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
     for (const locationId of gameCase.locations || []) checkRef(data.locations, locationId, "Case " + id);
     for (const npcId of gameCase.npcs || []) checkRef(data.npcs, npcId, "Case " + id);
     const activeNpcIds = new Set(gameCase.npcs || []);
+    for (const [npcId, dialogueId] of Object.entries(gameCase.npcDialogueOverrides || {})) {
+        if (!activeNpcIds.has(npcId)) {
+            errors.push("Case " + id + " overrides dialogue for an inactive NPC: " + npcId);
+        }
+        const dialogue = data.dialogues?.[dialogueId];
+        if (!dialogue || dialogue.npcId !== npcId) {
+            errors.push("Case " + id + " has an invalid dialogue override for NPC " + npcId + ": " + dialogueId);
+        }
+    }
     const relationshipConfig = gameCase.npcRelationships || {};
     const goalIds = new Set();
     for (const goal of relationshipConfig.goals || []) {
