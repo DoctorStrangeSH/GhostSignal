@@ -149,6 +149,7 @@ test("reset clears all serializable active dialogue state", () => {
 
 test("player answers are retained in the dialogue transcript for reload", () => {
     const { engine, dialogue } = createEngineHarness();
+    engine.memoryService = null;
     engine.currentDialogue = dialogue;
     engine.currentStableNodeId = "greeting";
     engine.currentNode = { id: "greeting", ...dialogue.tree.nodes.greeting };
