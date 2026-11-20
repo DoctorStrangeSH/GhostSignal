@@ -88,11 +88,13 @@ class AchievementSystem {
             }),
             this.events.on('case:solved', data => {
                 const caseId = data?.caseId || data?.caseData?.id || this.progress?.activeCase;
-                const start = Number(this.progress?.activeRunStartedGameMinute);
+                const storedStart = this.progress?.activeRunStartedGameMinute;
+                const hasStart = typeof storedStart === 'number' && Number.isFinite(storedStart);
+                const start = hasStart ? storedStart : null;
                 const current = this._absoluteGameMinute(
                     this.services.gameTime?.toJSON?.() || this.progress?.gameTime
                 );
-                if (caseId && Number.isFinite(start) && Number.isFinite(current)) {
+                if (caseId && hasStart && Number.isFinite(current)) {
                     const elapsed = current - start;
                     if (elapsed >= 0 && elapsed < 30) {
                         this.unlock('speedy', {
@@ -125,6 +127,23 @@ class AchievementSystem {
                 }
             })
         ].filter(Boolean);
+    }
+
+    reconcile() {
+        const caseId = this.progress?.activeCase;
+        if (!caseId) return [];
+        const unlocked = [];
+        const time = this.services.gameTime?.toJSON?.() || this.progress.gameTime;
+        const hour = Number(time?.hour);
+        if (Number.isInteger(hour) && hour >= 0 && hour < 5) {
+            const record = this.unlock('night_owl', {
+                caseData: { id: caseId }, context: 'resumed_night_investigation', hour
+            });
+            if (record) unlocked.push(record);
+        }
+        const evidence = this._checkAllCaseEvidence(caseId);
+        if (evidence) unlocked.push(this.records.all_evidence);
+        return unlocked;
     }
 
     _absoluteGameMinute(time) {
