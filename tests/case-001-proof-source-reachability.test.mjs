@@ -48,7 +48,9 @@ function reachableCaseObjects(caseData, locations, objects) {
             const object = objects[objectId];
             if (!object) continue;
             const examine = object.interactions?.examine;
-            const unlock = object.interactions?.unlock;
+            const unlock = object.requiresItem && !items.has(object.requiresItem)
+                ? null
+                : object.interactions?.unlock;
             for (const result of [examine, unlock]) {
                 if (!result) continue;
                 if (result.spawnsItem && !items.has(result.spawnsItem)) {
