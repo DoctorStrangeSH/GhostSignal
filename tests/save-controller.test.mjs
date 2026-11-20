@@ -90,9 +90,9 @@ test("SaveController reports failed writes and does not claim a successful quick
 
     assert.equal(controller.quickSave(), false);
     assert.equal(attempts, 1);
-    assert.deepEqual(progress.npcMemoryData.cases["case-001"], { witness: true });
-    assert.deepEqual(progress.npcSocialData.cases["case-001"], { rumor: true });
-    assert.deepEqual(progress.npcRelationshipData.cases["case-001"], { trust: 42 });
+    assert.equal(progress.npcMemoryData, undefined, "failed writes must not mutate the last known-good in-memory save");
+    assert.equal(progress.npcSocialData, undefined);
+    assert.equal(progress.npcRelationshipData, undefined);
     assert.equal(controller.saveProgress(), false);
     assert.equal(attempts, 2);
 });
