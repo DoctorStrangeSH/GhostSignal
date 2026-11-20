@@ -28,7 +28,10 @@ export function resolvePublicFile(rootDirectory, requestPath) {
     } catch {
         return null;
     }
-    if (pathname.includes('\0')) return null;
+    if (pathname.includes('\0') || pathname.includes('\\')) return null;
+    // Hidden paths are not game assets and may contain repository metadata or
+    // local secrets (.git, .env, editor state). Never expose them over HTTP.
+    if (pathname.split('/').some(segment => segment.startsWith('.'))) return null;
 
     const root = resolve(rootDirectory);
     const candidate = resolve(root, '.' + (pathname.startsWith('/') ? pathname : '/' + pathname));
