@@ -95,8 +95,8 @@ test("failed cloud upload keeps both save versions and the conflict unresolved",
     await manager.syncFromCloud();
     assert.equal(await manager.resolveConflict("local"), false);
     assert.equal(manager.hasConflict, true);
-    assert.deepEqual(values.cloud_conflict_backup.local, local);
-    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.local), JSON.stringify(local));
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.cloud), JSON.stringify(cloud));
 });
 
 test("failed local restore does not clear the conflict backup", async () => {
@@ -106,8 +106,8 @@ test("failed local restore does not clear the conflict backup", async () => {
     await manager.syncFromCloud();
     assert.equal(await manager.resolveConflict("cloud"), false);
     assert.equal(manager.hasConflict, true);
-    assert.deepEqual(values.cloud_conflict_backup.local, local);
-    assert.deepEqual(values.cloud_conflict_backup.cloud, cloud);
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.local), JSON.stringify(local));
+    assert.equal(JSON.stringify(values.cloud_conflict_backup.cloud), JSON.stringify(cloud));
 });
 
 test("legacy cloud-only conflict backups remain resolvable", async () => {
