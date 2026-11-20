@@ -61,3 +61,11 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 
 - `package-lock.json` is currently absent. The quality workflow does not install npm dependencies, while the visual workflow installs a pinned Playwright version with lockfile generation disabled.
 - Before release, decide whether to add and commit a lockfile for the runtime/development dependency set, then use `npm ci` in workflows that install project dependencies. Do not generate or claim a lockfile until it has been produced and validated with the project's Node/npm version.
+
+## Art-reference audit (2026-11-20)
+
+- Direct references were confirmed for all five location SVGs through `assets/css/art-direction.css`.
+- Direct references were confirmed for the board texture, menu background, brand emblem and seven location/city backgrounds through the corresponding noir CSS files.
+- All nine portrait WebP files are referenced by the two case NPC data packs and rendered by `assets/js/ui/npcListUI.js`.
+- `assets/art/evidence/bar-contact-print.webp` is the only art file not yet found in the direct-reference paths checked (CSS, HTML and case NPC/evidence/object data). Treat it as a possible orphan, not as safe to delete: inspect dynamic/runtime usage and visual intent before removal.
+- No art resources were deleted or recompressed in this audit. The objective is to identify genuinely unused files without degrading the visual direction.
