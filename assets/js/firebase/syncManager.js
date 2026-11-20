@@ -5,13 +5,12 @@ class SyncManager {
         this.storage = storageManager;
         this.syncInProgress = false;
         this.hasConflict = Boolean(this.storage.get('cloud_conflict_backup'));
+        this._bindEvents();
     }
 
     _isSaveCompatible(data) {
         if (typeof SaveMigrationManager === 'undefined' || typeof SAVE_SCHEMA_VERSION === 'undefined') return true;
         return new SaveMigrationManager(SAVE_SCHEMA_VERSION).migrate(data).ok;
-
-        this._bindEvents();
     }
 
     _bindEvents() {
