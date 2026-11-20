@@ -234,6 +234,7 @@ class App {
         return {
             schemaVersion: SAVE_SCHEMA_VERSION,
             solvedCases: [], failedCases: [], totalHintsUsed: 0, totalTimeSpent: 0, activeCase: null,
+            activeRunId: null, playthroughSequence: 0, completedRunIds: [],
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
             boardData: null, notesData: null, trackerData: null, reputationData: null,
