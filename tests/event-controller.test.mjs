@@ -721,11 +721,14 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     assert.equal(showCalls, 1);
     assert.equal(elements["modal-title"].innerHTML, "Первое окно");
 
+    // Bootstrap removes .show as soon as hide starts, but keeps its backdrop
+    // until the transition completes. A class-only check would miss this race.
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
     eventBus.emit("modal:show", { title: "Второе окно", body: "Текст 2", footer: "Продолжить" });
-    assert.equal(showCalls, 1, "Bootstrap must not be asked to show a modal while another is open");
+    assert.equal(showCalls, 1, "Bootstrap must not be asked to show while the previous hide transition is running");
     assert.equal(elements["modal-title"].innerHTML, "Первое окно");
 
-    classes.delete("show");
     modalElement.dispatch("hidden.bs.modal");
     assert.equal(showCalls, 2);
     assert.equal(classes.has("show"), true);
