@@ -757,9 +757,12 @@ test("SaveController includes achievement unlock records in the same durable sna
 
 test("AchievementScreen renders progress, hides secret requirements and filters the collection", () => {
     let clickHandler = null;
+    let backHandler = null;
+    const backButton = { addEventListener: (name, handler) => { if (name === "click") backHandler = handler; } };
     const container = {
         innerHTML: "",
-        addEventListener: (name, handler) => { if (name === "click") clickHandler = handler; }
+        addEventListener: (name, handler) => { if (name === "click") clickHandler = handler; },
+        querySelector: selector => selector === "[data-achievement-back]" ? backButton : null
     };
     const AchievementScreen = loadClass("assets/js/ui/achievementScreen.js", "AchievementScreen", {
         document: { getElementById: id => id === "screen-achievements" ? container : null },
@@ -776,7 +779,12 @@ test("AchievementScreen renders progress, hides secret requirements and filters 
         getSummary: () => ({ total: 3, unlocked: 1, percent: 33 })
     };
     const screen = new AchievementScreen("screen-achievements", system);
+    let returnedToMenu = false;
+    screen.setOnBack(() => { returnedToMenu = true; });
     screen.render();
+    assert.equal(typeof backHandler, "function");
+    backHandler();
+    assert.equal(returnedToMenu, true);
 
     assert.match(container.innerHTML, /data-achievement-count>1<\/span> \/ 3/);
     assert.match(container.innerHTML, /33%/);
