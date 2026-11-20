@@ -19,13 +19,17 @@ function loadCaseOne() {
         "assets/data/cases/case-001/index.js",
         "assets/data/cases/case-001/locations.js",
         "assets/data/cases/case-001/objects.js",
-        "assets/data/cases/case-001/dialogues/housekeeper.js"
+        "assets/data/cases/case-001/dialogues/housekeeper.js",
+        "assets/data/cases/case-001/dialogues/porter.js"
     ]) {
         vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
     }
     return {
         caseData: vm.runInContext("CASE_001", context),
-        dialogue: vm.runInContext("DIALOGUE_HOUSEKEEPER", context),
+        dialogues: [
+            vm.runInContext("DIALOGUE_HOUSEKEEPER", context),
+            vm.runInContext("DIALOGUE_PORTER", context)
+        ],
         locations: registry.location,
         object: registry.object
     };
@@ -124,4 +128,48 @@ test("the perfect ending's independent rescue-location insight is reachable in t
 
     assert.equal(locationNode.givesInsight, "blackwood_location_revealed");
     assert.equal(hasUnconditionalDialoguePath(dialogue, "where_is_he"), true);
+});
+
+
+function collectConditionAtoms(condition) {
+    if (typeof condition !== "string" || !condition) return [];
+    if (condition.startsWith("not:")) return collectConditionAtoms(condition.slice(4));
+    if (condition.startsWith("all:") || condition.startsWith("any:")) {
+        return condition.slice(condition.indexOf(":") + 1)
+            .split("&").flatMap(collectConditionAtoms);
+    }
+    return [condition];
+}
+
+test("case one dialogue prerequisites always reference obtainable evidence or an existing insight source", () => {
+    const { dialogues, object } = loadCaseOne();
+    const objectInsights = Object.values(object)
+        .flatMap(entry => Object.values(entry.interactions || {}))
+        .map(interaction => interaction?.givesInsight)
+        .filter(Boolean);
+    const dialogueInsights = dialogues.flatMap(dialogue =>
+        Object.values(dialogue.tree.nodes)
+            .map(node => node.givesInsight)
+            .filter(Boolean)
+    );
+    const availableInsights = new Set([...objectInsights, ...dialogueInsights]);
+
+    for (const dialogue of dialogues) {
+        for (const [nodeId, node] of Object.entries(dialogue.tree.nodes)) {
+            for (const answer of node.answers || []) {
+                for (const atom of collectConditionAtoms(answer.condition)) {
+                    if (atom.startsWith("hasInsight:")) {
+                        const insightId = atom.slice("hasInsight:".length);
+                        assert.ok(availableInsights.has(insightId),
+                            `Dialogue ${dialogue.id}/${nodeId} requires insight ${insightId}, but no case-one source provides it`);
+                    }
+                    if (atom.startsWith("hasItem:")) {
+                        const itemId = atom.slice("hasItem:".length);
+                        assert.ok(object[itemId],
+                            `Dialogue ${dialogue.id}/${nodeId} requires missing item ${itemId}`);
+                    }
+                }
+            }
+        }
+    }
 });
