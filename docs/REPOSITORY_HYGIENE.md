@@ -26,7 +26,7 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [x] Obtain passing Quality checks and Visual smoke runs on the updated branch HEAD.
 - [ ] Review all 129 branch refs against merged PRs and unique commits.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
-- [ ] Complete source-level asset reference audit and review duplicate/obsolete documentation before deleting anything.
+- [x] Complete source-level asset reference audit for the current art inventory; all 26 art files have confirmed uses after checking the dynamic evidence-photo viewer.
 - [ ] Complete a clean install/build/test run from the documented setup.
 
 ## Branch cleanup rules
@@ -68,4 +68,5 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - Direct references were confirmed for the board texture, menu background, brand emblem and seven location/city backgrounds through the corresponding noir CSS files.
 - All nine portrait WebP files are referenced by the two case NPC data packs and rendered by `assets/js/ui/npcListUI.js`.
 - `assets/art/evidence/bar-contact-print.webp` is confirmed in active runtime use by `assets/js/ui/inventoryUI.js` (`_renderBarPhotoStudy`, line 193), shown when the player inspects `bar_photo`. It is not an orphan and must be retained.
+- All 26 art resources in `assets/art/` now have confirmed direct or dynamic references; no art file is currently approved for deletion.
 - No art resources were deleted or recompressed in this audit. The objective is to identify genuinely unused files without degrading the visual direction.
