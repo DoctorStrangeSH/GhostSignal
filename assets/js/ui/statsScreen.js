@@ -2,6 +2,42 @@ class StatsScreen {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.progressTracker = null;
+        this.reputationSystem = null;
+    }
+
+    setReputation(reputationSystem) {
+        this.reputationSystem = reputationSystem || null;
+    }
+
+    _renderFactionReputation() {
+        const groups = [
+            { id: 'police', name: 'Полиция', icon: '🚔' },
+            { id: 'press', name: 'Пресса', icon: '📰' },
+            { id: 'residents', name: 'Жители', icon: '🏘️' },
+            { id: 'witnesses', name: 'Свидетели', icon: '🗣️' },
+            { id: 'underworld', name: 'Преступный мир', icon: '🌒' }
+        ];
+        if (!this.reputationSystem?.getFactionStanding) return '';
+        return `
+            <section class="stats-card faction-reputation-card" aria-labelledby="faction-reputation-title">
+                <div class="faction-reputation-heading">
+                    <div><h4 id="faction-reputation-title">⚖️ РЕПУТАЦИЯ СРЕДИ СООБЩЕСТВ</h4>
+                    <p>Разные группы по-разному оценивают ваши поступки</p></div>
+                </div>
+                <div class="faction-reputation-list">
+                    ${groups.map(group => {
+                        const standing = this.reputationSystem.getFactionStanding(group.id);
+                        if (!standing) return '';
+                        const score = Math.max(0, Math.min(100, Number(standing.score) || 0));
+                        return `<div class="faction-reputation-row" data-faction="${group.id}">
+                            <div class="faction-reputation-meta"><span class="faction-reputation-name">${group.icon} ${group.name}</span>
+                            <span class="faction-reputation-standing">${standing.label}</span><strong>${score}/100</strong></div>
+                            <div class="faction-reputation-track" role="progressbar" aria-label="Репутация: ${group.name}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${score}">
+                                <span style="width:${score}%"></span></div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </section>`;
     }
     
     setTracker(tracker) {
@@ -83,6 +119,8 @@ class StatsScreen {
                     </div>
                 </div>
                 
+                ${this._renderFactionReputation()}
+
                 <!-- История дел -->
                 <div class="stats-card history-card">
                     <h4>📜 ИСТОРИЯ ДЕЛ</h4>
