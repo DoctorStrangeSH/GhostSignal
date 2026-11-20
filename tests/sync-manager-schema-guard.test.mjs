@@ -130,3 +130,14 @@ test("an existing unresolved conflict is never replaced by a later cloud snapsho
     await manager.syncFromCloud();
     assert.deepEqual(values.cloud_conflict_backup, preserved);
 });
+
+test("saveEverywhere does not upload when the local storage write fails", async () => {
+    const { manager, calls } = createSyncManager({
+        local: null,
+        localSaveResult: false
+    });
+    const result = await manager.saveEverywhere({ schemaVersion: 1, activeCase: "case-001" });
+    assert.equal(result, false);
+    assert.equal(calls.localSaves, 1);
+    assert.equal(calls.cloudSaves, 0, "cloud must never receive a snapshot that was not persisted locally");
+});
