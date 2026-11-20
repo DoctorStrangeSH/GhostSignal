@@ -3,13 +3,23 @@ class LocationManager {
         this.gameTime = gameTime;
         this.currentLocation = null;
         this.activeCaseData = null;
-        this.unlockedLocations = new Set(['police_station', 'hotel_grand', 'hotel_room_304', 'bar_joe', 'alley']);
+        this.defaultUnlockedLocations = new Set(['police_station', 'hotel_grand', 'hotel_room_304', 'bar_joe', 'alley']);
+        this.unlockedLocations = new Set(this.defaultUnlockedLocations);
         this.visitedLocations = new Set();
         this._listeners = [];
     }
 
     setActiveCase(caseData) {
         this.activeCaseData = caseData || null;
+    }
+
+    // Start a genuinely new investigation without carrying over case-only map progress.
+    // Restore paths deliberately use setActiveCase() so saved unlocks remain intact.
+    beginCase(caseData) {
+        this.activeCaseData = caseData || null;
+        this.currentLocation = null;
+        this.unlockedLocations = new Set(this.defaultUnlockedLocations);
+        this.visitedLocations.clear();
     }
 
     // Проверить, доступна ли локация сейчас
