@@ -4,8 +4,8 @@
   "description": "Ghost Signal — детективный терминал. Раскрывайте нераскрытые дела сквозь цифровые помехи.",
   "main": "index.html",
   "scripts": {
-    "start": "npx serve .",
-    "dev": "npx live-server --port=3000 --no-browser",
+    "start": "node scripts/dev-server.mjs",
+    "dev": "node scripts/dev-server.mjs 3000",
     "build": "npm run check && npm run validate:data && npm test",
     "check": "node scripts/check-syntax.mjs",
     "test": "node --test",
@@ -21,9 +21,6 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {
-    "serve": "^14.0.0"
-  },
   "engines": {
     "node": ">=20"
   }
