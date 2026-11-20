@@ -191,3 +191,18 @@
     .stats-header h2 { font-size: 18px; }
     .rank-badge h3 { font-size: 20px; }
 }
+
+/* Community-specific detective reputation */
+.faction-reputation-card{grid-column:1/-1}
+.faction-reputation-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+.faction-reputation-heading h4{margin:0;color:var(--text-bright)}
+.faction-reputation-heading p{margin:5px 0 0;color:var(--text-dim);font-size:11px;line-height:1.5}
+.faction-reputation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+.faction-reputation-row{min-width:0;padding:10px 12px;border:1px solid rgba(212,160,23,.12);border-radius:8px;background:rgba(10,14,18,.28)}
+.faction-reputation-meta{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;margin-bottom:9px;font-size:11px}
+.faction-reputation-name{color:var(--text-bright);font-weight:600;overflow-wrap:anywhere}
+.faction-reputation-standing{color:var(--text-dim);text-align:right}
+.faction-reputation-meta strong{color:var(--accent-amber-glow);font-variant-numeric:tabular-nums;white-space:nowrap}
+.faction-reputation-track{height:7px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.08)}
+.faction-reputation-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#80612f,#d4a047);transition:width .25s ease}
+@media(max-width:700px){.faction-reputation-list{grid-template-columns:1fr}.faction-reputation-meta{grid-template-columns:minmax(0,1fr) auto}.faction-reputation-standing{grid-column:1;grid-row:2;text-align:left}.faction-reputation-meta strong{grid-column:2;grid-row:1/3}}
