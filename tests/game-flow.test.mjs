@@ -12,6 +12,7 @@ function createRuntime() {
     const dataScripts = [...html.matchAll(/<script src="(assets\/data\/[^"]+\.js)"><\/script>/g)]
         .map(match => match[1])
         .filter(path => path === "assets/data/core-init.js" ||
+            path.startsWith("assets/data/shared/") ||
             path === "assets/data/cases/case-index.js" ||
             path.startsWith("assets/data/cases/case-001/") ||
             path.startsWith("assets/data/cases/case-002/"));
