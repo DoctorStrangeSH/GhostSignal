@@ -98,8 +98,8 @@ class EventController {
             app.progress.playthroughSequence = (Number.isInteger(app.progress.playthroughSequence) ? app.progress.playthroughSequence : 0) + 1;
             const runId = caseId + ':' + Date.now() + ':' + app.progress.playthroughSequence;
             app.progress.activeRunId = runId;
-            app.progressTracker?.startCase(caseId, runId);
-            app.progress.trackerData = app.progressTracker?.toJSON() || app.progress.trackerData;
+            app.progressTracker?.startCase?.(caseId, runId);
+            app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.completedRunIds = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
             app.investigationBoard?.setCase(caseId);
             app.progress.boardData = app.investigationBoard?.toJSON();
