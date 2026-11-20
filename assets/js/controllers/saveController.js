@@ -52,6 +52,7 @@ class SaveController {
                 boardData: app.investigationBoard?.toJSON(),
                 notesData: app.notesManager?.toJSON(),
                 trackerData: app.progressTracker?.toJSON(),
+                achievementData: app.achievementSystem?.toJSON(),
                 reputationData: app.reputationSystem?.toJSON(),
                 stakeoutData: app.stakeoutSystem?.toJSON(),
                 chainData: app.evidenceChainSystem?.toJSON(),
