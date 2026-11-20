@@ -856,3 +856,78 @@ test("AchievementSystem unlocks night and full-board achievements only from real
     events.emit("time:changed", { hour: 1, minute: 0 });
     assert.equal(system.records.night_owl.caseId, "case-001", "disposed listeners must not react to future events");
 });
+
+
+test("AchievementSystem awards collector only after every declared case clue is acquired", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, achievementData: null };
+    const inventory = { items: [] };
+    const caseData = { id: "case-001", evidenceIds: ["clue-a", "clue-b", "clue-c"] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events, { inventory });
+
+    events.emit("case:started", { caseId: "case-001", caseData });
+    inventory.items.push("clue-a", "clue-b");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-b" });
+    assert.equal(system.unlocked.includes("all_evidence"), false, "missing one clue must keep the achievement locked");
+
+    inventory.items.push("clue-c");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-c" });
+    assert.equal(system.unlocked.includes("all_evidence"), true);
+    assert.equal(system.records.all_evidence.caseId, "case-001");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-c" });
+    assert.equal(system.unlocked.filter(id => id === "all_evidence").length, 1);
+    system.dispose();
+});
+
+test("AchievementSystem awards speedy from elapsed in-game minutes, with a strict 30-minute limit", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, gameTime: { day: 1, hour: 8, minute: 0 } };
+    const clock = { value: { day: 1, hour: 8, minute: 0 }, toJSON() { return { ...this.value }; } };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem(progress, events, { gameTime: clock });
+
+    events.emit("case:started", { caseId: "case-001" });
+    assert.equal(progress.activeRunStartedGameMinute, 480);
+    clock.value = { day: 1, hour: 8, minute: 29 };
+    events.emit("case:solved", { caseId: "case-001" });
+    assert.equal(system.unlocked.includes("speedy"), true);
+    assert.equal(system.records.speedy.caseId, "case-001");
+    assert.equal(progress.activeRunStartedGameMinute, null);
+
+    const exactProgress = { activeCase: null, gameTime: { day: 1, hour: 8, minute: 0 } };
+    const exactClock = { value: { day: 1, hour: 8, minute: 0 }, toJSON() { return { ...this.value }; } };
+    const exactSystem = new AchievementSystem(exactProgress, events, { gameTime: exactClock });
+    events.emit("case:started", { caseId: "case-002" });
+    exactClock.value = { day: 1, hour: 8, minute: 30 };
+    events.emit("case:solved", { caseId: "case-002" });
+    assert.equal(exactSystem.unlocked.includes("speedy"), false, "exactly 30 minutes does not qualify");
+    system.dispose();
+    exactSystem.dispose();
+});
