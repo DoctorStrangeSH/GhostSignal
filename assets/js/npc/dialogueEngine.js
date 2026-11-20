@@ -356,7 +356,7 @@ class DialogueEngine {
             typeof snapshot.stableNodeId !== 'string') return false;
 
         const dialogue = getDialogueById(snapshot.dialogueId);
-        if (!dialogue?.tree?.nodes || (snapshot.npcId && dialogue.npcId !== snapshot.npcId)) return false;
+        if (!dialogue?.tree?.nodes || !dialogue.npcId || snapshot.npcId !== dialogue.npcId) return false;
         const nodes = dialogue.tree.nodes;
         const stableNode = nodes[snapshot.stableNodeId];
         if (!stableNode) return false;
