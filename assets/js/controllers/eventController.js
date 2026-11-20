@@ -299,7 +299,7 @@ class EventController {
             const avail = app.npcManager?.isNPCAvailable(id);
             if (!npc || !avail?.available) { events.emit('npc:call', id); return; }
             app.gameTime.advance(CONFIG.time.costs.dialogue);
-            app.callInterface.startCall(id);
+            app.callInterface.startCall(id, app.npcManager?.getDialogueForNPC?.(id));
         });
 
         on('npc:social_network_changed', () => {
