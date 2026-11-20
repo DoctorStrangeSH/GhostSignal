@@ -416,6 +416,8 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
         const dialogue = data.dialogues?.[dialogueId];
         if (!dialogue || dialogue.npcId !== npcId) {
             errors.push("Case " + id + " has an invalid dialogue override for NPC " + npcId + ": " + dialogueId);
+        } else {
+            dialogueReferences.add(dialogueId);
         }
     }
     const relationshipConfig = gameCase.npcRelationships || {};
