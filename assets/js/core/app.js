@@ -200,6 +200,7 @@ class App {
         this.achievementSystem = new AchievementSystem(this.progress);
         this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
         this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
+        this.achievementScreen.setOnBack(() => this.navigateTo('screen-main-menu'));
         this.difficultySystem = new DifficultySystem();
         this.interrogationSystem = InterrogationSystem.fromJSON(this.progress.interrogationData);
         this.alternateEndings = new AlternateEndings();
