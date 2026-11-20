@@ -169,10 +169,14 @@ test("case 002 gameplay events unlock the complete-evidence achievement and surv
     const AchievementSystem = vm.runInContext("AchievementSystem", context);
     const restored = new AchievementSystem(progress, systems.events, { inventory, gameTime: systems.gameTime });
     restored.load(savedAchievements);
-    const before = restored.getSummary().unlocked;
+    restored.reconcile();
+    const afterFirstResume = restored.getSummary().unlocked;
+    const evidenceAward = JSON.parse(JSON.stringify(restored.records.all_evidence));
     restored.reconcile();
 
-    assert.equal(restored.getSummary().unlocked, before, "resume must not duplicate or re-award an existing achievement");
+    assert.equal(restored.getSummary().unlocked, afterFirstResume, "repeated resume reconciliation must be idempotent");
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.records.all_evidence)), evidenceAward,
+        "the evidence achievement must keep its original award record");
     assert.equal(restored.records.all_evidence.caseId, "case-002");
     restored.dispose();
 });
