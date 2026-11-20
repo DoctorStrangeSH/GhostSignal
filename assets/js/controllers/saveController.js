@@ -11,12 +11,12 @@ class SaveController {
         this.saveFailed = false;
     }
 
-    saveProgress() {
-        if (!this.app.progress || this.app.saveBlocked) return false;
-        this.app.progress.schemaVersion = typeof SAVE_SCHEMA_VERSION !== 'undefined' ? SAVE_SCHEMA_VERSION : 1;
+    saveProgress(progress = this.app.progress) {
+        if (!this.app.progress || !progress || this.app.saveBlocked) return false;
+        progress.schemaVersion = typeof SAVE_SCHEMA_VERSION !== 'undefined' ? SAVE_SCHEMA_VERSION : 1;
         let saved = false;
         try {
-            saved = this.storage.saveProgress(this.app.progress) === true;
+            saved = this.storage.saveProgress(progress) === true;
         } catch (error) {
             console.error('Unable to save investigation:', error);
         }
@@ -75,7 +75,9 @@ class SaveController {
             return false;
         }
 
-        Object.assign(app.progress, snapshot);
-        return this.saveProgress();
+        const candidateProgress = { ...app.progress, ...snapshot };
+        const saved = this.saveProgress(candidateProgress);
+        if (saved) Object.assign(app.progress, candidateProgress);
+        return saved;
     }
 }
