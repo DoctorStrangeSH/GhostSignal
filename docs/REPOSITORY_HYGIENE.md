@@ -79,7 +79,7 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Found and fixed a failure path in `SyncManager.saveEverywhere()`: previously it could proceed to cloud upload even if `storage.saveProgress()` returned false.
 - [x] Cloud upload now stops immediately when local persistence fails or the persisted snapshot cannot be read back.
 - [x] Added a regression test proving that local write failure returns false and performs zero cloud writes.
-- [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 510/510 tests passed.
+- [x] Confirm Quality checks on commit `dde279b4198d6bd7049f4b847011c266d060af50`: 512/512 tests passed on commit `c2a66969b90f3003a7670bb1a31bc3ab6670c2d4`.
 - [ ] Confirm Visual smoke on the same commit.
 - [x] Remove the need for a project lockfile by eliminating third-party app dependencies; document Node.js 20+ as the only local runtime requirement.
 
@@ -91,4 +91,5 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Server supports GET/HEAD, MIME types, directory index files, 404/405 responses, path traversal protection and symlink containment checks.
 - [x] Hidden files/directories (including `.git` and `.env`) are denied to avoid exposing repository metadata or local secrets.
 - [x] Added automated tests for normal serving, MIME, HEAD, missing files, unsupported methods, traversal, hidden paths and symlink escapes.
-- [ ] Verify the server tests and complete Visual smoke on the newest commit.
+- [x] Verify the server implementation and tests: 512/512 tests passed on commit `c2a66969b90f3003a7670bb1a31bc3ab6670c2d4`.
+- [ ] Complete Visual smoke on the newest server implementation.
