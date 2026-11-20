@@ -67,5 +67,5 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - Direct references were confirmed for all five location SVGs through `assets/css/art-direction.css`.
 - Direct references were confirmed for the board texture, menu background, brand emblem and seven location/city backgrounds through the corresponding noir CSS files.
 - All nine portrait WebP files are referenced by the two case NPC data packs and rendered by `assets/js/ui/npcListUI.js`.
-- `assets/art/evidence/bar-contact-print.webp` is the only art file not yet found in the direct-reference paths checked (CSS, HTML and case NPC/evidence/object data). Treat it as a possible orphan, not as safe to delete: inspect dynamic/runtime usage and visual intent before removal.
+- `assets/art/evidence/bar-contact-print.webp` is confirmed in active runtime use by `assets/js/ui/inventoryUI.js` (`_renderBarPhotoStudy`, line 193), shown when the player inspects `bar_photo`. It is not an orphan and must be retained.
 - No art resources were deleted or recompressed in this audit. The objective is to identify genuinely unused files without degrading the visual direction.
