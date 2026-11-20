@@ -82,6 +82,10 @@ class EventController {
 
         on('navigation:go', (id) => { app.navigateTo(id); if (id === 'screen-map') app.mapRenderer?.render(); });
         on('case:select', (id) => app.loadCase(id));
+        on('case:replay', (id) => {
+            if (!id || !getCaseById(id)) return;
+            app.loadCase(id);
+        });
         on('case:load', (id) => app.loadCase(id));
 
         on('case:started', (data) => {
@@ -368,11 +372,12 @@ class EventController {
                     app.progressTracker.stats.solvedCaseIds.length
                 );
             }
-            app.progressTracker?.caseSolved?.(caseData, runId);
+            app.progressTracker?.caseSolved?.(caseData, runId, ending);
             app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON() || app.progress.reputationData;
             app.achievementSystem?.checkAll();
             app.caseListUI?.setProgress(app.progress);
+            app.caseArchiveUI?.setProgress(app.progress);
             app._updateMainMenu();
             document.getElementById('btn-continue')?.classList.add('hidden');
             app._quickSave();
