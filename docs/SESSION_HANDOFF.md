@@ -912,3 +912,12 @@ PR #1 оставить открытым, `main` не менять и не сли
 - PR #1 remains open; do not merge or modify `main` without the owner's explicit instruction.
 
 Next: implement an explicit, case-authored route graph (edges with travel minutes and access notes), not distances inferred from map coordinates. Route checks must be scoped to known/visited places and should explain assumptions; keep opening hours, investigator authorization, physical access, and actual NPC presence as separate concepts. Then add a case-002 route graph grounded in its narrative and test route reachability, travel-time budget, unavailable/undiscovered paths, and legacy-save behavior.
+
+
+## 2026-11-20: матрица концовок двух текущих расследований
+
+- Добавлен runtime-тест всех шести исходов: нераскрытое, частичное и идеальное завершение для case-001 и case-002.
+- Проверены независимые условия идеальных концовок, пороги улик для частичных исходов и запрет подмены признания простым количеством находок.
+- Проверено, что ending registry одного дела не влияет на другое.
+- Quality checks: **517/517 PASS**, syntax 110 JS-файлов, game-data validation PASS.
+- Следующий обязательный этап: пройти реальные браузерные маршруты обоих дел до каждой концовки. Скриншотный Visual smoke не считается заменой полного прохождения. Case-003 пока не создавать.
