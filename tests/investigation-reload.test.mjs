@@ -265,8 +265,8 @@ test("loading a different active case never imports the previous case's progress
     const restoredCase = CaseManager.fromJSON(oldCaseSnapshot, time, locations, inventory, "case-002");
     assert.equal(restoredCase.currentCase.id, "case-002");
     assert.equal(restoredCase.caseState, "active");
-    assert.deepEqual(restoredCase.completedEvents, []);
-    assert.deepEqual(restoredCase.visitedLocations, []);
+    assert.deepEqual(clone(restoredCase.completedEvents), []);
+    assert.deepEqual(clone(restoredCase.visitedLocations), []);
     assert.equal(restoredCase.evidenceFound, 0);
 
     const oldNpcSnapshot = {
@@ -277,7 +277,7 @@ test("loading a different active case never imports the previous case's progress
     };
     const restoredNPCs = NPCManager.fromJSON(oldNpcSnapshot, time, inventory, "case-002");
     assert.equal(restoredNPCs.currentCaseId, "case-002");
-    assert.deepEqual(restoredNPCs.activeNPCs.map(npc => npc.id), ["waiter"]);
-    assert.deepEqual(restoredNPCs.npcStates.waiter.dialoguesCompleted, []);
-    assert.deepEqual(restoredNPCs.autoTriggered, []);
+    assert.deepEqual(clone(restoredNPCs.activeNPCs.map(npc => npc.id)), ["waiter"]);
+    assert.deepEqual(clone(restoredNPCs.npcStates.waiter.dialoguesCompleted), []);
+    assert.deepEqual(clone(restoredNPCs.autoTriggered), []);
 });
