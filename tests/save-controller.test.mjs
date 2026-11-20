@@ -8,7 +8,7 @@ import vm from "node:vm";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function loadSaveController(globals = {}) {
-    const context = vm.createContext({ console, ...globals });
+    const context = vm.createContext({ console, SAVE_SCHEMA_VERSION: 1, ...globals });
     const source = readFileSync(resolve(root, "assets/js/controllers/saveController.js"), "utf8");
     vm.runInContext(source + "\n;globalThis.__exported = SaveController;", context);
     return context.__exported;
@@ -139,4 +139,27 @@ test("unexpected storage exceptions surface as a failed save without breaking th
     assert.equal(notices.length, 1);
     assert.equal(notices[0].detail.type, "error");
     assert.equal(errors.length, 2);
+});
+
+
+test("SaveController stamps the current schema version on every save", () => {
+    const progress = { activeCase: "case-001" };
+    let saved;
+    const controller = new (loadSaveController({ SAVE_SCHEMA_VERSION: 4 }))(
+        { progress }, { saveProgress(value) { saved = value; return true; } }
+    );
+    assert.equal(controller.saveProgress(), true);
+    assert.equal(saved.schemaVersion, 4);
+});
+
+test("SaveController never overwrites an unsupported future save", () => {
+    let writes = 0;
+    const progress = { schemaVersion: 7, activeCase: "case-001" };
+    const controller = new (loadSaveController())(
+        { progress, saveBlocked: true },
+        { saveProgress() { writes++; return true; } }
+    );
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(progress.schemaVersion, 7);
+    assert.equal(writes, 0);
 });
