@@ -126,3 +126,13 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 
 
 - [x] Case-scoped location unlock ownership changes passed Quality checks (516/516) and Visual smoke on runtime commit `1f667492b24028fbcfeabbe5d0c768324edb79f7`; later commits only updated documentation.
+
+
+## Case 001 evidence reachability (2026-11-20)
+
+- [x] Added a scene-object reachability regression test that follows accessible locations, examine-spawned evidence, revealed objects, and keyed containers.
+- [x] Confirmed both required accusation exhibits (`hidden_note`, `wire_fragment`) are discoverable.
+- [x] Confirmed both independent corroboration paths (`victim_knew_danger` from the diary and `blackwood_affair` from the torn photograph) have reachable sources.
+- [x] Confirmed the housekeeper dialogue graph contains the `blackwood_location_revealed` node required for the perfect ending.
+- [x] Quality checks: 519/519 tests passed; JavaScript syntax and game-data validation passed.
+- [ ] Browser playthrough still required for the actual key → wall safe → diary interaction sequence and all final routes.
