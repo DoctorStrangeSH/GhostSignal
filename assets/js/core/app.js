@@ -41,6 +41,7 @@ class App {
         this.ambianceDetails = null;
         this.tutorialSystem = null;
         this.achievementSystem = null;
+        this.achievementScreen = null;
         this.difficultySystem = null;
         this.interrogationSystem = null;
         this.alternateEndings = null;
@@ -185,7 +186,6 @@ class App {
         this.progressTracker = ProgressTracker.fromJSON(this.progress.trackerData);
         this.statsScreen = new StatsScreen('screen-stats');
         this.caseArchiveUI = new CaseArchiveUI('screen-case-archive');
-        this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
         this.caseArchiveUI.setProgress(this.progress);
 
         this.reputationSystem = ReputationSystem.fromJSON(this.progress.reputationData);
@@ -199,6 +199,7 @@ class App {
         this.tutorialSystem = new TutorialSystem();
         this.achievementSystem = new AchievementSystem(this.progress);
         this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
+        this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
         this.difficultySystem = new DifficultySystem();
         this.interrogationSystem = InterrogationSystem.fromJSON(this.progress.interrogationData);
         this.alternateEndings = new AlternateEndings();
