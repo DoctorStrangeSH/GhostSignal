@@ -6,6 +6,52 @@ const baseUrl = process.env.GHOST_SIGNAL_URL || 'http://127.0.0.1:4173';
 const output = 'artifacts/visual-smoke';
 await mkdir(output, { recursive: true });
 
+// Modal events can enqueue a follow-up narrative while Bootstrap is finishing
+// the previous hide transition. Wait for a genuinely quiet modal state instead
+// of assuming a fixed number of dialogs or a fixed transition delay.
+async function waitForModalQueueToSettle(page, { quietMs = 900, timeoutMs = 15000 } = {}) {
+    const startedAt = Date.now();
+    let quietSince = null;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const modal = page.locator('#universal-modal.show');
+        if (await modal.isVisible()) {
+            quietSince = null;
+            const close = modal.locator('[data-bs-dismiss="modal"], .btn-close').first();
+            if (!await close.count()) {
+                throw new Error('Visible modal has no dismiss control');
+            }
+            await close.click();
+            await page.locator('#universal-modal').waitFor({ state: 'hidden' });
+            await page.waitForTimeout(100);
+            continue;
+        }
+
+        const state = await page.evaluate(() => ({
+            visibleModals: document.querySelectorAll('.modal.show').length,
+            backdrops: document.querySelectorAll('.modal-backdrop').length,
+            bodyModalOpen: document.body.classList.contains('modal-open')
+        }));
+
+        if (state.visibleModals === 0 && state.backdrops === 0 && !state.bodyModalOpen) {
+            quietSince ??= Date.now();
+            if (Date.now() - quietSince >= quietMs) return;
+        } else {
+            quietSince = null;
+        }
+
+        await page.waitForTimeout(150);
+    }
+
+    const state = await page.evaluate(() => ({
+        visibleModals: [...document.querySelectorAll('.modal.show')].map(el => el.id || el.className),
+        backdrops: document.querySelectorAll('.modal-backdrop').length,
+        bodyModalOpen: document.body.classList.contains('modal-open'),
+        bodyClass: document.body.className
+    }));
+    throw new Error(`Modal queue did not settle within ${timeoutMs}ms: ${JSON.stringify(state)}`);
+}
+
 let ready = false;
 for (let attempt = 0; attempt < 30; attempt++) {
     try {
@@ -90,33 +136,17 @@ try {
         await page.waitForFunction(() => window.app?.inventory?.hasItem('guest_book') &&
             window.app?.inventory?.hasInsight('missing_page'));
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-        await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
+        await waitForModalQueueToSettle(page);
 
         await page.locator('#scene-container .scene-sublocation-btn').filter({ hasText: 'Номер 304' }).click();
         await page.waitForFunction(() => window.app?.sceneRenderer?.currentScene?.id === 'hotel_room_304');
-        // Location introductions are intentionally delayed after travel.
-        // Wait for that event-driven window, then dismiss every queued narrative
-        // through the actual UI control before examining room objects.
+        // Location introductions and autonomous NPC events can enqueue more
+        // than one narrative window. Drain the queue through the real UI.
         await page.waitForTimeout(850);
-        for (let index = 0; index < 5; index++) {
-            const travelModal = page.locator('#universal-modal.show');
-            if (!await travelModal.isVisible()) break;
-            const close = travelModal.locator('[data-bs-dismiss="modal"], .btn-close').first();
-            if (!await close.count()) break;
-            await close.click();
-            await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-            await page.waitForTimeout(200);
-        }
-        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-        await page.waitForFunction(() =>
-            document.querySelectorAll('.modal-backdrop').length === 0 &&
-            document.querySelectorAll('.modal.show').length === 0
-        );
+        await waitForModalQueueToSettle(page);
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Кровать' }).click();
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-        await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
+        await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
 
         for (const [tabId, filename, contentSelector] of [
