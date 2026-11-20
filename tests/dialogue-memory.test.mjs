@@ -3565,3 +3565,28 @@ test("Thomas does not generalize several threats within one investigation into c
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "thomas_declines_optional_followup"), false);
     assert.equal(engine.getAvailableAnswers().some(a => a.nextNode === "he_saw" && a.isAvailable), true);
 });
+
+
+test("finishing an NPC conversation emits one completion event for the interview tracker", () => {
+    const { engine, emitted } = createDialogueHarness();
+    engine.currentDialogue = {
+        id: "test-final-dialogue",
+        npcId: "waiter",
+        tree: { nodes: {
+            final_goodbye: { speaker: "npc", text: "На этом разговор окончен.", endDialogue: true }
+        } }
+    };
+    engine.currentNode = {
+        id: "final_question",
+        answers: [{ text: "До свидания.", nextNode: "final_goodbye" }]
+    };
+
+    const result = engine.selectAnswer(0);
+    assert.equal(result.endDialogue, true);
+    const completions = emitted.filter(event => event.name === "dialogue:completed");
+    assert.equal(completions.length, 1);
+    assert.deepEqual(
+        { npcId: completions[0].payload.npcId, dialogueId: completions[0].payload.dialogueId },
+        { npcId: "waiter", dialogueId: "test-final-dialogue" }
+    );
+});
