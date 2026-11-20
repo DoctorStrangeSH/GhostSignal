@@ -506,7 +506,13 @@ test("keeping the witness-protection promise improves witness and resident reput
             }
         },
         reputationSystem: {
-            changeFactionReputation(...args) { changes.push(args); },
+            applied: new Set(),
+            changeFactionReputation(...args) {
+                if (this.applied.has(args[3])) return { changed: false, reason: "already_applied" };
+                this.applied.add(args[3]);
+                changes.push(args);
+                return { changed: true };
+            },
             toJSON() { return { saved: true }; }
         }
     };
@@ -538,7 +544,13 @@ test("breaking the witness-protection promise harms witness and resident reputat
             }]
         },
         reputationSystem: {
-            changeFactionReputation(...args) { changes.push(args); },
+            applied: new Set(),
+            changeFactionReputation(...args) {
+                if (this.applied.has(args[3])) return { changed: false, reason: "already_applied" };
+                this.applied.add(args[3]);
+                changes.push(args);
+                return { changed: true };
+            },
             toJSON: () => ({ saved: true })
         }
     };
