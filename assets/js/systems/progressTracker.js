@@ -40,7 +40,7 @@ class ProgressTracker {
     }
     
     // Дело раскрыто
-    caseSolved(caseData, runId = this.activeRunId) {
+    caseSolved(caseData, runId = this.activeRunId, ending = null) {
         const id = runId || `${caseData.id}:legacy:${this.stats.casesHistory.length + 1}`;
         const existing = this.stats.casesHistory.find(record => record.runId === id);
         if (existing) return existing;
