@@ -466,9 +466,12 @@ test("a false public accusation harms Anna once and survives a memory reload", (
         "a proven false public accusation damages residents' confidence once");
     assert.equal(app.reputationSystem.getFactionReputation("witnesses"), 40,
         "witnesses become less willing to trust the detective");
-    assert.deepEqual(app.progress.reputationData.factionReputation, {
-        police: 50, press: 50, residents: 42, witnesses: 40, underworld: 50
-    }, "the faction consequences are included in the next save");
+    assert.equal(app.progress.reputationData.factionReputation.police, 50);
+    assert.equal(app.progress.reputationData.factionReputation.press, 50);
+    assert.equal(app.progress.reputationData.factionReputation.residents, 42);
+    assert.equal(app.progress.reputationData.factionReputation.witnesses, 40);
+    assert.equal(app.progress.reputationData.factionReputation.underworld, 50,
+        "the faction consequences are included in the next save");
     assert.ok(after < 50, "Anna's current trust decreases");
     assert.ok(memory.getLongTermProfile("ex_wife").trust < baseline, "long-term trust decreases");
     const stored = memory.toJSON();
