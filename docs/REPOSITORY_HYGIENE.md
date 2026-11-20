@@ -138,3 +138,11 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [ ] Browser playthrough still required for the actual key → wall safe → diary interaction sequence and all final routes.
 
 - [x] Visual smoke passed on runtime commit `51709079cdc09d668cc322861e232b5038e3b3c8`; subsequent commits changed only regression tests and documentation.
+
+
+## Case 001 dialogue prerequisite validation (2026-11-20)
+
+- [x] Fixed Frank's unavailable follow-up: replaced the orphaned `mary_suspicion` insight condition with `red_scarf_detail`, which the preceding dialogue node actually grants.
+- [x] Added regression coverage for every `hasInsight` and `hasItem` prerequisite in the housekeeper and porter dialogue trees.
+- [x] Quality checks: 520/520 tests passed; syntax validation and game-data validation passed.
+- [ ] Browser playthrough still required to confirm the follow-up question appears immediately after the red-scarf clue is received.
