@@ -148,13 +148,13 @@ test('opening another case clears previously visited places', () => {
 
 
 test("case 002 gameplay events unlock the complete-evidence achievement and survive achievement reload", () => {
-    const { systems, achievements, progress } = createRuntime();
+    const { context, systems, achievements, progress } = createRuntime();
     const { caseManager, inventory } = systems;
     assert.equal(caseManager.loadCase("case-002"), true);
     assert.equal(progress.activeCase, "case-002");
 
-    const caseData = systems.context.CASES_INDEX?.["case-002"] ||
-        vm.runInContext('getCaseById("case-002")', systems.context);
+    const caseData = context.CASES_INDEX?.["case-002"] ||
+        vm.runInContext('getCaseById("case-002")', context);
     assert.equal(caseData.evidenceIds.length, 14);
 
     for (const evidenceId of caseData.evidenceIds) {
@@ -166,7 +166,7 @@ test("case 002 gameplay events unlock the complete-evidence achievement and surv
 
     const savedAchievements = JSON.parse(JSON.stringify(achievements.toJSON()));
     achievements.dispose();
-    const AchievementSystem = vm.runInContext("AchievementSystem", systems.context);
+    const AchievementSystem = vm.runInContext("AchievementSystem", context);
     const restored = new AchievementSystem(progress, systems.events, { inventory, gameTime: systems.gameTime });
     restored.load(savedAchievements);
     const before = restored.getSummary().unlocked;
