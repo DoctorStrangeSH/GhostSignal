@@ -94,6 +94,9 @@ try {
         await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
 
         await page.locator('#scene-container .scene-sublocation-btn').filter({ hasText: 'Номер 304' }).click();
+        await page.waitForFunction(() => window.app?.sceneRenderer?.currentScene?.id === 'hotel_room_304');
+        await page.locator('#universal-modal').waitFor({ state: 'hidden' });
+        await page.waitForFunction(() => document.querySelectorAll('.modal-backdrop').length === 0);
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Кровать' }).click();
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await page.locator('#universal-modal').waitFor({ state: 'hidden' });
