@@ -312,6 +312,11 @@ class EventController {
         on('note:collected', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
         on('fragment:saved', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
 
+        on('achievement:unlocked', () => {
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
+            app._saveProgress?.();
+        });
+
         on('case:solved', (data = {}) => {
             const caseData = app.caseManager?.currentCase || getCaseById(data.caseId) || data;
             const caseId = caseData?.id || data.caseId;
@@ -375,7 +380,9 @@ class EventController {
             app.progressTracker?.caseSolved?.(caseData, runId, ending);
             app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON() || app.progress.reputationData;
-            app.achievementSystem?.checkAll();
+            const runRecord = app.progressTracker?.stats?.casesHistory?.find(record => record.runId === runId) || null;
+            app.achievementSystem?.checkAll({ caseData, runRecord, ending, firstClear: isFirstSolve });
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
             app.caseListUI?.setProgress(app.progress);
             app.caseArchiveUI?.setProgress(app.progress);
             app._updateMainMenu();
