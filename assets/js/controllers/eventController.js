@@ -188,6 +188,13 @@ class EventController {
                 text: 'Детектив публично назвал этого человека виновным, не подтвердив обвинение.'
             });
             if (!recorded?.recorded) return;
+            // A proven false public accusation damages confidence in the detective
+            // among residents and witnesses. The event ID makes this consequence idempotent.
+            app.reputationSystem?.changeFactionReputation?.('residents', -8,
+                'Публичное ложное обвинение: ' + suspectId, 'false-public-accusation:' + caseId + ':' + suspectId);
+            app.reputationSystem?.changeFactionReputation?.('witnesses', -10,
+                'Публичное ложное обвинение: ' + suspectId, 'false-public-accusation:' + caseId + ':' + suspectId);
+            app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
             app.npcMemoryService.resolveAccusation(
                 suspectId, accusationId, 'false', 'Публичное обвинение противоречит установленным обстоятельствам дела.'
             );
