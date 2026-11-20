@@ -16,7 +16,7 @@ class CallInterface {
     }
 
     // Начать звонок
-    startCall(npcId) {
+    startCall(npcId, dialogueId = null) {
         const npc = getNPCById(npcId);
         if (!npc) return;
 
@@ -119,7 +119,7 @@ class CallInterface {
 
     _connectCall(npc) {
         // Определяем диалог
-        const dialogueId = npc.dialogueId;
+        const dialogueId = this.currentDialogueId || npc.dialogueId;
         if (!dialogueId) {
             this.endCall();
             return;
@@ -166,6 +166,7 @@ class CallInterface {
         }
 
         this.currentNPC = npc;
+        this.currentDialogueId = dialogueId || npc.dialogueId || null;
         this.isCallActive = true;
         this._showCallingScreen(npc);
         const status = document.getElementById('call-status');
