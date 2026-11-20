@@ -178,3 +178,49 @@ test("SaveController skips snapshot serialization while migration recovery is re
     assert.equal(serialized, 0);
     assert.equal(writes, 0);
 });
+
+
+test("quickSave includes the active dialogue and binds it to the current case", () => {
+    let saved = null;
+    const app = {
+        progress: { activeCase: "case-002" },
+        dialogueEngine: {
+            toJSON() {
+                return {
+                    dialogueId: "dialogue-waiter",
+                    npcId: "waiter",
+                    nodeId: "after_visit",
+                    stableNodeId: "after_visit",
+                    nodeText: "Я видел его у входа."
+                };
+            }
+        }
+    };
+    const controller = new (loadSaveController())(app, {
+        saveProgress(value) { saved = structuredClone(value); return true; }
+    });
+
+    assert.equal(controller.quickSave(), true);
+    assert.deepEqual(saved.dialogueData, {
+        dialogueId: "dialogue-waiter",
+        npcId: "waiter",
+        nodeId: "after_visit",
+        stableNodeId: "after_visit",
+        nodeText: "Я видел его у входа.",
+        caseId: "case-002"
+    });
+});
+
+test("quickSave clears stale active dialogue data when no conversation is open", () => {
+    let saved = null;
+    const app = {
+        progress: { activeCase: "case-001", dialogueData: { dialogueId: "stale" } },
+        dialogueEngine: { toJSON() { return null; } }
+    };
+    const controller = new (loadSaveController())(app, {
+        saveProgress(value) { saved = structuredClone(value); return true; }
+    });
+
+    assert.equal(controller.quickSave(), true);
+    assert.equal(saved.dialogueData, null);
+});
