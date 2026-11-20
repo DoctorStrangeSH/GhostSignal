@@ -28,7 +28,8 @@ This file records the repository cleanup state for the Ghost Signal 1.0 release.
 - [ ] Prune branches only after confirming their work is merged or otherwise preserved.
 - [x] Complete source-level asset reference audit for the current art inventory; all 26 art files have confirmed uses after checking the dynamic evidence-photo viewer.
 - [x] Remove unpinned runtime/dev server dependencies and replace them with a Node.js built-in static server.
-- [x] Complete Quality checks on the case-dialogue architecture changes: 514/514 tests passed; data validation and syntax checks passed.
+- [x] Complete Quality checks on the case-dialogue architecture changes: 515/515 tests passed; data validation and syntax checks passed.
+- [x] Extract recurring NPC profiles and their default dialogues into `assets/data/shared/`; update script load order and integration coverage.
 - [ ] Complete Visual smoke on the latest documentation HEAD.
 - [x] Add a regression guard: cloud upload is aborted when the preceding local save fails; the new test is running in CI.
 
@@ -104,3 +105,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Regression coverage added for switching between case-001 and case-002 without mutating the shared bartender profile.
 - [x] Updated the new-case template and added `docs/CASE_PACK_AUTHORING.md`.
 - [ ] Extract recurring bartender/sergeant profiles and shared dialogue from the legacy case-001 folder into a shared-data pack before case-003 is created.
+
+
+## Shared NPC and dialogue extraction (2026-11-20)
+
+- [x] Moved Joe and Sergeant Mills profiles to `assets/data/shared/npcs.js`.
+- [x] Moved their base dialogue trees to `assets/data/shared/dialogues/`.
+- [x] Removed the old case-001 dialogue script tags and files; case-specific Joe dialogue for case-002 remains in case-002.
+- [x] Case runtime tests load the shared data before case packs.
+- [ ] Confirm full quality and browser visual checks after the shared dialogue move.
