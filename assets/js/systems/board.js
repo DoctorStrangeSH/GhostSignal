@@ -70,7 +70,7 @@ class InvestigationBoard {
         // Убираем улику из инвентаря
         events.emit('inventory:remove', evidenceId);
 
-        events.emit('board:updated', { action: 'place', evidenceId, slotId });
+        events.emit('board:updated', { action: 'place', evidenceId, slotId, caseId: this.caseId, filledSlots: this.slots.filter(item => item.evidenceId).length, totalSlots: this.slots.length });
         return true;
     }
 
