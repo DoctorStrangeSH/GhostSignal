@@ -959,3 +959,42 @@ test("AchievementSystem reconciles collected evidence when resuming an active in
     assert.equal(system.records.all_evidence.caseId, "case-002");
     system.dispose();
 });
+
+
+test("AchievementSystem awards social detective only after every case participant finishes a dialogue", () => {
+    const listeners = new Map();
+    const emitted = [];
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            emitted.push({ name, payload });
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const caseData = { id: "case-001", npcs: ["porter", "bartender", "housekeeper"] };
+    const progress = { activeCase: null, activeCaseDialogueNpcIds: [] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events);
+
+    events.emit("case:started", { caseId: "case-001", caseData });
+    events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
+    events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
+    events.emit("dialogue:completed", { npcId: "unknown", dialogueId: "unknown_intro" });
+    assert.deepEqual(progress.activeCaseDialogueNpcIds, ["porter"]);
+    assert.equal(system.unlocked.includes("social_detective"), false);
+
+    events.emit("dialogue:completed", { npcId: "bartender", dialogueId: "bartender_intro" });
+    assert.equal(system.unlocked.includes("social_detective"), false);
+    events.emit("dialogue:completed", { npcId: "housekeeper", dialogueId: "housekeeper_intro" });
+    assert.equal(system.unlocked.includes("social_detective"), true);
+    assert.equal(system.records.social_detective.caseId, "case-001");
+    assert.ok(emitted.some(event => event.name === "achievement:progress_changed"));
+    system.dispose();
+});
