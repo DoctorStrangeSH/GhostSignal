@@ -291,7 +291,7 @@ class EventController {
             if (!npc) { events.emit('notification:show', { message: 'Абонент не найден', type: 'error', duration: 2000 }); return; }
             if (!avail?.available) { events.emit('notification:show', { message: avail?.message || 'Недоступен', type: 'warning', duration: 3000 }); return; }
             app.gameTime.advance(CONFIG.time.costs.call);
-            app.callInterface.startCall(id);
+            app.callInterface.startCall(id, app.npcManager?.getDialogueForNPC?.(id));
         });
 
         on('npc:chat', (id) => {
