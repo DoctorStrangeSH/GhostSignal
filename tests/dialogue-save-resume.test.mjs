@@ -142,5 +142,5 @@ test("reset clears all serializable active dialogue state", () => {
     engine.reset();
     assert.equal(engine.toJSON(), null);
     assert.equal(engine.currentStableNodeId, null);
-    assert.deepEqual(engine.getHistory(), []);
+    assert.deepEqual(Array.from(engine.getHistory()), []);
 });
