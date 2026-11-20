@@ -658,3 +658,69 @@ test("Case archive ending codex reveals only endings present in completed-run hi
     assert.doesNotMatch(container.innerHTML, /Секретная развязка/);
     assert.match(container.innerHTML, /ОТКРЫТО/);
 });
+
+
+test("AchievementSystem unlocks data-driven run achievements once and persists them in progress", () => {
+    const emitted = [];
+    const events = { emit: (name, payload) => emitted.push({ name, payload }) };
+    const storageWrites = [];
+    const storage = { set: (key, value) => storageWrites.push({ key, value: [...value] }) };
+    const caseData = {
+        id: "case-001",
+        achievements: [
+            { id: "case_001_full_truth", name: "Человек найден", description: "Добейтесь полной концовки.", icon: "🗝️", rarity: "epic", criteria: { type: "ending_id", endingId: "case-001-perfect" } },
+            { id: "case_001_clean_work", name: "Без лишнего шума", description: "Раскройте дело без подсказок.", icon: "🕯️", rarity: "rare", criteria: { type: "case_no_hints", caseId: "case-001" } }
+        ]
+    };
+    const progress = {
+        solvedCases: ["case-001"],
+        trackerData: { stats: { casesHistory: [] } },
+        reputationData: { reputation: 75 }
+    };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events);
+    system.load(null, ["first_case"]);
+
+    const firstRun = {
+        runId: "case-001:run-1", caseId: "case-001", result: "solved",
+        hintsUsed: 0, attempts: 1, endingId: "case-001-perfect"
+    };
+    progress.trackerData.stats.casesHistory.push(firstRun);
+    const unlocked = system.checkAll({ caseData, runRecord: firstRun, ending: { id: firstRun.endingId } });
+
+    assert.ok(unlocked.some(record => record.id === "no_hints"));
+    assert.ok(unlocked.some(record => record.id === "perfect_case"));
+    assert.ok(unlocked.some(record => record.id === "case_001_full_truth"));
+    assert.ok(unlocked.some(record => record.id === "case_001_clean_work"));
+    assert.ok(system.unlocked.includes("first_case"), "legacy local achievements remain unlocked");
+    assert.equal(system.checkAll({ caseData, runRecord: firstRun }).length, 0, "rechecking one run does not duplicate rewards");
+    assert.equal(progress.achievementData.unlocked.length, system.unlocked.length);
+    assert.ok(storageWrites.length >= 1);
+    assert.ok(emitted.some(event => event.name === "achievement:unlocked"));
+
+    const replay = { ...firstRun, runId: "case-001:run-2", hintsUsed: 2, attempts: 3, endingId: "case-001-partial" };
+    progress.trackerData.stats.casesHistory.push(replay);
+    const replayUnlocks = system.checkAll({ caseData, runRecord: replay, ending: { id: replay.endingId } });
+    assert.ok(replayUnlocks.some(record => record.id === "two_endings"));
+
+    const saved = system.toJSON();
+    const restored = new AchievementSystem(progress, events);
+    restored.registerCases([]);
+    restored.load(saved);
+    assert.deepEqual(Array.from(restored.unlocked).sort(), Array.from(system.unlocked).sort());
+    assert.equal(restored.records.case_001_full_truth.runId, "case-001:run-1");
+    assert.equal(restored.getSummary().unlocked, system.getSummary().unlocked);
+});
+
+test("AchievementSystem rejects malformed case achievement definitions", () => {
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events: { emit() {} }, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem({});
+    assert.equal(system.register({ id: "broken", name: "Broken" }), false);
+    assert.equal(system.register({ id: "valid", name: "Valid", criteria: { type: "case_solved", caseId: "case-x" } }), true);
+    assert.equal(system.register({ id: "valid", name: "Updated", criteria: { type: "case_solved", caseId: "case-x" } }), true);
+    assert.equal(system.getAll().filter(item => item.id === "valid").length, 1);
+});
