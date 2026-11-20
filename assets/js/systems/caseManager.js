@@ -39,7 +39,11 @@ class CaseManager {
         }
         
         this.currentCase = caseData;
-        this.locationManager?.setActiveCase?.(caseData);
+        if (typeof this.locationManager?.beginCase === 'function') {
+            this.locationManager.beginCase(caseData);
+        } else {
+            this.locationManager?.setActiveCase?.(caseData);
+        }
         this.caseState = 'active';
         this.completedEvents = [];
         this.visitedLocations = [];
@@ -47,7 +51,6 @@ class CaseManager {
 
         // Exploration belongs to the active investigation. A new case must
         // not inherit visited locations from a previous case's map.
-        this.locationManager?.visitedLocations?.clear?.();
         
         // Устанавливаем время начала дела
         if (caseData.startTime) {
