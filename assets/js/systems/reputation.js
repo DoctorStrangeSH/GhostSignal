@@ -75,7 +75,7 @@ class ReputationSystem {
         this.changeNPCRelation('sergeant', 2);
         
         events.emit('notification:show', {
-            message: `Репутация +15. Текущий статус: ${this.title}`,
+            message: `Репутация ${appliedBonus >= 0 ? '+' : ''}${appliedBonus}. Текущий статус: ${this.title}`,
             type: 'success',
             duration: 4000
         });
