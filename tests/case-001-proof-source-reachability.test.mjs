@@ -259,6 +259,21 @@ test("every gated case-one location has an obtainable unlock item", () => {
     const { caseData, locations, object, dialogues } = loadCaseOne();
     const { reachable, items } = reachableCaseObjects(caseData, locations, object);
     const failures = [];
+    const accessibleEvidence = new Set([...reachable, ...items].filter(itemId =>
+        object[itemId]?.isEvidence === true && object[itemId]?.takeable === true
+    ));
+    assert.ok(accessibleEvidence.size >= 3,
+        `case one must expose at least three distinct collectible evidence items; found ${accessibleEvidence.size}`);
+
+    const sergeant = dialogues.find(dialogue => dialogue.npcId === "sergeant");
+    assert.ok(sergeant, "the shared sergeant dialogue must be loaded for case one");
+    const opening = sergeant.tree?.nodes?.[sergeant.tree?.start];
+    const warrantOption = (opening?.answers || []).find(answer => answer.nextNode === "warrant_request");
+    assert.ok(warrantOption, "the sergeant must offer a warrant request in the opening dialogue");
+    assert.equal(warrantOption.condition, "evidence_count:3",
+        "the warrant request must require three distinct collected evidence items");
+    assert.equal(sergeant.tree.nodes.review_evidence?.givesEvidence, "search_warrant",
+        "the evidence review must grant the warrant needed by the locked apartment");
 
     for (const locationId of caseData.locations) {
         const location = locations[locationId];
