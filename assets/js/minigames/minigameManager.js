@@ -70,7 +70,7 @@ class MinigameManager {
             game.render(modalBody);
             modalFooter.innerHTML = ''; // Убираем стандартные кнопки
 
-            const modal = new bootstrap.Modal(document.getElementById('universal-modal'));
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('universal-modal'));
             modal.show();
 
             // При закрытии модалки останавливаем игру
