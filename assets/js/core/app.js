@@ -32,6 +32,7 @@ class App {
         this.answerChecker = null;
         this.progressTracker = null;
         this.statsScreen = null;
+        this.caseArchiveUI = null;
         this.reputationSystem = null;
         this.stakeoutSystem = null;
         this.evidenceChainSystem = null;
@@ -40,6 +41,7 @@ class App {
         this.ambianceDetails = null;
         this.tutorialSystem = null;
         this.achievementSystem = null;
+        this.achievementScreen = null;
         this.difficultySystem = null;
         this.interrogationSystem = null;
         this.alternateEndings = null;
@@ -80,7 +82,35 @@ class App {
 
     _afterLoad() {
         console.log('📂 Загрузка данных...');
-        this.progress = storage.loadProgress() || this._defaultProgress();
+        const storedProgress = storage.loadProgress();
+        const loadedProgress = storedProgress || this._defaultProgress();
+        const migrationManager = new SaveMigrationManager(SAVE_SCHEMA_VERSION);
+        const migration = migrationManager.migrateWithBackup(loadedProgress, storage, Boolean(storedProgress));
+        this.saveBlocked = !migration.ok;
+        if (migration.reason === 'backup_failed') {
+            console.error('Save migration blocked: backup could not be written.');
+            events.emit('notification:show', {
+                message: '⚠️ Не удалось создать резервную копию сохранения. Запись отключена, исходный прогресс сохранён.',
+                type: 'warning', duration: 10000
+            });
+            this.progress = { ...this._defaultProgress(), ...loadedProgress };
+        } else if (!migration.ok) {
+            console.error('Save migration could not be completed:', migration.reason);
+            events.emit('notification:show', {
+                message: '⚠️ Сохранение создано более новой версией игры или требует обновления. Исходные данные сохранены без изменений.',
+                type: 'warning', duration: 10000
+            });
+            this.progress = { ...this._defaultProgress(), ...loadedProgress };
+        } else {
+            this.progress = { ...this._defaultProgress(), ...migration.data };
+            if (migration.applied.length) {
+                console.info('Save schema migrated:', migration.fromVersion, '->', migration.toVersion);
+                events.emit('notification:show', {
+                    message: 'Резервная копия сохранения создана перед обновлением формата.',
+                    type: 'system', duration: 5000
+                });
+            }
+        }
 
         this._initGameTime();
         this._bindNavigation();
@@ -94,8 +124,15 @@ class App {
         this.locationManager = new LocationManager(this.gameTime);
         if (this.progress.locationData) {
             const s = this.progress.locationData;
-            this.locationManager.unlockedLocations = new Set(s.unlockedLocations || []);
+            this.locationManager.unlockedLocations = new Set(s.unlockedLocations || this.locationManager.defaultUnlockedLocations);
+            // Keep legacy unlocks intact: old saves cannot tell case gates from permanent rewards.
+            this.locationManager.permanentUnlockedLocations = new Set(
+                s.permanentUnlockedLocations ||
+                (!Array.isArray(s.caseUnlockedLocations) ? s.unlockedLocations || [] : [])
+            );
+            this.locationManager.caseUnlockedLocations = new Set(s.caseUnlockedLocations || []);
             this.locationManager.currentLocation = s.currentLocation || null;
+            this.locationManager.visitedLocations = new Set(s.visitedLocations || []);
         }
 
         this.inventory = Inventory.fromJSON(this.progress.inventoryData);
@@ -155,6 +192,8 @@ class App {
         this.answerChecker = new AnswerChecker();
         this.progressTracker = ProgressTracker.fromJSON(this.progress.trackerData);
         this.statsScreen = new StatsScreen('screen-stats');
+        this.caseArchiveUI = new CaseArchiveUI('screen-case-archive');
+        this.caseArchiveUI.setProgress(this.progress);
 
         this.reputationSystem = ReputationSystem.fromJSON(this.progress.reputationData);
         this.newspaperUI = new NewspaperUI();
@@ -165,7 +204,11 @@ class App {
         this.jukebox = new Jukebox();
         this.ambianceDetails = new AmbianceDetails(this.gameTime, this.weatherSystem);
         this.tutorialSystem = new TutorialSystem();
-        this.achievementSystem = new AchievementSystem(); this.achievementSystem.load();
+        this.achievementSystem = new AchievementSystem(this.progress, events, { inventory: this.inventory, gameTime: this.gameTime });
+        this.achievementSystem.load(this.progress.achievementData, storage.get('achievements', []));
+        this.achievementSystem.reconcile();
+        this.achievementScreen = new AchievementScreen('screen-achievements', this.achievementSystem);
+        this.achievementScreen.setOnBack(() => this.navigateTo('screen-main-menu'));
         this.difficultySystem = new DifficultySystem();
         this.interrogationSystem = InterrogationSystem.fromJSON(this.progress.interrogationData);
         this.alternateEndings = new AlternateEndings();
@@ -173,7 +216,7 @@ class App {
 
         this.authManager = new AuthManager();
         this.cloudStorage = new CloudStorage(this.authManager);
-        this.syncManager = new SyncManager(this.authManager, this.cloudStorage, storage);
+        this.syncManager = new SyncManager(this.authManager, this.cloudStorage, storage, () => this.saveBlocked);
         this.authUI = new AuthUI(this.authManager);
 
         this.detectiveThoughts = new DetectiveThoughts();
@@ -194,6 +237,21 @@ class App {
 
         this._bindEvents();
 
+        // Restore an interrupted conversation only after all case systems and
+        // event listeners are ready. A snapshot from another case is discarded.
+        if (this.progress.dialogueData) {
+            const savedDialogue = this.progress.dialogueData;
+            const sameCase = savedDialogue.caseId === (this.progress.activeCase || null);
+            const expectedDialogueId = this.npcManager?.getDialogueForNPC?.(savedDialogue.npcId);
+            const belongsToActiveCase = expectedDialogueId === savedDialogue.dialogueId;
+            const restored = sameCase && belongsToActiveCase && this.callInterface?.restoreActiveDialogue(savedDialogue);
+            if (!restored) {
+                this.progress.dialogueData = null;
+                this._quickSave();
+            }
+        }
+
+
         // Reconcile already-collected clues after listeners are attached.
         if (this.caseManager?.currentCase) this.evidenceChainSystem?.checkChains();
 
@@ -204,11 +262,14 @@ class App {
 
     _defaultProgress() {
         return {
+            schemaVersion: SAVE_SCHEMA_VERSION,
             solvedCases: [], failedCases: [], totalHintsUsed: 0, totalTimeSpent: 0, activeCase: null,
+            activeRunId: null, activeRunStartedGameMinute: null, activeCaseDialogueNpcIds: [], lastCompletedRunId: null, playthroughSequence: 0, completedRunIds: [],
             gameTime: { hour: 8, minute: 0, day: 1 },
             locationData: null, inventoryData: null, caseData: null, npcData: null,
-            boardData: null, notesData: null, trackerData: null, reputationData: null,
-            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null
+            boardData: null, notesData: null, trackerData: null, reputationData: null, dialogueData: null,
+            stakeoutData: null, chainData: null, weatherData: null, interrogationData: null, npcMemoryData: null, npcSocialData: null, npcRelationshipData: null,
+            achievementData: { version: 1, unlocked: [], records: [] }
         };
     }
 
@@ -268,7 +329,7 @@ class App {
             <hr><h4>📖 Обучение</h4><button id="btn-restart-tutorial" class="terminal-btn">🔄 ПРОЙТИ ЗАНОВО</button>
             <hr><h4>🔄 Сброс</h4><button id="btn-reset-case" class="terminal-btn" style="border-color:var(--accent-red-bright);">🗑️ ДЕЛО ЗАНОВО</button>
             <button id="btn-reset-all" class="terminal-btn" style="border-color:var(--accent-red-bright);">💀 СБРОСИТЬ ВСЁ</button>
-            <hr><h4>🏆 Достижения</h4><div class="achievements-grid">${this.achievementSystem.getAll().map(a => `<div class="achievement-card ${a.unlocked?'unlocked':'locked'}"><span class="achievement-icon">${a.unlocked?a.icon:'🔒'}</span><div class="achievement-info"><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.description}</div></div><span class="achievement-rarity rarity-${a.rarity}">${a.rarity}</span></div>`).join('')}</div>
+            <hr><h4>🏆 Достижения · ${this.achievementSystem.getSummary().unlocked}/${this.achievementSystem.getSummary().total}</h4><div class="achievements-grid">${this.achievementSystem.getAll().map(a => `<div class="achievement-card ${a.unlocked?'unlocked':'locked'}"><span class="achievement-icon">${a.unlocked?a.icon:'🔒'}</span><div class="achievement-info"><div class="achievement-name">${a.unlocked || !a.secret ? a.name : 'СЕКРЕТНОЕ ДОСТИЖЕНИЕ'}</div><div class="achievement-desc">${a.unlocked || !a.secret ? a.description : 'Условие скрыто. Продолжайте расследование.'}</div></div><span class="achievement-rarity rarity-${a.rarity}">${a.rarity}</span></div>`).join('')}</div>
         `;
         footer.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ</button>';
         const modal = new bootstrap.Modal(document.getElementById('universal-modal')); modal.show();

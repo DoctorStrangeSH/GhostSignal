@@ -39,7 +39,11 @@ class CaseManager {
         }
         
         this.currentCase = caseData;
-        this.locationManager?.setActiveCase?.(caseData);
+        if (typeof this.locationManager?.beginCase === 'function') {
+            this.locationManager.beginCase(caseData);
+        } else {
+            this.locationManager?.setActiveCase?.(caseData);
+        }
         this.caseState = 'active';
         this.completedEvents = [];
         this.visitedLocations = [];
@@ -47,7 +51,6 @@ class CaseManager {
 
         // Exploration belongs to the active investigation. A new case must
         // not inherit visited locations from a previous case's map.
-        this.locationManager?.visitedLocations?.clear?.();
         
         // Устанавливаем время начала дела
         if (caseData.startTime) {
@@ -69,7 +72,7 @@ class CaseManager {
             caseData.locations.forEach(locId => {
                 const location = getLocationById(locId);
                 if (location?.unlockedByDefault !== false) {
-                    this.locationManager.unlockLocation(locId);
+                    this._unlockCaseLocation(locId);
                 }
             });
         }
@@ -151,6 +154,16 @@ class CaseManager {
     // Проверить финальный ответ
     checkFinalAnswer(answer) {
         if (!this.currentCase?.finalQuestion) return null;
+        // A closed investigation cannot accept another verdict. This protects
+        // failed/solved runs even if a stale UI callback fires after closure.
+        if (this.caseState === 'failed' || this.caseState === 'solved') {
+            return {
+                isCorrect: false,
+                caseClosed: true,
+                title: 'ДЕЛО УЖЕ ЗАКРЫТО',
+                text: 'Это расследование уже завершено. Начните новое прохождение, чтобы вынести вердикт.'
+            };
+        }
         
         const proof = assessAccusationEvidence(this.currentCase, this.inventory);
         if (!proof.sufficient) {
@@ -262,12 +275,19 @@ class CaseManager {
         events.emit('case:ready_for_final', true);
     }
 
+    _unlockCaseLocation(locationId) {
+        if (typeof this.locationManager?.unlockCaseLocation === 'function') {
+            return this.locationManager.unlockCaseLocation(locationId);
+        }
+        return this.locationManager?.unlockLocation?.(locationId) || false;
+    }
+
     _checkUnlockConditions() {
         if (!this.currentCase?.unlockConditions) return;
         
         this.currentCase.unlockConditions.forEach(condition => {
             if (this.inventory.hasItem(condition.requiresItem)) {
-                const unlocked = this.locationManager.unlockLocation(condition.locationId);
+                const unlocked = this._unlockCaseLocation(condition.locationId);
                 if (unlocked && condition.message) {
                     events.emit('notification:show', {
                         message: condition.message,

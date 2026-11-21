@@ -134,3 +134,150 @@ test('breaking a promise persists its consequence across reloads without double 
     assert.equal(restored.getMemory('waiter').trust, before - 8);
     assert.ok(restored.people.waiter.memories.some(entry => entry.type === 'promise_broken'));
 });
+
+
+function loadCoreSystems() {
+    const cases = {
+        "case-001": { id: "case-001", title: "Дело 001", npcs: ["bartender"], unlockConditions: [] },
+        "case-002": { id: "case-002", title: "Дело 002", npcs: ["waiter"], unlockConditions: [] }
+    };
+    const npcs = {
+        bartender: { id: "bartender", name: "Бармен" },
+        waiter: { id: "waiter", name: "Официант" }
+    };
+    const context = vm.createContext({
+        console,
+        events: { emit() {} },
+        CONFIG: { time: { dawn: 6, day: 9, dusk: 18, night: 22 } },
+        getCaseById: id => cases[id] || null,
+        getNPCById: id => npcs[id] || null,
+        getObjectById: () => null,
+        getObjectsByIds: () => [],
+        getLocationById: () => null,
+        getMapLocations: () => [],
+        getSubLocations: () => [],
+        window: {}
+    });
+    const paths = [
+        "assets/js/systems/gameTime.js",
+        "assets/js/systems/locationManager.js",
+        "assets/js/systems/inventory.js",
+        "assets/js/systems/caseManager.js",
+        "assets/js/npc/npcManager.js",
+        "assets/js/systems/notes.js",
+        "assets/js/systems/board.js",
+        "assets/js/controllers/saveController.js"
+    ];
+    for (const path of paths) {
+        vm.runInContext(readFileSync(resolve(root, path), "utf8"), context, { filename: path });
+    }
+    return vm.runInContext(
+        "({ GameTime, LocationManager, Inventory, CaseManager, NPCManager, NotesManager, InvestigationBoard, SaveController })",
+        context
+    );
+}
+
+test("a complete active investigation restores time, map, inventory, case progress, NPC state, notes and board", () => {
+    const { GameTime, LocationManager, Inventory, CaseManager, NPCManager, NotesManager, InvestigationBoard, SaveController } = loadCoreSystems();
+    const time = new GameTime(21, 35, 4);
+    const locations = new LocationManager(time);
+    locations.currentLocation = "hotel_room_304";
+    locations.unlockedLocations.add("private_archive");
+    locations.visitedLocations.add("hotel_room_304");
+
+    const inventory = new Inventory();
+    inventory.items = ["magnifying_glass", "sealed_letter"];
+    inventory.evidence = ["torn_photo", "telephone_exchange_slip"];
+    inventory.insights = ["photo_detail"];
+    inventory.currentWeight = 4;
+
+    const caseManager = new CaseManager(time, locations, inventory);
+    assert.equal(caseManager.loadCase("case-002"), true);
+    caseManager.caseState = "active";
+    caseManager.completedEvents = ["joe_interview", "archive_unlocked"];
+    caseManager.visitedLocations = ["bar_joe", "hotel_room_304"];
+    caseManager.evidenceFound = 7;
+
+    const npcManager = new NPCManager(time, inventory);
+    npcManager.currentCaseId = "case-002";
+    npcManager.activeNPCs = [{ id: "waiter", name: "Официант" }];
+    npcManager.npcStates.waiter = {
+        dialoguesCompleted: ["waiter_first_interview"],
+        evidenceGiven: ["torn_photo"],
+        insightsGiven: ["photo_detail"],
+        lastInteraction: { hour: 21, minute: 10 }
+    };
+    npcManager.autoTriggered = ["waiter_warning"];
+
+    const notes = new NotesManager();
+    notes.collectedNotes = ["case-002-police-report"];
+    notes.highlightedFragments = [{ id: "fragment-1", noteId: "case-002-police-report", text: "Свидетель изменил время" }];
+
+    const board = new InvestigationBoard();
+    board.setCase("case-002");
+    const hypothesis = board.addHypothesis("Свидетель изменил время");
+    board.linkHypothesis(hypothesis, "evidence", "torn_photo", "against");
+
+    const app = {
+        progress: { activeCase: "case-002" },
+        gameTime: time, locationManager: locations, inventory, caseManager,
+        npcManager, notesManager: notes, investigationBoard: board
+    };
+    let stored = null;
+    const save = new SaveController(app, { saveProgress(value) { stored = clone(value); return true; } });
+    assert.equal(save.quickSave(), true);
+
+    const snapshot = clone(stored);
+    const restoredTime = GameTime.fromJSON(snapshot.gameTime);
+    const restoredLocations = LocationManager.fromJSON(snapshot.locationData, restoredTime);
+    const restoredInventory = Inventory.fromJSON(snapshot.inventoryData);
+    const restoredCase = CaseManager.fromJSON(snapshot.caseData, restoredTime, restoredLocations, restoredInventory, snapshot.activeCase);
+    const restoredNPCs = NPCManager.fromJSON(snapshot.npcData, restoredTime, restoredInventory, snapshot.activeCase);
+    const restoredNotes = NotesManager.fromJSON(snapshot.notesData);
+    const restoredBoard = InvestigationBoard.fromJSON(snapshot.boardData);
+    restoredBoard.setCase(snapshot.activeCase, true);
+
+    assert.deepEqual(clone(restoredTime.toJSON()), clone(time.toJSON()));
+    assert.deepEqual(clone(restoredLocations.toJSON()), clone(locations.toJSON()));
+    assert.deepEqual(clone(restoredInventory.toJSON()), clone(inventory.toJSON()));
+    assert.deepEqual(clone(restoredCase.toJSON()), clone(caseManager.toJSON()));
+    assert.deepEqual(clone(restoredNPCs.toJSON()), clone(npcManager.toJSON()));
+    assert.deepEqual(clone(restoredNotes.toJSON()), clone(notes.toJSON()));
+    assert.deepEqual(clone(restoredBoard.toJSON()), clone(board.toJSON()));
+    assert.equal(restoredLocations.activeCaseData.id, "case-002");
+    assert.equal(restoredNPCs.activeNPCs[0].id, "waiter");
+    assert.equal(restoredCase.canAccuse?.() ?? true, true);
+});
+
+test("loading a different active case never imports the previous case's progress or NPC state", () => {
+    const { GameTime, LocationManager, Inventory, CaseManager, NPCManager } = loadCoreSystems();
+    const time = new GameTime(12, 0, 1);
+    const locations = new LocationManager(time);
+    const inventory = new Inventory();
+
+    const oldCaseSnapshot = {
+        currentCaseId: "case-001",
+        caseState: "solved",
+        completedEvents: ["old_case_finale"],
+        visitedLocations: ["hotel_room_304"],
+        evidenceFound: 99
+    };
+    const restoredCase = CaseManager.fromJSON(oldCaseSnapshot, time, locations, inventory, "case-002");
+    assert.equal(restoredCase.currentCase.id, "case-002");
+    assert.equal(restoredCase.caseState, "active");
+    assert.deepEqual(clone(restoredCase.completedEvents), []);
+    assert.deepEqual(clone(restoredCase.visitedLocations), []);
+    assert.equal(restoredCase.evidenceFound, 0);
+
+    const oldNpcSnapshot = {
+        currentCaseId: "case-001",
+        activeNPCs: ["bartender"],
+        npcStates: { bartender: { dialoguesCompleted: ["old_confession"] } },
+        autoTriggered: ["old_case_trigger"]
+    };
+    const restoredNPCs = NPCManager.fromJSON(oldNpcSnapshot, time, inventory, "case-002");
+    assert.equal(restoredNPCs.currentCaseId, "case-002");
+    assert.deepEqual(clone(restoredNPCs.activeNPCs.map(npc => npc.id)), ["waiter"]);
+    assert.deepEqual(clone(restoredNPCs.npcStates.waiter.dialoguesCompleted), []);
+    assert.deepEqual(clone(restoredNPCs.autoTriggered), []);
+});

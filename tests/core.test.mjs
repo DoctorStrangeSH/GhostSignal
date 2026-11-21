@@ -123,26 +123,31 @@ test("NPCManager selects and restores the correct case-specific bartender dialog
         id: "bartender",
         name: "Joe",
         dialogueId: "dialogue-bartender",
-        specialConditions: [{
-            id: "case-two-dialogue",
-            condition: "case:case-002",
-            dialogueId: "dialogue-bartender-case2"
-        }]
+        specialConditions: []
+    };
+    const cases = {
+        "case-001": { id: "case-001", npcs: ["bartender"] },
+        "case-002": {
+            id: "case-002",
+            npcs: ["bartender"],
+            npcDialogueOverrides: { bartender: "dialogue-bartender-case2" }
+        }
     };
     const getNPCById = id => id === "bartender" ? bartender : null;
+    const getCaseById = id => cases[id] || null;
     const events = { emit() {} };
     const inventory = { hasItem: () => false, hasInsight: () => false, evidence: [] };
     const gameTime = { hour: 20, getFormatted: () => "20:00" };
-    const NPCManager = loadClass("assets/js/npc/npcManager.js", "NPCManager", { getNPCById, events });
+    const NPCManager = loadClass("assets/js/npc/npcManager.js", "NPCManager", { getNPCById, getCaseById, events });
     const manager = new NPCManager(gameTime, inventory);
 
-    manager.loadNPCsForCase({ id: "case-002", npcs: ["bartender"] });
+    manager.loadNPCsForCase(cases["case-002"]);
     assert.equal(manager.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
     const restored = NPCManager.fromJSON(manager.toJSON(), gameTime, inventory);
     assert.equal(restored.getDialogueForNPC("bartender"), "dialogue-bartender-case2");
 
-    restored.loadNPCsForCase({ id: "case-001", npcs: ["bartender"] });
+    restored.loadNPCsForCase(cases["case-001"]);
     assert.equal(restored.getDialogueForNPC("bartender"), "dialogue-bartender");
 });
 
@@ -376,6 +381,75 @@ test("CaseManager uses the evidence threshold declared by each case", () => {
     assert.ok(emitted.some(event => event.name === "case:ready_for_final" && event.data === true));
 });
 
+test("Starting a different case resets only case-scoped location unlocks and visits", () => {
+    const locations = {
+        police_station: { id: "police_station", unlockedByDefault: true, hours: { open: 0, close: 24 } },
+        case_one_secret: { id: "case_one_secret", unlockedByDefault: false, hours: { open: 0, close: 24 } },
+        case_two_public: { id: "case_two_public", unlockedByDefault: true, hours: { open: 0, close: 24 } }
+    };
+    const cases = {
+        "case-002": {
+            id: "case-002",
+            title: "Second investigation",
+            startTime: { hour: 10, minute: 0, day: 1 },
+            locations: ["case_two_public"],
+            startLocation: "case_two_public",
+            events: []
+        }
+    };
+    const emitted = [];
+    const events = { emit: (name, data) => emitted.push({ name, data }) };
+    const getLocationById = id => locations[id] || null;
+    const getCaseById = id => cases[id] || null;
+    const globals = { events, getLocationById, getCaseById, CONFIG: { time: { costs: { travel: 15 } } }, window: {} };
+    const LocationManager = loadClass("assets/js/systems/locationManager.js", "LocationManager", globals);
+    const CaseManager = loadClass("assets/js/systems/caseManager.js", "CaseManager", globals);
+    const gameTime = {
+        hour: 3, minute: 20, day: 2,
+        setTime(hour, minute, day) { this.hour = hour; this.minute = minute; this.day = day; },
+        getFormatted() { return "10:00"; },
+        advance(minutes) { this.minute += minutes; }
+    };
+    const locationManager = new LocationManager(gameTime);
+    locationManager.unlockCaseLocation("case_one_secret");
+    locationManager.unlockLocation("train_station");
+    locationManager.visitedLocations.add("case_one_secret");
+    locationManager.currentLocation = "case_one_secret";
+    const manager = new CaseManager(gameTime, locationManager, { hasItem: () => false });
+
+    assert.equal(manager.loadCase("case-002"), true);
+    assert.equal(locationManager.unlockedLocations.has("case_one_secret"), false);
+    assert.equal(locationManager.unlockedLocations.has("case_two_public"), true);
+    assert.equal(locationManager.unlockedLocations.has("train_station"), true,
+        "permanent ending rewards must survive a new investigation");
+    assert.equal(locationManager.caseUnlockedLocations.has("case_two_public"), true);
+    assert.equal(locationManager.permanentUnlockedLocations.has("train_station"), true);
+    assert.deepEqual(Array.from(locationManager.visitedLocations), ["case_two_public"]);
+    assert.equal(locationManager.currentLocation, "case_two_public");
+    assert.equal(locationManager.activeCaseData.id, "case-002");
+
+    // Restoring a save must not invoke the fresh-run reset or discard map progress.
+    locationManager.unlockedLocations.add("case_two_saved_unlock");
+    locationManager.visitedLocations.add("case_two_saved_unlock");
+    locationManager.setActiveCase(cases["case-002"]);
+    assert.equal(locationManager.unlockedLocations.has("case_two_saved_unlock"), true);
+    assert.equal(locationManager.visitedLocations.has("case_two_saved_unlock"), true);
+
+    const snapshot = locationManager.toJSON();
+    const restored = LocationManager.fromJSON(snapshot, gameTime);
+    assert.equal(restored.unlockedLocations.has("train_station"), true);
+    assert.equal(restored.permanentUnlockedLocations.has("train_station"), true);
+    assert.equal(restored.caseUnlockedLocations.has("case_two_public"), true);
+
+    const legacy = LocationManager.fromJSON({
+        unlockedLocations: ["train_station", "legacy_case_unlock"]
+    }, gameTime);
+    legacy.beginCase({ id: "case-003" });
+    assert.equal(legacy.unlockedLocations.has("train_station"), true,
+        "legacy saves preserve ambiguous unlocks rather than deleting progress");
+    assert.equal(legacy.unlockedLocations.has("legacy_case_unlock"), true);
+});
+
 test("LocationManager adds active case scene objects without duplicating base items", () => {
     const locations = {
         bar_joe: { id: "bar_joe", defaultItems: ["bar_counter", "jukebox"], nightOnlyItems: ["hidden_suitcase"] }
@@ -433,8 +507,14 @@ test("InvestigationBoard returns clues when a slot is cleared or the board is re
     const getObjectById = id => id === "evidence_note" ? { id, isEvidence: true } : null;
     const InvestigationBoard = loadClass("assets/js/systems/board.js", "InvestigationBoard", { events, getObjectById });
     const board = new InvestigationBoard();
+    board.setCase("case-001");
 
     assert.equal(board.placeEvidence("evidence_note", "slot-1"), true);
+    const placement = emitted.find(event => event.name === "board:updated" && event.data.action === "place");
+    assert.deepEqual(
+        { caseId: placement.data.caseId, filledSlots: placement.data.filledSlots, totalSlots: placement.data.totalSlots },
+        { caseId: "case-001", filledSlots: 1, totalSlots: 6 }
+    );
     assert.equal(board.removeEvidence("slot-1"), "evidence_note");
     assert.ok(emitted.some(event => event.name === "inventory:restore_evidence" && event.data === "evidence_note"));
 
@@ -534,7 +614,8 @@ test("SyncManager preserves an active local case when cloud progress is newer", 
     await manager.syncFromCloud();
 
     assert.equal(state.progress.activeCase, "case-001");
-    assert.equal(state.cloud_conflict_backup, cloudData);
+    assert.equal(JSON.stringify(state.cloud_conflict_backup.cloud), JSON.stringify(cloudData));
+    assert.equal(JSON.stringify(state.cloud_conflict_backup.local), JSON.stringify({ activeCase: "case-001", solvedCases: [], _sync: { revision: 2, updatedAt: 100 } }));
     assert.equal(manager.hasConflict, true);
     assert.equal(cloudWrites, 0);
     assert.ok(emitted.some(event => event.name === "sync:conflict"));
@@ -544,4 +625,450 @@ test("SyncManager preserves an active local case when cloud progress is newer", 
     assert.equal(state.progress.activeCase, null);
     assert.equal(state.cloud_conflict_backup, undefined);
     assert.ok(emitted.some(event => event.name === "sync:reload_needed"));
+});
+
+
+test("ProgressTracker records each replay once while counting a case only once for rank", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }, { name: "ДЕТЕКТИВ", minSolved: 1 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    const caseData = { id: "case-002", title: "Последний заказ" };
+
+    tracker.startCase(caseData.id, "case-002:run-1");
+    tracker.caseStartTime = Date.now() - 120000;
+    const first = tracker.caseSolved(caseData, "case-002:run-1");
+    const duplicate = tracker.caseSolved(caseData, "case-002:run-1");
+
+    assert.equal(duplicate, first, "the same run cannot be counted twice");
+    assert.equal(tracker.stats.totalCasesSolved, 1, "unique solved cases drive rank progression");
+    assert.equal(tracker.stats.totalSolvedRuns, 1);
+    assert.equal(tracker.stats.casesHistory.length, 1);
+
+    tracker.startCase(caseData.id, "case-002:run-2");
+    tracker.caseHintsUsed = 2;
+    const replay = tracker.caseSolved(caseData, "case-002:run-2");
+    assert.equal(replay.runId, "case-002:run-2");
+    assert.equal(tracker.stats.totalCasesSolved, 1, "replaying a solved case does not farm rank");
+    assert.equal(tracker.stats.totalSolvedRuns, 2);
+    assert.equal(tracker.stats.casesHistory.length, 2);
+    assert.equal(tracker.getSolveRate(), 100);
+
+    const restored = ProgressTracker.fromJSON(tracker.toJSON());
+    assert.equal(restored.stats.totalSolvedRuns, 2);
+    assert.deepEqual(Array.from(restored.stats.casesHistory, record => record.runId), [
+        "case-002:run-1", "case-002:run-2"
+    ]);
+});
+
+
+test("ProgressTracker keeps failed replay attempts separate and deduplicates the same failed run", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    const caseData = { id: "case-001", title: "Номер 304" };
+
+    tracker.startCase(caseData.id, "case-001:failed-run-1");
+    const first = tracker.caseFailed(caseData, "case-001:failed-run-1");
+    assert.equal(tracker.caseFailed(caseData, "case-001:failed-run-1"), first);
+    tracker.startCase(caseData.id, "case-001:failed-run-2");
+    tracker.caseFailed(caseData, "case-001:failed-run-2");
+
+    assert.equal(tracker.stats.totalCasesFailed, 2);
+    assert.equal(tracker.stats.casesHistory.filter(record => record.result === "failed").length, 2);
+    assert.equal(tracker.stats.casesHistory[0].runId, "case-001:failed-run-1");
+    assert.equal(tracker.stats.casesHistory[1].runId, "case-001:failed-run-2");
+    assert.equal(tracker.getSolveRate(), 0);
+});
+
+
+test("ProgressTracker preserves the ending reached in each solved playthrough", () => {
+    const events = { emit() {} };
+    const CONFIG = { ranks: [{ name: "СТАЖЁР", minSolved: 0 }] };
+    const ProgressTracker = loadClass("assets/js/systems/progressTracker.js", "ProgressTracker", { events, CONFIG });
+    const tracker = new ProgressTracker();
+    tracker.startCase("case-001", "case-001:ending-run");
+    const ending = { id: "truth", title: "Полная правда", text: "Кейн признался." };
+    const record = tracker.caseSolved({ id: "case-001", title: "Номер 304" }, "case-001:ending-run", ending);
+
+    assert.equal(record.endingId, "truth");
+    assert.equal(record.endingTitle, "Полная правда");
+    assert.equal(record.endingText, "Кейн признался.");
+    const restored = ProgressTracker.fromJSON(tracker.toJSON());
+    assert.equal(restored.stats.casesHistory[0].endingTitle, "Полная правда");
+});
+
+test("CaseArchiveUI sorts saved runs and escapes untrusted archive text", () => {
+    const CaseArchiveUI = loadClass("assets/js/ui/caseArchiveUI.js", "CaseArchiveUI", {
+        document: { getElementById: () => null }
+    });
+    const archive = new CaseArchiveUI("archive");
+    archive.setProgress({ trackerData: { stats: { casesHistory: [
+        { runId: "older", caseId: "case-001", title: "Старое дело", result: "failed", date: "2026-01-01T00:00:00.000Z" },
+        { runId: "newer", caseId: "case-002", title: "<script>alert(1)</script>", result: "solved", date: "2026-02-01T00:00:00.000Z" }
+    ] } } });
+
+    assert.deepEqual(Array.from(archive._records(), record => record.runId), ["newer", "older"]);
+    assert.equal(archive._escape('<img src=x onerror="x">'), '&lt;img src=x onerror=&quot;x&quot;&gt;');
+});
+
+
+test("Case archive ending codex reveals only endings present in completed-run history", () => {
+    const container = {
+        innerHTML: "",
+        querySelector: () => null,
+        querySelectorAll: () => []
+    };
+    const CaseArchiveUI = loadClass("assets/js/ui/caseArchiveUI.js", "CaseArchiveUI", {
+        document: { getElementById: () => container },
+        window: { ENDINGS: {
+            ending_found: { id: "ending_found", caseId: "case-001", title: "Истина раскрыта", text: "Скрытый текст найден." },
+            ending_hidden: { id: "ending_hidden", caseId: "case-001", title: "Секретная развязка", text: "Секрет." }
+        } },
+        events: { emit() {} }
+    });
+    const archive = new CaseArchiveUI("archive");
+    archive._renderEndings([
+        { runId: "run-1", caseId: "case-001", result: "solved", endingId: "ending_found", endingTitle: "Истина раскрыта", endingText: "Скрытый текст найден." }
+    ]);
+
+    assert.match(container.innerHTML, /Истина раскрыта/);
+    assert.match(container.innerHTML, /НЕИЗВЕСТНАЯ КОНЦОВКА/);
+    assert.doesNotMatch(container.innerHTML, /Секретная развязка/);
+    assert.match(container.innerHTML, /ОТКРЫТО/);
+});
+
+
+test("AchievementSystem unlocks data-driven run achievements once and persists them in progress", () => {
+    const emitted = [];
+    const events = { emit: (name, payload) => emitted.push({ name, payload }) };
+    const storageWrites = [];
+    const storage = { set: (key, value) => storageWrites.push({ key, value: [...value] }) };
+    const caseData = {
+        id: "case-001",
+        achievements: [
+            { id: "case_001_full_truth", name: "Человек найден", description: "Добейтесь полной концовки.", icon: "🗝️", rarity: "epic", criteria: { type: "ending_id", endingId: "case-001-perfect" } },
+            { id: "case_001_clean_work", name: "Без лишнего шума", description: "Раскройте дело без подсказок.", icon: "🕯️", rarity: "rare", criteria: { type: "case_no_hints", caseId: "case-001" } }
+        ]
+    };
+    const progress = {
+        solvedCases: ["case-001"],
+        trackerData: { stats: { casesHistory: [] } },
+        reputationData: { reputation: 75 }
+    };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events);
+    system.load(null, ["first_case"]);
+
+    const firstRun = {
+        runId: "case-001:run-1", caseId: "case-001", result: "solved",
+        hintsUsed: 0, attempts: 1, endingId: "case-001-perfect"
+    };
+    progress.trackerData.stats.casesHistory.push(firstRun);
+    const unlocked = system.checkAll({ caseData, runRecord: firstRun, ending: { id: firstRun.endingId } });
+
+    assert.ok(unlocked.some(record => record.id === "no_hints"));
+    assert.ok(unlocked.some(record => record.id === "perfect_case"));
+    assert.ok(unlocked.some(record => record.id === "case_001_full_truth"));
+    assert.ok(unlocked.some(record => record.id === "case_001_clean_work"));
+    assert.ok(system.unlocked.includes("first_case"), "legacy local achievements remain unlocked");
+    assert.equal(system.checkAll({ caseData, runRecord: firstRun }).length, 0, "rechecking one run does not duplicate rewards");
+    assert.equal(progress.achievementData.unlocked.length, system.unlocked.length);
+    assert.ok(storageWrites.length >= 1);
+    assert.ok(emitted.some(event => event.name === "achievement:unlocked"));
+
+    const replay = { ...firstRun, runId: "case-001:run-2", hintsUsed: 2, attempts: 3, endingId: "case-001-partial" };
+    progress.trackerData.stats.casesHistory.push(replay);
+    const replayUnlocks = system.checkAll({ caseData, runRecord: replay, ending: { id: replay.endingId } });
+    assert.ok(replayUnlocks.some(record => record.id === "two_endings"));
+
+    const saved = system.toJSON();
+    const restored = new AchievementSystem(progress, events);
+    restored.registerCases([]);
+    restored.load(saved);
+    assert.deepEqual(Array.from(restored.unlocked).sort(), Array.from(system.unlocked).sort());
+    assert.equal(restored.records.case_001_full_truth.runId, "case-001:run-1");
+    assert.equal(restored.getSummary().unlocked, system.getSummary().unlocked);
+});
+
+test("AchievementSystem rejects malformed case achievement definitions", () => {
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events: { emit() {} }, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem({});
+    assert.equal(system.register({ id: "broken", name: "Broken" }), false);
+    assert.equal(system.register({ id: "valid", name: "Valid", criteria: { type: "case_solved", caseId: "case-x" } }), true);
+    assert.equal(system.register({ id: "valid", name: "Updated", criteria: { type: "case_solved", caseId: "case-x" } }), true);
+    assert.equal(system.getAll().filter(item => item.id === "valid").length, 1);
+});
+
+
+test("SaveController includes achievement unlock records in the same durable snapshot", () => {
+    const snapshots = [];
+    const SaveController = loadClass("assets/js/controllers/saveController.js", "SaveController", {});
+    const achievementData = {
+        version: 1,
+        unlocked: ["first_case"],
+        records: [{ id: "first_case", unlockedAt: "2026-11-20T10:00:00.000Z", caseId: "case-001", runId: "run-1" }]
+    };
+    const app = {
+        progress: { activeCase: null },
+        saveBlocked: false,
+        gameTime: { toJSON: () => ({ hour: 8 }) },
+        achievementSystem: { toJSON: () => achievementData }
+    };
+    const storage = {
+        saveProgress(snapshot) {
+            snapshots.push(JSON.parse(JSON.stringify(snapshot)));
+            return true;
+        },
+        loadProgress: () => null
+    };
+    const controller = new SaveController(app, storage);
+
+    assert.equal(controller.quickSave(), true);
+    assert.deepEqual(snapshots[0].achievementData, achievementData);
+    assert.deepEqual(app.progress.achievementData, achievementData);
+});
+
+
+test("AchievementScreen renders progress, hides secret requirements and filters the collection", () => {
+    let clickHandler = null;
+    let backHandler = null;
+    const backButton = { addEventListener: (name, handler) => { if (name === "click") backHandler = handler; } };
+    const container = {
+        innerHTML: "",
+        addEventListener: (name, handler) => { if (name === "click") clickHandler = handler; },
+        querySelector: selector => selector === "[data-achievement-back]" ? backButton : null
+    };
+    const AchievementScreen = loadClass("assets/js/ui/achievementScreen.js", "AchievementScreen", {
+        document: { getElementById: id => id === "screen-achievements" ? container : null },
+        Intl,
+        Date
+    });
+    const system = {
+        records: { unlocked_one: { unlockedAt: "2026-11-20T10:00:00.000Z" } },
+        getAll: () => [
+            { id: "unlocked_one", name: "Первое дело", description: "Раскройте первое дело", icon: "🔍", rarity: "common", unlocked: true },
+            { id: "secret_one", name: "Скрытая разгадка", description: "Секретное условие", icon: "◆", rarity: "epic", secret: true, unlocked: false },
+            { id: "locked_one", name: "Опытный сыщик", description: "Три дела", icon: "⭐", rarity: "rare", unlocked: false }
+        ],
+        getSummary: () => ({ total: 3, unlocked: 1, percent: 33 })
+    };
+    const screen = new AchievementScreen("screen-achievements", system);
+    let returnedToMenu = false;
+    screen.setOnBack(() => { returnedToMenu = true; });
+    screen.render();
+    assert.equal(typeof backHandler, "function");
+    backHandler();
+    assert.equal(returnedToMenu, true);
+
+    assert.match(container.innerHTML, /data-achievement-count>1<\/span> \/ 3/);
+    assert.match(container.innerHTML, /33%/);
+    assert.match(container.innerHTML, /Первое дело/);
+    assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+    assert.doesNotMatch(container.innerHTML, /Скрытая разгадка|Секретное условие/);
+    assert.equal(typeof clickHandler, "function");
+
+    clickHandler({ target: { closest: () => ({ dataset: { achievementFilter: "unlocked" } }) } });
+    assert.match(container.innerHTML, /Первое дело/);
+    assert.doesNotMatch(container.innerHTML, /Опытный сыщик|СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+
+    clickHandler({ target: { closest: () => ({ dataset: { achievementFilter: "secret" } }) } });
+    assert.match(container.innerHTML, /СЕКРЕТНОЕ ДОСТИЖЕНИЕ/);
+    assert.doesNotMatch(container.innerHTML, /Первое дело/);
+});
+
+
+test("AchievementSystem unlocks night and full-board achievements only from real gameplay events", () => {
+    const listeners = new Map();
+    const emitted = [];
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            emitted.push({ name, payload });
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, achievementData: null };
+    const storage = { set() {} };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem(progress, events);
+
+    events.emit("time:changed", { hour: 2, minute: 10 });
+    assert.equal(system.unlocked.includes("night_owl"), false, "time outside an active case must not award the achievement");
+
+    progress.activeCase = "case-001";
+    events.emit("time:changed", { hour: 5, minute: 0 });
+    assert.equal(system.unlocked.includes("night_owl"), false, "dawn is outside the midnight window");
+    events.emit("time:changed", { hour: 2, minute: 10 });
+    assert.equal(system.unlocked.includes("night_owl"), true);
+    assert.equal(system.records.night_owl.caseId, "case-001");
+
+    events.emit("board:updated", {
+        action: "place", caseId: "case-001", filledSlots: 5, totalSlots: 6
+    });
+    assert.equal(system.unlocked.includes("board_master"), false, "a partially filled board is not complete");
+    events.emit("board:updated", {
+        action: "place", caseId: "case-001", filledSlots: 6, totalSlots: 6
+    });
+    assert.equal(system.unlocked.includes("board_master"), true);
+    assert.equal(progress.achievementData.unlocked.length, 2);
+
+    system.dispose();
+    progress.activeCase = "case-002";
+    events.emit("time:changed", { hour: 1, minute: 0 });
+    assert.equal(system.records.night_owl.caseId, "case-001", "disposed listeners must not react to future events");
+});
+
+
+test("AchievementSystem awards collector only after every declared case clue is acquired", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, achievementData: null };
+    const inventory = { items: [] };
+    const caseData = { id: "case-001", evidenceIds: ["clue-a", "clue-b", "clue-c"] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events, { inventory });
+
+    events.emit("case:started", { caseId: "case-001", caseData });
+    inventory.items.push("clue-a", "clue-b");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-b" });
+    assert.equal(system.unlocked.includes("all_evidence"), false, "missing one clue must keep the achievement locked");
+
+    inventory.items.push("clue-c");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-c" });
+    assert.equal(system.unlocked.includes("all_evidence"), true);
+    assert.equal(system.records.all_evidence.caseId, "case-001");
+    events.emit("inventory:changed", { action: "add", itemId: "clue-c" });
+    assert.equal(system.unlocked.filter(id => id === "all_evidence").length, 1);
+    system.dispose();
+});
+
+test("AchievementSystem awards speedy from elapsed in-game minutes, with a strict 30-minute limit", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: null, gameTime: { day: 1, hour: 8, minute: 0 } };
+    const clock = { value: { day: 1, hour: 8, minute: 0 }, toJSON() { return { ...this.value }; } };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: {}
+    });
+    const system = new AchievementSystem(progress, events, { gameTime: clock });
+
+    events.emit("case:started", { caseId: "case-001" });
+    assert.equal(progress.activeRunStartedGameMinute, 480);
+    clock.value = { day: 1, hour: 8, minute: 29 };
+    events.emit("case:solved", { caseId: "case-001" });
+    assert.equal(system.unlocked.includes("speedy"), true);
+    assert.equal(system.records.speedy.caseId, "case-001");
+    assert.equal(progress.activeRunStartedGameMinute, null);
+
+    const exactProgress = { activeCase: null, gameTime: { day: 1, hour: 8, minute: 0 } };
+    const exactClock = { value: { day: 1, hour: 8, minute: 0 }, toJSON() { return { ...this.value }; } };
+    const exactSystem = new AchievementSystem(exactProgress, events, { gameTime: exactClock });
+    events.emit("case:started", { caseId: "case-002" });
+    exactClock.value = { day: 1, hour: 8, minute: 30 };
+    events.emit("case:solved", { caseId: "case-002" });
+    assert.equal(exactSystem.unlocked.includes("speedy"), false, "exactly 30 minutes does not qualify");
+    system.dispose();
+    exactSystem.dispose();
+});
+
+
+test("AchievementSystem reconciles collected evidence when resuming an active investigation", () => {
+    const listeners = new Map();
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const progress = { activeCase: "case-002", achievementData: null };
+    const inventory = { items: ["clue-a", "clue-b"] };
+    const caseData = { id: "case-002", evidenceIds: ["clue-a", "clue-b"] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-002": caseData }
+    });
+    const system = new AchievementSystem(progress, events, { inventory });
+    system.load(null);
+    const unlocked = system.reconcile();
+    assert.ok(unlocked.some(record => record.id === "all_evidence"));
+    assert.equal(system.records.all_evidence.caseId, "case-002");
+    system.dispose();
+});
+
+
+test("AchievementSystem awards social detective only after every case participant finishes a dialogue", () => {
+    const listeners = new Map();
+    const emitted = [];
+    const events = {
+        on(name, callback) {
+            const callbacks = listeners.get(name) || [];
+            callbacks.push(callback);
+            listeners.set(name, callbacks);
+            return () => listeners.set(name, (listeners.get(name) || []).filter(item => item !== callback));
+        },
+        emit(name, payload) {
+            emitted.push({ name, payload });
+            for (const callback of listeners.get(name) || []) callback(payload);
+        }
+    };
+    const caseData = { id: "case-001", npcs: ["porter", "bartender", "housekeeper"] };
+    const progress = { activeCase: null, activeCaseDialogueNpcIds: [] };
+    const AchievementSystem = loadClass("assets/js/systems/achievements.js", "AchievementSystem", {
+        events, storage: { set() {} }, CASES_INDEX: { "case-001": caseData }
+    });
+    const system = new AchievementSystem(progress, events);
+
+    events.emit("case:started", { caseId: "case-001", caseData });
+    events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
+    events.emit("dialogue:completed", { npcId: "porter", dialogueId: "porter_intro" });
+    events.emit("dialogue:completed", { npcId: "unknown", dialogueId: "unknown_intro" });
+    assert.deepEqual(Array.from(progress.activeCaseDialogueNpcIds), ["porter"]);
+    assert.equal(system.unlocked.includes("social_detective"), false);
+
+    events.emit("dialogue:completed", { npcId: "bartender", dialogueId: "bartender_intro" });
+    assert.equal(system.unlocked.includes("social_detective"), false);
+    events.emit("dialogue:completed", { npcId: "housekeeper", dialogueId: "housekeeper_intro" });
+    assert.equal(system.unlocked.includes("social_detective"), true);
+    assert.equal(system.records.social_detective.caseId, "case-001");
+    assert.ok(emitted.some(event => event.name === "achievement:progress_changed"));
+    system.dispose();
 });

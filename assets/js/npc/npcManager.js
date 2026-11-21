@@ -6,6 +6,7 @@ class NPCManager {
         this.npcStates = {};
         this.autoTriggered = [];
         this.currentCaseId = null;
+        this.currentCaseData = null;
         this.memoryService = null;
         this.socialNetwork = null;
         this.relationshipService = null;
@@ -32,6 +33,7 @@ class NPCManager {
         }
 
         this.currentCaseId = caseData.id || null;
+        this.currentCaseData = caseData;
         this.activeNPCs = caseData.npcs
             .map(id => getNPCById(id))
             .filter(Boolean);
@@ -167,6 +169,11 @@ class NPCManager {
         const npc = getNPCById(npcId);
         if (!npc) return null;
 
+        // Case-specific dialogue belongs to the case pack, not to a shared
+        // NPC definition authored by another investigation.
+        const caseDialogue = this.currentCaseData?.npcDialogueOverrides?.[npcId];
+        if (typeof caseDialogue === 'string' && caseDialogue) return caseDialogue;
+
         if (npc.specialConditions) {
             for (const condition of npc.specialConditions) {
                 if (this._checkCondition(condition.condition) && condition.dialogueId) {
@@ -268,6 +275,7 @@ class NPCManager {
     static fromJSON(json, gameTime, inventory, currentCaseId = null) {
         const manager = new NPCManager(gameTime, inventory);
         manager.currentCaseId = currentCaseId || json?.currentCaseId || null;
+        manager.currentCaseData = manager.currentCaseId ? getCaseById(manager.currentCaseId) : null;
         const snapshotMatchesCase = !currentCaseId || json?.currentCaseId === currentCaseId;
         manager.npcStates = snapshotMatchesCase ? (json?.npcStates || {}) : {};
         manager.autoTriggered = snapshotMatchesCase ? (json?.autoTriggered || []) : [];

@@ -581,3 +581,160 @@ test("unrelated NPC promises do not change community reputation", () => {
     ]);
     assert.equal(changes.length, 0);
 });
+
+
+test("duplicate solve events never duplicate ending, rewards, statistics or promise settlement", () => {
+    const bus = createEventBus();
+    const calls = [];
+    const app = {
+        progress: { activeCase: "case-002", activeRunId: "case-002:run-1", solvedCases: [], failedCases: [] },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Последний заказ" },
+            caseState: "active",
+            evidenceFound: 6,
+            toJSON() { return { caseState: this.caseState, currentCaseId: "case-002" }; }
+        },
+        npcMemoryService: {
+            settlePromisesForCase(id, outcome) { calls.push("promises:" + id + ":" + outcome); return []; },
+            toJSON() { return { settled: true }; }
+        },
+        alternateEndings: {
+            determineEnding() { calls.push("ending"); return { title: "Полная правда", bonusReputation: 5, unlocks: ["archive"] }; }
+        },
+        progressTracker: { activeRunId: "case-002:run-1", caseSolved() { calls.push("stats"); this.activeRunId = null; }, toJSON: () => ({ solved: 1 }) },
+        reputationSystem: { caseSolved() { calls.push("reputation"); }, addReputation() { calls.push("bonus"); }, toJSON: () => ({ reputation: 55 }) },
+        locationManager: { unlockLocation(id) { calls.push("unlock:" + id); } },
+        achievementSystem: { checkAll() { calls.push("achievements"); } },
+        caseListUI: { setProgress() {} },
+        _updateMainMenu() {},
+        _quickSave() { calls.push("save"); }
+    };
+    const Controller = loadEventController({
+        document: { getElementById: () => null },
+        setTimeout(callback) { callback(); },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new Controller(app, bus);
+    controller.bind();
+
+    bus.emit("case:solved", { caseId: "case-002" });
+    bus.emit("case:solved", { caseId: "case-002" });
+
+    assert.equal(app.progress.activeCase, null);
+    assert.deepEqual([...app.progress.solvedCases], ["case-002"]);
+    for (const once of ["ending", "stats", "reputation", "bonus", "unlock:archive"]) {
+        assert.equal(calls.filter(call => call === once).length, 1, once + " is applied once");
+    }
+    assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 1,
+        "a duplicate completion event must not settle promises twice");
+    assert.equal(calls.filter(call => call === "save").length, 1,
+        "a duplicate completion event does not write a second snapshot");
+    controller.dispose();
+});
+
+
+test("a replay gets a new run ID and ending while permanent rewards remain first-clear only", () => {
+    const bus = createEventBus();
+    const endings = [];
+    const trackerRuns = [];
+    const rewards = [];
+    const app = {
+        progress: { activeCase: "case-002", solvedCases: ["case-002"], completedRunIds: [], activeRunId: "case-002:run-2" },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Последний заказ" },
+            caseState: "active",
+            evidenceFound: 5,
+            toJSON() { return { caseState: this.caseState }; }
+        },
+        npcMemoryService: { settlePromisesForCase() { return []; } },
+        alternateEndings: { determineEnding() { endings.push("ending"); return { id: "perfect", bonusReputation: 10, unlocks: ["secret_archive"] }; } },
+        progressTracker: { activeRunId: "case-002:run-2", caseSolved(_data, runId) { trackerRuns.push(runId); }, toJSON: () => ({ history: trackerRuns }) },
+        reputationSystem: { caseSolved() { rewards.push("first-clear"); }, addReputation() { rewards.push("bonus"); }, toJSON: () => ({}) },
+        locationManager: { unlockLocation() { rewards.push("unlock"); } },
+        achievementSystem: { checkAll() {} },
+        caseListUI: { setProgress() {} },
+        _updateMainMenu() {},
+        _quickSave() {}
+    };
+    const Controller = loadEventController({
+        document: { getElementById: () => null },
+        setTimeout(callback) { callback(); },
+        setInterval: () => 1, clearInterval() {}
+    });
+    const controller = new Controller(app, bus);
+    controller.bind();
+
+    bus.emit("case:solved", { caseId: "case-002" });
+    bus.emit("case:solved", { caseId: "case-002" });
+
+    assert.deepEqual(endings, ["ending"], "one ending is generated for the new playthrough");
+    assert.deepEqual(trackerRuns, ["case-002:run-2"], "the run is recorded exactly once");
+    assert.deepEqual(rewards, [], "first-clear progression rewards are not farmable on replay");
+    assert.deepEqual([...app.progress.completedRunIds], ["case-002:run-2"]);
+    controller.dispose();
+});
+
+
+test("EventController queues a second narrative modal until the first Bootstrap transition is hidden", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const modalElement = {
+        classList: {
+            contains(name) { return classes.has(name); },
+            add(name) { classes.add(name); },
+            remove(name) { classes.delete(name); }
+        },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name).add(handler);
+        },
+        removeEventListener(name, handler) { listeners.get(name)?.delete(handler); },
+        dispatch(name) {
+            for (const handler of listeners.get(name) || []) handler();
+        }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    let showCalls = 0;
+    const EventController = loadEventController({
+        document: { getElementById: id => elements[id] || null },
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    return { show() { showCalls++; classes.add("show"); } };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", { title: "Первое окно", body: "Текст 1", footer: "Закрыть" });
+    assert.equal(showCalls, 1);
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    // Bootstrap removes .show as soon as hide starts, but keeps its backdrop
+    // until the transition completes. A class-only check would miss this race.
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    eventBus.emit("modal:show", { title: "Второе окно", body: "Текст 2", footer: "Продолжить" });
+    assert.equal(showCalls, 1, "Bootstrap must not be asked to show while the previous hide transition is running");
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    modalElement.dispatch("hidden.bs.modal");
+    assert.equal(showCalls, 2);
+    assert.equal(classes.has("show"), true);
+    assert.equal(elements["modal-title"].innerHTML, "Второе окно");
+    assert.equal(elements["modal-body"].innerHTML, "Текст 2");
+
+    controller.dispose();
+    assert.equal(listeners.get("hidden.bs.modal").size, 0);
+});

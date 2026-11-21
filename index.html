@@ -44,10 +44,12 @@
     <link rel="stylesheet" href="assets/css/components/minigames.css">
     <link rel="stylesheet" href="assets/css/components/notes.css">
     <link rel="stylesheet" href="assets/css/components/stats.css">
+    <link rel="stylesheet" href="assets/css/components/case-archive.css">
     <link rel="stylesheet" href="assets/css/components/auth.css">
     <link rel="stylesheet" href="assets/css/components/newspaper.css">
     <link rel="stylesheet" href="assets/css/components/tutorial.css">
     <link rel="stylesheet" href="assets/css/components/achievements.css">
+    <link rel="stylesheet" href="assets/css/components/achievement-screen.css">
     <link rel="stylesheet" href="assets/css/components/options.css">
     <link rel="stylesheet" href="assets/css/components/npc-portraits.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
@@ -120,6 +122,8 @@
                         <button id="btn-open-cases" class="terminal-btn">ОТКРЫТЬ ДЕЛА <span aria-hidden="true">↗</span></button>
                         <button id="btn-continue" class="terminal-btn hidden">ПРОДОЛЖИТЬ <span aria-hidden="true">→</span></button>
                         <button id="btn-stats" class="terminal-btn">СТАТИСТИКА <span aria-hidden="true">↗</span></button>
+                        <button id="btn-case-archive" class="terminal-btn">АРХИВ РАССЛЕДОВАНИЙ <span aria-hidden="true">↗</span></button>
+                        <button id="btn-achievements" class="terminal-btn">ДОСТИЖЕНИЯ <span aria-hidden="true">🏆</span></button>
                         <button id="btn-options" class="terminal-btn">НАСТРОЙКИ <span aria-hidden="true">⚙</span></button>
                     </nav>
 
@@ -141,6 +145,12 @@
 
             <!-- Экран: Статистика -->
             <section id="screen-stats" class="screen"></section>
+
+            <!-- Экран: Архив расследований -->
+            <section id="screen-case-archive" class="screen"></section>
+
+            <!-- Экран: Коллекция достижений -->
+            <section id="screen-achievements" class="screen"></section>
 
             <!-- Экран: Дело -->
             <section id="screen-case-active" class="screen">
@@ -227,6 +237,7 @@
     <!-- ============ CORE ============ -->
     <script src="assets/js/core/config.js"></script>
     <script src="assets/js/core/storage.js"></script>
+    <script src="assets/js/core/saveMigrations.js"></script>
     <script src="assets/js/core/eventBus.js"></script>
 
     <!-- ============ FIREBASE ============ -->
@@ -238,6 +249,11 @@
     <!-- ============ ЯДРО ДАННЫХ ============ -->
     <script src="assets/data/core-init.js"></script>
 
+    <!-- ============ ОБЩИЕ ПЕРСОНАЖИ ============ -->
+    <script src="assets/data/shared/npcs.js"></script>
+    <script src="assets/data/shared/dialogues/bartender.js"></script>
+    <script src="assets/data/shared/dialogues/sergeant.js"></script>
+
     <!-- ============ ДЕЛО №1 ============ -->
     <script src="assets/data/cases/case-001/locations.js"></script>
     <script src="assets/data/cases/case-001/npcs.js"></script>
@@ -246,9 +262,7 @@
     <script src="assets/data/cases/case-001/endings.js"></script>
     <script src="assets/data/cases/case-001/story.js"></script>
     <script src="assets/data/cases/case-001/dialogues/porter.js"></script>
-    <script src="assets/data/cases/case-001/dialogues/bartender.js"></script>
     <script src="assets/data/cases/case-001/dialogues/housekeeper.js"></script>
-    <script src="assets/data/cases/case-001/dialogues/sergeant.js"></script>
     <script src="assets/data/cases/case-001/dialogues/elias.js"></script>
     <script src="assets/data/cases/case-001/dialogues/wife.js"></script>
     <script src="assets/data/cases/case-001/dialogues/coroner.js"></script>
@@ -337,6 +351,8 @@
     <script src="assets/js/ui/notesUI.js"></script>
     <script src="assets/js/ui/radioPlayer.js"></script>
     <script src="assets/js/ui/statsScreen.js"></script>
+    <script src="assets/js/ui/caseArchiveUI.js"></script>
+    <script src="assets/js/ui/achievementScreen.js"></script>
     <script src="assets/js/ui/authUI.js"></script>
     <script src="assets/js/ui/newspaperUI.js"></script>
     <script src="assets/js/ui/jukebox.js"></script>

@@ -207,7 +207,6 @@ for (const [id, dialogue] of Object.entries(data.dialogues)) {
         if (!reachableNodes.has(nodeId)) errors.push("Dialogue " + id + " contains unreachable node: " + nodeId);
     }
 
-    if (!dialogueReferences.has(id)) errors.push("Dialogue is not linked to any NPC: " + id);
 
     for (const [nodeId, node] of Object.entries(nodes)) {
         if (node.givesEvidence) {
@@ -409,6 +408,17 @@ for (const [id, gameCase] of Object.entries(data.cases)) {
     for (const locationId of gameCase.locations || []) checkRef(data.locations, locationId, "Case " + id);
     for (const npcId of gameCase.npcs || []) checkRef(data.npcs, npcId, "Case " + id);
     const activeNpcIds = new Set(gameCase.npcs || []);
+    for (const [npcId, dialogueId] of Object.entries(gameCase.npcDialogueOverrides || {})) {
+        if (!activeNpcIds.has(npcId)) {
+            errors.push("Case " + id + " overrides dialogue for an inactive NPC: " + npcId);
+        }
+        const dialogue = data.dialogues?.[dialogueId];
+        if (!dialogue || dialogue.npcId !== npcId) {
+            errors.push("Case " + id + " has an invalid dialogue override for NPC " + npcId + ": " + dialogueId);
+        } else {
+            dialogueReferences.add(dialogueId);
+        }
+    }
     const relationshipConfig = gameCase.npcRelationships || {};
     const goalIds = new Set();
     for (const goal of relationshipConfig.goals || []) {
@@ -611,6 +621,10 @@ for (const [id, ending] of Object.entries(data.endings || {})) {
 
 for (const [id, newspaper] of Object.entries(data.newspapers || {})) {
     if (newspaper.id !== id) errors.push("Newspaper key/id mismatch: " + id);
+}
+
+for (const id of Object.keys(data.dialogues || {})) {
+    if (!dialogueReferences.has(id)) errors.push("Dialogue is not linked to any NPC: " + id);
 }
 
 if (errors.length) {

@@ -12,11 +12,12 @@ function createRuntime() {
     const dataScripts = [...html.matchAll(/<script src="(assets\/data\/[^"]+\.js)"><\/script>/g)]
         .map(match => match[1])
         .filter(path => path === "assets/data/core-init.js" ||
+            path.startsWith("assets/data/shared/") ||
             path === "assets/data/cases/case-index.js" ||
             path.startsWith("assets/data/cases/case-001/") ||
             path.startsWith("assets/data/cases/case-002/"));
 
-    const context = vm.createContext({ console: quietConsole, window: {} });
+    const context = vm.createContext({ console: quietConsole, window: {}, storage: { set() { return true; } } });
     const scripts = [
         "assets/js/core/config.js",
         "assets/js/core/eventBus.js",
@@ -27,6 +28,7 @@ function createRuntime() {
         "assets/js/systems/caseManager.js",
         "assets/js/systems/evidenceChain.js",
         "assets/js/systems/alternateEndings.js",
+        "assets/js/systems/achievements.js",
         "assets/js/npc/npcManager.js"
     ];
 
@@ -42,7 +44,9 @@ function createRuntime() {
         const npcManager = new NPCManager(gameTime, inventory);
         const evidenceChains = new EvidenceChainSystem(inventory);
         const endings = new AlternateEndings();
-        return { gameTime, locationManager, inventory, caseManager, npcManager, evidenceChains, endings };
+        const progress = { activeCase: null, achievementData: null };
+        const achievements = new AchievementSystem(progress, events, { inventory, gameTime });
+        return { gameTime, locationManager, inventory, caseManager, npcManager, evidenceChains, endings, progress, achievements };
     })()`, context);
 
     const events = vm.runInContext("events", context);
@@ -67,7 +71,7 @@ function createRuntime() {
         if (examine?.givesInsight) systems.inventory.addInsight(examine.givesInsight);
     });
 
-    return { context, systems, events };
+    return { context, systems, events, progress: systems.progress, achievements: systems.achievements };
 }
 
 test("Case 001 runtime loads its authored scenes, contacts, clue chains and endings", () => {
@@ -131,6 +135,39 @@ test("Case 002 runtime routes the bartender, exposes the crime-scene clue and un
     assert.equal(perfect.id, "case-002-perfect");
 });
 
+test("Both case packs select only their own failed, partial, and perfect endings", () => {
+    const { context, systems } = createRuntime();
+    const { endings } = systems;
+    const caseOne = vm.runInContext('getCaseById("case-001")', context);
+    const caseTwo = vm.runInContext('getCaseById("case-002")', context);
+    const clues = (ids = []) => ({
+        items: ids,
+        hasInsight(id) { return ids.includes(id); }
+    });
+
+    // Case 001: the confession is not enough without the independently disclosed location.
+    assert.equal(endings.determineEnding(caseOne, clues(), 0).id, "case-001-failed");
+    assert.equal(endings.determineEnding(caseOne, clues(), 6).id, "case-001-partial");
+    assert.equal(endings.determineEnding(caseOne,
+        clues(["mary_full_confession"]), 6, { solved: true }).id, "case-001-partial");
+    assert.equal(endings.determineEnding(caseOne,
+        clues(["mary_full_confession", "blackwood_location_revealed"]), 6, { solved: true }).id,
+    "case-001-perfect");
+
+    // Case 002: a large evidence count cannot substitute for the confession.
+    assert.equal(endings.determineEnding(caseTwo, clues(), 0).id, "case-002-failed");
+    assert.equal(endings.determineEnding(caseTwo, clues(), 4).id, "case-002-partial");
+    assert.equal(endings.determineEnding(caseTwo, clues(), 99).id, "case-002-partial");
+    assert.equal(endings.determineEnding(caseTwo,
+        clues(["full_confession_kane"]), 4, { solved: true }).id, "case-002-perfect");
+
+    // A case must never borrow another investigation's ending records.
+    assert.notEqual(endings.determineEnding(caseOne, clues(["full_confession_kane"]), 99).id,
+        "case-002-perfect");
+    assert.notEqual(endings.determineEnding(caseTwo, clues(["mary_full_confession", "blackwood_location_revealed"]), 99).id,
+        "case-001-perfect");
+});
+
 test('opening another case clears previously visited places', () => {
     const { systems } = createRuntime();
     const { caseManager, locationManager } = systems;
@@ -141,4 +178,39 @@ test('opening another case clears previously visited places', () => {
     assert.equal(caseManager.loadCase('case-001'), true);
     assert.deepEqual(Array.from(locationManager.visitedLocations), ['police_station']);
     assert.equal(locationManager.activeCaseData.id, 'case-001');
+});
+
+
+test("case 002 gameplay events unlock the complete-evidence achievement and survive achievement reload", () => {
+    const { context, systems, achievements, progress } = createRuntime();
+    const { caseManager, inventory } = systems;
+    assert.equal(caseManager.loadCase("case-002"), true);
+    assert.equal(progress.activeCase, "case-002");
+
+    const caseData = context.CASES_INDEX?.["case-002"] ||
+        vm.runInContext('getCaseById("case-002")', context);
+    assert.equal(caseData.evidenceIds.length, 14);
+
+    for (const evidenceId of caseData.evidenceIds) {
+        assert.equal(inventory.addItem(evidenceId), true, "case evidence should be obtainable: " + evidenceId);
+    }
+    assert.equal(achievements.unlocked.includes("all_evidence"), true);
+    assert.equal(achievements.records.all_evidence.caseId, "case-002");
+    assert.equal(inventory.items.filter(id => caseData.evidenceIds.includes(id)).length, 14);
+
+    const savedAchievements = JSON.parse(JSON.stringify(achievements.toJSON()));
+    achievements.dispose();
+    const AchievementSystem = vm.runInContext("AchievementSystem", context);
+    const restored = new AchievementSystem(progress, systems.events, { inventory, gameTime: systems.gameTime });
+    restored.load(savedAchievements);
+    restored.reconcile();
+    const afterFirstResume = restored.getSummary().unlocked;
+    const evidenceAward = JSON.parse(JSON.stringify(restored.records.all_evidence));
+    restored.reconcile();
+
+    assert.equal(restored.getSummary().unlocked, afterFirstResume, "repeated resume reconciliation must be idempotent");
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.records.all_evidence)), evidenceAward,
+        "the evidence achievement must keep its original award record");
+    assert.equal(restored.records.all_evidence.caseId, "case-002");
+    restored.dispose();
 });

@@ -23,6 +23,15 @@ class NavigationController {
             app.statsScreen.render();
             app.navigateTo('screen-stats');
         });
+        document.getElementById('btn-case-archive')?.addEventListener('click', () => {
+            app.caseArchiveUI?.setProgress(app.progress);
+            app.navigateTo('screen-case-archive');
+        });
+        document.getElementById('btn-achievements')?.addEventListener('click', () => {
+            app.achievementScreen?.setSystem(app.achievementSystem);
+            app.achievementScreen?.render();
+            app.navigateTo('screen-achievements');
+        });
         document.getElementById('btn-options')?.addEventListener('click', () => app._showOptionsMenu());
         document.querySelectorAll('.btn-back').forEach(button => {
             button.addEventListener('click', () => {

@@ -183,3 +183,21 @@ test('without independent evidence, even a wrong guess offers no public accusati
     assert.equal(h.publicButton.onClick, null);
     assert.equal(h.emitted.some(event => event.name === 'deduction:public_accusation'), false);
 });
+
+
+test('closed investigations reject stale final-answer submissions without emitting another solve', () => {
+    for (const closedState of ['failed', 'solved']) {
+        const h = createHarness(['hidden_note', 'wire_fragment'], ['victim_knew_danger']);
+        const manager = new h.manager(null, null, h.inventory);
+        manager.currentCase = h.first;
+        manager.caseState = closedState;
+
+        const result = manager.checkFinalAnswer('мэри');
+
+        assert.equal(result.isCorrect, false);
+        assert.equal(result.caseClosed, true);
+        assert.match(result.title, /ЗАКРЫТО/);
+        assert.equal(manager.caseState, closedState);
+        assert.equal(h.emitted.some(event => event.name === 'case:solved'), false);
+    }
+});

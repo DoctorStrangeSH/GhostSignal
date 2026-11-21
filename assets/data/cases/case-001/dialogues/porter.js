@@ -86,7 +86,7 @@ const DIALOGUE_PORTER = {
                 innerThought: "Красный шарф. Важная деталь.",
                 givesInsight: "red_scarf_detail",
                 answers: [
-                    { text: "Горничная Мэри? Это была она?", nextNode: "was_it_mary", condition: "hasInsight:mary_suspicion" },
+                    { text: "Горничная Мэри? Это была она?", nextNode: "was_it_mary", condition: "hasInsight:red_scarf_detail" },
                     { text: "Что было потом?", nextNode: "after_visit" }
                 ]
             },

@@ -8,7 +8,7 @@ import vm from "node:vm";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function loadSaveController(globals = {}) {
-    const context = vm.createContext({ console, ...globals });
+    const context = vm.createContext({ console, SAVE_SCHEMA_VERSION: 1, ...globals });
     const source = readFileSync(resolve(root, "assets/js/controllers/saveController.js"), "utf8");
     vm.runInContext(source + "\n;globalThis.__exported = SaveController;", context);
     return context.__exported;
@@ -90,9 +90,9 @@ test("SaveController reports failed writes and does not claim a successful quick
 
     assert.equal(controller.quickSave(), false);
     assert.equal(attempts, 1);
-    assert.deepEqual(progress.npcMemoryData.cases["case-001"], { witness: true });
-    assert.deepEqual(progress.npcSocialData.cases["case-001"], { rumor: true });
-    assert.deepEqual(progress.npcRelationshipData.cases["case-001"], { trust: 42 });
+    assert.equal(progress.npcMemoryData, undefined, "failed writes must not mutate the last known-good in-memory save");
+    assert.equal(progress.npcSocialData, undefined);
+    assert.equal(progress.npcRelationshipData, undefined);
     assert.equal(controller.saveProgress(), false);
     assert.equal(attempts, 2);
 });
@@ -139,4 +139,88 @@ test("unexpected storage exceptions surface as a failed save without breaking th
     assert.equal(notices.length, 1);
     assert.equal(notices[0].detail.type, "error");
     assert.equal(errors.length, 2);
+});
+
+
+test("SaveController stamps the current schema version on every save", () => {
+    const progress = { activeCase: "case-001" };
+    let saved;
+    const controller = new (loadSaveController({ SAVE_SCHEMA_VERSION: 4 }))(
+        { progress }, { saveProgress(value) { saved = value; return true; } }
+    );
+    assert.equal(controller.saveProgress(), true);
+    assert.equal(saved.schemaVersion, 4);
+});
+
+test("SaveController never overwrites an unsupported future save", () => {
+    let writes = 0;
+    const progress = { schemaVersion: 7, activeCase: "case-001" };
+    const controller = new (loadSaveController())(
+        { progress, saveBlocked: true },
+        { saveProgress() { writes++; return true; } }
+    );
+    assert.equal(controller.saveProgress(), false);
+    assert.equal(progress.schemaVersion, 7);
+    assert.equal(writes, 0);
+});
+
+
+test("SaveController skips snapshot serialization while migration recovery is required", () => {
+    let serialized = 0;
+    let writes = 0;
+    const app = {
+        progress: { activeCase: "case-001" },
+        saveBlocked: true,
+        gameTime: { toJSON() { serialized++; return {}; } }
+    };
+    const controller = new (loadSaveController())(app, { saveProgress() { writes++; return true; } });
+    assert.equal(controller.quickSave(), false);
+    assert.equal(serialized, 0);
+    assert.equal(writes, 0);
+});
+
+
+test("quickSave includes the active dialogue and binds it to the current case", () => {
+    let saved = null;
+    const app = {
+        progress: { activeCase: "case-002" },
+        dialogueEngine: {
+            toJSON() {
+                return {
+                    dialogueId: "dialogue-waiter",
+                    npcId: "waiter",
+                    nodeId: "after_visit",
+                    stableNodeId: "after_visit",
+                    nodeText: "Я видел его у входа."
+                };
+            }
+        }
+    };
+    const controller = new (loadSaveController())(app, {
+        saveProgress(value) { saved = structuredClone(value); return true; }
+    });
+
+    assert.equal(controller.quickSave(), true);
+    assert.deepEqual(saved.dialogueData, {
+        dialogueId: "dialogue-waiter",
+        npcId: "waiter",
+        nodeId: "after_visit",
+        stableNodeId: "after_visit",
+        nodeText: "Я видел его у входа.",
+        caseId: "case-002"
+    });
+});
+
+test("quickSave clears stale active dialogue data when no conversation is open", () => {
+    let saved = null;
+    const app = {
+        progress: { activeCase: "case-001", dialogueData: { dialogueId: "stale" } },
+        dialogueEngine: { toJSON() { return null; } }
+    };
+    const controller = new (loadSaveController())(app, {
+        saveProgress(value) { saved = structuredClone(value); return true; }
+    });
+
+    assert.equal(controller.quickSave(), true);
+    assert.equal(saved.dialogueData, null);
 });

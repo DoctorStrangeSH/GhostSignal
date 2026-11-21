@@ -912,3 +912,25 @@ PR #1 оставить открытым, `main` не менять и не сли
 - PR #1 remains open; do not merge or modify `main` without the owner's explicit instruction.
 
 Next: implement an explicit, case-authored route graph (edges with travel minutes and access notes), not distances inferred from map coordinates. Route checks must be scoped to known/visited places and should explain assumptions; keep opening hours, investigator authorization, physical access, and actual NPC presence as separate concepts. Then add a case-002 route graph grounded in its narrative and test route reachability, travel-time budget, unavailable/undiscovered paths, and legacy-save behavior.
+
+
+## 2026-11-20: матрица концовок двух текущих расследований
+
+- Добавлен runtime-тест всех шести исходов: нераскрытое, частичное и идеальное завершение для case-001 и case-002.
+- Проверены независимые условия идеальных концовок, пороги улик для частичных исходов и запрет подмены признания простым количеством находок.
+- Проверено, что ending registry одного дела не влияет на другое.
+- Quality checks: **517/517 PASS**, syntax 110 JS-файлов, game-data validation PASS.
+- Следующий обязательный этап: пройти реальные браузерные маршруты обоих дел до каждой концовки. Скриншотный Visual smoke не считается заменой полного прохождения. Case-003 пока не создавать.
+
+
+## 2026-11-20: active dialogue save/resume
+
+- Active dialogue is now included in the quick-save snapshot as `dialogueData`, bound to the active case.
+- `DialogueEngine` serializes the current node and transcript and restores only if the dialogue/NPC/node identifiers resolve against authored game data. Dynamic evidence and contradiction reactions rebuild their answer lists from trusted dialogue definitions.
+- Restore does not re-run dialogue effects, duplicate NPC memory visits, or advance game time. CallInterface restores the connected conversation UI without ringing.
+- Player answers and evidence/contradiction prompts are included in the transcript. NPC call/chat now resolves case-specific dialogue overrides, including case-002's bartender.
+- Automated validation: **531/531 tests PASS**, syntax 110 JS files PASS, game-data validation PASS (Quality checks run `44801778381`).
+- Visual smoke: PASS (run `44801778067`). Browser reload scenarios remain a manual verification item.
+- Work remains on branch `feat/save-schema-migrations`; PR #128 remains open; `main` is untouched.
+
+Next: finish CI/Visual smoke, then manually verify reload during a normal question, an evidence reaction, and case-002 bartender dialogue. After that, proceed to cross-case state isolation and save migration recovery checks.

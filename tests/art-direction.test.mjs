@@ -13,7 +13,10 @@ const room = readFileSync(new URL('../assets/art/locations/room-304.svg', import
 const bar = readFileSync(new URL('../assets/art/locations/joes-bar.svg', import.meta.url), 'utf8');
 const mansion = readFileSync(new URL('../assets/art/locations/blackwood-mansion.svg', import.meta.url), 'utf8');
 const sceneRenderer = readFileSync(new URL('../assets/js/ui/sceneRenderer.js', import.meta.url), 'utf8');
-const npcData = readFileSync(new URL('../assets/data/cases/case-001/npcs.js', import.meta.url), 'utf8');
+const npcData = [
+    readFileSync(new URL('../assets/data/shared/npcs.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('../assets/data/cases/case-001/npcs.js', import.meta.url), 'utf8')
+].join('\n');
 const npcList = readFileSync(new URL('../assets/js/ui/npcListUI.js', import.meta.url), 'utf8');
 const callInterface = readFileSync(new URL('../assets/js/npc/callInterface.js', import.meta.url), 'utf8');
 const inventoryUI = readFileSync(new URL('../assets/js/ui/inventoryUI.js', import.meta.url), 'utf8');

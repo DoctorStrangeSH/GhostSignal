@@ -11,6 +11,11 @@ class EventController {
         this.intervals = [];
         this.bound = false;
         this.pageHideHandler = null;
+        this.pendingModalData = null;
+        this.modalElement = null;
+        this.modalHiddenHandler = null;
+        this.modalHideHandler = null;
+        this.modalIsHiding = false;
     }
 
     _subscribe(name, handler) {
@@ -68,23 +73,55 @@ class EventController {
         const events = this.events;
         const on = (name, handler) => this._subscribe(name, handler);
 
-        // Модалка
+        on('dialogue:state_changed', () => {
+            if (app.progress && !app.saveBlocked) app._quickSave();
+        });
+        on('dialogue:ended', () => {
+            if (!app.progress) return;
+            app.progress.dialogueData = null;
+            if (!app.saveBlocked) app._quickSave();
+        });
+
+
+        // Модальные окна показываем последовательно: Bootstrap игнорирует show()
+        // во время перехода предыдущего окна, оставляя backdrop без владельца.
+        this.modalElement = typeof document !== 'undefined' ? document.getElementById('universal-modal') : null;
+        if (this.modalElement && !this.modalHiddenHandler) {
+            this.modalHideHandler = () => { this.modalIsHiding = true; };
+            this.modalHiddenHandler = () => {
+                this.modalIsHiding = false;
+                if (!this.pendingModalData) return;
+                const next = this.pendingModalData;
+                this.pendingModalData = null;
+                this._showModal(next);
+            };
+            this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
+            this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
+        }
         on('modal:show', (data) => {
-            const body = document.getElementById('modal-body');
-            const title = document.getElementById('modal-title');
-            const footer = document.getElementById('modal-footer');
-            if (!body || !title || !footer) return;
-            title.innerHTML = data.title || '';
-            body.innerHTML = data.body || '';
-            footer.innerHTML = data.footer || '';
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('universal-modal')).show();
+            if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
+            if (!this.modalElement) return;
+            if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
+                // Keep the newest request. Its contents are applied only after
+                // the current Bootstrap hide transition has fully completed.
+                this.pendingModalData = data;
+                return;
+            }
+            this._showModal(data);
         });
 
         on('navigation:go', (id) => { app.navigateTo(id); if (id === 'screen-map') app.mapRenderer?.render(); });
         on('case:select', (id) => app.loadCase(id));
+        on('case:replay', (id) => {
+            if (!id || !getCaseById(id)) return;
+            app.loadCase(id);
+        });
         on('case:load', (id) => app.loadCase(id));
 
         on('case:started', (data) => {
+            app.progress.dialogueData = null;
+            app.dialogueEngine?.reset();
+
             const caseId = data.caseData.id;
             // This event marks a NEW playthrough, never a resume. Keep people's
             // long-term profiles but discard run-specific claims and rumors.
@@ -95,6 +132,12 @@ class EventController {
             // board first so replaying the same investigation starts blank.
             if (app.investigationBoard?.caseId === caseId) app.investigationBoard.setCase(null);
             app.progress.activeCase = app.caseManager.currentCase?.id;
+            app.progress.playthroughSequence = (Number.isInteger(app.progress.playthroughSequence) ? app.progress.playthroughSequence : 0) + 1;
+            const runId = caseId + ':' + Date.now() + ':' + app.progress.playthroughSequence;
+            app.progress.activeRunId = runId;
+            app.progressTracker?.startCase?.(caseId, runId);
+            app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
+            app.progress.completedRunIds = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
             app.investigationBoard?.setCase(caseId);
             app.progress.boardData = app.investigationBoard?.toJSON();
             app.boardUI?.render();
@@ -114,7 +157,6 @@ class EventController {
             app.progress.npcMemoryData = app.npcMemoryService?.toJSON();
             app.progress.caseData = app.caseManager.toJSON();
             app._saveProgress();
-            app.progressTracker.startCase(data.caseData.id);
             app.npcManager.loadNPCsForCase(data.caseData);
             app.npcListUI.render();
             app.evidenceChainSystem?.loadChainsForCase(data.caseData);
@@ -249,7 +291,7 @@ class EventController {
             if (!npc) { events.emit('notification:show', { message: 'Абонент не найден', type: 'error', duration: 2000 }); return; }
             if (!avail?.available) { events.emit('notification:show', { message: avail?.message || 'Недоступен', type: 'warning', duration: 3000 }); return; }
             app.gameTime.advance(CONFIG.time.costs.call);
-            app.callInterface.startCall(id);
+            app.callInterface.startCall(id, app.npcManager?.getDialogueForNPC?.(id));
         });
 
         on('npc:chat', (id) => {
@@ -257,7 +299,7 @@ class EventController {
             const avail = app.npcManager?.isNPCAvailable(id);
             if (!npc || !avail?.available) { events.emit('npc:call', id); return; }
             app.gameTime.advance(CONFIG.time.costs.dialogue);
-            app.callInterface.startCall(id);
+            app.callInterface.startCall(id, app.npcManager?.getDialogueForNPC?.(id));
         });
 
         on('npc:social_network_changed', () => {
@@ -303,59 +345,84 @@ class EventController {
         on('note:collected', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
         on('fragment:saved', () => { app.progress.notesData = app.notesManager?.toJSON(); app._saveProgress(); });
 
+        on('achievement:progress_changed', () => {
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
+            app._saveProgress?.();
+        });
+
+        on('achievement:unlocked', () => {
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
+            app._saveProgress?.();
+        });
+
         on('case:solved', (data = {}) => {
             const caseData = app.caseManager?.currentCase || getCaseById(data.caseId) || data;
             const caseId = caseData?.id || data.caseId;
-            if (!caseId) return;
+            if (!caseId || !app.progress) return;
+
+            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || app.progress.lastCompletedRunId || (caseId + ':legacy');
+            const completedRuns = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
+            if (completedRuns.includes(runId)) return;
 
             this._notifyPromiseChanges(app.npcMemoryService?.settlePromisesForCase(caseId, 'solved'));
 
             const solvedCases = Array.isArray(app.progress.solvedCases) ? app.progress.solvedCases : [];
             const isFirstSolve = !solvedCases.includes(caseId);
+            completedRuns.push(runId);
+            app.progress.completedRunIds = completedRuns;
+            app.progress.lastCompletedRunId = runId;
 
             if (app.caseManager) app.caseManager.caseState = 'solved';
             app.progress.activeCase = null;
+            app.progress.activeRunId = null;
             app.progress.caseData = app.caseManager?.toJSON() || app.progress.caseData;
 
-            // Повторная отправка события не должна повторно начислять статистику и репутацию.
-            if (isFirstSolve) {
-                const ending = app.alternateEndings?.determineEnding(
-                    caseData,
-                    app.inventory,
-                    app.caseManager?.evidenceFound || 0,
-                    { npcMemoryService: app.npcMemoryService, solved: true }
-                );
-                if (ending) {
-                    events.emit('ending:determined', { caseId, ending });
-                    const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-                    })[char]);
-                    const quality = ending.outcomeQuality === 'compromised' ? 'consequences' :
-                        !ending.condition || ending.condition === 'default' ? 'limited' :
-                        ending.condition?.startsWith('evidence_count_') ? 'partial' : 'complete';
-                    setTimeout(() => events.emit('modal:show', {
-                        title: ending.title || 'Дело завершено',
-                        body: `<div class="ending-report ending-report--${quality}"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено.')}</p></div>`,
-                        footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
-                    }), 350);
-                }
+            // Every distinct playthrough gets its own ending and history record.
+            // Permanent progression rewards remain first-clear only.
+            const ending = app.alternateEndings?.determineEnding(
+                caseData, app.inventory, app.caseManager?.evidenceFound || 0,
+                { npcMemoryService: app.npcMemoryService, solved: true }
+            );
+            if (ending) {
+                events.emit('ending:determined', { caseId, runId, ending });
+                const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[char]);
+                const quality = ending.outcomeQuality === 'compromised' ? 'consequences' :
+                    !ending.condition || ending.condition === 'default' ? 'limited' :
+                    ending.condition?.startsWith('evidence_count_') ? 'partial' : 'complete';
+                setTimeout(() => events.emit('modal:show', {
+                    title: ending.title || 'Дело завершено',
+                    body: `<div class="ending-report ending-report--${quality}"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено.')}</p></div>`,
+                    footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
+                }), 350);
+            }
 
+            if (isFirstSolve) {
                 app.progress.solvedCases = [...solvedCases, caseId];
-                app.progressTracker?.caseSolved(caseData);
                 app.reputationSystem?.caseSolved(caseData);
-                if (ending?.bonusReputation) {
-                    app.reputationSystem?.addReputation(ending.bonusReputation, 'Бонус концовки: ' + (ending.title || caseId));
-                }
-                for (const locationId of ending?.unlocks || []) {
-                    app.locationManager?.unlockLocation(locationId);
-                }
+                if (ending?.bonusReputation) app.reputationSystem?.addReputation(ending.bonusReputation, 'Бонус концовки: ' + (ending.title || caseId));
+                for (const locationId of ending?.unlocks || []) app.locationManager?.unlockLocation(locationId);
                 app.ttsEngine?.playSuccessSound();
             }
 
-            app.progress.trackerData = app.progressTracker?.toJSON() || app.progress.trackerData;
+            if (app.progressTracker?.stats && Array.isArray(app.progress.solvedCases)) {
+                const knownSolved = Array.isArray(app.progressTracker.stats.solvedCaseIds)
+                    ? app.progressTracker.stats.solvedCaseIds : [];
+                app.progressTracker.stats.solvedCaseIds = [...new Set([...knownSolved, ...app.progress.solvedCases])];
+                app.progressTracker.stats.totalCasesSolved = Math.max(
+                    Number(app.progressTracker.stats.totalCasesSolved) || 0,
+                    app.progressTracker.stats.solvedCaseIds.length
+                );
+            }
+            app.progressTracker?.caseSolved?.(caseData, runId, ending);
+            app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.progress.reputationData = app.reputationSystem?.toJSON() || app.progress.reputationData;
-            app.achievementSystem?.checkAll();
+            const runRecord = app.progressTracker?.stats?.casesHistory?.find(record => record.runId === runId) || null;
+            app.achievementSystem?.checkAll({ caseData, runRecord, ending, firstClear: isFirstSolve });
+            app.progress.achievementData = app.achievementSystem?.toJSON?.() || app.progress.achievementData;
             app.caseListUI?.setProgress(app.progress);
+            app.caseArchiveUI?.setProgress(app.progress);
             app._updateMainMenu();
             document.getElementById('btn-continue')?.classList.add('hidden');
             app._quickSave();
@@ -376,9 +443,17 @@ class EventController {
             if (!failedCases.includes(caseId)) app.progress.failedCases = [...failedCases, caseId];
 
             const caseData = app.caseManager?.currentCase || getCaseById(caseId) || { id: caseId, title: caseId };
-            app.progressTracker?.caseFailed(caseData);
+            const runId = app.progress.activeRunId || app.progressTracker?.activeRunId || (caseId + ':legacy');
+            const completedRuns = Array.isArray(app.progress.completedRunIds) ? app.progress.completedRunIds : [];
+            if (completedRuns.includes(runId)) return;
+            completedRuns.push(runId);
+            app.progress.completedRunIds = completedRuns;
+            app.progress.lastCompletedRunId = runId;
+            app.progress.activeRunId = null;
+            app.progressTracker?.caseFailed(caseData, runId);
             app.reputationSystem?.caseFailed(data);
             app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
+            app.caseArchiveUI?.setProgress(app.progress);
             app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
             app.caseListUI?.setProgress(app.progress);
             app._updateMainMenu?.();
@@ -420,7 +495,29 @@ class EventController {
         }, 30000));
     }
 
+    _showModal(data) {
+        const body = document.getElementById('modal-body');
+        const title = document.getElementById('modal-title');
+        const footer = document.getElementById('modal-footer');
+        if (!body || !title || !footer || !this.modalElement) return;
+        title.innerHTML = data.title || '';
+        body.innerHTML = data.body || '';
+        footer.innerHTML = data.footer || '';
+        bootstrap.Modal.getOrCreateInstance(this.modalElement).show();
+    }
+
     dispose() {
+        if (this.modalElement && this.modalHideHandler) {
+            this.modalElement.removeEventListener('hide.bs.modal', this.modalHideHandler);
+        }
+        if (this.modalElement && this.modalHiddenHandler) {
+            this.modalElement.removeEventListener('hidden.bs.modal', this.modalHiddenHandler);
+        }
+        this.modalHideHandler = null;
+        this.modalHiddenHandler = null;
+        this.modalIsHiding = false;
+        this.pendingModalData = null;
+        this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.pageHideHandler);
             this.pageHideHandler = null;

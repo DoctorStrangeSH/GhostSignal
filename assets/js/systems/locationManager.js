@@ -3,13 +3,57 @@ class LocationManager {
         this.gameTime = gameTime;
         this.currentLocation = null;
         this.activeCaseData = null;
-        this.unlockedLocations = new Set(['police_station', 'hotel_grand', 'hotel_room_304', 'bar_joe', 'alley']);
+        this.defaultUnlockedLocations = new Set(['police_station', 'hotel_grand', 'hotel_room_304', 'bar_joe', 'alley']);
+        this.unlockedLocations = new Set(this.defaultUnlockedLocations);
+        this.permanentUnlockedLocations = new Set();
+        this.caseUnlockedLocations = new Set();
         this.visitedLocations = new Set();
         this._listeners = [];
     }
 
     setActiveCase(caseData) {
         this.activeCaseData = caseData || null;
+    }
+
+    // Start a new investigation by dropping only unlocks owned by the previous case.
+    // Permanent rewards and the shared city baseline survive across investigations.
+    beginCase(caseData) {
+        for (const locationId of this.caseUnlockedLocations) {
+            if (!this.permanentUnlockedLocations.has(locationId)) {
+                this.unlockedLocations.delete(locationId);
+            }
+        }
+        this.caseUnlockedLocations.clear();
+        this.activeCaseData = caseData || null;
+        this.currentLocation = null;
+        this.visitedLocations.clear();
+    }
+
+    _unlockLocation(locationId) {
+        if (this.unlockedLocations.has(locationId)) return false;
+        this.unlockedLocations.add(locationId);
+        events.emit('location:unlocked', { locationId });
+        events.emit('notification:show', {
+            message: `Новая локация открыта: ${getLocationById(locationId)?.name || locationId}`,
+            type: 'success',
+            duration: 4000
+        });
+        return true;
+    }
+
+    // Story rewards and account-wide unlocks must survive future case starts.
+    unlockLocation(locationId) {
+        this.permanentUnlockedLocations.add(locationId);
+        this.caseUnlockedLocations.delete(locationId);
+        return this._unlockLocation(locationId);
+    }
+
+    // Evidence and progression gates are scoped to the active investigation.
+    unlockCaseLocation(locationId) {
+        if (this.permanentUnlockedLocations.has(locationId) ||
+            this.defaultUnlockedLocations.has(locationId)) return false;
+        this.caseUnlockedLocations.add(locationId);
+        return this._unlockLocation(locationId);
     }
 
     // Проверить, доступна ли локация сейчас
@@ -36,21 +80,6 @@ class LocationManager {
         // Если open === close (0 и 24) — круглосуточно
 
         return true;
-    }
-
-    // Разблокировать локацию
-    unlockLocation(locationId) {
-        if (!this.unlockedLocations.has(locationId)) {
-            this.unlockedLocations.add(locationId);
-            events.emit('location:unlocked', { locationId });
-            events.emit('notification:show', {
-                message: `Новая локация открыта: ${getLocationById(locationId)?.name || locationId}`,
-                type: 'success',
-                duration: 4000
-            });
-            return true;
-        }
-        return false;
     }
 
     // Переместиться в локацию
@@ -165,6 +194,8 @@ class LocationManager {
         return {
             currentLocation: this.currentLocation,
             unlockedLocations: [...this.unlockedLocations],
+            permanentUnlockedLocations: [...this.permanentUnlockedLocations],
+            caseUnlockedLocations: [...this.caseUnlockedLocations],
             visitedLocations: [...this.visitedLocations]
         };
     }
@@ -174,7 +205,14 @@ class LocationManager {
         const manager = new LocationManager(gameTime);
         if (json) {
             manager.currentLocation = json.currentLocation || null;
-            manager.unlockedLocations = new Set(json.unlockedLocations || []);
+            manager.unlockedLocations = new Set(json.unlockedLocations || manager.defaultUnlockedLocations);
+            // Older saves did not distinguish unlock ownership. Preserve their
+            // existing unlocks as permanent rather than deleting player progress.
+            manager.permanentUnlockedLocations = new Set(
+                json.permanentUnlockedLocations ||
+                (!Array.isArray(json.caseUnlockedLocations) ? json.unlockedLocations || [] : [])
+            );
+            manager.caseUnlockedLocations = new Set(json.caseUnlockedLocations || []);
             manager.visitedLocations = new Set(json.visitedLocations || []);
         }
         return manager;
