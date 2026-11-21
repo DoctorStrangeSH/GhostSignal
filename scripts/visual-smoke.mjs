@@ -284,6 +284,8 @@ try {
             await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
             await waitForModalQueueToSettle(page);
         }
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('detective_photos') &&
+            window.app?.inventory?.hasInsight('wife_hired_detective'));
 
         // Autonomous calls can still arrive during later UI checks. Drain them
         // through the actual in-game hang-up control, never by hiding the overlay.
