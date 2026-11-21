@@ -188,11 +188,13 @@ try {
 
         // The crooked mirror must reveal a previously hidden wall safe. Its
         // code is grounded in the room number and rewards the victim's diary.
-        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Зеркало' }).click();
+        await waitForCallModalToSettle(page);
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Зеркало' }).click({ force: true });
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
         const revealedSafe = page.locator('#scene-container .scene-object-card').filter({ hasText: 'Сейф в стене' });
         await revealedSafe.waitFor({ state: 'visible' });
+        await waitForCallModalToSettle(page);
         await revealedSafe.click({ force: true });
         await page.locator('#universal-modal.show .lock-game').waitFor();
         for (let click = 0; click < 3; click++) {
