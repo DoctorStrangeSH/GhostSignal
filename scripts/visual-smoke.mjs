@@ -186,17 +186,8 @@ try {
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
 
-        // The chain mechanism must produce a collectible evidence item and
-        // its authored insight, not merely display explanatory prose.
-        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
-        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-        await waitForModalQueueToSettle(page);
-        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
-            window.app?.inventory?.hasInsight('chain_trick'));
-
         // The crooked mirror must reveal a previously hidden wall safe. Its
         // code is grounded in the room number and rewards the victim's diary.
-        await waitForCallModalToSettle(page);
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Зеркало' }).click({ force: true });
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
@@ -215,7 +206,16 @@ try {
         await page.waitForFunction(() => window.app?.inventory?.hasItem('victim_diary'), { timeout: 10000 });
         await page.locator('#universal-modal .modal-header .btn-close').click();
         await waitForModalQueueToSettle(page);
+        await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.locationManager?.getLocationItems('hotel_room_304')?.includes('wall_safe'));
+
+        // Collect the third distinct clue only after the hidden-object route is
+        // complete, so its automatic sergeant call remains available to answer.
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
 
         // Three distinct evidence items trigger the sergeant's real incoming
         // call. Complete the authored dialogue instead of bypassing the warrant gate.
