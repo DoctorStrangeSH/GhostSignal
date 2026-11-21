@@ -287,6 +287,80 @@ try {
         await page.waitForFunction(() => window.app?.inventory?.hasItem('detective_photos') &&
             window.app?.inventory?.hasInsight('wife_hired_detective'));
 
+
+        // Complete the first investigation's critical confession route through
+        // real scene, inventory, call and deduction interfaces. The route requires
+        // a physical relationship clue, the sedative observation, the door-chain
+        // reconstruction and the victim's diary; merely knowing Mary's identity
+        // must not be enough to close the case.
+        await waitForCallModalToSettle(page);
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('hotel_room_304'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Пятно на ковре' }).click({ force: true });
+        await page.waitForFunction(() => window.app?.inventory?.hasInsight('sedative_clue'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('alley'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Мусорный бак' }).click({ force: true });
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('torn_photo'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        await page.evaluate(() => {
+            if (!window.app?.callInterface) throw new Error('Call interface is unavailable');
+            window.app.callInterface.currentDialogueId = 'dialogue-housekeeper';
+            window.app.callInterface.startCall('housekeeper');
+        });
+        const maryAnswers = page.locator('#dialogue-answers .answer-btn');
+        await page.waitForFunction(() =>
+            document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+            document.querySelectorAll('#dialogue-answers .answer-btn').length > 0,
+        { timeout: 15000 });
+        for (const answer of [
+            'Успокойтесь, Мэри. Я просто хочу задать несколько вопросов о мистере Блэквуде.',
+            'Расскажите о ваших отношениях с мистером Блэквудом.',
+            'Вы были ближе, чем просто горничная и постоялец. Я знаю о вас.',
+            'Это не важно. Важно то, что вы скрываете правду.',
+            'Но он передумал, верно?',
+            'И что вы сделали, когда он сказал это?',
+            'Вы угрожали ему. А потом он исчез.',
+            'Он спал? Или вы дали ему снотворное?',
+            'Мэри, что вы сделали с ним?',
+            'Дверь была заперта цепочкой изнутри. Как вы закрыли её снаружи?',
+            'Теперь расскажите, где Блэквуд.',
+            'Мэри, вы совершили ошибку. Но он жив. Это главное.',
+            'Я вызову полицию. Вам нужна помощь, Мэри.'
+        ]) {
+            await maryAnswers.filter({ hasText: answer }).waitFor({ state: 'visible' });
+            await maryAnswers.filter({ hasText: answer }).click();
+        }
+        await page.waitForFunction(() =>
+            window.app?.inventory?.hasInsight('mary_full_confession') &&
+            window.app?.inventory?.hasInsight('blackwood_location_revealed') &&
+            window.app?.inventory?.hasInsight('chain_trick_confirmed'),
+        { timeout: 15000 });
+        await page.locator('#call-modal').waitFor({ state: 'hidden', timeout: 10000 });
+        await page.screenshot({ path: `${output}/${name}-case-one-full-confession.png`, fullPage: true });
+
+        // The complete confession and the independently revealed rescue location
+        // must produce the ideal ending, while the actual deduction still checks
+        // the physical scene evidence and corroborating diary.
+        await page.evaluate(() => window.app?.inventoryUI?.render?.());
+        await page.locator('.sidebar-tab[data-tab="tab-inventory"]').click();
+        await page.locator('.inventory-card[data-item-id="victim_diary"]').click();
+        await page.waitForFunction(() => window.app?.inventory?.hasInsight('victim_knew_danger'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.evaluate(() => window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase));
+        await page.locator('#ded-suspect').selectOption('housekeeper');
+        await page.locator('#ded-motive').selectOption('love');
+        await page.locator('#ded-weapon').selectOption('sedative');
+        await page.locator('#btn-deduction-submit').click();
+        await page.locator('#deduction-feedback').getByText('ВСЁ ВЕРНО', { exact: false }).waitFor();
+        await page.waitForFunction(() => window.app?.caseManager?.caseState === 'solved', { timeout: 15000 });
+        await page.screenshot({ path: `${output}/${name}-case-one-perfect-ending.png`, fullPage: true });
+        await waitForModalQueueToSettle(page);
+
         // Autonomous calls can still arrive during later UI checks. Drain them
         // through the actual in-game hang-up control, never by hiding the overlay.
         await waitForCallModalToSettle(page);
