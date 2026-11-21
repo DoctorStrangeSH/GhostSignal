@@ -55,3 +55,13 @@ test("case one insufficient evidence produces the failed ending", () => {
     assert.equal(ending.id, "case-001-failed");
     assert.equal(ending.condition, "default");
 });
+
+test("explicitly abandoning case one always produces the failed ending", () => {
+    const ending = createEndingResolver(
+        ["mary_full_confession", "blackwood_location_revealed"],
+        11,
+        { failed: true }
+    );
+    assert.equal(ending.id, "case-001-failed");
+    assert.equal(ending.condition, "default");
+});
