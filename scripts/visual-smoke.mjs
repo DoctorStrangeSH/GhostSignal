@@ -156,6 +156,59 @@ try {
         await page.locator('#notifications-container .notification').first()
             .waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
+        // Verify the explicit unresolved closure from an isolated fresh save.
+        // This must always show the authored failure outcome, even when the
+        // original investigation continues in the main browser context.
+        await page.keyboard.press('Control+s');
+        const failureContext = await browser.newContext({
+            viewport,
+            deviceScaleFactor: 1,
+            storageState: await context.storageState()
+        });
+        try {
+            const failurePage = await failureContext.newPage();
+            failurePage.on('pageerror', error => errors.push('failure route: ' + error.message));
+            failurePage.on('console', message => {
+                if (message.type() === 'error') console.error('[failure route console]', message.text());
+            });
+            await failurePage.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+            await failurePage.locator('#loading-screen').waitFor({ state: 'detached' });
+            await failurePage.locator('#screen-main-menu.active').waitFor();
+            await failurePage.locator('#btn-continue:not(.hidden)').click();
+            await failurePage.locator('#screen-case-active.active').waitFor();
+            await failurePage.locator('#btn-abandon-case').click();
+            await failurePage.locator('#universal-modal.show #btn-confirm-abandon-case').click();
+            try {
+                await failurePage.locator('#universal-modal.show .ending-report--failed').waitFor({ timeout: 8000 });
+            } catch (error) {
+                const diagnostics = await failurePage.evaluate(() => ({
+                    activeCase: window.app?.progress?.activeCase,
+                    activeRunId: window.app?.progress?.activeRunId,
+                    completedRunIds: window.app?.progress?.completedRunIds,
+                    failedCases: window.app?.progress?.failedCases,
+                    caseState: window.app?.caseManager?.caseState,
+                    modalTitle: document.querySelector('#modal-title')?.textContent,
+                    modalBody: document.querySelector('#modal-body')?.innerHTML,
+                    modalVisible: document.querySelector('#universal-modal')?.classList.contains('show'),
+                    pendingModal: Boolean(window.app?.eventController?.pendingModalData)
+                }));
+                console.error('[failure route diagnostics]', JSON.stringify(diagnostics));
+                await failurePage.screenshot({ path: `${output}/${name}-case-one-failure-debug.png`, fullPage: true });
+                throw error;
+            }
+            await failurePage.waitForFunction(() =>
+                window.app?.progress?.activeCase === null &&
+                window.app?.progress?.failedCases?.includes('case-001') &&
+                document.querySelector('#universal-modal.show #modal-title')?.textContent?.includes('ДЕЛО НЕ РАСКРЫТО')
+            );
+            await failurePage.screenshot({
+                path: `${output}/${name}-case-one-failed-ending.png`,
+                fullPage: true
+            });
+        } finally {
+            await failureContext.close();
+        }
+
         // Exercise a real investigation path through rendered scene objects.
         // The clue must enter the inventory and grant its authored insight;
         // examining the bed in room 304 must reveal a second, spawned clue.

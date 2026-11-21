@@ -51,6 +51,22 @@ class NavigationController {
             app.mapRenderer?.render();
         });
         document.getElementById('btn-wait')?.addEventListener('click', () => app._showWaitDialog());
+        document.getElementById('btn-abandon-case')?.addEventListener('click', () => {
+            if (!app.caseController?.canResume()) return;
+            events.emit('modal:show', {
+                title: 'ЗАКРЫТЬ РАССЛЕДОВАНИЕ?',
+                body: '<p>Вы завершите дело без установленной истины. Оно попадёт в архив нераскрытых, а доверие к детективу может снизиться.</p><p>Это решение нельзя отменить в текущем прохождении. Позже вы сможете начать дело заново.</p>',
+                footer: '<button id="btn-confirm-abandon-case" class="terminal-btn btn-danger" type="button">ЗАКРЫТЬ ДЕЛО</button><button class="terminal-btn" data-bs-dismiss="modal" type="button">ПРОДОЛЖИТЬ ПОИСК</button>',
+                onConfirm: () => {
+                    if (!app.caseController?.canResume()) return;
+                    const caseId = app.progress.activeCase;
+                    events.emit('case:failed', {
+                        caseId,
+                        reason: 'player_abandoned'
+                    });
+                }
+            });
+        });
         document.getElementById('btn-hint')?.addEventListener('click', () => {
             const question = app.caseManager?.currentCase?.finalQuestion;
             if (!question) return;

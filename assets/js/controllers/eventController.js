@@ -474,6 +474,36 @@ class EventController {
             if (typeof document !== 'undefined') document.getElementById('btn-continue')?.classList.add('hidden');
             if (app._quickSave) app._quickSave();
             else app._saveProgress?.();
+
+            const ending = app.alternateEndings?.determineEnding(
+                caseData, app.inventory, app.caseManager?.evidenceFound || 0,
+                { npcMemoryService: app.npcMemoryService, failed: true }
+            );
+            if (ending) {
+                events.emit('ending:determined', { caseId, runId, ending });
+                const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[char]);
+                // Reuse the already-visible confirmation dialog for the final
+                // report. Chaining Bootstrap hide/show transitions on the same
+                // modal can leave a queued report behind a stale backdrop.
+                const showFailureReport = () => {
+                    const modal = this.modalElement || document.getElementById('universal-modal');
+                    const title = document.getElementById('modal-title');
+                    const body = document.getElementById('modal-body');
+                    const footer = document.getElementById('modal-footer');
+                    if (!modal || !title || !body || !footer) return;
+                    title.textContent = ending.title || 'Дело не раскрыто';
+                    body.innerHTML = `<div class="ending-report ending-report--failed"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено без результата.')}</p></div>`;
+                    footer.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>';
+                };
+                if (this.modalElement?.classList.contains('show')) showFailureReport();
+                else events.emit('modal:show', {
+                    title: ending.title || 'Дело не раскрыто',
+                    body: `<div class="ending-report ending-report--failed"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено без результата.')}</p></div>`,
+                    footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
+                });
+            }
         });
 
         on('weather:changed', (data) => {
@@ -517,6 +547,27 @@ class EventController {
         title.innerHTML = data.title || '';
         body.innerHTML = data.body || '';
         footer.innerHTML = data.footer || '';
+        // Bind callbacks only after this modal is actually dequeued and rendered.
+        // This avoids racing the shared modal queue when another narrative window
+        // is closing and keeps controller logic out of HTML string handlers.
+        if (typeof data.onConfirm === 'function') {
+            const confirmButton = footer.querySelector('#btn-confirm-abandon-case');
+            if (confirmButton) {
+                // Bootstrap ignores hide() while the opening fade transition is
+                // still running. Keep the destructive action unavailable until
+                // the modal is fully shown, so the follow-up ending can always
+                // close this dialog and enter the modal queue.
+                confirmButton.disabled = true;
+                this.modalElement.addEventListener('shown.bs.modal', () => {
+                    if (confirmButton.isConnected) confirmButton.disabled = false;
+                }, { once: true });
+                confirmButton.addEventListener('click', () => {
+                    if (confirmButton.disabled) return;
+                    confirmButton.disabled = true;
+                    data.onConfirm();
+                });
+            }
+        }
         bootstrap.Modal.getOrCreateInstance(this.modalElement).show();
     }
 
