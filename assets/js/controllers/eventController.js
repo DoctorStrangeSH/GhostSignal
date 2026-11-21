@@ -474,6 +474,22 @@ class EventController {
             if (typeof document !== 'undefined') document.getElementById('btn-continue')?.classList.add('hidden');
             if (app._quickSave) app._quickSave();
             else app._saveProgress?.();
+
+            const ending = app.alternateEndings?.determineEnding(
+                caseData, app.inventory, app.caseManager?.evidenceFound || 0,
+                { npcMemoryService: app.npcMemoryService, failed: true }
+            );
+            if (ending) {
+                events.emit('ending:determined', { caseId, runId, ending });
+                const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[char]);
+                setTimeout(() => events.emit('modal:show', {
+                    title: ending.title || 'Дело не раскрыто',
+                    body: `<div class="ending-report ending-report--failed"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено без результата.')}</p></div>`,
+                    footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
+                }), 350);
+            }
         });
 
         on('weather:changed', (data) => {
