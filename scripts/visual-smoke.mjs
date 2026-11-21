@@ -209,14 +209,6 @@ try {
         await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.locationManager?.getLocationItems('hotel_room_304')?.includes('wall_safe'));
 
-        // Collect the third distinct clue only after the hidden-object route is
-        // complete, so its automatic sergeant call remains available to answer.
-        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
-        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-        await waitForModalQueueToSettle(page);
-        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
-            window.app?.inventory?.hasInsight('chain_trick'));
-
         // Three distinct evidence items trigger the sergeant's real incoming
         // call. Complete the authored dialogue instead of bypassing the warrant gate.
         await page.locator('#call-modal').waitFor({ state: 'visible', timeout: 20000 });
@@ -238,6 +230,14 @@ try {
             hasText: 'Спасибо, сержант. Я не подведу.'
         }).click();
         await page.locator('#call-modal').waitFor({ state: 'hidden', timeout: 10000 });
+
+        // The chain mechanism is an additional fourth clue. The diary already
+        // satisfied the three-evidence warrant gate, so this click is unblocked.
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
 
         // The warrant must unlock the private apartment, but opening hours still
         // apply. Use the in-game wait controls, then travel through the city map.
