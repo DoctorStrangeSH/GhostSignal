@@ -229,6 +229,42 @@ try {
             throw new Error(`${name}: expected case-002 after resume, got ${resumedCase}`);
         }
 
+        // Case two must expose its own crime-scene objects after a real reload.
+        // Inspecting the glass should reveal the hidden vial and preserve the
+        // authored poison insight; the scarf is a separate, collectible clue.
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('bar_joe'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Опрокинутый стакан' }).waitFor();
+        await page.screenshot({ path: output + '/' + name + '-case-two-crime-scene.png', fullPage: true });
+
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Опрокинутый стакан' }).click();
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('overturned_glass') &&
+            window.app?.inventory?.hasItem('poison_vial') &&
+            window.app?.inventory?.hasInsight('cyanide_poison'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Красный шарф' }).click();
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('red_scarf') &&
+            window.app?.inventory?.hasInsight('scarf_owner'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        await page.keyboard.press('Control+s');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-continue:not(.hidden)').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.waitForFunction(() => window.app?.progress?.activeCase === 'case-002' &&
+            window.app?.inventory?.hasItem('overturned_glass') &&
+            window.app?.inventory?.hasItem('poison_vial') &&
+            window.app?.inventory?.hasItem('red_scarf') &&
+            window.app?.inventory?.hasInsight('cyanide_poison') &&
+            window.app?.inventory?.hasInsight('scarf_owner'));
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('bar_joe'));
+        await page.screenshot({ path: output + '/' + name + '-case-two-resumed-evidence.png', fullPage: true });
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
     }
