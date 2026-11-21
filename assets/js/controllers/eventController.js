@@ -338,6 +338,14 @@ class EventController {
         on('call:connected', () => app.ttsEngine?.playConnectSound());
         on('call:ended', () => { app.ttsEngine?.stop(); app.ttsEngine?.playHangupSound(); });
         on('minigame:start', (id) => app.minigameManager?.startGame(id));
+        // MinigameBase emits reward events; bridge them into the same inventory
+        // APIs used by scene interactions and dialogue rewards.
+        on('inventory:add', (itemId) => {
+            if (itemId && app.inventory && !app.inventory.hasItem(itemId)) app.inventory.addItem(itemId);
+        });
+        on('insight:add', (insightId) => {
+            if (insightId && app.inventory && !app.inventory.hasInsight(insightId)) app.inventory.addInsight(insightId);
+        });
         on('evidence:from_dialogue', (d) => { if (d.evidenceId && app.inventory) app.inventory.addItem(d.evidenceId); });
 
         on('board:updated', () => {
