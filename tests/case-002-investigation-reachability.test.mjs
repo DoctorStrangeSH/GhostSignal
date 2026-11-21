@@ -168,16 +168,31 @@ test("case two accusation corroboration has a reachable authored dialogue source
         "the journalist's independently assembled evidence must remain a reachable alternative");
 });
 
-test("the case-two search warrant has a reachable sergeant dialogue source", () => {
-    const { dialogues } = loadInvestigation();
+test("the case-two search warrant is reachable after collecting three distinct accessible evidence items", () => {
+    const { caseData, locations, objects, dialogues } = loadInvestigation();
     const sergeant = dialogues.find(dialogue => dialogue.npcId === "sergeant");
     assert.ok(sergeant, "the shared sergeant dialogue must be loaded for case two");
 
-    const reachable = reachableDialogueNodes(sergeant);
-    const warrantNode = Object.entries(sergeant.tree?.nodes || {}).find(([nodeId, node]) =>
-        node.givesEvidence === "search_warrant" && reachable.has(nodeId)
-    );
+    const { reachableObjects, obtainedItems } = collectReachableSceneObjects(caseData, locations, objects);
+    const accessibleEvidence = new Set([...reachableObjects, ...obtainedItems].filter(itemId =>
+        objects[itemId]?.isEvidence === true && objects[itemId]?.takeable === true
+    ));
+    assert.ok(accessibleEvidence.size >= 3,
+        `the case must expose at least three distinct collectible evidence items; found ${accessibleEvidence.size}`);
 
-    assert.ok(warrantNode,
-        "the player must be able to obtain the search warrant through a reachable sergeant dialogue node");
+    const greeting = sergeant.tree?.nodes?.[sergeant.tree?.start];
+    const warrantOption = (greeting?.answers || []).find(answer => answer.nextNode === "warrant_request");
+    assert.ok(warrantOption, "the sergeant's opening dialogue must offer the warrant request");
+    assert.equal(warrantOption.condition, "evidence_count:3",
+        "the warrant option must be gated by the three-evidence threshold");
+
+    const request = sergeant.tree?.nodes?.warrant_request;
+    const reviewOption = (request?.answers || []).find(answer => answer.nextNode === "review_evidence");
+    assert.ok(reviewOption, "the warrant request must lead to an evidence review");
+    assert.equal(sergeant.tree.nodes.review_evidence?.givesEvidence, "search_warrant",
+        "the reachable evidence review must grant the search warrant");
+
+    const reachable = reachableDialogueNodes(sergeant);
+    assert.ok(reachable.has("warrant_request") && reachable.has("review_evidence"),
+        "the warrant request and review must be connected to the sergeant's dialogue start");
 });
