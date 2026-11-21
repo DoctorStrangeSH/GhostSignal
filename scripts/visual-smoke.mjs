@@ -348,8 +348,9 @@ try {
         await page.evaluate(() => window.app?.inventoryUI?.render?.());
         await page.locator('.sidebar-tab[data-tab="tab-inventory"]').click();
         await page.locator('.inventory-card[data-item-id="victim_diary"]').click();
+        await page.locator('#universal-modal.show').waitFor();
         await page.waitForFunction(() => window.app?.inventory?.hasInsight('victim_knew_danger'));
-        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await page.locator('#universal-modal .modal-header .btn-close').click();
         await waitForModalQueueToSettle(page);
         await page.evaluate(() => window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase));
         await page.locator('#ded-suspect').selectOption('housekeeper');
