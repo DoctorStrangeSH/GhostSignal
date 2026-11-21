@@ -178,6 +178,11 @@ class InventoryUI {
             `
         });
 
+        // Evidence-specific observations must become durable investigation insights
+        // when the player studies the item in the inventory, not only when it is
+        // first discovered in a scene.
+        if (details.givesInsight) this.inventory?.addInsight?.(details.givesInsight);
+
         if (item.id === 'bar_photo') this._bindBarPhotoStudy();
 
         // Тратим время на осмотр
