@@ -538,11 +538,21 @@ class EventController {
         // is closing and keeps controller logic out of HTML string handlers.
         if (typeof data.onConfirm === 'function') {
             const confirmButton = footer.querySelector('#btn-confirm-abandon-case');
-            confirmButton?.addEventListener('click', () => {
-                if (confirmButton.disabled) return;
+            if (confirmButton) {
+                // Bootstrap ignores hide() while the opening fade transition is
+                // still running. Keep the destructive action unavailable until
+                // the modal is fully shown, so the follow-up ending can always
+                // close this dialog and enter the modal queue.
                 confirmButton.disabled = true;
-                data.onConfirm();
-            });
+                this.modalElement.addEventListener('shown.bs.modal', () => {
+                    if (confirmButton.isConnected) confirmButton.disabled = false;
+                }, { once: true });
+                confirmButton.addEventListener('click', () => {
+                    if (confirmButton.disabled) return;
+                    confirmButton.disabled = true;
+                    data.onConfirm();
+                });
+            }
         }
         bootstrap.Modal.getOrCreateInstance(this.modalElement).show();
     }
