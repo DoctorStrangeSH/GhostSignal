@@ -149,6 +149,14 @@ try {
         await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
 
+        // The chain mechanism must produce a collectible evidence item and
+        // its authored insight, not merely display explanatory prose.
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
+
         for (const [tabId, filename, contentSelector] of [
             ['tab-npcs', 'contacts', '#tab-npcs.active .npc-card'],
             ['tab-board', 'board', '#tab-board.active .board-canvas'],
@@ -191,6 +199,12 @@ try {
         await page.locator('#btn-continue').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
+        await page.waitForFunction(() => window.app?.progress?.activeCase === 'case-001' &&
+            window.app?.inventory?.hasItem('guest_book') &&
+            window.app?.inventory?.hasItem('hidden_note') &&
+            window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('missing_page') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
 
         await page.keyboard.press('Escape');
         await page.locator('#screen-main-menu.active').waitFor();
