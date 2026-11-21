@@ -484,11 +484,25 @@ class EventController {
                 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
                     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
                 })[char]);
-                setTimeout(() => events.emit('modal:show', {
+                // Reuse the already-visible confirmation dialog for the final
+                // report. Chaining Bootstrap hide/show transitions on the same
+                // modal can leave a queued report behind a stale backdrop.
+                const showFailureReport = () => {
+                    const modal = this.modalElement || document.getElementById('universal-modal');
+                    const title = document.getElementById('modal-title');
+                    const body = document.getElementById('modal-body');
+                    const footer = document.getElementById('modal-footer');
+                    if (!modal || !title || !body || !footer) return;
+                    title.textContent = ending.title || 'Дело не раскрыто';
+                    body.innerHTML = `<div class="ending-report ending-report--failed"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено без результата.')}</p></div>`;
+                    footer.innerHTML = '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>';
+                };
+                if (this.modalElement?.classList.contains('show')) showFailureReport();
+                else events.emit('modal:show', {
                     title: ending.title || 'Дело не раскрыто',
                     body: `<div class="ending-report ending-report--failed"><span class="ending-report-kicker">ИТОГОВЫЙ ПРОТОКОЛ · ${escapeHTML(caseId)}</span><p>${escapeHTML(ending.text || 'Расследование завершено без результата.')}</p></div>`,
                     footer: '<button class="terminal-btn" data-bs-dismiss="modal">ЗАКРЫТЬ ДЕЛО</button>'
-                }), 350);
+                });
             }
         });
 
