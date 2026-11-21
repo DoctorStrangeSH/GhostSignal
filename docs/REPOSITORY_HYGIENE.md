@@ -176,3 +176,12 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Transcript records player answers, evidence presentation, and contradiction prompts.
 - [x] Quality checks: 531/531 tests passed; 110 JavaScript files passed syntax validation; game-data validation passed.
 - [ ] Manual browser verification remains required for ordinary dialogue, evidence reaction, and case-specific bartender dialogue after reload.
+
+
+## Interrupted dialogue restore fix (2026-11-21)
+
+- [x] Fixed `CallInterface.restoreActiveDialogue` to remove the reference to an undeclared `dialogueId` variable.
+- [x] Restores the saved `snapshot.dialogueId` rather than the shared `npc.dialogueId`, preserving case-specific dialogue overrides.
+- [x] Added a regression test for the case-two bartender whose investigation dialogue differs from the shared NPC profile.
+- [x] Quality checks: 532/532 tests passed; JavaScript syntax and game-data validation passed.
+- [ ] Latest visual smoke is still running; browser-level manual resume verification remains an acceptance task.
