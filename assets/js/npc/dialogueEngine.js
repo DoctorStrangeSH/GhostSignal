@@ -856,10 +856,21 @@ class DialogueEngine {
             return psychology?.disposition === conditionStr.slice('disposition:'.length);
         }
 
-        // evidence_count:N
+        // evidence_count:N counts all collected, distinct evidence items.
+        // Evidence moved from the inventory tray onto the investigation board
+        // remains collected and must not make the warrant option disappear.
         if (conditionStr.startsWith('evidence_count:')) {
-            const count = parseInt(conditionStr.replace('evidence_count:', ''));
-            return (this.inventory?.evidence?.length || 0) >= count;
+            const count = Number.parseInt(conditionStr.slice('evidence_count:'.length), 10);
+            if (!Number.isInteger(count) || count < 0) return false;
+
+            const collectedIds = Array.isArray(this.inventory?.items)
+                ? this.inventory.items
+                : (this.inventory?.evidence || []);
+            const evidenceIds = typeof getObjectById === 'function'
+                ? collectedIds.filter(itemId => getObjectById(itemId)?.isEvidence)
+                : (this.inventory?.evidence || []);
+
+            return new Set(evidenceIds).size >= count;
         }
         
         // hasMagnifier
