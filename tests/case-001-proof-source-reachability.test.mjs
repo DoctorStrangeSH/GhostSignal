@@ -51,7 +51,9 @@ function reachableCaseObjects(caseData, locations, objects) {
     for (const locationId of caseData.locations) {
         const location = locations[locationId];
         if (!location || location.unlockedByDefault === false) continue;
-        for (const objectId of location.defaultItems || []) reachable.add(objectId);
+        for (const objectId of [...(location.defaultItems || []), ...(location.nightOnlyItems || [])]) {
+            reachable.add(objectId);
+        }
     }
 
     // Resolve ordinary examination, revealed objects, and keyed containers
@@ -250,4 +252,63 @@ test("case one dialogue entry points and answer targets all resolve to existing 
     }
 
     assert.deepEqual(errors, []);
+});
+
+
+test("every gated case-one location has an obtainable unlock item", () => {
+    const { caseData, locations, object, dialogues } = loadCaseOne();
+    const { reachable, items } = reachableCaseObjects(caseData, locations, object);
+    const failures = [];
+    const accessibleEvidence = new Set([...reachable, ...items].filter(itemId =>
+        object[itemId]?.isEvidence === true && object[itemId]?.takeable === true
+    ));
+    assert.ok(accessibleEvidence.size >= 3,
+        `case one must expose at least three distinct collectible evidence items; found ${accessibleEvidence.size}`);
+
+    const sergeant = dialogues.find(dialogue => dialogue.npcId === "sergeant");
+    assert.ok(sergeant, "the shared sergeant dialogue must be loaded for case one");
+    const opening = sergeant.tree?.nodes?.[sergeant.tree?.start];
+    const warrantOption = (opening?.answers || []).find(answer => answer.nextNode === "warrant_request");
+    assert.ok(warrantOption, "the sergeant must offer a warrant request in the opening dialogue");
+    assert.equal(warrantOption.condition, "evidence_count:3",
+        "the warrant request must require three distinct collected evidence items");
+    assert.equal(sergeant.tree.nodes.review_evidence?.givesEvidence, "search_warrant",
+        "the evidence review must grant the warrant needed by the locked apartment");
+
+    for (const locationId of caseData.locations) {
+        const location = locations[locationId];
+        if (!location || location.unlockedByDefault !== false) continue;
+
+        const requiredItem = location.requiresItem;
+        if (!requiredItem) {
+            failures.push(`${locationId} is locked but declares no unlock item`);
+            continue;
+        }
+
+        const sceneSource = items.has(requiredItem) || reachable.has(requiredItem);
+        const dialogueSource = dialogues.some(dialogue => {
+            const reachableNodes = reachableDialogueNodes(dialogue);
+            return Object.entries(dialogue.tree?.nodes || {}).some(([nodeId, node]) =>
+                node.givesEvidence === requiredItem && reachableNodes.has(nodeId)
+            );
+        });
+
+        assert.ok(object[requiredItem] || dialogueSource,
+            `${locationId} requires missing unlock item ${requiredItem}`);
+        assert.ok(sceneSource || dialogueSource,
+            `${locationId} requires ${requiredItem}, but no accessible scene or reachable dialogue grants it`);
+    }
+
+    assert.deepEqual(failures, []);
+});
+
+test("the train-station unlock clue is available through the alley's night-only scene path", () => {
+    const { caseData, locations, object } = loadCaseOne();
+    const { reachable, items } = reachableCaseObjects(caseData, locations, object);
+
+    assert.ok(reachable.has("hidden_suitcase"),
+        "the night-only suitcase must be considered reachable in the accessible alley");
+    assert.ok(items.has("train_ticket") || reachable.has("train_ticket"),
+        "examining the suitcase must make the train ticket obtainable");
+    assert.equal(object.train_ticket?.isEvidence, true);
 });
