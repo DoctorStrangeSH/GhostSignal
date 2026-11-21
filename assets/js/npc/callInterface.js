@@ -166,7 +166,9 @@ class CallInterface {
         }
 
         this.currentNPC = npc;
-        this.currentDialogueId = dialogueId || npc.dialogueId || null;
+        // The snapshot is the authoritative source: case-specific NPC dialogue
+        // overrides may differ from the shared profile's default dialogueId.
+        this.currentDialogueId = snapshot.dialogueId;
         this.isCallActive = true;
         this._showCallingScreen(npc);
         const status = document.getElementById('call-status');
