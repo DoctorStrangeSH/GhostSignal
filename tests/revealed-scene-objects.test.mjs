@@ -20,7 +20,7 @@ test('revealed scene objects are added once, survive save/load, and reset betwee
     const location = { id: 'hotel_room_304', defaultItems: ['mirror', 'wardrobe'] };
     const manager = createLocationManager(location);
 
-    assert.deepEqual(manager.getLocationItems(location.id), ['mirror', 'wardrobe']);
+    assert.deepEqual(Array.from(manager.getLocationItems(location.id)), ['mirror', 'wardrobe']);
     assert.equal(manager.revealObject(location.id, 'wall_safe'), true);
     assert.equal(manager.revealObject(location.id, 'wall_safe'), false);
     assert.deepEqual(Array.from(manager.getLocationItems(location.id)), ['mirror', 'wardrobe', 'wall_safe']);
