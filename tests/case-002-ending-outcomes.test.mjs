@@ -97,3 +97,24 @@ test("case two ending selection remains independent from NPC promise consequence
     assert.match(ending.text, /Томас сдержал обещание/);
     assert.equal(ending.socialConsequencesApplied, 1);
 });
+
+
+test("case two perfect ending insight is emitted only by the formal confession dialogue node", () => {
+    const dialogue = readFileSync(resolve(root, "assets/data/cases/case-002/dialogues/rival.js"), "utf8");
+    const formalNode = dialogue.match(/formal_confession:\s*\{([\s\S]*?)\n\s{12}\},/);
+    assert.ok(formalNode, "formal_confession node must exist");
+    assert.match(formalNode[1], /givesInsight:\s*"full_confession_kane"/);
+    assert.match(formalNode[1], /Я, Виктор Кейн/);
+    assert.match(dialogue, /nextNode:\s*"confession"/);
+    assert.match(dialogue, /nextNode:\s*"murder_decision"/);
+    assert.match(dialogue, /nextNode:\s*"final_decision"/);
+    assert.match(dialogue, /nextNode:\s*"realization"/);
+    assert.match(dialogue, /nextNode:\s*"formal_confession"/);
+});
+
+test("case two confession route requires the independent poisoning and stolen-vial insights", () => {
+    const dialogue = readFileSync(resolve(root, "assets/data/cases/case-002/dialogues/rival.js"), "utf8");
+    assert.match(dialogue, /hasInsight:waiter_saw_poisoning&hasInsight:kane_stole_vial/);
+    assert.match(dialogue, /hasInsight:hard_evidence_kane&hasInsight:kane_stole_vial/);
+    assert.match(dialogue, /hasInsight:full_confession_kane/);
+});
