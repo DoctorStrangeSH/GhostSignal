@@ -52,6 +52,33 @@ async function waitForModalQueueToSettle(page, { quietMs = 900, timeoutMs = 1500
     throw new Error(`Modal queue did not settle within ${timeoutMs}ms: ${JSON.stringify(state)}`);
 }
 
+async function waitForCallModalToSettle(page, { quietMs = 900, timeoutMs = 15000 } = {}) {
+    const startedAt = Date.now();
+    let quietSince = null;
+    const callModal = page.locator('#call-modal');
+    const hangup = page.locator('#btn-hangup');
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const visible = await callModal.count() &&
+            await callModal.evaluate(element => !element.classList.contains('hidden'));
+
+        if (visible) {
+            quietSince = null;
+            await hangup.waitFor({ state: 'visible' });
+            await hangup.click();
+            await callModal.waitFor({ state: 'hidden' });
+            await page.waitForTimeout(150);
+            continue;
+        }
+
+        quietSince ??= Date.now();
+        if (Date.now() - quietSince >= quietMs) return;
+        await page.waitForTimeout(150);
+    }
+
+    throw new Error(`Incoming call modal did not settle within ${timeoutMs}ms`);
+}
+
 let ready = false;
 for (let attempt = 0; attempt < 30; attempt++) {
     try {
@@ -156,6 +183,10 @@ try {
         await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
             window.app?.inventory?.hasInsight('chain_trick'));
+
+        // Autonomous NPC calls are real gameplay overlays. Close them through
+        // the in-game hang-up control before navigating the sidebar.
+        await waitForCallModalToSettle(page);
 
         for (const [tabId, filename, contentSelector] of [
             ['tab-npcs', 'contacts', '#tab-npcs.active .npc-card'],
