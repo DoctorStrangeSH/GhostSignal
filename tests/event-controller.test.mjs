@@ -738,3 +738,53 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
 });
+
+
+test("failed case reputation receives the resolved case data and is applied only once", () => {
+    const bus = createEventBus();
+    const received = [];
+    const app = {
+        progress: { activeCase: "case-002", activeRunId: "case-002:failure-1", failedCases: [] },
+        caseManager: {
+            currentCase: { id: "case-002", title: "Последний заказ" },
+            caseState: "active",
+            toJSON() { return { id: "case-002", title: "Последний заказ", caseState: this.caseState }; }
+        },
+        progressTracker: {
+            caseFailed(caseData, runId) { received.push({ type: "tracker", caseData, runId }); },
+            toJSON() { return { failed: 1 }; }
+        },
+        reputationSystem: {
+            caseFailed(caseData) { received.push({ type: "reputation", caseData }); },
+            toJSON() { return { reputation: 40, lastReason: "Провалено дело: Последний заказ" }; }
+        },
+        caseArchiveUI: { setProgress() {} },
+        caseListUI: { setProgress() {} },
+        _updateMainMenu() {},
+        _quickSave() {}
+    };
+    const Controller = loadEventController({
+        document: { getElementById: () => null },
+        setInterval() { return 1; },
+        clearInterval() {}
+    });
+    const controller = new Controller(app, bus);
+    controller.bind();
+
+    bus.emit("case:failed", { caseId: "case-002" });
+    bus.emit("case:failed", { caseId: "case-002" });
+
+    assert.equal(received.filter(call => call.type === "reputation").length, 1);
+    assert.equal(received[0].type, "tracker");
+    assert.equal(received[1].type, "reputation");
+    assert.equal(received[1].caseData, app.caseManager.currentCase,
+        "reputation receives the canonical case object, not the event payload");
+    assert.equal(received[1].caseData.title, "Последний заказ");
+    assert.deepEqual(app.progress.reputationData, {
+        reputation: 40,
+        lastReason: "Провалено дело: Последний заказ"
+    });
+    assert.deepEqual([...app.progress.failedCases], ["case-002"]);
+    assert.equal(app.progress.activeCase, null);
+    controller.dispose();
+});

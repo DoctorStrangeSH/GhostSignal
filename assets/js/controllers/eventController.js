@@ -465,7 +465,7 @@ class EventController {
             app.progress.lastCompletedRunId = runId;
             app.progress.activeRunId = null;
             app.progressTracker?.caseFailed(caseData, runId);
-            app.reputationSystem?.caseFailed(data);
+            app.reputationSystem?.caseFailed(caseData);
             app.progress.trackerData = app.progressTracker?.toJSON?.() || app.progress.trackerData;
             app.caseArchiveUI?.setProgress(app.progress);
             app.progress.reputationData = app.reputationSystem?.toJSON?.() || app.progress.reputationData;
