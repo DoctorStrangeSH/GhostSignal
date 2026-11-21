@@ -221,6 +221,12 @@ class EventController {
         on('object:interact', (data) => {
             const obj = getObjectById(data.itemId);
             if (!obj) return;
+            const revealedObjectId = obj.interactions?.examine?.revealsObject;
+            if (revealedObjectId && app.locationManager?.revealObject(data.locationId, revealedObjectId)) {
+                if (app.sceneRenderer?.currentScene?.id === data.locationId) {
+                    app.sceneRenderer.renderLocation(data.locationId);
+                }
+            }
             if (obj.takeable && app.inventory && !app.inventory.hasItem(data.itemId)) app.inventory.addItem(data.itemId);
             if (obj.interactions?.examine?.spawnsItem) { const sid = obj.interactions.examine.spawnsItem; if (app.inventory && !app.inventory.hasItem(sid)) setTimeout(() => app.inventory.addItem(sid), 500); }
             if (obj.interactions?.examine?.givesInsight) app.inventory?.addInsight(obj.interactions.examine.givesInsight);
