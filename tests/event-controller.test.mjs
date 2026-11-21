@@ -602,7 +602,7 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
             determineEnding() { calls.push("ending"); return { title: "Полная правда", bonusReputation: 5, unlocks: ["archive"] }; }
         },
         progressTracker: { activeRunId: "case-002:run-1", caseSolved() { calls.push("stats"); this.activeRunId = null; }, toJSON: () => ({ solved: 1 }) },
-        reputationSystem: { caseSolved() { calls.push("reputation"); }, addReputation() { calls.push("bonus"); }, toJSON: () => ({ reputation: 55 }) },
+        reputationSystem: { caseSolved(_caseData, bonus) { calls.push("reputation:" + bonus); }, toJSON: () => ({ reputation: 55 }) },
         locationManager: { unlockLocation(id) { calls.push("unlock:" + id); } },
         achievementSystem: { checkAll() { calls.push("achievements"); } },
         caseListUI: { setProgress() {} },
@@ -623,7 +623,7 @@ test("duplicate solve events never duplicate ending, rewards, statistics or prom
 
     assert.equal(app.progress.activeCase, null);
     assert.deepEqual([...app.progress.solvedCases], ["case-002"]);
-    for (const once of ["ending", "stats", "reputation", "bonus", "unlock:archive"]) {
+    for (const once of ["ending", "stats", "reputation:5", "unlock:archive"]) {
         assert.equal(calls.filter(call => call === once).length, 1, once + " is applied once");
     }
     assert.equal(calls.filter(call => call === "promises:case-002:solved").length, 1,

@@ -68,14 +68,15 @@ class ReputationSystem {
     // === ПОСЛЕДСТВИЯ ДЕЙСТВИЙ ===
     
     // Раскрыл дело
-    caseSolved(caseData) {
-        this.addReputation(15, `Раскрыто дело: ${caseData.title}`);
+    caseSolved(caseData, reputationBonus = 15) {
+        const appliedBonus = Number.isFinite(reputationBonus) ? reputationBonus : 15;
+        this.addReputation(appliedBonus, `Раскрыто дело: ${caseData.title}`);
         
         // Улучшаем отношения с сержантом
         this.changeNPCRelation('sergeant', 2);
         
         events.emit('notification:show', {
-            message: `Репутация +15. Текущий статус: ${this.title}`,
+            message: `Репутация ${appliedBonus >= 0 ? '+' : ''}${appliedBonus}. Текущий статус: ${this.title}`,
             type: 'success',
             duration: 4000
         });
