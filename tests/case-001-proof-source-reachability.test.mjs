@@ -145,6 +145,18 @@ test("the victim apartment points to Victoria's case-specific desk and its evide
     assert.equal(object.wife_desk?.interactions?.examine?.givesInsight, "wife_hired_detective");
 });
 
+test("every default object in the victim apartment resolves to an examinable case object", () => {
+    const { locations, object } = loadCaseOne();
+    const apartment = locations.victim_apartment;
+
+    assert.ok(apartment, "the victim apartment must exist");
+    for (const objectId of apartment.defaultItems) {
+        assert.ok(object[objectId], `victim apartment object ${objectId} must be defined`);
+        assert.ok(object[objectId].interactions?.examine,
+            `victim apartment object ${objectId} must have an examine interaction`);
+    }
+});
+
 test("the perfect ending's independent rescue-location insight is reachable in the housekeeper dialogue", () => {
     const { dialogues } = loadCaseOne();
     const housekeeper = dialogues.find(dialogue => dialogue.npcId === "housekeeper");
