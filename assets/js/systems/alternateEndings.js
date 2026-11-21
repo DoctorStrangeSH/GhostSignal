@@ -40,6 +40,11 @@ class AlternateEndings {
                 .filter(ending => ending.condition?.startsWith('evidence_count_'))
                 .sort((a, b) => Number(a.condition.split('_').pop()) - Number(b.condition.split('_').pop()))[0];
         }
+        // Explicitly abandoning an investigation is a failure even if the player
+        // collected enough evidence for a partial outcome before giving up.
+        if (socialContext?.failed) {
+            selected = configured.find(ending => ending.condition === 'default') || this._getDefaultEnding(caseData);
+        }
         if (!selected) selected = configured.find(ending => ending.condition === 'default') || this._getDefaultEnding(caseData);
 
         const summary = socialContext?.npcMemoryService?.getCaseSocialSummary?.(caseData?.id);
