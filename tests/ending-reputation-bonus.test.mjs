@@ -13,7 +13,7 @@ function loadSystem() {
         events: { emit(name, payload) { emitted.push({ name, payload }); } }
     });
     vm.runInContext(readFileSync(resolve(root, "assets/js/systems/reputation.js"), "utf8") +
-        "\\n;globalThis.__exported = ReputationSystem;", context);
+        "\n;globalThis.__exported = ReputationSystem;", context);
     return { ReputationSystem: context.__exported, emitted };
 }
 
