@@ -533,6 +533,17 @@ class EventController {
         title.innerHTML = data.title || '';
         body.innerHTML = data.body || '';
         footer.innerHTML = data.footer || '';
+        // Bind callbacks only after this modal is actually dequeued and rendered.
+        // This avoids racing the shared modal queue when another narrative window
+        // is closing and keeps controller logic out of HTML string handlers.
+        if (typeof data.onConfirm === 'function') {
+            const confirmButton = footer.querySelector('#btn-confirm-abandon-case');
+            confirmButton?.addEventListener('click', () => {
+                if (confirmButton.disabled) return;
+                confirmButton.disabled = true;
+                data.onConfirm();
+            });
+        }
         bootstrap.Modal.getOrCreateInstance(this.modalElement).show();
     }
 
