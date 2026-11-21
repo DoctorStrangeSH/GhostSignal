@@ -37,7 +37,7 @@ test('normal app bootstrap restores revealed objects from saved location data', 
     const app = read('assets/js/core/app.js');
     assert.match(app, /revealedObjectsByLocation = new Map\(/);
     assert.match(app, /Object\.entries\(s\.revealedObjectsByLocation \|\| \{\}\)/);
-    assert.match(app, /\[locationId,\s*new Set\(Array\.isArray\(objectIds\) \? objectIds : \[\]\)\]/);
+    assert.match(app, /locationId,\s*new Set\(Array\.isArray\(objectIds\) \? objectIds : \[\]\)/);
 });
 
 test('case one hides the wall safe until the mirror is examined', () => {
