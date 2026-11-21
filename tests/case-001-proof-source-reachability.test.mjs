@@ -17,6 +17,7 @@ function loadCaseOne() {
     });
     for (const path of [
         "assets/data/cases/case-001/index.js",
+        "assets/data/cases/case-001/endings.js",
         "assets/data/cases/case-001/locations.js",
         "assets/data/cases/case-001/objects.js",
         "assets/data/cases/case-001/dialogues/housekeeper.js",
@@ -41,7 +42,8 @@ function loadCaseOne() {
             vm.runInContext("DIALOGUE_SERGEANT", context)
         ],
         locations: registry.location,
-        object: registry.object
+        object: registry.object,
+        endings: registry.ending
     };
 }
 
@@ -176,6 +178,22 @@ function collectConditionAtoms(condition) {
     }
     return [condition];
 }
+
+test("the perfect ending requires confession and the explicit rescue location", () => {
+    const { dialogues, endings } = loadCaseOne();
+    const housekeeper = dialogues.find(dialogue => dialogue.npcId === "housekeeper");
+    const confession = housekeeper.tree.nodes.full_confession;
+    const location = housekeeper.tree.nodes.where_is_he;
+    const perfectEnding = endings["case-001-perfect"];
+
+    assert.equal(confession.givesInsight, "mary_full_confession");
+    assert.ok(confession.answers.some(answer =>
+        answer.nextNode === "where_is_he" && !answer.condition),
+        "the detective must be able to ask where Blackwood is immediately after the confession");
+    assert.equal(location.givesInsight, "blackwood_location_revealed");
+    assert.equal(perfectEnding.condition, "mary_full_confession");
+    assert.deepEqual(Array.from(perfectEnding.requiredInsights), ["blackwood_location_revealed"]);
+});
 
 test("case one dialogue prerequisites always reference obtainable evidence or an existing insight source", () => {
     const { dialogues, object } = loadCaseOne();
