@@ -22,8 +22,10 @@ async function waitForModalQueueToSettle(page, { quietMs = 900, timeoutMs = 1500
                 throw new Error('Visible modal has no dismiss control');
             }
             await close.click();
-            await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-            await page.waitForTimeout(100);
+            // The hidden.bs.modal handler may synchronously open the next queued
+            // narrative modal. Waiting for a hidden state can miss that brief
+            // transition and time out; let Bootstrap finish, then inspect again.
+            await page.waitForTimeout(400);
             continue;
         }
 
