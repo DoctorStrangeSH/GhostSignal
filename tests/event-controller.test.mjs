@@ -756,7 +756,7 @@ test("failed case reputation receives the resolved case data and is applied only
         },
         reputationSystem: {
             caseFailed(caseData) { received.push({ type: "reputation", caseData }); },
-            toJSON() { return { reputation: 40, lastReason: "Провалено дело: " + caseData.title }; }
+            toJSON() { return { reputation: 40, lastReason: "Провалено дело: Последний заказ" }; }
         },
         caseArchiveUI: { setProgress() {} },
         caseListUI: { setProgress() {} },
