@@ -13,7 +13,8 @@ function createLocationManager(location) {
         getSubLocations: () => []
     });
     const source = read('assets/js/systems/locationManager.js');
-    return vm.runInContext(`${source}\nLocationManager;`, context)(null);
+    const LocationManager = vm.runInContext(`${source}\nLocationManager;`, context);
+    return new LocationManager(null);
 }
 
 test('revealed scene objects are added once, survive save/load, and reset between cases', () => {
