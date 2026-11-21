@@ -133,6 +133,14 @@ class App {
             this.locationManager.caseUnlockedLocations = new Set(s.caseUnlockedLocations || []);
             this.locationManager.currentLocation = s.currentLocation || null;
             this.locationManager.visitedLocations = new Set(s.visitedLocations || []);
+            // Restore investigation-scoped hidden objects as part of the normal
+            // app bootstrap; otherwise a reload silently hides discovered clues.
+            this.locationManager.revealedObjectsByLocation = new Map(
+                Object.entries(s.revealedObjectsByLocation || {}).map(([locationId, objectIds]) => [
+                    locationId,
+                    new Set(Array.isArray(objectIds) ? objectIds : [])
+                ])
+            );
         }
 
         this.inventory = Inventory.fromJSON(this.progress.inventoryData);
