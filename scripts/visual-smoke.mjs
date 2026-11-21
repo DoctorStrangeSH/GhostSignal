@@ -384,6 +384,63 @@ try {
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
 
+        // Study the diary before any confession: it independently corroborates
+        // the danger to the victim and is required for a supported accusation.
+        await page.evaluate(() => window.app?.inventoryUI?.render?.());
+        await page.locator('.sidebar-tab[data-tab="tab-inventory"]').click();
+        await page.locator('.inventory-card[data-item-id="victim_diary"]').click();
+        await page.locator('#universal-modal.show').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasInsight('victim_knew_danger'));
+        await page.locator('#universal-modal .modal-header .btn-close').click();
+        await waitForModalQueueToSettle(page);
+
+        // Clone the pre-confession save into an isolated browser context. This
+        // lets the same real deduction UI prove that enough evidence without
+        // Mary's confession leads to the partial, not perfect, ending.
+        await page.keyboard.press('Control+s');
+        await page.waitForFunction(() => window.app?.caseManager?.evidenceFound >= 6 &&
+            window.app?.inventory?.hasInsight('victim_knew_danger'));
+        const partialContext = await browser.newContext({
+            viewport,
+            deviceScaleFactor: 1,
+            storageState: await context.storageState()
+        });
+        try {
+            const partialPage = await partialContext.newPage();
+            partialPage.on('pageerror', error => errors.push('partial route: ' + error.message));
+            await partialPage.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+            await partialPage.locator('#loading-screen').waitFor({ state: 'detached' });
+            await partialPage.locator('#screen-main-menu.active').waitFor();
+            await partialPage.locator('#btn-continue:not(.hidden)').click();
+            await partialPage.locator('#screen-case-active.active').waitFor();
+            await partialPage.waitForFunction(() => window.app?.progress?.activeCase === 'case-001' &&
+                window.app?.caseManager?.evidenceFound >= 6 &&
+                window.app?.inventory?.hasItem('hidden_note') &&
+                window.app?.inventory?.hasItem('wire_fragment') &&
+                window.app?.inventory?.hasInsight('victim_knew_danger') &&
+                !window.app?.inventory?.hasInsight('mary_full_confession') &&
+                !window.app?.inventory?.hasInsight('blackwood_location_revealed'));
+            await partialPage.evaluate(() =>
+                window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase)
+            );
+            await partialPage.locator('#ded-suspect').selectOption('housekeeper');
+            await partialPage.locator('#ded-motive').selectOption('love');
+            await partialPage.locator('#ded-weapon').selectOption('sedative');
+            await partialPage.locator('#btn-deduction-submit').click();
+            await partialPage.locator('#deduction-feedback').getByText('ВСЁ ВЕРНО', { exact: false }).waitFor();
+            await partialPage.waitForFunction(() =>
+                window.app?.caseManager?.caseState === 'solved' &&
+                document.querySelector('#universal-modal.show #modal-title')?.textContent?.includes('ЧАСТИЧНОЕ РАСКРЫТИЕ'),
+            { timeout: 15000 });
+            await partialPage.locator('#universal-modal.show .ending-report--partial').waitFor();
+            await partialPage.screenshot({
+                path: `${output}/${name}-case-one-partial-ending.png`,
+                fullPage: true
+            });
+        } finally {
+            await partialContext.close();
+        }
+
         await page.evaluate(() => {
             if (!window.app?.callInterface) throw new Error('Call interface is unavailable');
             window.app.callInterface.currentDialogueId = 'dialogue-housekeeper';
