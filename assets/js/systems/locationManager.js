@@ -8,6 +8,7 @@ class LocationManager {
         this.permanentUnlockedLocations = new Set();
         this.caseUnlockedLocations = new Set();
         this.visitedLocations = new Set();
+        this.revealedObjectsByLocation = new Map();
         this._listeners = [];
     }
 
@@ -27,6 +28,18 @@ class LocationManager {
         this.activeCaseData = caseData || null;
         this.currentLocation = null;
         this.visitedLocations.clear();
+        this.revealedObjectsByLocation.clear();
+    }
+
+    // Reveal a hidden scene object without mutating shared case definitions.
+    // Reveals are scoped to the current investigation and persisted in its save.
+    revealObject(locationId, objectId) {
+        if (!locationId || !objectId) return false;
+        const revealed = this.revealedObjectsByLocation.get(locationId) || new Set();
+        if (revealed.has(objectId)) return false;
+        revealed.add(objectId);
+        this.revealedObjectsByLocation.set(locationId, revealed);
+        return true;
     }
 
     _unlockLocation(locationId) {
@@ -153,6 +166,7 @@ class LocationManager {
         if (!location) return [];
 
         let items = [...(location.defaultItems || [])];
+        items.push(...(this.revealedObjectsByLocation.get(locationId) || []));
 
         // Предметы конкретной сцены дела добавляются к базовым объектам локации.
         const caseScenes = this.activeCaseData?.scenes?.filter(scene => scene.locationId === locationId) || [];
@@ -196,7 +210,10 @@ class LocationManager {
             unlockedLocations: [...this.unlockedLocations],
             permanentUnlockedLocations: [...this.permanentUnlockedLocations],
             caseUnlockedLocations: [...this.caseUnlockedLocations],
-            visitedLocations: [...this.visitedLocations]
+            visitedLocations: [...this.visitedLocations],
+            revealedObjectsByLocation: Object.fromEntries(
+                [...this.revealedObjectsByLocation].map(([locationId, objectIds]) => [locationId, [...objectIds]])
+            )
         };
     }
 
@@ -214,6 +231,9 @@ class LocationManager {
             );
             manager.caseUnlockedLocations = new Set(json.caseUnlockedLocations || []);
             manager.visitedLocations = new Set(json.visitedLocations || []);
+            manager.revealedObjectsByLocation = new Map(
+                Object.entries(json.revealedObjectsByLocation || {}).map(([locationId, objectIds]) => [locationId, new Set(objectIds || [])])
+            );
         }
         return manager;
     }
