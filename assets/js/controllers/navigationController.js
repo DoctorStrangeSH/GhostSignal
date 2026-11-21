@@ -66,6 +66,7 @@ class NavigationController {
             confirmButton?.addEventListener?.('click', () => {
                 if (confirmButton.disabled || !app.caseController?.canResume()) return;
                 confirmButton.disabled = true;
+                bootstrap.Modal.getInstance(document.getElementById('universal-modal'))?.hide();
                 events.emit('case:failed', {
                     caseId: app.progress.activeCase,
                     reason: 'player_abandoned'
