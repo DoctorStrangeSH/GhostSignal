@@ -178,6 +178,13 @@ try {
         await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
 
+        // The wardrobe contains the brass key required by the wall safe.
+        await waitForCallModalToSettle(page);
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Шкаф' }).click({ force: true });
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('small_key'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
         // The chain mechanism must produce a collectible evidence item and
         // its authored insight, not merely display explanatory prose.
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
