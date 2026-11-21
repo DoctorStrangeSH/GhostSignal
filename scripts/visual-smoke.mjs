@@ -438,6 +438,81 @@ try {
             window.app?.inventory?.hasInsight('scarf_owner'));
         await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('bar_joe'));
         await page.screenshot({ path: output + '/' + name + '-case-two-resumed-evidence.png', fullPage: true });
+
+        // Complete a proof-based case-two route through the rendered browser UI.
+        // Start from the resumed save, collect the two required physical exhibits,
+        // verify that the deduction gate rejects a theory without independent
+        // corroboration, then obtain Lora's documentary evidence and solve.
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('pharmacy'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Журнал продаж' }).click();
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('prescription_copy') &&
+            window.app?.inventory?.hasInsight('kane_bought_cyanide'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        await page.evaluate(() => window.app?.sceneRenderer?.renderLocation('newspaper_office'));
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Фотографии прессы' }).click();
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('bar_photo') &&
+            window.app?.inventory?.hasInsight('photo_evidence'));
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        // Correct suspect/motive/weapon are not enough: the UI must explain
+        // that independent corroboration is still missing without leaking answers.
+        await page.evaluate(() => window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase));
+        await page.locator('#ded-suspect').selectOption('business_rival');
+        await page.locator('#ded-motive').selectOption('revenge');
+        await page.locator('#ded-weapon').selectOption('poison');
+        await page.locator('#btn-deduction-submit').click();
+        await page.locator('#deduction-feedback').getByText('ДОКАЗАТЕЛЬСТВ НЕДОСТАТОЧНО', { exact: false }).waitFor();
+        await page.locator('#deduction-feedback').getByText('Документы журналистки или официальное признание', { exact: false }).waitFor();
+        await page.screenshot({ path: `${output}/${name}-case-two-proof-gate.png`, fullPage: true });
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        // Lora's dialogue is run through the call UI: greeting -> investigation
+        // -> show_evidence. The resulting insight is independent corroboration,
+        // not a side effect of merely visiting her office.
+        await page.evaluate(() => {
+            if (!window.app?.callInterface) throw new Error('Call interface is unavailable');
+            window.app.callInterface.currentDialogueId = 'dialogue-journalist';
+            window.app.callInterface.startCall('journalist');
+        });
+        await page.waitForFunction(() =>
+            document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+            document.querySelectorAll('#dialogue-answers .answer-btn').length > 0,
+        { timeout: 15000 });
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'Вы следили за Кейном. Что вы раскопали?'
+        }).click();
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'У вас есть доказательства? Покажите.'
+        }).waitFor({ state: 'visible' });
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'У вас есть доказательства? Покажите.'
+        }).click();
+        await page.waitForFunction(() => window.app?.inventory?.hasInsight('hard_evidence_kane'));
+        await page.screenshot({ path: `${output}/${name}-case-two-independent-corroboration.png`, fullPage: true });
+        await page.locator('#btn-hangup').click();
+        await page.locator('#call-modal').waitFor({ state: 'hidden' });
+
+        // The same deduction now passes only after the independent source is
+        // acquired. The normal success path emits case:solved exactly once.
+        await page.evaluate(() => window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase));
+        await page.locator('#ded-suspect').selectOption('business_rival');
+        await page.locator('#ded-motive').selectOption('revenge');
+        await page.locator('#ded-weapon').selectOption('poison');
+        await page.locator('#btn-deduction-submit').click();
+        await page.locator('#deduction-feedback').getByText('ВСЁ ВЕРНО', { exact: false }).waitFor();
+        await page.waitForFunction(() =>
+            window.app?.progress?.completedCases?.includes('case-002') ||
+            window.app?.progress?.solvedCases?.includes('case-002') ||
+            window.app?.caseManager?.caseState === 'solved',
+        { timeout: 12000 });
+        await page.screenshot({ path: `${output}/${name}-case-two-solved.png`, fullPage: true });
+
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
     }
