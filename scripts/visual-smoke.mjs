@@ -182,6 +182,7 @@ try {
         await waitForCallModalToSettle(page);
         await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Шкаф' }).click({ force: true });
         await page.waitForFunction(() => window.app?.inventory?.hasItem('small_key'));
+        await waitForCallModalToSettle(page);
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
 
