@@ -134,6 +134,17 @@ test("case one accusation evidence has playable sources in locations available t
     }
 });
 
+test("the victim apartment points to Victoria's case-specific desk and its evidence reward", () => {
+    const { locations, object } = loadCaseOne();
+    const apartment = locations.victim_apartment;
+
+    assert.ok(apartment.defaultItems.includes("wife_desk"),
+        "the Blackwood apartment must render Victoria's desk, not the generic desk object");
+    assert.equal(object.wife_desk?.id, "wife_desk");
+    assert.equal(object.wife_desk?.interactions?.examine?.spawnsItem, "detective_photos");
+    assert.equal(object.wife_desk?.interactions?.examine?.givesInsight, "wife_hired_detective");
+});
+
 test("the perfect ending's independent rescue-location insight is reachable in the housekeeper dialogue", () => {
     const { dialogues } = loadCaseOne();
     const housekeeper = dialogues.find(dialogue => dialogue.npcId === "housekeeper");

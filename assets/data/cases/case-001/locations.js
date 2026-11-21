@@ -68,7 +68,7 @@ registerData('location', {
         mapPosition: { x: 75, y: 30 },
         scenes: { day: null, night: null },
         npcsPresent: [],
-        defaultItems: ["desk", "bookshelf", "safe", "photo_frame"],
+        defaultItems: ["wife_desk", "bookshelf", "safe", "photo_frame"],
         unlockedByDefault: false,
         requiresItem: "search_warrant"
     },

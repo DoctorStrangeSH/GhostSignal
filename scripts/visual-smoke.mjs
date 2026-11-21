@@ -22,8 +22,10 @@ async function waitForModalQueueToSettle(page, { quietMs = 900, timeoutMs = 1500
                 throw new Error('Visible modal has no dismiss control');
             }
             await close.click();
-            await page.locator('#universal-modal').waitFor({ state: 'hidden' });
-            await page.waitForTimeout(100);
+            // The hidden.bs.modal handler may synchronously open the next queued
+            // narrative modal. Waiting for a hidden state can miss that brief
+            // transition and time out; let Bootstrap finish, then inspect again.
+            await page.waitForTimeout(400);
             continue;
         }
 
@@ -184,8 +186,60 @@ try {
         await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
             window.app?.inventory?.hasInsight('chain_trick'));
 
-        // Autonomous NPC calls are real gameplay overlays. Close them through
-        // the in-game hang-up control before navigating the sidebar.
+        // Three distinct evidence items trigger the sergeant's real incoming
+        // call. Complete the authored dialogue instead of bypassing the warrant gate.
+        await page.locator('#call-modal').waitFor({ state: 'visible', timeout: 20000 });
+        await page.waitForFunction(() =>
+            document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+            document.querySelectorAll('#dialogue-answers .answer-btn').length > 0
+        );
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'Мне нужен судебный ордер по делу.'
+        }).click();
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'У меня есть три разные улики, подтверждающие необходимость обыска и запроса документов.'
+        }).waitFor({ state: 'visible' });
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'У меня есть три разные улики, подтверждающие необходимость обыска и запроса документов.'
+        }).click();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('search_warrant'));
+        await page.locator('#dialogue-answers .answer-btn').filter({
+            hasText: 'Спасибо, сержант. Я не подведу.'
+        }).click();
+        await page.locator('#call-modal').waitFor({ state: 'hidden', timeout: 10000 });
+
+        // The warrant must unlock the private apartment, but opening hours still
+        // apply. Use the in-game wait controls, then travel through the city map.
+        await page.locator('#btn-wait').click();
+        await page.locator('#universal-modal.show .wait-btn[data-minutes="0"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.locator('#btn-wait').click();
+        await page.locator('#universal-modal.show .wait-btn[data-minutes="120"]').click();
+        await waitForModalQueueToSettle(page);
+        await waitForCallModalToSettle(page);
+        await page.locator('#btn-map').click();
+        await page.locator('#screen-map.active').waitFor();
+        const apartmentMarker = page.locator('.map-marker').filter({ hasText: 'Квартира жертвы' });
+        await apartmentMarker.waitFor({ state: 'visible' });
+        await apartmentMarker.click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.waitForFunction(() => window.app?.sceneRenderer?.currentScene?.id === 'victim_apartment');
+        const victoriaDesk = page.locator('#scene-container .scene-object-card').filter({
+            hasText: 'Письменный стол Виктории'
+        });
+        await victoriaDesk.waitFor({ state: 'visible' });
+        // The card intentionally lifts on hover. Force only bypasses Playwright's
+        // bounding-box stability heuristic; the real DOM click handler still runs.
+        await victoriaDesk.click({ force: true });
+        await page.locator('#universal-modal.show #modal-body').waitFor();
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('detective_photos') &&
+            window.app?.inventory?.hasInsight('wife_hired_detective'));
+        await page.screenshot({ path: `${output}/${name}-case-one-warrant-apartment.png`, fullPage: true });
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+
+        // Autonomous calls can still arrive during later UI checks. Drain them
+        // through the actual in-game hang-up control, never by hiding the overlay.
         await waitForCallModalToSettle(page);
 
         for (const [tabId, filename, contentSelector] of [
@@ -234,8 +288,12 @@ try {
             window.app?.inventory?.hasItem('guest_book') &&
             window.app?.inventory?.hasItem('hidden_note') &&
             window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasItem('search_warrant') &&
+            window.app?.inventory?.hasItem('detective_photos') &&
             window.app?.inventory?.hasInsight('missing_page') &&
-            window.app?.inventory?.hasInsight('chain_trick'));
+            window.app?.inventory?.hasInsight('chain_trick') &&
+            window.app?.inventory?.hasInsight('wife_hired_detective') &&
+            window.app?.locationManager?.unlockedLocations?.has('victim_apartment'));
 
         await page.keyboard.press('Escape');
         await page.locator('#screen-main-menu.active').waitFor();
