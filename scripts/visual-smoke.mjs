@@ -315,18 +315,37 @@ try {
         await page.locator('#btn-continue').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
-        await page.waitForFunction(() => window.app?.progress?.activeCase === 'case-001' &&
-            window.app?.inventory?.hasItem('guest_book') &&
-            window.app?.inventory?.hasItem('hidden_note') &&
-            window.app?.inventory?.hasItem('wire_fragment') &&
-            window.app?.inventory?.hasItem('victim_diary') &&
-            window.app?.locationManager?.getLocationItems('hotel_room_304')?.includes('wall_safe') &&
-            window.app?.inventory?.hasItem('search_warrant') &&
-            window.app?.inventory?.hasItem('detective_photos') &&
-            window.app?.inventory?.hasInsight('missing_page') &&
-            window.app?.inventory?.hasInsight('chain_trick') &&
-            window.app?.inventory?.hasInsight('wife_hired_detective') &&
-            window.app?.locationManager?.unlockedLocations?.has('victim_apartment'));
+        const restoredInvestigation = await page.waitForFunction(() => {
+            const app = window.app;
+            return app?.progress?.activeCase === 'case-001' &&
+                app?.inventory?.hasItem('guest_book') &&
+                app?.inventory?.hasItem('hidden_note') &&
+                app?.inventory?.hasItem('wire_fragment') &&
+                app?.inventory?.hasItem('victim_diary') &&
+                app?.locationManager?.getLocationItems('hotel_room_304')?.includes('wall_safe') &&
+                app?.inventory?.hasItem('search_warrant') &&
+                app?.inventory?.hasItem('detective_photos') &&
+                app?.inventory?.hasInsight('missing_page') &&
+                app?.inventory?.hasInsight('chain_trick') &&
+                app?.inventory?.hasInsight('wife_hired_detective') &&
+                app?.locationManager?.unlockedLocations?.has('victim_apartment');
+        }, { timeout: 30000 }).catch(async error => {
+            const state = await page.evaluate(() => {
+                const app = window.app;
+                return {
+                    activeCase: app?.progress?.activeCase,
+                    items: ['guest_book', 'hidden_note', 'wire_fragment', 'victim_diary', 'search_warrant', 'detective_photos']
+                        .filter(id => app?.inventory?.hasItem(id)),
+                    insights: ['missing_page', 'chain_trick', 'wife_hired_detective']
+                        .filter(id => app?.inventory?.hasInsight(id)),
+                    wallSafeRevealed: app?.locationManager?.getLocationItems('hotel_room_304')?.includes('wall_safe'),
+                    apartmentUnlocked: app?.locationManager?.unlockedLocations?.has('victim_apartment'),
+                    savedProgress: app?.progress?.toJSON?.(),
+                    savedLocation: app?.locationManager?.toJSON?.()
+                };
+            });
+            throw new Error(`Investigation did not restore after reload: ${JSON.stringify(state)}; ${error.message}`);
+        });
 
         await page.keyboard.press('Escape');
         await page.locator('#screen-main-menu.active').waitFor();
