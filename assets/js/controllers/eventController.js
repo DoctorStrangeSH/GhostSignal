@@ -414,8 +414,8 @@ class EventController {
 
             if (isFirstSolve) {
                 app.progress.solvedCases = [...solvedCases, caseId];
-                app.reputationSystem?.caseSolved(caseData);
-                if (ending?.bonusReputation) app.reputationSystem?.addReputation(ending.bonusReputation, 'Бонус концовки: ' + (ending.title || caseId));
+                const endingReputation = Number.isFinite(ending?.bonusReputation) ? ending.bonusReputation : 15;
+                app.reputationSystem?.caseSolved(caseData, endingReputation);
                 for (const locationId of ending?.unlocks || []) app.locationManager?.unlockLocation(locationId);
                 app.ttsEngine?.playSuccessSound();
             }
