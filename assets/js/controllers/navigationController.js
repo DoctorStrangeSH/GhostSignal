@@ -60,8 +60,6 @@ class NavigationController {
                 onConfirm: () => {
                     if (!app.caseController?.canResume()) return;
                     const caseId = app.progress.activeCase;
-                    const modal = document.getElementById('universal-modal');
-                    bootstrap.Modal.getInstance(modal)?.hide();
                     events.emit('case:failed', {
                         caseId,
                         reason: 'player_abandoned'
