@@ -70,7 +70,7 @@ test("solving a case on replay increments solved runs but counts the unique case
     assert.equal(tracker.stats.totalSolvedRuns, 2);
     assert.equal(tracker.stats.totalCasesSolved, 1);
     assert.deepEqual(Array.from(tracker.stats.solvedCaseIds), ["case-001"]);
-    assert.deepEqual(tracker.stats.casesHistory.map(record => record.endingId), [
+    assert.deepEqual(Array.from(tracker.stats.casesHistory, record => record.endingId), [
         "case-001-partial", "case-001-perfect"
     ]);
 });
