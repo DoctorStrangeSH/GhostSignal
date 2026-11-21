@@ -307,7 +307,11 @@ test("failed cases close once, preserve settled NPC promises and cannot be resum
             toJSON() { return { failed: 1 }; }
         },
         reputationSystem: {
-            caseFailed() { sequence.push("reputation"); },
+            caseFailed(caseData) {
+                assert.equal(caseData.id, "case-002");
+                assert.equal(caseData.title, "Poisoning");
+                sequence.push("reputation");
+            },
             toJSON() { return { trust: 30 }; }
         },
         _saveProgress() {},
