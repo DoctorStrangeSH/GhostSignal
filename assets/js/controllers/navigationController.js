@@ -51,6 +51,26 @@ class NavigationController {
             app.mapRenderer?.render();
         });
         document.getElementById('btn-wait')?.addEventListener('click', () => app._showWaitDialog());
+        document.getElementById('btn-abandon-case')?.addEventListener('click', () => {
+            if (!app.caseController?.canResume()) return;
+            events.emit('modal:show', {
+                title: 'ЗАКРЫТЬ РАССЛЕДОВАНИЕ?',
+                body: '<p>Вы завершите дело без установленной истины. Оно попадёт в архив нераскрытых, а доверие к детективу может снизиться.</p><p>Это решение нельзя отменить в текущем прохождении. Позже вы сможете начать дело заново.</p>',
+                footer: '<button id="btn-confirm-abandon-case" class="terminal-btn btn-danger" type="button">ЗАКРЫТЬ ДЕЛО</button><button class="terminal-btn" data-bs-dismiss="modal" type="button">ПРОДОЛЖИТЬ ПОИСК</button>'
+            });
+        });
+        // The confirmation button is injected into the shared modal, so use one
+        // delegated listener rather than binding a new handler on every opening.
+        document.addEventListener('click', event => {
+            if (!event.target.closest('#btn-confirm-abandon-case')) return;
+            const confirmButton = event.target.closest('#btn-confirm-abandon-case');
+            if (confirmButton.disabled || !app.caseController?.canResume()) return;
+            confirmButton.disabled = true;
+            events.emit('case:failed', {
+                caseId: app.progress.activeCase,
+                reason: 'player_abandoned'
+            });
+        });
         document.getElementById('btn-hint')?.addEventListener('click', () => {
             const question = app.caseManager?.currentCase?.finalQuestion;
             if (!question) return;
