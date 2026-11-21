@@ -269,6 +269,22 @@ try {
         await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
         await waitForModalQueueToSettle(page);
 
+        // Audit every remaining apartment prop through the real interaction UI.
+        // The locked home safe must clearly explain what is missing rather than
+        // pretending that an unsupported key/code path exists.
+        for (const [label, expectedText] of [
+            ['Книжный шкаф', 'Некоторые книги лежат на полу'],
+            ['Сейф', 'Нужен ключ или код'],
+            ['Фоторамка', 'На фото они улыбаются']
+        ]) {
+            const objectCard = page.locator('#scene-container .scene-object-card').filter({ hasText: label });
+            await objectCard.waitFor({ state: 'visible' });
+            await objectCard.click({ force: true });
+            await page.locator('#universal-modal.show #modal-body').getByText(expectedText, { exact: false }).waitFor();
+            await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+            await waitForModalQueueToSettle(page);
+        }
+
         // Autonomous calls can still arrive during later UI checks. Drain them
         // through the actual in-game hang-up control, never by hiding the overlay.
         await waitForCallModalToSettle(page);
