@@ -52,4 +52,8 @@ test('object interaction applies the reveal and refreshes the current scene', ()
     assert.match(controller, /app\.sceneRenderer\.renderLocation\(data\.locationId\)/);
     assert.match(controller, /on\('inventory:add',[\s\S]*?app\.inventory\.addItem\(itemId\)/);
     assert.match(controller, /on\('insight:add',[\s\S]*?app\.inventory\.addInsight\(insightId\)/);
+
+    const minigameManager = read('assets/js/minigames/minigameManager.js');
+    assert.match(minigameManager, /bootstrap\.Modal\.getOrCreateInstance\(document\.getElementById\('universal-modal'\)\)/);
+    assert.doesNotMatch(minigameManager, /new bootstrap\.Modal\(document\.getElementById\('universal-modal'\)\)/);
 });
