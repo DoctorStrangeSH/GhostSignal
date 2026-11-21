@@ -222,9 +222,13 @@ try {
         await apartmentMarker.click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.waitForFunction(() => window.app?.sceneRenderer?.currentScene?.id === 'victim_apartment');
-        await page.locator('#scene-container .scene-object-card').filter({
+        const victoriaDesk = page.locator('#scene-container .scene-object-card').filter({
             hasText: 'Письменный стол Виктории'
-        }).click();
+        });
+        await victoriaDesk.waitFor({ state: 'visible' });
+        // The card intentionally lifts on hover. Force only bypasses Playwright's
+        // bounding-box stability heuristic; the real DOM click handler still runs.
+        await victoriaDesk.click({ force: true });
         await page.locator('#universal-modal.show #modal-body').waitFor();
         await page.waitForFunction(() => window.app?.inventory?.hasItem('detective_photos') &&
             window.app?.inventory?.hasInsight('wife_hired_detective'));
