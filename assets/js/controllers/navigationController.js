@@ -58,17 +58,18 @@ class NavigationController {
                 body: '<p>Вы завершите дело без установленной истины. Оно попадёт в архив нераскрытых, а доверие к детективу может снизиться.</p><p>Это решение нельзя отменить в текущем прохождении. Позже вы сможете начать дело заново.</p>',
                 footer: '<button id="btn-confirm-abandon-case" class="terminal-btn btn-danger" type="button">ЗАКРЫТЬ ДЕЛО</button><button class="terminal-btn" data-bs-dismiss="modal" type="button">ПРОДОЛЖИТЬ ПОИСК</button>'
             });
-        });
-        // The confirmation button is injected into the shared modal, so use one
-        // delegated listener rather than binding a new handler on every opening.
-        document.addEventListener('click', event => {
-            if (!event.target.closest('#btn-confirm-abandon-case')) return;
-            const confirmButton = event.target.closest('#btn-confirm-abandon-case');
-            if (confirmButton.disabled || !app.caseController?.canResume()) return;
-            confirmButton.disabled = true;
-            events.emit('case:failed', {
-                caseId: app.progress.activeCase,
-                reason: 'player_abandoned'
+            // modal:show renders the footer synchronously when no other modal is
+            // active. Bind directly to the injected control; this also keeps the
+            // controller independent from document-level event delegation.
+            const confirmButton = document.getElementById('modal-footer')
+                ?.querySelector?.('#btn-confirm-abandon-case');
+            confirmButton?.addEventListener?.('click', () => {
+                if (confirmButton.disabled || !app.caseController?.canResume()) return;
+                confirmButton.disabled = true;
+                events.emit('case:failed', {
+                    caseId: app.progress.activeCase,
+                    reason: 'player_abandoned'
+                });
             });
         });
         document.getElementById('btn-hint')?.addEventListener('click', () => {
