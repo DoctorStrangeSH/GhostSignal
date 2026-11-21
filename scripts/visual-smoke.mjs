@@ -52,6 +52,33 @@ async function waitForModalQueueToSettle(page, { quietMs = 900, timeoutMs = 1500
     throw new Error(`Modal queue did not settle within ${timeoutMs}ms: ${JSON.stringify(state)}`);
 }
 
+async function waitForCallModalToSettle(page, { quietMs = 900, timeoutMs = 15000 } = {}) {
+    const startedAt = Date.now();
+    let quietSince = null;
+    const callModal = page.locator('#call-modal');
+    const hangup = page.locator('#btn-hangup');
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const visible = await callModal.count() &&
+            await callModal.evaluate(element => !element.classList.contains('hidden'));
+
+        if (visible) {
+            quietSince = null;
+            await hangup.waitFor({ state: 'visible' });
+            await hangup.click();
+            await callModal.waitFor({ state: 'hidden' });
+            await page.waitForTimeout(150);
+            continue;
+        }
+
+        quietSince ??= Date.now();
+        if (Date.now() - quietSince >= quietMs) return;
+        await page.waitForTimeout(150);
+    }
+
+    throw new Error(`Incoming call modal did not settle within ${timeoutMs}ms`);
+}
+
 let ready = false;
 for (let attempt = 0; attempt < 30; attempt++) {
     try {
@@ -149,6 +176,18 @@ try {
         await waitForModalQueueToSettle(page);
         await page.waitForFunction(() => window.app?.inventory?.hasItem('hidden_note'));
 
+        // The chain mechanism must produce a collectible evidence item and
+        // its authored insight, not merely display explanatory prose.
+        await page.locator('#scene-container .scene-object-card').filter({ hasText: 'Дверная цепочка' }).click();
+        await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
+        await waitForModalQueueToSettle(page);
+        await page.waitForFunction(() => window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
+
+        // Autonomous NPC calls are real gameplay overlays. Close them through
+        // the in-game hang-up control before navigating the sidebar.
+        await waitForCallModalToSettle(page);
+
         for (const [tabId, filename, contentSelector] of [
             ['tab-npcs', 'contacts', '#tab-npcs.active .npc-card'],
             ['tab-board', 'board', '#tab-board.active .board-canvas'],
@@ -191,6 +230,12 @@ try {
         await page.locator('#btn-continue').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
+        await page.waitForFunction(() => window.app?.progress?.activeCase === 'case-001' &&
+            window.app?.inventory?.hasItem('guest_book') &&
+            window.app?.inventory?.hasItem('hidden_note') &&
+            window.app?.inventory?.hasItem('wire_fragment') &&
+            window.app?.inventory?.hasInsight('missing_page') &&
+            window.app?.inventory?.hasInsight('chain_trick'));
 
         await page.keyboard.press('Escape');
         await page.locator('#screen-main-menu.active').waitFor();
