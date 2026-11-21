@@ -576,6 +576,39 @@ try {
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
         await page.keyboard.press('Control+s');
+
+        // Exercise the authored case-two failure epilogue in an isolated
+        // browser context. The main context keeps its clean active run for the
+        // evidence-gated partial route below.
+        const caseTwoFailureContext = await browser.newContext({
+            viewport,
+            deviceScaleFactor: 1,
+            storageState: await context.storageState()
+        });
+        try {
+            const failurePage = await caseTwoFailureContext.newPage();
+            failurePage.on('pageerror', error => errors.push('case two failure route: ' + error.message));
+            await failurePage.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+            await failurePage.locator('#loading-screen').waitFor({ state: 'detached' });
+            await failurePage.locator('#screen-main-menu.active').waitFor();
+            await failurePage.locator('#btn-continue:not(.hidden)').click();
+            await failurePage.locator('#screen-case-active.active').waitFor();
+            await failurePage.locator('#btn-abandon-case').click();
+            await failurePage.locator('#universal-modal.show #btn-confirm-abandon-case').click();
+            await failurePage.locator('#universal-modal.show .ending-report--failed').waitFor({ timeout: 10000 });
+            await failurePage.waitForFunction(() =>
+                window.app?.progress?.activeCase === null &&
+                window.app?.progress?.failedCases?.includes('case-002') &&
+                document.querySelector('#universal-modal.show .ending-report--failed')?.textContent?.includes('Кейн на свободе')
+            );
+            await failurePage.screenshot({
+                path: `${output}/${name}-case-two-failed-ending.png`,
+                fullPage: true
+            });
+        } finally {
+            await caseTwoFailureContext.close();
+        }
+
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.locator('#screen-main-menu.active').waitFor();
@@ -696,7 +729,15 @@ try {
             window.app?.progress?.solvedCases?.includes('case-002') ||
             window.app?.caseManager?.caseState === 'solved',
         { timeout: 12000 });
-        await page.screenshot({ path: `${output}/${name}-case-two-solved.png`, fullPage: true });
+        // This route deliberately has independent corroboration and enough
+        // physical evidence, but no full_confession_kane insight: it must end
+        // as a partial resolution, never as a perfect confession outcome.
+        await page.locator('#universal-modal.show .ending-report--partial').waitFor({ timeout: 10000 });
+        await page.waitForFunction(() =>
+            !window.app?.inventory?.hasInsight('full_confession_kane') &&
+            window.app?.caseManager?.caseState === 'solved'
+        );
+        await page.screenshot({ path: `${output}/${name}-case-two-partial-ending.png`, fullPage: true });
 
         if (errors.length) throw new Error(`${name}: uncaught browser error(s): ${errors.join(' | ')}`);
         await context.close();
