@@ -457,6 +457,14 @@ class CallInterface {
     }
 
     endCall() {
+        // Hanging up can be triggered by overlapping UI cleanup paths (for
+        // example, the hang-up button and a modal teardown). Once every call
+        // resource is already cleared, a second endCall must be a no-op.
+        if (!this.isCallActive && !this.currentNPC && !this.dialogueEngine?.currentDialogue &&
+            this._connectionTimeout === null && !this._timerInterval && !this._ringtoneOscillator) {
+            return;
+        }
+
         this.isCallActive = false;
 
         if (this._connectionTimeout !== null) {
