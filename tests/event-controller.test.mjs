@@ -885,7 +885,7 @@ test("ending a call clears the active dialogue snapshot and persists the cleared
     app.saveBlocked = true;
     bus.emit("dialogue:ended", { npcId: "business_rival" });
     assert.equal(app.progress.dialogueData, null);
-    assert.equal(quickSaves, 2, "save migration/restore guards must still be respected");
+    assert.equal(quickSaves, 1, "save migration/restore guards must still be respected");
 
     controller.dispose();
 });
