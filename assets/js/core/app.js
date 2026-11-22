@@ -245,21 +245,6 @@ class App {
 
         this._bindEvents();
 
-        // Restore an interrupted conversation only after all case systems and
-        // event listeners are ready. A snapshot from another case is discarded.
-        if (this.progress.dialogueData) {
-            const savedDialogue = this.progress.dialogueData;
-            const sameCase = savedDialogue.caseId === (this.progress.activeCase || null);
-            const expectedDialogueId = this.npcManager?.getDialogueForNPC?.(savedDialogue.npcId);
-            const belongsToActiveCase = expectedDialogueId === savedDialogue.dialogueId;
-            const restored = sameCase && belongsToActiveCase && this.callInterface?.restoreActiveDialogue(savedDialogue);
-            if (!restored) {
-                this.progress.dialogueData = null;
-                this._quickSave();
-            }
-        }
-
-
         // Reconcile already-collected clues after listeners are attached.
         if (this.caseManager?.currentCase) this.evidenceChainSystem?.checkChains();
 
@@ -395,6 +380,22 @@ class App {
 
     navigateTo(screenId) {
         this.navigationController.navigateTo(screenId);
+    }
+
+    // Restore an interrupted call only after the player has resumed its case.
+    // Opening the call modal during boot would cover the main-menu Continue button.
+    restoreInterruptedDialogue(caseId) {
+        const snapshot = this.progress?.dialogueData;
+        if (!snapshot) return false;
+
+        const sameCase = snapshot.caseId === caseId;
+        const expectedDialogueId = this.npcManager?.getDialogueForNPC?.(snapshot.npcId);
+        const belongsToActiveCase = expectedDialogueId === snapshot.dialogueId;
+        const restored = sameCase && belongsToActiveCase &&
+            this.callInterface?.restoreActiveDialogue(snapshot);
+
+        if (!restored) this.progress.dialogueData = null;
+        return Boolean(restored);
     }
 
     loadCase(caseId) {
