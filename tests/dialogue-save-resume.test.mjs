@@ -161,3 +161,45 @@ test("player answers are retained in the dialogue transcript for reload", () => 
     assert.equal(transcript[0].text, "Спросить о времени");
     assert.equal(transcript[1].nodeId, "time_question");
 });
+
+
+test("Kane formal confession dialogue snapshot resumes at the trusted confession node", () => {
+    let rivalDialogue = null;
+    const context = vm.createContext({
+        console: { log() {}, error() {} },
+        CONFIG: { time: { costs: { dialogue: 0 } } },
+        events: { emit() {} },
+        registerData(type, value) {
+            if (type === "dialogue" && value.id === "dialogue-rival-full") rivalDialogue = value;
+        },
+        getDialogueById(id) { return id === "dialogue-rival-full" ? rivalDialogue : null; },
+        getNPCById(id) { return id === "business_rival" ? { id, name: "Виктор Кейн" } : null; }
+    });
+    vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/dialogues/rival.js"), "utf8"), context);
+    vm.runInContext(readFileSync(resolve(root, "assets/js/npc/dialogueEngine.js"), "utf8") +
+        "\\n;globalThis.__DialogueEngine = DialogueEngine;", context);
+
+    const engine = new context.__DialogueEngine({}, { advance() {} });
+    engine.currentDialogue = rivalDialogue;
+    engine.currentStableNodeId = "realization";
+    engine.currentNode = { id: "formal_confession", ...rivalDialogue.tree.nodes.formal_confession };
+    engine.dialogueHistory = [
+        { nodeId: "confession", speaker: "npc", text: rivalDialogue.tree.nodes.confession.text },
+        { nodeId: "murder_decision", speaker: "npc", text: rivalDialogue.tree.nodes.murder_decision.text },
+        { nodeId: "final_decision", speaker: "npc", text: rivalDialogue.tree.nodes.final_decision.text },
+        { nodeId: "realization", speaker: "npc", text: rivalDialogue.tree.nodes.realization.text },
+        { nodeId: "formal_confession", speaker: "npc", text: rivalDialogue.tree.nodes.formal_confession.text }
+    ];
+
+    const snapshot = engine.toJSON();
+    const restored = new context.__DialogueEngine({}, { advance() { throw new Error("restore must not advance time"); } });
+    assert.equal(restored.restoreFromJSON(snapshot), true);
+    assert.equal(restored.currentDialogue.id, "dialogue-rival-full");
+    assert.equal(restored.currentNode.id, "formal_confession");
+    assert.match(restored.currentNode.text, /Я, Виктор Кейн/);
+    assert.equal(restored.currentNode.answers[0].nextNode, "end_rival");
+    assert.deepEqual(
+        JSON.parse(JSON.stringify(restored.getHistory())).map(entry => entry.nodeId),
+        ["confession", "murder_decision", "final_decision", "realization", "formal_confession"]
+    );
+});
