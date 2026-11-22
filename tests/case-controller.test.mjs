@@ -105,7 +105,7 @@ test("CaseController restores an interrupted dialogue only after entering the ac
     assert.equal(controller.loadCase("case-001"), true);
     assert.deepEqual(calls, [
         ["navigateTo", "screen-case-active"],
-        ["renderLocation", "police_station"],
+        ["renderLocation", "hotel_room_304"],
         ["restoreDialogue", "case-001"],
         ["save"]
     ]);
