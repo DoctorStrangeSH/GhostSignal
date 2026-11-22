@@ -63,6 +63,8 @@ class CaseController {
         if (!canResume) {
             this._clearInvestigationState();
             if (!app.caseManager.loadCase(caseId)) return false;
+            // Only discard the old call after the new run has started successfully.
+            app.progress.dialogueData = null;
         }
 
         app.navigateTo('screen-case-active');
@@ -83,6 +85,9 @@ class CaseController {
         }
 
         app.progress.activeCase = caseId;
+        // Restore a saved call only after the case screen is active, never over
+        // the main menu. Invalid/cross-case snapshots are discarded safely.
+        if (app.progress.dialogueData) app.restoreInterruptedDialogue?.(caseId);
         // Persist the complete case snapshot immediately: selecting/continuing
         // a case must not depend on the next timed autosave.
         app._quickSave();
