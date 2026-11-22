@@ -131,6 +131,23 @@ test("starting a fresh run discards an interrupted dialogue from the previous ru
     ]);
 });
 
+test("failed new case start preserves the previous interrupted dialogue snapshot", () => {
+    const { controller, app } = createHarness({
+        loadResult: false,
+        app: {
+            progress: {
+                activeCase: null,
+                dialogueData: { caseId: "case-001", dialogueId: "old-call", npcId: "witness" }
+            }
+        }
+    });
+
+    assert.equal(controller.loadCase("case-001"), false);
+    assert.deepEqual(app.progress.dialogueData, {
+        caseId: "case-001", dialogueId: "old-call", npcId: "witness"
+    });
+});
+
 test("CaseController saves the selected case and existing evidence in one snapshot", () => {
     const snapshots = [];
     const app = {
