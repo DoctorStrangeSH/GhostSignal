@@ -83,6 +83,54 @@ test("CaseController resumes the active case without resetting CaseManager state
     ]);
 });
 
+test("CaseController restores an interrupted dialogue only after entering the active case screen", () => {
+    const { controller, app, calls } = createHarness({
+        app: {
+            progress: {
+                activeCase: "case-001",
+                dialogueData: { caseId: "case-001", dialogueId: "dialogue-case-one", npcId: "witness" }
+            },
+            caseManager: {
+                currentCase: { id: "case-001" },
+                caseState: "active",
+                loadCase() { throw new Error("resuming must not reset the case"); }
+            },
+            restoreInterruptedDialogue(caseId) {
+                assert.equal(calls.at(-1)[0], "renderLocation");
+                calls.push(["restoreDialogue", caseId]);
+            }
+        }
+    });
+
+    assert.equal(controller.loadCase("case-001"), true);
+    assert.deepEqual(calls, [
+        ["navigateTo", "screen-case-active"],
+        ["renderLocation", "police_station"],
+        ["restoreDialogue", "case-001"],
+        ["save"]
+    ]);
+});
+
+test("starting a fresh run discards an interrupted dialogue from the previous run", () => {
+    const { controller, app, calls } = createHarness({
+        app: {
+            progress: {
+                activeCase: "case-001",
+                dialogueData: { caseId: "case-001", dialogueId: "old-call", npcId: "witness" }
+            }
+        }
+    });
+
+    assert.equal(controller.loadCase("case-001"), true);
+    assert.equal(app.progress.dialogueData, null);
+    assert.deepEqual(calls, [
+        ["loadCase", "case-001"],
+        ["navigateTo", "screen-case-active"],
+        ["renderLocation", "hotel_room_304"],
+        ["save"]
+    ]);
+});
+
 test("CaseController saves the selected case and existing evidence in one snapshot", () => {
     const snapshots = [];
     const app = {
