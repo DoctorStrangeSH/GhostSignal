@@ -573,6 +573,9 @@ try {
             window.app?.caseListUI && window.app?.navigationController &&
             window.app?.progress?.activeCase === null
         ));
+        // Reset can enqueue an achievement/narrative modal after the menu is
+        // ready. Drain the modal queue before interacting with the case button.
+        await waitForModalQueueToSettle(page);
         await page.locator('#btn-open-cases').click();
         await page.locator('#screen-cases.active .case-btn[data-case-id="case-002"]').click();
         await page.locator('#screen-case-active.active').waitFor();
