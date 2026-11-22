@@ -875,10 +875,11 @@ test("ending a call clears the active dialogue snapshot and persists the cleared
     assert.equal(app.progress.dialogueData, null);
     assert.equal(quickSaves, 1);
 
-    // A late duplicate end event must remain harmless and cannot resurrect state.
+    // A late duplicate end event must remain harmless and must not write
+    // an identical empty snapshot again.
     bus.emit("dialogue:ended", { npcId: "business_rival" });
     assert.equal(app.progress.dialogueData, null);
-    assert.equal(quickSaves, 2);
+    assert.equal(quickSaves, 1, "duplicate end events must not write another identical save");
 
     app.progress.dialogueData = { dialogueId: "blocked-snapshot" };
     app.saveBlocked = true;
