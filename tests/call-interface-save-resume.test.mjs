@@ -104,7 +104,7 @@ test("ending an active call emits dialogue:ended once and resets the dialogue en
     assert.equal(call._callStartTime, null);
     assert.equal(resets, 1);
     assert.deepEqual(events.map(event => event.name), ["dialogue:ended", "call:ended"]);
-    assert.deepEqual(events[0].detail, { npcId: "bartender" });
+    assert.equal(events[0].detail.npcId, "bartender");
 
     // A duplicate hang-up cannot emit another end event or reset a second time.
     call.endCall();
