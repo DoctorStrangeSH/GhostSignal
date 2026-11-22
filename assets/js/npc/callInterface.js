@@ -23,6 +23,8 @@ class CallInterface {
         if (this.isCallActive) this.endCall();
 
         this.currentNPC = npc;
+        // Resolve case-specific dialogue for this call before the delayed connection.
+        this.currentDialogueId = dialogueId || npc.dialogueId || null;
         this.isCallActive = true;
 
         // Показываем интерфейс звонка

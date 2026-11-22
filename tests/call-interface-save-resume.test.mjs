@@ -69,3 +69,11 @@ test("restoring an interrupted case-specific call uses the saved dialogue id", (
     assert.ok(events.some(event => event.name === "call:connected" &&
         event.detail.npcId === "bartender" && event.detail.resumed === true));
 });
+
+
+test("startCall stores an explicit case dialogue before the delayed connection", () => {
+    const source = readFileSync(resolve(root, "assets/js/npc/callInterface.js"), "utf8");
+    assert.match(source, /startCall\(npcId, dialogueId = null\)/);
+    assert.match(source, /this\.currentDialogueId = dialogueId \|\| npc\.dialogueId \|\| null;/);
+    assert.match(source, /const dialogueId = this\.currentDialogueId \|\| npc\.dialogueId;/);
+});
