@@ -77,3 +77,37 @@ test("startCall stores an explicit case dialogue before the delayed connection",
     assert.match(source, /this\.currentDialogueId = dialogueId \|\| npc\.dialogueId \|\| null;/);
     assert.match(source, /const dialogueId = this\.currentDialogueId \|\| npc\.dialogueId;/);
 });
+
+test("ending an active call emits dialogue:ended once and resets the dialogue engine", () => {
+    const { CallInterface, events } = loadCallInterface();
+    const call = Object.create(CallInterface.prototype);
+    let resets = 0;
+    call.isCallActive = true;
+    call.currentNPC = { id: "bartender" };
+    call.dialogueEngine = {
+        currentDialogue: { id: "dialogue-bartender-case2", npcId: "bartender" },
+        reset() {
+            resets++;
+            this.currentDialogue = null;
+        }
+    };
+    call.callModal = { classList: { add() {} } };
+    call._connectionTimeout = null;
+    call._timerInterval = null;
+    call._ringtoneOscillator = null;
+    call._callStartTime = 123;
+
+    call.endCall();
+
+    assert.equal(call.isCallActive, false);
+    assert.equal(call.currentNPC, null);
+    assert.equal(call._callStartTime, null);
+    assert.equal(resets, 1);
+    assert.deepEqual(events.map(event => event.name), ["dialogue:ended", "call:ended"]);
+    assert.deepEqual(events[0].detail, { npcId: "bartender" });
+
+    // A duplicate hang-up cannot emit another end event or reset a second time.
+    call.endCall();
+    assert.deepEqual(events.map(event => event.name), ["dialogue:ended", "call:ended"]);
+    assert.equal(resets, 1);
+});
