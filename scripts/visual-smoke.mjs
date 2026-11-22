@@ -740,6 +740,143 @@ try {
         await page.locator('#btn-hangup').click();
         await page.locator('#call-modal').waitFor({ state: 'hidden' });
 
+        // Clone the evidence-complete, pre-deduction save into an isolated
+        // browser context. This route proves the actual Kane confession chain
+        // and perfect ending without consuming the partial route below.
+        await page.keyboard.press('Control+s');
+        const confessionContext = await browser.newContext({
+            viewport,
+            deviceScaleFactor: 1,
+            storageState: await context.storageState()
+        });
+        try {
+            const confessionPage = await confessionContext.newPage();
+            confessionPage.on('pageerror', error => errors.push('case two confession route: ' + error.message));
+            await confessionPage.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+            await confessionPage.locator('#loading-screen').waitFor({ state: 'detached' });
+            await confessionPage.locator('#screen-main-menu.active').waitFor();
+            await confessionPage.locator('#btn-continue:not(.hidden)').click();
+            await confessionPage.locator('#screen-case-active.active').waitFor();
+            await confessionPage.waitForFunction(() =>
+                window.app?.progress?.activeCase === 'case-002' &&
+                window.app?.inventory?.hasInsight('hard_evidence_kane') &&
+                !window.app?.inventory?.hasInsight('full_confession_kane')
+            );
+
+            // Joe's own account of the dropped vial is the second, independent
+            // prerequisite for entering the full confession route.
+            await confessionPage.evaluate(() =>
+                window.app?.callInterface?.startCall('bartender', 'dialogue-bartender-case2')
+            );
+            await confessionPage.waitForFunction(() =>
+                document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+                window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-bartender-case2' &&
+                window.app?.dialogueEngine?.currentNode?.id === 'greeting'
+            , { timeout: 15000 });
+            for (const [answer, node] of [
+                ['Расскажите мне о вечере отравления ещё раз. Медленно.', 'retell'],
+                ['Кто подходил к нему?', 'visitors'],
+                ['Кто был следующим?', 'next_visitor'],
+                ['Он говорил с Анной?', 'kane_anna'],
+                ['Он вернул его Анне?', 'returned_vial']
+            ]) {
+                await confessionPage.locator('#dialogue-answers .answer-btn').filter({ hasText: answer }).click();
+                await confessionPage.waitForFunction(expected =>
+                    window.app?.dialogueEngine?.currentNode?.id === expected, node);
+            }
+            await confessionPage.waitForFunction(() => window.app?.inventory?.hasInsight('kane_stole_vial'));
+            await confessionPage.locator('#btn-hangup').click();
+            await confessionPage.locator('#call-modal').waitFor({ state: 'hidden' });
+
+            await confessionPage.evaluate(() =>
+                window.app?.callInterface?.startCall('business_rival', 'dialogue-rival-full')
+            );
+            await confessionPage.waitForFunction(() =>
+                document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+                window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-rival-full' &&
+                window.app?.dialogueEngine?.currentNode?.id === 'confrontation'
+            , { timeout: 15000 });
+
+            await confessionPage.locator('#dialogue-answers .answer-btn').filter({
+                hasText: 'Расскажите, зачем вы это сделали.'
+            }).click();
+            await confessionPage.waitForFunction(() =>
+                window.app?.dialogueEngine?.currentNode?.id === 'why'
+            );
+            await confessionPage.locator('#dialogue-answers .answer-btn').filter({
+                hasText: 'У меня есть фотография из бара и свидетельство о пузырьке.'
+            }).click();
+            await confessionPage.waitForFunction(() =>
+                window.app?.dialogueEngine?.currentNode?.id === 'confession'
+            );
+
+            await confessionPage.locator('#dialogue-answers .answer-btn').filter({
+                hasText: 'И вы решили убить его?'
+            }).click();
+            await confessionPage.waitForFunction(() =>
+                window.app?.dialogueEngine?.currentNode?.id === 'murder_decision'
+            );
+
+            // Reload in the middle of the confession. The restored call must
+            // resume at the exact node without replaying earlier testimony.
+            await confessionPage.keyboard.press('Control+s');
+            await confessionPage.reload({ waitUntil: 'domcontentloaded' });
+            await confessionPage.locator('#loading-screen').waitFor({ state: 'detached' });
+            await confessionPage.locator('#screen-main-menu.active').waitFor();
+            await confessionPage.locator('#call-modal').waitFor({ state: 'hidden' });
+            await confessionPage.locator('#btn-continue:not(.hidden)').click();
+            await confessionPage.locator('#screen-case-active.active').waitFor();
+            await confessionPage.locator('#call-modal').waitFor({ state: 'visible' });
+            await confessionPage.waitForFunction(() =>
+                window.app?.progress?.activeCase === 'case-002' &&
+                window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-rival-full' &&
+                window.app?.dialogueEngine?.currentNode?.id === 'murder_decision' &&
+                window.app?.inventory?.hasInsight('kane_stole_vial') &&
+                !window.app?.inventory?.hasInsight('full_confession_kane')
+            );
+
+            for (const [answer, node] of [
+                ['И тогда вы решились?', 'final_decision'],
+                ['Вы понимаете, что погубили не только его, но и себя?', 'realization'],
+                ['Этого достаточно для признания.', 'formal_confession']
+            ]) {
+                await confessionPage.locator('#dialogue-answers .answer-btn').filter({ hasText: answer }).click();
+                await confessionPage.waitForFunction(expected =>
+                    window.app?.dialogueEngine?.currentNode?.id === expected, node);
+            }
+            await confessionPage.waitForFunction(() =>
+                window.app?.inventory?.hasInsight('full_confession_kane')
+            );
+            await confessionPage.locator('#dialogue-answers .answer-btn').filter({
+                hasText: 'Спасибо за честность.'
+            }).click();
+            await confessionPage.locator('#call-modal').waitFor({ state: 'hidden' });
+
+            await confessionPage.evaluate(() =>
+                window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase)
+            );
+            await confessionPage.locator('#ded-suspect').selectOption('business_rival');
+            await confessionPage.locator('#ded-motive').selectOption('revenge');
+            await confessionPage.locator('#ded-weapon').selectOption('poison');
+            await confessionPage.locator('#btn-deduction-submit').click();
+            await confessionPage.locator('#deduction-feedback').getByText('ВСЁ ВЕРНО', { exact: false }).waitFor();
+            await confessionPage.locator('#universal-modal.show').getByText('ИДЕАЛЬНОЕ РАСКРЫТИЕ', {
+                exact: false
+            }).waitFor({ timeout: 15000 });
+            await confessionPage.waitForFunction(() =>
+                window.app?.caseManager?.caseState === 'solved' &&
+                window.app?.inventory?.hasInsight('full_confession_kane') &&
+                (window.app?.progress?.completedCases?.includes('case-002') ||
+                    window.app?.progress?.solvedCases?.includes('case-002'))
+            );
+            await confessionPage.screenshot({
+                path: `${output}/${name}-case-two-perfect-confession-ending.png`,
+                fullPage: true
+            });
+        } finally {
+            await confessionContext.close();
+        }
+
         // The same deduction now passes only after the independent source is
         // acquired. The normal success path emits case:solved exactly once.
         await page.evaluate(() => window.app?.deductionScreen?.show(window.app?.caseManager?.currentCase));
