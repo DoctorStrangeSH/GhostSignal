@@ -77,7 +77,7 @@ class EventController {
             if (app.progress && !app.saveBlocked) app._quickSave();
         });
         on('dialogue:ended', () => {
-            if (!app.progress) return;
+            if (!app.progress?.dialogueData) return;
             app.progress.dialogueData = null;
             if (!app.saveBlocked) app._quickSave();
         });
