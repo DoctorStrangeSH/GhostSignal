@@ -39,7 +39,7 @@
 - В этом проходе игровые данные и ассеты не удалялись.
 - PR #159 merged в `main` (merge commit `62cc7b2802b7fb4a209aa7e79a40d7c361e1fe76`); Quality checks и Visual Smoke PASS на точном head `c74dc9ff7a140bd7498acb5fd284f8607b4cc908`.
 - Первоначальный PR #160 закрыт без merge из-за устаревшей базы. Актуальный PR #161: `chore/repository-polish-after-dialogue-merge`.
-- PR #161: Quality checks PASS и Desktop/Mobile Visual Smoke PASS на точном head `8ac31b07a1f2eaa0e41f4371e609dba63cfcd494`.
+- PR #161 merged в `main` (merge commit `3ca946838a96ba04adb95aa4980ac1b9857c8cdc`); Quality checks и Desktop/Mobile Visual Smoke PASS на точном head `16793d570dd72478bf7ee7558a5c39801d3f5e21`.
 - Аудит веток: 154 подтверждённые ветки-кандидаты, 7 веток с уникальными коммитами сохранены, 3 служебные ветки сохранены. Физическое удаление 154 кандидатов не выполнено.
 - NOT DONE: полный поиск авторских пометок за пределами `scripts/`, интеграционная оценка 7 уникальных веток и полная браузерная приёмка двух дел.
 
@@ -234,3 +234,13 @@ With both CI workflows green, continue branch pruning and the deeper asset/docum
 - [x] Added a regression test for the case-two bartender whose investigation dialogue differs from the shared NPC profile.
 - [x] Quality checks: 532/532 tests passed; JavaScript syntax and game-data validation passed.
 - [ ] Latest visual smoke is still running; browser-level manual resume verification remains an acceptance task.
+
+
+## Продолжение после PR #161 — 22.11.2026
+
+- [x] PR #161 merged; README и три документа проходят Quality checks и Desktop/Mobile Visual Smoke.
+- [x] Перепроверены ссылки на изображения и docs в README, а также команды запуска по package.json.
+- [ ] PR #163: браузерный маршрут полного признания Кейна и идеальной концовки дела №2 — ожидает CI.
+- [ ] Полный поиск DeepSeek-атрибуции по всем исходникам за пределами scripts/.
+- [ ] Ручная оценка семи веток с уникальными коммитами; не удалять до решения.
+- [ ] Удаление 154 веток-кандидатов через GitHub UI после отдельной финальной проверки.
