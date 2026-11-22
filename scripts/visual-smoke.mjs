@@ -706,6 +706,24 @@ try {
         await page.locator('#dialogue-answers .answer-btn').filter({
             hasText: 'Вы следили за Кейном. Что вы раскопали?'
         }).click();
+
+        // Interrupt a real conversation after the first answer. The reload must
+        // restore the same case-specific dialogue and current node without
+        // ringing again or replaying the opening node.
+        await page.waitForFunction(() =>
+            window.app?.progress?.dialogueData?.dialogueId === 'dialogue-journalist' &&
+            window.app?.progress?.dialogueData?.nodeId === 'investigation'
+        );
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-continue:not(.hidden)').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.waitForFunction(() =>
+            document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
+            window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-journalist' &&
+            window.app?.dialogueEngine?.currentNode?.id === 'investigation'
+        );
         await page.locator('#dialogue-answers .answer-btn').filter({
             hasText: 'У вас есть доказательства? Покажите.'
         }).waitFor({ state: 'visible' });
