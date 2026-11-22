@@ -866,7 +866,8 @@ try {
             await confessionPage.waitForFunction(() =>
                 window.app?.caseManager?.caseState === 'solved' &&
                 window.app?.inventory?.hasInsight('full_confession_kane') &&
-                window.app?.progress?.completedCases?.includes('case-002')
+                (window.app?.progress?.completedCases?.includes('case-002') ||
+                    window.app?.progress?.solvedCases?.includes('case-002'))
             );
             await confessionPage.screenshot({
                 path: `${output}/${name}-case-two-perfect-confession-ending.png`,
