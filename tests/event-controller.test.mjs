@@ -788,3 +788,56 @@ test("failed case reputation receives the resolved case data and is applied only
     assert.equal(app.progress.activeCase, null);
     controller.dispose();
 });
+
+
+test("dialogue state changes quick-save the active case snapshot and dialogue end clears it", () => {
+    const eventBus = createEventBus();
+    const snapshots = [];
+    const app = {
+        progress: { activeCase: "case-002", dialogueData: null },
+        saveBlocked: false,
+        _quickSave() {
+            snapshots.push(structuredClone(this.progress.dialogueData));
+            return true;
+        }
+    };
+    const EventController = loadEventController({ setInterval: () => 1, clearInterval() {} });
+    const controller = new EventController(app, eventBus);
+    controller.bind();
+
+    app.progress.dialogueData = {
+        dialogueId: "dialogue-rival-full",
+        npcId: "business_rival",
+        nodeId: "formal_confession",
+        stableNodeId: "realization",
+        caseId: "case-002"
+    };
+    eventBus.emit("dialogue:state_changed", app.progress.dialogueData);
+    assert.deepEqual(snapshots[0], app.progress.dialogueData);
+
+    eventBus.emit("dialogue:ended");
+    assert.equal(app.progress.dialogueData, null);
+    assert.equal(snapshots.length, 2);
+    assert.equal(snapshots[1], null);
+
+    controller.dispose();
+});
+
+test("dialogue state changes do not save while migration or recovery blocks writes", () => {
+    const eventBus = createEventBus();
+    let saves = 0;
+    const app = {
+        progress: { activeCase: "case-002", dialogueData: null },
+        saveBlocked: true,
+        _quickSave() { saves++; }
+    };
+    const EventController = loadEventController({ setInterval: () => 1, clearInterval() {} });
+    const controller = new EventController(app, eventBus);
+    controller.bind();
+
+    eventBus.emit("dialogue:state_changed", { nodeId: "formal_confession" });
+    eventBus.emit("dialogue:ended");
+    assert.equal(saves, 0);
+    assert.equal(app.progress.dialogueData, null);
+    controller.dispose();
+});
