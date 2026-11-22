@@ -717,8 +717,10 @@ try {
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#call-modal').waitFor({ state: 'hidden' });
         await page.locator('#btn-continue:not(.hidden)').click();
         await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#call-modal').waitFor({ state: 'visible' });
         await page.waitForFunction(() =>
             document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
             window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-journalist' &&
