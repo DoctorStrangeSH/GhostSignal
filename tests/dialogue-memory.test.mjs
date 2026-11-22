@@ -3605,9 +3605,9 @@ test("Thomas's protection promise is fulfilled only by confirmed family safety a
     assert.equal(pending[0].status, "pending");
 
     const trustBefore = memory.getTrust("waiter");
-    assert.deepEqual(
-        memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "full_confession_kane" }),
-        []
+    assert.equal(
+        memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "full_confession_kane" }).length,
+        0
     );
     assert.equal(memory.getPromises("waiter")[0].status, "pending");
     assert.equal(memory.getTrust("waiter"), trustBefore);
