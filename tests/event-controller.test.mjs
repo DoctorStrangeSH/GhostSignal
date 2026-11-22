@@ -841,3 +841,50 @@ test("dialogue state changes do not save while migration or recovery blocks writ
     assert.equal(app.progress.dialogueData, null);
     controller.dispose();
 });
+
+test("ending a call clears the active dialogue snapshot and persists the cleared state once", () => {
+    const bus = createEventBus();
+    let quickSaves = 0;
+    const app = {
+        progress: {
+            activeCase: "case-002",
+            dialogueData: {
+                caseId: "case-002",
+                dialogueId: "dialogue-rival-full",
+                npcId: "business_rival",
+                nodeId: "formal_confession"
+            }
+        },
+        saveBlocked: false,
+        _quickSave() {
+            quickSaves++;
+            assert.equal(this.progress.dialogueData, null,
+                "the cleared snapshot must be persisted, never the ended dialogue");
+            return true;
+        }
+    };
+    const EventController = loadEventController({
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController(app, bus);
+    controller.bind();
+
+    bus.emit("dialogue:ended", { npcId: "business_rival" });
+
+    assert.equal(app.progress.dialogueData, null);
+    assert.equal(quickSaves, 1);
+
+    // A late duplicate end event must remain harmless and cannot resurrect state.
+    bus.emit("dialogue:ended", { npcId: "business_rival" });
+    assert.equal(app.progress.dialogueData, null);
+    assert.equal(quickSaves, 2);
+
+    app.progress.dialogueData = { dialogueId: "blocked-snapshot" };
+    app.saveBlocked = true;
+    bus.emit("dialogue:ended", { npcId: "business_rival" });
+    assert.equal(app.progress.dialogueData, null);
+    assert.equal(quickSaves, 2, "save migration/restore guards must still be respected");
+
+    controller.dispose();
+});
