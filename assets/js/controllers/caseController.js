@@ -61,6 +61,8 @@ class CaseController {
         const canResume = this.canResume(caseId);
 
         if (!canResume) {
+            // A new run must not inherit an interrupted call from the previous run.
+            app.progress.dialogueData = null;
             this._clearInvestigationState();
             if (!app.caseManager.loadCase(caseId)) return false;
         }
@@ -83,6 +85,9 @@ class CaseController {
         }
 
         app.progress.activeCase = caseId;
+        // Restore a saved call only after the case screen is active, never over
+        // the main menu. Invalid/cross-case snapshots are discarded safely.
+        if (app.progress.dialogueData) app.restoreInterruptedDialogue?.(caseId);
         // Persist the complete case snapshot immediately: selecting/continuing
         // a case must not depend on the next timed autosave.
         app._quickSave();
