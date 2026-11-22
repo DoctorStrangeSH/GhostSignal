@@ -177,7 +177,7 @@ test("Kane formal confession dialogue snapshot resumes at the trusted confession
     });
     vm.runInContext(readFileSync(resolve(root, "assets/data/cases/case-002/dialogues/rival.js"), "utf8"), context);
     vm.runInContext(readFileSync(resolve(root, "assets/js/npc/dialogueEngine.js"), "utf8") +
-        "\\n;globalThis.__DialogueEngine = DialogueEngine;", context);
+        String.fromCharCode(10) + ";globalThis.__DialogueEngine = DialogueEngine;", context);
 
     const engine = new context.__DialogueEngine({}, { advance() {} });
     engine.currentDialogue = rivalDialogue;
