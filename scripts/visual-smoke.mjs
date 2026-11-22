@@ -496,14 +496,16 @@ try {
 
         await page.evaluate(() => {
             if (!window.app?.callInterface) throw new Error('Call interface is unavailable');
-            window.app.callInterface.currentDialogueId = 'dialogue-housekeeper';
-            window.app.callInterface.startCall('housekeeper');
+            window.app.callInterface.startCall('housekeeper', 'dialogue-housekeeper');
         });
         const maryAnswers = page.locator('#dialogue-answers .answer-btn');
         await page.waitForFunction(() =>
             document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
             document.querySelectorAll('#dialogue-answers .answer-btn').length > 0,
         { timeout: 15000 });
+        await page.waitForFunction(() =>
+            window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-housekeeper'
+        );
         for (const answer of [
             'Успокойтесь, Мэри. Я просто хочу задать несколько вопросов о мистере Блэквуде.',
             'Расскажите о ваших отношениях с мистером Блэквудом.',
@@ -695,8 +697,7 @@ try {
         // not a side effect of merely visiting her office.
         await page.evaluate(() => {
             if (!window.app?.callInterface) throw new Error('Call interface is unavailable');
-            window.app.callInterface.currentDialogueId = 'dialogue-journalist';
-            window.app.callInterface.startCall('journalist');
+            window.app.callInterface.startCall('journalist', 'dialogue-journalist');
         });
         await page.waitForFunction(() =>
             document.querySelector('#call-status')?.textContent?.trim() === 'СОЕДИНЁН' &&
