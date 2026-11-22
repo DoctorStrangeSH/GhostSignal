@@ -61,10 +61,10 @@ class CaseController {
         const canResume = this.canResume(caseId);
 
         if (!canResume) {
-            // A new run must not inherit an interrupted call from the previous run.
-            app.progress.dialogueData = null;
             this._clearInvestigationState();
             if (!app.caseManager.loadCase(caseId)) return false;
+            // Only discard the old call after the new run has started successfully.
+            app.progress.dialogueData = null;
         }
 
         app.navigateTo('screen-case-active');
