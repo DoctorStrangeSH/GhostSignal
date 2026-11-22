@@ -3590,3 +3590,53 @@ test("finishing an NPC conversation emits one completion event for the interview
         { npcId: "waiter", dialogueId: "test-final-dialogue" }
     );
 });
+
+test("Thomas's protection promise is fulfilled only by confirmed family safety and survives reload", () => {
+    const { engine, memory, context } = createDialogueHarness();
+    engine.startDialogue("dialogue-waiter");
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+    engine.selectAnswer(0);
+
+    const pending = memory.getPromises("waiter");
+    assert.equal(pending.length, 1);
+    assert.equal(pending[0].id, "thomas-family-protection");
+    assert.equal(pending[0].status, "pending");
+
+    const trustBefore = memory.getTrust("waiter");
+    assert.deepEqual(
+        memory.resolvePromisesForEvent({ type: "insight_gained", insightId: "full_confession_kane" }),
+        []
+    );
+    assert.equal(memory.getPromises("waiter")[0].status, "pending");
+    assert.equal(memory.getTrust("waiter"), trustBefore);
+
+    const resolved = memory.resolvePromisesForEvent({
+        type: "insight_gained",
+        insightId: "thomas_family_protected"
+    });
+    assert.equal(resolved.length, 1);
+    assert.equal(resolved[0].promiseId, "thomas-family-protection");
+    assert.equal(memory.getPromises("waiter")[0].status, "fulfilled");
+    assert.equal(memory.getTrust("waiter"), trustBefore + 6);
+    assert.equal(memory.hasLongTermMemoryTag("waiter", "promise_kept:thomas-family-protection"), true);
+
+    memory.resolvePromisesForEvent({
+        type: "insight_gained",
+        insightId: "thomas_family_protected"
+    });
+    assert.equal(memory.getTrust("waiter"), trustBefore + 6, "duplicate confirmation must not reward twice");
+
+    context.savedMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+    const restored = vm.runInContext(
+        "NPCMemoryService.fromJSON(savedMemory, 'case-002')",
+        context
+    );
+    assert.equal(restored.getPromises("waiter")[0].status, "fulfilled");
+    assert.equal(restored.getTrust("waiter"), trustBefore + 6);
+    assert.equal(
+        restored.hasLongTermMemoryTag("waiter", "promise_kept:thomas-family-protection"),
+        true
+    );
+});
