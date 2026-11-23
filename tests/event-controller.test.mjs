@@ -889,3 +889,90 @@ test("ending a call clears the active dialogue snapshot and persists the cleared
 
     controller.dispose();
 });
+
+test("real case completion settles Thomas's promise and applies community reputation exactly once", () => {
+    for (const outcome of ["solved", "failed"]) {
+        const eventBus = createEventBus();
+        const context = vm.createContext({
+            console,
+            events: eventBus,
+            setInterval: () => 1,
+            clearInterval() {},
+            setTimeout() {},
+            document: { getElementById: () => null }
+        });
+        vm.runInContext(
+            readFileSync(resolve(root, "assets/js/npc/npcMemoryService.js"), "utf8") +
+            "\n;globalThis.TestMemoryService = NPCMemoryService;",
+            context
+        );
+        vm.runInContext(
+            readFileSync(resolve(root, "assets/js/controllers/eventController.js"), "utf8") +
+            "\n;globalThis.TestEventController = EventController;",
+            context
+        );
+        vm.runInContext(
+            readFileSync(resolve(root, "assets/js/systems/reputation.js"), "utf8") +
+            "\n;globalThis.TestReputationSystem = ReputationSystem;",
+            context
+        );
+
+        const memory = new context.TestMemoryService(null, "case-002");
+        memory.recordPromise("waiter", {
+            id: "thomas-family-protection",
+            text: "Обеспечить безопасность семьи Томаса",
+            caseId: "case-002",
+            fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" },
+            fulfilledTrustDelta: 6,
+            brokenTrustDelta: -8
+        });
+        const trustBefore = memory.getTrust("waiter");
+        const caseData = { id: "case-002", title: "Последний заказ" };
+        const reputation = new context.TestReputationSystem();
+        const app = {
+            progress: {
+                activeCase: "case-002",
+                activeRunId: "case-002:promise-integration:" + outcome,
+                solvedCases: [],
+                failedCases: [],
+                completedRunIds: []
+            },
+            caseManager: {
+                currentCase: caseData,
+                caseState: "active",
+                evidenceFound: 4,
+                toJSON() { return { caseState: this.caseState }; }
+            },
+            npcMemoryService: memory,
+            reputationSystem: reputation,
+            inventory: { hasInsight: () => false },
+            _quickSave() {},
+            _saveProgress() {},
+            _updateMainMenu() {}
+        };
+        const controller = new context.TestEventController(app, eventBus);
+        controller.bind();
+
+        eventBus.emit(outcome === "solved" ? "case:solved" : "case:failed", { caseId: "case-002" });
+        eventBus.emit(outcome === "solved" ? "case:solved" : "case:failed", { caseId: "case-002" });
+
+        assert.equal(memory.getPromises("waiter")[0].status, "broken");
+        assert.equal(memory.getTrust("waiter"), trustBefore - 8);
+        assert.equal(memory.hasLongTermMemoryTag("waiter", "promise_broken:thomas-family-protection"), true);
+        assert.equal(reputation.getFactionReputation("witnesses"), 42);
+        assert.equal(reputation.getFactionReputation("residents"), 45);
+        assert.deepEqual(app.progress.reputationData.factionReputation, reputation.toJSON().factionReputation);
+        assert.equal(eventBus.emitted.filter(event =>
+            event.name === "npc:memory_changed" && event.payload?.reason === "promise_resolution"
+        ).length, 1, "a repeated case completion must not emit a second promise consequence");
+
+        const restoredMemory = new context.TestMemoryService(memory.toJSON(), "case-002");
+        assert.equal(restoredMemory.getPromises("waiter")[0].status, "broken");
+        assert.equal(restoredMemory.getTrust("waiter"), trustBefore - 8);
+        assert.equal(
+            restoredMemory.hasLongTermMemoryTag("waiter", "promise_broken:thomas-family-protection"),
+            true
+        );
+    }
+});
+
