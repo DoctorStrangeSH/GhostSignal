@@ -735,6 +735,25 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     assert.equal(elements["modal-title"].innerHTML, "Второе окно");
     assert.equal(elements["modal-body"].innerHTML, "Текст 2");
 
+    eventBus.emit("modal:show", { title: "Третье окно", body: "Текст 3", footer: "Далее" });
+    eventBus.emit("modal:show", { title: "Четвёртое окно", body: "Текст 4", footer: "Завершить" });
+    assert.equal(showCalls, 2, "queued modals must wait for the active modal to finish hiding");
+    assert.equal(controller.pendingModalData.length, 2);
+
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+    assert.equal(showCalls, 3);
+    assert.equal(elements["modal-title"].innerHTML, "Третье окно");
+
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+    assert.equal(showCalls, 4);
+    assert.equal(elements["modal-title"].innerHTML, "Четвёртое окно");
+    assert.equal(elements["modal-body"].innerHTML, "Текст 4");
+    assert.equal(controller.pendingModalData.length, 0);
+
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
 });
