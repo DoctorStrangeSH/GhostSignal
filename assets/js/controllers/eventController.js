@@ -11,7 +11,7 @@ class EventController {
         this.intervals = [];
         this.bound = false;
         this.pageHideHandler = null;
-        this.pendingModalData = null;
+        this.pendingModalData = [];
         this.modalElement = null;
         this.modalHiddenHandler = null;
         this.modalHideHandler = null;
@@ -90,10 +90,8 @@ class EventController {
             this.modalHideHandler = () => { this.modalIsHiding = true; };
             this.modalHiddenHandler = () => {
                 this.modalIsHiding = false;
-                if (!this.pendingModalData) return;
-                const next = this.pendingModalData;
-                this.pendingModalData = null;
-                this._showModal(next);
+                const next = this.pendingModalData.shift();
+                if (next) this._showModal(next);
             };
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
@@ -102,9 +100,9 @@ class EventController {
             if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
             if (!this.modalElement) return;
             if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
-                // Keep the newest request. Its contents are applied only after
-                // the current Bootstrap hide transition has fully completed.
-                this.pendingModalData = data;
+                // Preserve every narrative event in arrival order. Replacing a
+                // single pending payload silently discarded earlier dialogue.
+                this.pendingModalData.push(data);
                 return;
             }
             this._showModal(data);
