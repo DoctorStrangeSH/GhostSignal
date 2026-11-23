@@ -69,10 +69,11 @@
     }
 
     .case-toolbar .terminal-btn {
-        padding: 8px 10px;
-        font-size: 10px;
-        flex: 1;
-        min-width: 55px;
+        padding: 8px 2px;
+        font-size: 9px;
+        flex: 1 1 0;
+        min-width: 0;
+        white-space: nowrap;
         text-align: center;
     }
 
