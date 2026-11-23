@@ -1,3 +1,25 @@
+# Контрольная точка — 23 ноября 2026 (PR #173)
+
+- PR #173 `test: verify Thomas remembers broken promises` объединён в `main` squash-коммитом `d681a26a5b6162bda5cb2879834319a7c2873802`.
+- Текущий `main`: `d681a26a5b6162bda5cb2879834319a7c2873802`.
+- На одном PR head `92a58bee9c057c8ab82c9ebf36a9ed3b9b113046` прошли все три проверки: Quality **592/592**, 0 failed; Visual Smoke PASS; Thomas Promise Acceptance PASS.
+- Browser acceptance проходит два независимых пути в изолированных контекстах: обещание выполнено и обещание нарушено. Проверяются реальные UI-действия, изменение доверия, сохранение после reload и реакция Томаса при следующем разговоре.
+- Исправлена проверка долговременной памяти после нового запуска дела: ожидается `past_broken_promise_opening`, а не локальный `promise_broken_opening`. Локальная память дела и память между расследованиями теперь проверяются отдельно.
+- PR затрагивал только `.github/workflows/thomas-promise-smoke.yml` и `scripts/thomas-promise-smoke.mjs`; production gameplay logic не менялась.
+- Post-merge Quality на `main`: syntax **110 JavaScript files PASS**, game-data validation PASS, unit tests **592/592 PASS**. Cleanup steps workflow завершены успешно.
+- PR #173 закрыт с merge. Следующие действия не должны повторно создавать ту же браузерную проверку.
+
+### Следующий этап — интеграционная приёмка и подготовка 1.0
+
+1. Завершить проверку публикации GitHub Pages после merge.
+2. Обновить Handoff: зафиксировать merge SHA, проверки и точку продолжения.
+3. Провести повторную приёмку обоих расследований от чистого старта: failed / partial / perfect, сохранения, сброс и повторный запуск.
+4. Проверить социальные последствия обещаний, отношений и репутации на повторных прохождениях; исключить дублирование наград и последствий.
+5. Провести отдельный UX/арт-аудит desktop/mobile и собрать release checklist 1.0.
+6. Не начинать третье дело до закрытия приёмки двух текущих расследований.
+
+---
+
 # Контрольная точка — 23 ноября 2026 (PR #172)
 
 - PR #172 `test: cover Thomas promise resolution through real insight events` объединён в `main` squash-коммитом `7102a2a4ef909a1253048414da531311689e29f0`.

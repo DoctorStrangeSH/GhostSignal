@@ -1,3 +1,15 @@
+# Контрольная точка — 23 ноября 2026 (PR #173)
+
+- PR #173 объединён в `main` squash-коммитом `d681a26a5b6162bda5cb2879834319a7c2873802`; это текущий `main`.
+- На PR head `92a58bee9c057c8ab82c9ebf36a9ed3b9b113046` прошли Quality **592/592**, Visual Smoke PASS и Thomas Promise Acceptance PASS.
+- Сквозной Playwright-сценарий проверяет обе ветви обещания Томасу в изолированных браузерных контекстах: fulfilled и broken; reload; доверие; долговременную память; реакцию NPC при новом запуске дела.
+- Проверка нового расследования ожидает `past_broken_promise_opening`, отделяя долговременную память от локального `promise_broken_opening`.
+- PR #173 менял только workflow и acceptance script; игровая логика не менялась.
+- Post-merge Quality на main: 110 JS-файлов синтаксически корректны, game-data validation PASS, **592/592** unit tests PASS. GitHub Pages build/deployment PASS.
+- PR #173 закрыт с merge. Следующий этап: повторная приёмка двух дел (failed/partial/perfect), сохранений/сбросов/повторных прохождений, социальные последствия, затем UX/арт-аудит и release checklist 1.0. Третье дело пока не начинать.
+
+---
+
 # Контрольная точка — 23 ноября 2026 (PR #172)
 
 - PR #172 `test: cover Thomas promise resolution through real insight events` объединён в `main` squash-коммитом `7102a2a4ef909a1253048414da531311689e29f0`.
