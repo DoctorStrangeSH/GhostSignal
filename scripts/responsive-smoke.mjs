@@ -129,6 +129,12 @@ try {
         await page.locator('.case-btn[data-case-id="case-001"]').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
+        const abandonButton = await page.locator('#btn-abandon-case').boundingBox();
+        if (viewport.width <= 576 &&
+            (!abandonButton || abandonButton.width < viewport.width * 0.7 ||
+                abandonButton.x < -1 || abandonButton.x + abandonButton.width > viewport.width + 1)) {
+            throw new Error(`case close action is cramped or clipped at ${viewport.width}px: ${JSON.stringify(abandonButton)}`);
+        }
         await settleNarrative(page);
         await settleIncomingCalls(page);
         await assertNoPageOverflow(page, 'investigation', viewport.width);
