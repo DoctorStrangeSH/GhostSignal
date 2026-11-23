@@ -1,0 +1,118 @@
+import { chromium } from 'playwright';
+import { mkdir } from 'node:fs/promises';
+
+const baseUrl = process.env.GHOST_SIGNAL_URL || 'http://127.0.0.1:4173';
+const output = 'artifacts/responsive-smoke';
+await mkdir(output, { recursive: true });
+
+async function settleNarrative(page) {
+    const modal = page.locator('#universal-modal.show');
+    for (let attempt = 0; attempt < 24; attempt++) {
+        if (await modal.isVisible()) {
+            const close = modal.locator('[data-bs-dismiss="modal"], .btn-close').first();
+            if (!await close.count()) throw new Error('Narrative modal has no close control');
+            await close.click();
+            await page.waitForTimeout(350);
+            continue;
+        }
+        const clean = await page.evaluate(() =>
+            document.querySelectorAll('.modal.show, .modal-backdrop').length === 0 &&
+            !document.body.classList.contains('modal-open')
+        );
+        if (clean) {
+            await page.waitForTimeout(500);
+            if (!await modal.isVisible()) return;
+        }
+    }
+    throw new Error('Narrative modal queue did not settle');
+}
+
+async function assertNoPageOverflow(page, label, width) {
+    const metrics = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth
+    }));
+    if (metrics.document > metrics.viewport + 2 || metrics.body > metrics.viewport + 2) {
+        throw new Error(`${label} at ${width}px: horizontal overflow ${JSON.stringify(metrics)}`);
+    }
+}
+
+const viewports = [
+    { width: 320, height: 740 }, { width: 360, height: 780 },
+    { width: 375, height: 812 }, { width: 390, height: 844 },
+    { width: 430, height: 932 }, { width: 768, height: 1024 },
+    { width: 1024, height: 768 }, { width: 1440, height: 900 }
+];
+
+const browser = await chromium.launch({ headless: true });
+try {
+    for (const viewport of viewports) {
+        const name = String(viewport.width);
+        const context = await browser.newContext({
+            viewport, deviceScaleFactor: 1,
+            isMobile: viewport.width <= 430, hasTouch: viewport.width <= 430
+        });
+        const page = await context.newPage();
+        const errors = [];
+        page.on('pageerror', error => errors.push(error.message));
+
+        await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+        await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.locator('#screen-main-menu.active').waitFor();
+        await assertNoPageOverflow(page, 'main menu', viewport.width);
+        await page.screenshot({ path: `${output}/${name}-menu.png`, fullPage: true });
+
+        await page.locator('#btn-achievements').click();
+        await page.locator('#screen-achievements.active .achievement-screen-header h2').waitFor();
+        await assertNoPageOverflow(page, 'achievements', viewport.width);
+        const achievements = await page.locator('#screen-achievements .achievement-screen').boundingBox();
+        if (!achievements || achievements.width > viewport.width + 2) {
+            throw new Error(`achievements exceed viewport at ${viewport.width}px`);
+        }
+        await page.screenshot({ path: `${output}/${name}-achievements.png`, fullPage: true });
+        await page.locator('[data-achievement-back]').click();
+        await page.locator('#screen-main-menu.active').waitFor();
+
+        await page.locator('#btn-open-cases').click();
+        await page.locator('#screen-cases.active .case-card').first().waitFor();
+        await assertNoPageOverflow(page, 'case selection', viewport.width);
+        await page.screenshot({ path: `${output}/${name}-cases.png`, fullPage: true });
+
+        await page.locator('.case-btn[data-case-id="case-001"]').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+        await settleNarrative(page);
+        await assertNoPageOverflow(page, 'investigation', viewport.width);
+
+        for (const tabId of ['tab-npcs', 'tab-board', 'tab-inventory']) {
+            const tab = page.locator(`.sidebar-tab[data-tab="${tabId}"]`);
+            await tab.click();
+            await page.locator(`#${tabId}.active`).waitFor();
+            const bounds = await tab.boundingBox();
+            if (!bounds || bounds.x < -2 || bounds.x + bounds.width > viewport.width + 2) {
+                throw new Error(`${tabId} outside viewport at ${viewport.width}px: ${JSON.stringify(bounds)}`);
+            }
+            await assertNoPageOverflow(page, tabId, viewport.width);
+            if (tabId === 'tab-board') {
+                await page.locator('#tab-board.active .board-canvas').waitFor();
+                const board = await page.locator('.board-viewport').evaluate(element => ({
+                    clientWidth: element.clientWidth, scrollWidth: element.scrollWidth,
+                    overflowX: getComputedStyle(element).overflowX
+                }));
+                if (viewport.width <= 576 &&
+                    (board.scrollWidth <= board.clientWidth || !['auto', 'scroll'].includes(board.overflowX))) {
+                    throw new Error(`board horizontal scrolling missing at ${viewport.width}px: ${JSON.stringify(board)}`);
+                }
+            }
+            await page.screenshot({ path: `${output}/${name}-${tabId}.png`, fullPage: true });
+        }
+
+        if (errors.length) throw new Error(`browser errors at ${viewport.width}px: ${errors.join(' | ')}`);
+        await context.close();
+        console.log(`Responsive audit PASS: ${viewport.width}x${viewport.height}`);
+    }
+} finally {
+    await browser.close();
+}
+console.log('Responsive viewport audit completed.');
