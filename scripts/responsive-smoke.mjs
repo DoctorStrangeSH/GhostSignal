@@ -117,6 +117,7 @@ try {
 
         await page.locator('#btn-open-cases').click();
         await page.locator('#screen-cases.active .case-card').first().waitFor();
+        await settleNarrative(page);
         await assertNoPageOverflow(page, 'case selection', viewport.width);
         await page.screenshot({ path: `${output}/${name}-cases.png`, fullPage: true });
 
