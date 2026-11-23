@@ -135,6 +135,26 @@ try {
                 abandonButton.x < -1 || abandonButton.x + abandonButton.width > viewport.width + 1)) {
             throw new Error(`case close action is cramped or clipped at ${viewport.width}px: ${JSON.stringify(abandonButton)}`);
         }
+        if (viewport.width <= 360) {
+            const actionButtons = page.locator('.case-toolbar .terminal-btn:not(.btn-abandon-case)');
+            const buttonMetrics = await actionButtons.evaluateAll(buttons => buttons.map(button => {
+                const rect = button.getBoundingClientRect();
+                return {
+                    label: button.textContent.trim(),
+                    left: Math.round(rect.left * 10) / 10,
+                    right: Math.round(rect.right * 10) / 10,
+                    clientWidth: button.clientWidth,
+                    scrollWidth: button.scrollWidth
+                };
+            }));
+            const clipped = buttonMetrics.filter(button =>
+                button.left < -1 || button.right > window.innerWidth + 1 ||
+                button.scrollWidth > button.clientWidth + 1
+            );
+            if (clipped.length) {
+                throw new Error(`investigation action labels are clipped at ${viewport.width}px: ${JSON.stringify(clipped)}`);
+            }
+        }
         await settleNarrative(page);
         await settleIncomingCalls(page);
         await assertNoPageOverflow(page, 'investigation', viewport.width);
