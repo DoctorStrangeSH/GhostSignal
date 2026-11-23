@@ -903,17 +903,17 @@ test("real case completion settles Thomas's promise and applies community reputa
         });
         vm.runInContext(
             readFileSync(resolve(root, "assets/js/npc/npcMemoryService.js"), "utf8") +
-            "\\n;globalThis.TestMemoryService = NPCMemoryService;",
+            "\n;globalThis.TestMemoryService = NPCMemoryService;",
             context
         );
         vm.runInContext(
             readFileSync(resolve(root, "assets/js/controllers/eventController.js"), "utf8") +
-            "\\n;globalThis.TestEventController = EventController;",
+            "\n;globalThis.TestEventController = EventController;",
             context
         );
         vm.runInContext(
             readFileSync(resolve(root, "assets/js/systems/reputation.js"), "utf8") +
-            "\\n;globalThis.TestReputationSystem = ReputationSystem;",
+            "\n;globalThis.TestReputationSystem = ReputationSystem;",
             context
         );
 
