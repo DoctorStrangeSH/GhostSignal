@@ -579,7 +579,7 @@ class EventController {
         this.modalHideHandler = null;
         this.modalHiddenHandler = null;
         this.modalIsHiding = false;
-        this.pendingModalData = null;
+        this.pendingModalData = [];
         this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.pageHideHandler);
