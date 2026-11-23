@@ -947,6 +947,7 @@ test("real case completion settles Thomas's promise and applies community reputa
             reputationSystem: reputation,
             inventory: { hasInsight: () => false },
             _quickSave() {},
+            _saveProgress() {},
             _updateMainMenu() {}
         };
         const controller = new context.TestEventController(app, eventBus);
