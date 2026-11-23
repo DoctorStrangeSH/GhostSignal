@@ -46,8 +46,14 @@ try {
     });
     if (metrics.horizontalOverflow) throw new Error('document horizontal overflow: ' + JSON.stringify(metrics));
     if (!metrics.closeVisible) throw new Error('modal close control is not visible');
+    if (metrics.header.top < -1 || metrics.header.bottom > viewport.height + 1) {
+      throw new Error('modal header is outside viewport: ' + JSON.stringify(metrics));
+    }
     if (!metrics.bodyScrollable) throw new Error('long modal body is not scrollable: ' + JSON.stringify(metrics));
-    if (metrics.close.right > viewport.width + 1 || metrics.close.left < -1) throw new Error('close control clipped: ' + JSON.stringify(metrics));
+    if (metrics.close.right > viewport.width + 1 || metrics.close.left < -1 ||
+      metrics.close.top < -1 || metrics.close.bottom > viewport.height + 1) {
+      throw new Error('close control clipped: ' + JSON.stringify(metrics));
+    }
     await page.locator('#modal-audit-action').click();
     await page.keyboard.press('Escape');
     await modal.waitFor({ state: 'hidden' });
