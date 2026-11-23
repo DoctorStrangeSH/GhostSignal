@@ -905,6 +905,7 @@ test("Joe's follow-up is visible only after Joe personally completed his support
         hasCompletedInteraction(npcId, ruleId) {
             return npcId === "bartender" && completed.has(ruleId);
         },
+        getGoalProgress() { return 0; },
         toJSON() { return {}; }
     });
     engine.startDialogue("dialogue-bartender-case2");
