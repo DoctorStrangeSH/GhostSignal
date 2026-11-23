@@ -23,6 +23,14 @@ try {
       }).show();
     });
     await modal.waitFor({ state: 'visible' });
+    // Bootstrap marks a modal visible before its fade/slide transition ends.
+    // Inspect the settled layout rather than the temporary translated dialog.
+    await page.waitForFunction(() => {
+      const root = document.querySelector('#universal-modal');
+      const dialog = root?.querySelector('.modal-dialog');
+      return root?.classList.contains('show') &&
+        dialog && getComputedStyle(dialog).transform === 'none';
+    }, { timeout: 5000 });
     const metrics = await page.evaluate(() => {
       const root = document.querySelector('#universal-modal');
       const dialog = root.querySelector('.modal-dialog');
