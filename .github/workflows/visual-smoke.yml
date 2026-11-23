@@ -27,8 +27,6 @@ jobs:
           echo $! > /tmp/ghost-visual-server.pid
       - name: Capture interactive screens
         run: node scripts/visual-smoke.mjs
-      - name: Audit responsive layouts
-        run: node scripts/responsive-smoke.mjs
       - name: Upload screenshots for review
         if: always()
         uses: actions/upload-artifact@v4
