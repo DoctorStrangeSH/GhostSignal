@@ -27,6 +27,27 @@ async function settleNarrative(page) {
     throw new Error('Narrative modal queue did not settle');
 }
 
+async function settleIncomingCalls(page) {
+    const callModal = page.locator('#call-modal');
+    const hangup = page.locator('#btn-hangup');
+    for (let attempt = 0; attempt < 24; attempt++) {
+        const visible = await callModal.count() &&
+            await callModal.evaluate(element => !element.classList.contains('hidden'));
+        if (visible) {
+            await hangup.waitFor({ state: 'visible' });
+            await hangup.click();
+            await callModal.waitFor({ state: 'hidden' });
+            await page.waitForTimeout(200);
+            continue;
+        }
+        await page.waitForTimeout(350);
+        const stillVisible = await callModal.count() &&
+            await callModal.evaluate(element => !element.classList.contains('hidden'));
+        if (!stillVisible) return;
+    }
+    throw new Error('Incoming call queue did not settle');
+}
+
 async function assertNoPageOverflow(page, label, width) {
     const metrics = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
@@ -65,6 +86,7 @@ try {
 
         await page.locator('#btn-achievements').click();
         await page.locator('#screen-achievements.active .achievement-screen-header h2').waitFor();
+        await page.locator('#screen-achievements .achievement-entry').first().waitFor();
         await assertNoPageOverflow(page, 'achievements', viewport.width);
         const achievements = await page.locator('#screen-achievements .achievement-screen').boundingBox();
         if (!achievements || achievements.width > viewport.width + 2) {
@@ -83,6 +105,7 @@ try {
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
         await settleNarrative(page);
+        await settleIncomingCalls(page);
         await assertNoPageOverflow(page, 'investigation', viewport.width);
 
         for (const tabId of ['tab-npcs', 'tab-board', 'tab-inventory']) {
