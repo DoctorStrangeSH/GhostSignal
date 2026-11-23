@@ -1341,3 +1341,39 @@ test("Joe can defer escort assistance and cannot reply when Thomas chose private
     assert.equal(second.relationships.getEscortResponse("b", "reply"), "propose_later",
         "an already sent reply must not change after the bartender returns");
 });
+
+test("case two: Joe's independent check-in advances staff protection without a detective threat", () => {
+    const caseContext = vm.createContext({
+        console: { log() {} },
+        registerData() {}
+    });
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/data/cases/case-002/index.js"), "utf8"),
+        caseContext,
+        { filename: "assets/data/cases/case-002/index.js" }
+    );
+    const caseTwo = vm.runInContext("CASE_002", caseContext);
+    const harness = createHarness({ caseData: caseTwo });
+
+    // Joe and Thomas are both working in the bar; no threat rumor or
+    // threat-response interaction is seeded into either character's memory.
+    harness.availability.bartender = { available: true, location: "bar_joe" };
+    harness.availability.waiter = { available: true, location: "bar_joe" };
+    assert.equal(harness.memory.getRumors("bartender").some(rumor =>
+        rumor.id === "detective-threatened-thomas"
+    ), false);
+
+    const result = harness.advance(120);
+
+    assert.ok(result.changed > 0, "due autonomous interactions should be processed");
+    assert.equal(
+        harness.relationships.hasCompletedInteraction("bartender", "joe-checks-thomas"),
+        true,
+        "Joe's normal check-in should execute without a prior threat"
+    );
+    assert.equal(
+        harness.relationships.getGoalProgress("bartender", "protect_staff"),
+        1,
+        "the independent check-in should advance Joe's staff-protection goal"
+    );
+});
