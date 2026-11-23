@@ -30,7 +30,7 @@ try {
       const dialog = root?.querySelector('.modal-dialog');
       return root?.classList.contains('show') &&
         dialog && getComputedStyle(dialog).transform === 'none';
-    }, { timeout: 5000 });
+    }, null, { timeout: 5000 });
     const metrics = await page.evaluate(() => {
       const root = document.querySelector('#universal-modal');
       const dialog = root.querySelector('.modal-dialog');
