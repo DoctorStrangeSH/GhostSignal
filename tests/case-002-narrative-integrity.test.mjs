@@ -62,3 +62,16 @@ test('Eva and the bar photo preserve uncertainty about the missing vial', () => 
     assert.match(registry.object.bar_photo.interactions.examine.text, /не подтверждает ни кражу/);
     assert.match(registry.evidence.chain_002_poison_path.description, /не доказывает каждый/);
 });
+
+
+test('Joe\'s independent check-in and threat response both count as staff-protection support', () => {
+    const { caseTwo } = loadCaseTwoNarrative();
+    const interactions = caseTwo.npcRelationships.autonomousInteractions;
+    const reassurance = interactions.find(item => item.id === 'joe-reassures-thomas-after-threat');
+    const checkIn = interactions.find(item => item.id === 'joe-checks-thomas');
+
+    assert.equal(reassurance?.goalId, 'protect_staff');
+    assert.equal(reassurance?.goalProgress, 1);
+    assert.equal(checkIn?.goalId, 'protect_staff');
+    assert.equal(checkIn?.goalProgress, 1);
+});
