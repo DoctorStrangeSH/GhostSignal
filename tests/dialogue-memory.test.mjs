@@ -3664,7 +3664,7 @@ test("Thomas's unfulfilled family-protection promise is broken on either case ou
         assert.equal(memory.getTrust("waiter"), trustBefore - 8);
         assert.equal(memory.hasLongTermMemoryTag("waiter", "promise_broken:thomas-family-protection"), true);
 
-        assert.deepEqual(memory.settlePromisesForCase("case-002", outcome), [],
+        assert.equal(memory.settlePromisesForCase("case-002", outcome).length, 0,
             "settling the same case again must not repeat the consequence");
         assert.equal(memory.getTrust("waiter"), trustBefore - 8);
 
