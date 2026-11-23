@@ -27,6 +27,15 @@ class ProgressTracker {
         this.caseAttempts = 0;
     }
     
+    // Сбросить только текущую попытку, сохранив накопленную статистику и историю.
+    resetActiveRun() {
+        this.caseStartTime = null;
+        this.activeCaseId = null;
+        this.activeRunId = null;
+        this.caseHintsUsed = 0;
+        this.caseAttempts = 0;
+    }
+
     // Использована подсказка
     useHint() {
         this.caseHintsUsed++;

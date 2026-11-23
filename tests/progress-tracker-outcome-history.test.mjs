@@ -74,3 +74,33 @@ test("solving a case on replay increments solved runs but counts the unique case
         "case-001-partial", "case-001-perfect"
     ]);
 });
+
+
+test("resetActiveRun clears only the current attempt and preserves lifetime replay history", () => {
+    const tracker = new ProgressTracker();
+    tracker.stats.casesHistory.push({
+        runId: "case-001:completed-run",
+        caseId: "case-001",
+        result: "solved",
+        endingId: "case-001-perfect"
+    });
+    tracker.stats.totalCasesSolved = 1;
+    tracker.stats.solvedCaseIds = ["case-001"];
+    tracker.stats.totalHintsUsed = 3;
+    tracker.stats.totalAttempts = 5;
+
+    tracker.startCase("case-002", "case-002:active-run");
+    tracker.useHint();
+    tracker.addAttempt();
+    tracker.resetActiveRun();
+
+    assert.equal(tracker.caseStartTime, null);
+    assert.equal(tracker.activeCaseId, null);
+    assert.equal(tracker.activeRunId, null);
+    assert.equal(tracker.caseHintsUsed, 0);
+    assert.equal(tracker.caseAttempts, 0);
+    assert.equal(tracker.stats.totalHintsUsed, 4);
+    assert.equal(tracker.stats.totalAttempts, 6);
+    assert.equal(tracker.stats.totalCasesSolved, 1);
+    assert.deepEqual(Array.from(tracker.stats.casesHistory, record => record.runId), ["case-001:completed-run"]);
+});

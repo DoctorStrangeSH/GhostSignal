@@ -355,9 +355,14 @@ class App {
         const progress = this.progress;
         for (const key of [
             'locationData', 'inventoryData', 'caseData', 'npcData', 'boardData',
-            'notesData', 'stakeoutData', 'chainData', 'interrogationData'
+            'notesData', 'dialogueData', 'stakeoutData', 'chainData', 'interrogationData'
         ]) progress[key] = null;
         progress.activeCase = null;
+        progress.activeRunId = null;
+        progress.activeRunStartedGameMinute = null;
+        progress.activeCaseDialogueNpcIds = [];
+        this.progressTracker?.resetActiveRun?.();
+        progress.trackerData = this.progressTracker?.toJSON?.() || progress.trackerData;
         progress.npcMemoryData = this.npcMemoryService?.toJSON() || null;
         progress.npcSocialData = this.npcSocialNetwork?.toJSON() || null;
         progress.npcRelationshipData = this.npcRelationshipService?.toJSON() || null;
