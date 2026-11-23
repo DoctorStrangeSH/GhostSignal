@@ -756,6 +756,13 @@ test("EventController queues a second narrative modal until the first Bootstrap 
 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
+    assert.deepEqual(controller.pendingModalData, []);
+
+    controller.bind();
+    eventBus.emit("modal:show", { title: "После перезапуска", body: "Очередь доступна", footer: "OK" });
+    assert.equal(showCalls, 5, "controller can accept modal events after lifecycle restart");
+    assert.equal(elements["modal-title"].innerHTML, "После перезапуска");
+    controller.dispose();
 });
 
 
