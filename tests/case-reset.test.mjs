@@ -97,7 +97,7 @@ test("resetting an investigation discards only its run and reloads from a clean 
     assert.equal(snapshot.dialogueData, null);
     assert.equal(snapshot.activeRunId, null);
     assert.equal(snapshot.activeRunStartedGameMinute, null);
-    assert.deepEqual(snapshot.activeCaseDialogueNpcIds, []);
+    assert.deepEqual(Array.from(snapshot.activeCaseDialogueNpcIds), []);
     assert.equal(snapshot.playthroughSequence, 4);
     assert.deepEqual(snapshot.completedRunIds, ["case-001:completed-run"]);
     assert.equal(snapshot.lastCompletedRunId, "case-001:completed-run");
