@@ -155,6 +155,9 @@ try {
         await page.waitForFunction(() =>
             window.app.dialogueEngine.currentNode.id === 'revised_testimony_opening'
         );
+        const keptTrustBeforeConfirmation = await page.evaluate(() =>
+            window.app.npcMemoryService.getMemory('waiter').trust
+        );
         await choose(page, 'Джо организовал для твоей матери временное безопасное место', 'family_safety_confirmed');
         console.log('[kept branch after confirmation]', JSON.stringify(await page.evaluate(() => ({
             node: window.app.dialogueEngine.currentNode.id,
@@ -164,7 +167,7 @@ try {
             insights: ['full_confession_kane', 'joe_arranged_safe_lodging', 'thomas_family_protected']
                 .filter(id => window.app.inventory.hasInsight(id))
         }))));
-        await assertPromise(page, 'fulfilled', pendingTrust + 6);
+        await assertPromise(page, 'fulfilled', keptTrustBeforeConfirmation + 6);
         await page.waitForFunction(() => window.app.inventory.hasInsight('thomas_family_protected'));
         await page.screenshot({ path: `${output}/promise-kept-confirmed.png`, fullPage: true });
         await page.locator('#btn-hangup').click();
@@ -202,10 +205,13 @@ try {
         await page.locator('#btn-continue:not(.hidden)').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.waitForFunction(() => window.app?.progress?.activeCase === 'case-002');
+        const brokenTrustBeforeAbandon = await page.evaluate(() =>
+            window.app.npcMemoryService.getMemory('waiter').trust
+        );
         await page.locator('#btn-abandon-case').click();
         await page.locator('#universal-modal.show #btn-confirm-abandon-case').click();
         await page.locator('#universal-modal.show .ending-report--failed').waitFor({ timeout: 15000 });
-        await assertPromise(page, 'broken', pendingTrust - 8);
+        await assertPromise(page, 'broken', brokenTrustBeforeAbandon - 8);
         await page.screenshot({ path: `${output}/promise-broken-ending.png`, fullPage: true });
         await page.keyboard.press('Control+s');
         await page.reload({ waitUntil: 'domcontentloaded' });
