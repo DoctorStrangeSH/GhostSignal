@@ -84,6 +84,25 @@
         line-height: 1.25;
     }
 
+    .case-toolbar .toolbar-icon {
+        margin-right: 3px;
+    }
+
+    .case-toolbar .toolbar-label {
+        display: inline;
+    }
+
+    @media (max-width: 360px) {
+        .case-toolbar .toolbar-icon {
+            display: none;
+        }
+
+        .case-toolbar .toolbar-label {
+            font-size: 8px;
+            letter-spacing: 0;
+        }
+    }
+
     .case-main {
         min-height: 50%;
     }
