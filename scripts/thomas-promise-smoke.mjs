@@ -178,7 +178,7 @@ try {
         await page.waitForFunction(() =>
             window.app?.npcMemoryService?.getPromises('waiter')
                 ?.some(item => item.id === 'thomas-family-protection' && item.status === 'fulfilled') &&
-            window.app?.npcMemoryService?.getMemory('waiter')?.trust === pendingTrust + 6
+            window.app?.npcMemoryService?.getMemory('waiter')?.trust === keptTrustAfterResolution
         );
         await page.evaluate(() => window.app.loadCase('case-002'));
         await startThomasCall(page);
@@ -217,7 +217,7 @@ try {
         await page.waitForFunction(() =>
             window.app?.npcMemoryService?.getPromises('waiter')
                 ?.some(item => item.id === 'thomas-family-protection' && item.status === 'broken') &&
-            window.app?.npcMemoryService?.getMemory('waiter')?.trust === pendingTrust - 8
+            window.app?.npcMemoryService?.getMemory('waiter')?.trust === brokenTrustBeforeAbandon - 8
         );
         await page.evaluate(() => window.app.loadCase('case-002'));
         await startThomasCall(page);
