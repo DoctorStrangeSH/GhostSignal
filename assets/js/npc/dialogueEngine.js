@@ -708,7 +708,7 @@ class DialogueEngine {
         if (goalProgressCondition) {
             const [, goalId, rawProgress] = goalProgressCondition;
             const threshold = Number(rawProgress);
-            const progress = this.relationshipService?.getGoalProgress(npcId, goalId) ?? 0;
+            const progress = this.relationshipService?.getGoalProgress?.(npcId, goalId) ?? 0;
             return Number.isFinite(threshold) && progress >= threshold;
         }
         const investigationCondition = conditionStr.match(/^npc_investigation_outcome:([a-z0-9_:-]{1,64}):(corroborated|disputed|no_independent_evidence)$/i);
