@@ -143,3 +143,41 @@
         font-size: 16px;
     }
 }
+
+
+/* Compact terminal footer on very narrow phones. Keep essential status and radio controls usable. */
+@media (max-width: 360px) {
+    .terminal-footer {
+        min-width: 0;
+        max-width: 100%;
+        padding-inline: 8px;
+        gap: 6px;
+        font-size: 8px;
+        letter-spacing: .3px;
+        overflow: hidden;
+    }
+
+    .terminal-footer .footer-divider,
+    .terminal-footer .typed-cmd,
+    .terminal-footer #radio-status {
+        display: none;
+    }
+
+    .terminal-footer .status-text {
+        min-width: 0;
+        flex-shrink: 1;
+        white-space: nowrap;
+    }
+
+    .terminal-footer .radio-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .terminal-footer .radio-btn {
+        flex: 0 0 auto;
+    }
+}
