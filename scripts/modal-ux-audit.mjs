@@ -13,8 +13,9 @@ try {
       const body = document.querySelector('#modal-body');
       const footer = document.querySelector('#modal-footer');
       title.textContent = 'ПРОВЕРКА ДЛИННОГО ДИАЛОГА';
-      body.innerHTML = Array.from({ length: 36 }, (_, i) =>
-        '<p>Сообщение расследования ' + (i + 1) + ': свидетель подтверждает последовательность событий и уточняет детали показаний.</p>'
+      body.innerHTML = Array.from({ length: 72 }, (_, i) =>
+        '<p>Сообщение расследования ' + (i + 1) + ': свидетель подтверждает последовательность событий и уточняет детали показаний. ' +
+        'Детектив фиксирует источник информации, сопоставляет время, место и независимые свидетельства, не теряя контекст предыдущих ответов.</p>'
       ).join('');
       footer.innerHTML = '<button class="btn btn-warning" id="modal-audit-action">Продолжить</button>';
       bootstrap.Modal.getOrCreateInstance(document.querySelector('#universal-modal'), {
@@ -45,7 +46,7 @@ try {
     });
     if (metrics.horizontalOverflow) throw new Error('document horizontal overflow: ' + JSON.stringify(metrics));
     if (!metrics.closeVisible) throw new Error('modal close control is not visible');
-    if (!metrics.bodyScrollable) throw new Error('long modal body is not scrollable');
+    if (!metrics.bodyScrollable) throw new Error('long modal body is not scrollable: ' + JSON.stringify(metrics));
     if (metrics.close.right > viewport.width + 1 || metrics.close.left < -1) throw new Error('close control clipped: ' + JSON.stringify(metrics));
     await page.locator('#modal-audit-action').click();
     await page.keyboard.press('Escape');
