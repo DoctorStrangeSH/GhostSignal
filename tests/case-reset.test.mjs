@@ -62,7 +62,7 @@ test("resetting an investigation discards only its run and reloads from a clean 
     });
     vm.runInContext(
         readFileSync(resolve(root, "assets/js/systems/progressTracker.js"), "utf8") +
-            "\\n;globalThis.__ProgressTracker = ProgressTracker;",
+            "\n;globalThis.__ProgressTracker = ProgressTracker;",
         trackerContext
     );
     app.progressTracker = new trackerContext.__ProgressTracker();
