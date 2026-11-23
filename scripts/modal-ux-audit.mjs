@@ -8,7 +8,9 @@ try {
     await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.bootstrap?.Modal && document.querySelector('#universal-modal'));
     const modal = page.locator('#universal-modal');
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
+      const root = document.querySelector('#universal-modal');
+      const shown = new Promise(resolve => root.addEventListener('shown.bs.modal', resolve, { once: true }));
       const title = document.querySelector('#modal-title');
       const body = document.querySelector('#modal-body');
       const footer = document.querySelector('#modal-footer');
@@ -18,19 +20,12 @@ try {
         'Детектив фиксирует источник информации, сопоставляет время, место и независимые свидетельства, не теряя контекст предыдущих ответов.</p>'
       ).join('');
       footer.innerHTML = '<button class="btn btn-warning" id="modal-audit-action">Продолжить</button>';
-      bootstrap.Modal.getOrCreateInstance(document.querySelector('#universal-modal'), {
+      bootstrap.Modal.getOrCreateInstance(root, {
         backdrop: true, keyboard: true, focus: true
       }).show();
+      await shown;
     });
     await modal.waitFor({ state: 'visible' });
-    // Bootstrap marks a modal visible before its fade/slide transition ends.
-    // Inspect the settled layout rather than the temporary translated dialog.
-    await page.waitForFunction(() => {
-      const root = document.querySelector('#universal-modal');
-      const dialog = root?.querySelector('.modal-dialog');
-      return root?.classList.contains('show') &&
-        dialog && getComputedStyle(dialog).transform === 'none';
-    }, null, { timeout: 5000 });
     const metrics = await page.evaluate(() => {
       const root = document.querySelector('#universal-modal');
       const dialog = root.querySelector('.modal-dialog');
@@ -54,6 +49,7 @@ try {
     });
     if (metrics.horizontalOverflow) throw new Error('document horizontal overflow: ' + JSON.stringify(metrics));
     if (!metrics.closeVisible) throw new Error('modal close control is not visible');
+    if (!metrics.closeLabel) throw new Error('modal close button needs an accessible label');
     if (metrics.header.top < -1 || metrics.header.bottom > viewport.height + 1) {
       throw new Error('modal header is outside viewport: ' + JSON.stringify(metrics));
     }
