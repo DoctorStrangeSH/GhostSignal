@@ -135,6 +135,34 @@
     #screen-main-menu .menu-actions { grid-template-columns: 1fr; }
     #screen-main-menu .menu-actions .terminal-btn:first-child { grid-column: auto; }
 }
+
+@media (max-width: 360px) {
+    .terminal-header {
+        gap: 8px;
+        padding-inline: 8px;
+    }
+    .terminal-header .header-left,
+    .terminal-header .header-right .weather-display,
+    .terminal-header .header-right .header-divider,
+    .terminal-header .header-right .day-display {
+        display: none;
+    }
+    .terminal-header .header-center {
+        min-width: 0;
+        flex: 1;
+    }
+    .terminal-header .terminal-logo {
+        font-size: clamp(13px, 4vw, 16px);
+        letter-spacing: .08em;
+        white-space: nowrap;
+    }
+    .terminal-header .header-right {
+        flex-shrink: 0;
+        gap: 6px;
+        display: flex;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     #screen-main-menu .menu-actions .terminal-btn { transition: none; }
 }

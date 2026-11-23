@@ -68,14 +68,6 @@
         padding: 6px 8px;
     }
 
-    .case-toolbar .terminal-btn {
-        padding: 8px 10px;
-        font-size: 10px;
-        flex: 1;
-        min-width: 55px;
-        text-align: center;
-    }
-
     .case-main {
         min-height: 50%;
     }
