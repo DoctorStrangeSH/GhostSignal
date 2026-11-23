@@ -27,7 +27,7 @@ class ProgressTracker {
         this.caseAttempts = 0;
     }
     
-    // Discard only the current attempt; lifetime statistics and replay history remain intact.
+    // Сбросить только текущую попытку, сохранив накопленную статистику и историю.
     resetActiveRun() {
         this.caseStartTime = null;
         this.activeCaseId = null;
