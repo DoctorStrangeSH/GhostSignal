@@ -6,25 +6,30 @@ const output = 'artifacts/responsive-smoke';
 await mkdir(output, { recursive: true });
 
 async function settleNarrative(page) {
-    const modal = page.locator('#universal-modal.show');
-    for (let attempt = 0; attempt < 24; attempt++) {
-        if (await modal.isVisible()) {
+    const modal = page.locator('#universal-modal');
+    const isOpen = () => modal.count().then(count => count > 0
+        ? modal.evaluate(element => element.classList.contains('show'))
+        : false);
+    let quietSince = Date.now();
+
+    for (let attempt = 0; attempt < 60; attempt++) {
+        if (await isOpen()) {
             const close = modal.locator('[data-bs-dismiss="modal"], .btn-close').first();
             if (!await close.count()) throw new Error('Narrative modal has no close control');
             await close.click();
-            await page.waitForTimeout(350);
+            await page.waitForTimeout(250);
+            quietSince = Date.now();
             continue;
         }
-        const clean = await page.evaluate(() =>
-            document.querySelectorAll('.modal.show, .modal-backdrop').length === 0 &&
-            !document.body.classList.contains('modal-open')
-        );
-        if (clean) {
-            await page.waitForTimeout(500);
-            if (!await modal.isVisible()) return;
+
+        await page.waitForTimeout(200);
+        if (await isOpen()) {
+            quietSince = Date.now();
+            continue;
         }
+        if (Date.now() - quietSince >= 1600) return;
     }
-    throw new Error('Narrative modal queue did not settle');
+    throw new Error('Narrative modal queue did not settle for 1.6 seconds');
 }
 
 async function settleIncomingCalls(page) {
