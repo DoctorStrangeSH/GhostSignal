@@ -12,7 +12,7 @@ async function settleNarrative(page) {
         : false);
     let quietSince = Date.now();
 
-    for (let attempt = 0; attempt < 60; attempt++) {
+    for (let attempt = 0; attempt < 90; attempt++) {
         if (await isOpen()) {
             const close = modal.locator('[data-bs-dismiss="modal"], .btn-close').first();
             if (!await close.count()) throw new Error('Narrative modal has no close control');
@@ -27,9 +27,9 @@ async function settleNarrative(page) {
             quietSince = Date.now();
             continue;
         }
-        if (Date.now() - quietSince >= 1600) return;
+        if (Date.now() - quietSince >= 3000) return;
     }
-    throw new Error('Narrative modal queue did not settle for 1.6 seconds');
+    throw new Error('Narrative modal queue did not settle for 3 seconds');
 }
 
 async function settleIncomingCalls(page) {
