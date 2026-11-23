@@ -22,7 +22,17 @@ test("resetting an investigation discards only its run and reloads from a clean 
         notesData: { notes: ["tip"] }, caseData: { caseState: "active" },
         locationData: { currentLocation: "bar" }, chainData: { chains: ["x"] },
         stakeoutData: { active: true }, interrogationData: { complete: true },
-        solvedCases: ["case-001"], trackerData: { totalCasesSolved: 1 }
+        solvedCases: ["case-001"],
+        trackerData: { totalCasesSolved: 1 },
+        activeRunId: "case-002:active-run",
+        activeRunStartedGameMinute: 47,
+        activeCaseDialogueNpcIds: ["waiter"],
+        dialogueData: { caseId: "case-002", npcId: "waiter", nodeId: "promise" },
+        playthroughSequence: 4,
+        completedRunIds: ["case-001:completed-run"],
+        lastCompletedRunId: "case-001:completed-run",
+        achievementData: { version: 1, unlocked: ["first_ending"], records: [{ id: "first_ending" }] },
+        reputationData: { score: 42 }
     };
     const memory = {
         currentCaseId: "case-002",
@@ -45,12 +55,38 @@ test("resetting an investigation discards only its run and reloads from a clean 
     app.npcMemoryService = memory;
     app.npcSocialNetwork = scoped();
     app.npcRelationshipService = scoped();
+    const trackerContext = vm.createContext({
+        console,
+        events: { emit() {} },
+        CONFIG: { ranks: [{ name: "Новичок", minSolved: 0 }] }
+    });
+    vm.runInContext(
+        readFileSync(resolve(root, "assets/js/systems/progressTracker.js"), "utf8") +
+            "\\n;globalThis.__ProgressTracker = ProgressTracker;",
+        trackerContext
+    );
+    app.progressTracker = new trackerContext.__ProgressTracker();
+    app.progressTracker.stats.casesHistory = [{
+        runId: "case-001:completed-run", caseId: "case-001", result: "solved",
+        endingId: "case-001-perfect"
+    }];
+    app.progressTracker.stats.totalCasesSolved = 1;
+    app.progressTracker.stats.solvedCaseIds = ["case-001"];
+    app.progressTracker.startCase("case-002", "case-002:active-run");
+    app.progressTracker.useHint();
+    app.progressTracker.addAttempt();
     app.eventController = { dispose() { sequence.push("dispose"); } };
     app._saveProgress = () => {
         sequence.push("save");
         assert.equal(snapshot.activeCase, null);
         assert.equal(snapshot.inventoryData, null);
         assert.equal(snapshot.npcMemoryData.cases["case-002"], undefined);
+        assert.equal(snapshot.dialogueData, null);
+        assert.equal(snapshot.activeRunId, null);
+        assert.equal(snapshot.activeRunStartedGameMinute, null);
+        assert.deepEqual(snapshot.activeCaseDialogueNpcIds, []);
+        assert.equal(snapshot.trackerData.activeRunId, null);
+        assert.equal(snapshot.trackerData.activeCaseId, null);
     };
 
     assert.equal(app._resetCurrentCase(), true);
@@ -58,8 +94,28 @@ test("resetting an investigation discards only its run and reloads from a clean 
     assert.equal(snapshot.boardData, null);
     assert.equal(snapshot.chainData, null);
     assert.equal(snapshot.interrogationData, null);
+    assert.equal(snapshot.dialogueData, null);
+    assert.equal(snapshot.activeRunId, null);
+    assert.equal(snapshot.activeRunStartedGameMinute, null);
+    assert.deepEqual(snapshot.activeCaseDialogueNpcIds, []);
+    assert.equal(snapshot.playthroughSequence, 4);
+    assert.deepEqual(snapshot.completedRunIds, ["case-001:completed-run"]);
+    assert.equal(snapshot.lastCompletedRunId, "case-001:completed-run");
+    assert.deepEqual(snapshot.achievementData, {
+        version: 1, unlocked: ["first_ending"], records: [{ id: "first_ending" }]
+    });
+    assert.deepEqual(snapshot.reputationData, { score: 42 });
     assert.deepEqual(snapshot.solvedCases, ["case-001"]);
-    assert.deepEqual(snapshot.trackerData, { totalCasesSolved: 1 });
+    assert.deepEqual(snapshot.trackerData.stats.casesHistory, [{
+        runId: "case-001:completed-run", caseId: "case-001", result: "solved",
+        endingId: "case-001-perfect"
+    }]);
+    assert.equal(snapshot.trackerData.stats.totalCasesSolved, 1);
+    assert.equal(snapshot.trackerData.stats.totalHintsUsed, 1);
+    assert.equal(snapshot.trackerData.stats.totalAttempts, 1);
+    assert.equal(snapshot.trackerData.caseStartTime, null);
+    assert.equal(snapshot.trackerData.caseHintsUsed, 0);
+    assert.equal(snapshot.trackerData.caseAttempts, 0);
     assert.deepEqual(snapshot.npcMemoryData.cases["case-001"], { joe: { met: true } });
     assert.deepEqual(snapshot.npcMemoryData.people, { joe: { trust: 70 } });
     assert.ok(snapshot.npcSocialData.cases["case-001"]);
