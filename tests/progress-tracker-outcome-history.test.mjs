@@ -102,5 +102,5 @@ test("resetActiveRun clears only the current attempt and preserves lifetime repl
     assert.equal(tracker.stats.totalHintsUsed, 4);
     assert.equal(tracker.stats.totalAttempts, 6);
     assert.equal(tracker.stats.totalCasesSolved, 1);
-    assert.deepEqual(tracker.stats.casesHistory.map(record => record.runId), ["case-001:completed-run"]);
+    assert.deepEqual(Array.from(tracker.stats.casesHistory, record => record.runId), ["case-001:completed-run"]);
 });
