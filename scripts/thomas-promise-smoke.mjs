@@ -86,14 +86,10 @@ try {
     // Prepare only the preconditions needed to reach the authored testimony
     // branch. Promise creation and all promise outcomes remain real game flows.
     await seedPage.evaluate(() => {
-        const memory = window.app.npcMemoryService;
-        const claim = memory.recordClaim('waiter', {
-            id: 'waiter-kane-at-poisoning-v2',
-            topic: 'kane-presence-during-poisoning',
-            value: 'saw-poisoning'
-        });
-        if (!claim.added) throw new Error('Could not seed Thomas testimony claim');
-        memory.adjustTrust('waiter', 10);
+        // Give the player enough trust to choose the authored protection promise.
+        // The testimony claim is added only after that promise is recorded, so
+        // the first call follows the real greeting branch.
+        window.app.npcMemoryService.adjustTrust('waiter', 10);
     });
     await startThomasCall(seedPage);
     await choose(seedPage, 'Томас, ты видел что-то в тот вечер.', 'he_saw');
@@ -105,6 +101,14 @@ try {
     );
     await assertPromise(seedPage, 'pending', pendingTrust);
     await seedPage.screenshot({ path: `${output}/promise-made-pending.png`, fullPage: true });
+    await seedPage.evaluate(() => {
+        const result = window.app.npcMemoryService.recordClaim('waiter', {
+            id: 'waiter-kane-at-poisoning-v2',
+            topic: 'kane-presence-during-poisoning',
+            value: 'saw-poisoning'
+        });
+        if (!result.added) throw new Error('Could not seed follow-up testimony claim');
+    });
     await seedPage.locator('#btn-hangup').click();
     await seedPage.waitForFunction(() => !window.app.callInterface.isCallActive);
     await seedPage.keyboard.press('Control+s');
