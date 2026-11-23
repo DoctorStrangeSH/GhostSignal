@@ -1054,11 +1054,10 @@ test("real Inventory insight events resolve Thomas's promise through EventContro
         assert.equal(reputationChanges.length, 2,
             "duplicate insight delivery must not apply trust or faction reputation twice");
 
+        context.savedPromiseMemory = JSON.parse(JSON.stringify(memory.toJSON()));
         const restored = vm.runInContext(
             "NPCMemoryService.fromJSON(savedPromiseMemory, 'case-002')",
-            Object.assign(context, {
-                savedPromiseMemory: JSON.parse(JSON.stringify(memory.toJSON()))
-            })
+            context
         );
         assert.equal(restored.getPromises("waiter")[0].status, "fulfilled");
         assert.equal(restored.getTrust("waiter"), trustBefore + 6);
