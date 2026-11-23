@@ -76,7 +76,7 @@
         text-align: center;
     }
 
-    .case-toolbar .btn-abandon-case {
+    .case-toolbar .terminal-btn.btn-abandon-case {
         flex: 1 0 100%;
         min-width: 0;
         white-space: normal;
