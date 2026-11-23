@@ -99,6 +99,34 @@
         text-align: center;
     }
 
+    .case-toolbar .terminal-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 8px 4px;
+        font-size: 9px;
+        flex: 1 1 0;
+        min-width: 0;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .case-toolbar .terminal-btn.btn-abandon-case {
+        flex: 0 0 100%;
+        min-width: 0;
+        white-space: normal;
+        line-height: 1.25;
+    }
+
+    .case-toolbar .toolbar-icon {
+        flex: 0 0 auto;
+    }
+
+    .case-toolbar .toolbar-label {
+        min-width: 0;
+    }
+
     .case-sidebar {
         max-height: 50%;
     }
@@ -141,6 +169,21 @@
     .btn-final {
         padding: 12px 30px;
         font-size: 16px;
+    }
+}
+
+@media (max-width: 360px) {
+    .case-toolbar .btn-back {
+        flex: 0 0 100%;
+    }
+
+    .case-toolbar .toolbar-icon {
+        display: none;
+    }
+
+    .case-toolbar .toolbar-label {
+        font-size: 8px;
+        letter-spacing: 0;
     }
 }
 
