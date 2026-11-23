@@ -3640,3 +3640,45 @@ test("Thomas's protection promise is fulfilled only by confirmed family safety a
         true
     );
 });
+
+test("Thomas's unfulfilled family-protection promise is broken on either case outcome exactly once", () => {
+    for (const outcome of ["solved", "failed"]) {
+        const { engine, memory, context } = createDialogueHarness();
+        engine.startDialogue("dialogue-waiter");
+        engine.selectAnswer(0);
+        engine.selectAnswer(0);
+        engine.selectAnswer(0);
+        engine.selectAnswer(0);
+
+        const pending = memory.getPromises("waiter");
+        assert.equal(pending.length, 1);
+        assert.equal(pending[0].id, "thomas-family-protection");
+        assert.equal(pending[0].status, "pending");
+
+        const trustBefore = memory.getTrust("waiter");
+        const settled = memory.settlePromisesForCase("case-002", outcome);
+        assert.equal(settled.length, 1);
+        assert.equal(settled[0].promiseId, "thomas-family-protection");
+        assert.equal(settled[0].status, "broken");
+        assert.equal(memory.getPromises("waiter")[0].status, "broken");
+        assert.equal(memory.getTrust("waiter"), trustBefore - 8);
+        assert.equal(memory.hasLongTermMemoryTag("waiter", "promise_broken:thomas-family-protection"), true);
+
+        assert.deepEqual(memory.settlePromisesForCase("case-002", outcome), [],
+            "settling the same case again must not repeat the consequence");
+        assert.equal(memory.getTrust("waiter"), trustBefore - 8);
+
+        context.savedMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+        const restored = vm.runInContext(
+            "NPCMemoryService.fromJSON(savedMemory, 'case-002')",
+            context
+        );
+        assert.equal(restored.getPromises("waiter")[0].status, "broken");
+        assert.equal(restored.getTrust("waiter"), trustBefore - 8);
+        assert.equal(
+            restored.hasLongTermMemoryTag("waiter", "promise_broken:thomas-family-protection"),
+            true
+        );
+    }
+});
+
