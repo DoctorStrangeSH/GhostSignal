@@ -754,6 +754,10 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     assert.equal(elements["modal-body"].innerHTML, "Текст 4");
     assert.equal(controller.pendingModalData.length, 0);
 
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
     assert.deepEqual(controller.pendingModalData, []);
