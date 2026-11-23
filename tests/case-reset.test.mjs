@@ -84,7 +84,7 @@ test("resetting an investigation discards only its run and reloads from a clean 
         assert.equal(snapshot.dialogueData, null);
         assert.equal(snapshot.activeRunId, null);
         assert.equal(snapshot.activeRunStartedGameMinute, null);
-        assert.deepEqual(snapshot.activeCaseDialogueNpcIds, []);
+        assert.deepEqual(Array.from(snapshot.activeCaseDialogueNpcIds), []);
         assert.equal(snapshot.trackerData.activeRunId, null);
         assert.equal(snapshot.trackerData.activeCaseId, null);
     };
@@ -106,7 +106,7 @@ test("resetting an investigation discards only its run and reloads from a clean 
     });
     assert.deepEqual(snapshot.reputationData, { score: 42 });
     assert.deepEqual(snapshot.solvedCases, ["case-001"]);
-    assert.deepEqual(snapshot.trackerData.stats.casesHistory, [{
+    assert.deepEqual(JSON.parse(JSON.stringify(snapshot.trackerData.stats.casesHistory)), [{
         runId: "case-001:completed-run", caseId: "case-001", result: "solved",
         endingId: "case-001-perfect"
     }]);
