@@ -58,14 +58,32 @@ async function choose(page, text, nextNode) {
 }
 
 async function assertPromise(page, expectedStatus, expectedTrust) {
-    await page.waitForFunction(({ status, trust }) => {
-        const app = window.app;
-        const promise = app?.npcMemoryService?.getPromises('waiter')
-            ?.find(item => item.id === 'thomas-family-protection');
-        const actualTrust = app?.npcMemoryService?.getMemory('waiter')?.trust;
-        return promise?.status === status &&
-            (trust === null || actualTrust === trust);
-    }, { status: expectedStatus, trust: expectedTrust }, { timeout: 15000 });
+    try {
+        await page.waitForFunction(({ status, trust }) => {
+            const app = window.app;
+            const promise = app?.npcMemoryService?.getPromises('waiter')
+                ?.find(item => item.id === 'thomas-family-protection');
+            const actualTrust = app?.npcMemoryService?.getMemory('waiter')?.trust;
+            return promise?.status === status &&
+                (trust === null || actualTrust === trust);
+        }, { status: expectedStatus, trust: expectedTrust }, { timeout: 15000 });
+    } catch (error) {
+        const state = await page.evaluate(() => {
+            const app = window.app;
+            return {
+                node: app?.dialogueEngine?.currentNode?.id,
+                currentCaseId: app?.npcMemoryService?.currentCaseId,
+                promise: app?.npcMemoryService?.getPromises('waiter')
+                    ?.find(item => item.id === 'thomas-family-protection'),
+                trust: app?.npcMemoryService?.getMemory('waiter')?.trust,
+                insights: ['full_confession_kane', 'joe_arranged_safe_lodging', 'thomas_family_protected']
+                    .filter(id => app?.inventory?.hasInsight(id)),
+                savedPromise: app?.progress?.npcMemoryData?.cases?.['case-002']?.waiter?.promises
+                    ?.find(item => item.id === 'thomas-family-protection')
+            };
+        });
+        throw new Error(`Promise assertion failed (${expectedStatus}): ${JSON.stringify(state)}; ${error.message}`);
+    }
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -138,6 +156,14 @@ try {
             window.app.dialogueEngine.currentNode.id === 'revised_testimony_opening'
         );
         await choose(page, 'Джо организовал для твоей матери временное безопасное место', 'family_safety_confirmed');
+        console.log('[kept branch after confirmation]', JSON.stringify(await page.evaluate(() => ({
+            node: window.app.dialogueEngine.currentNode.id,
+            currentCaseId: window.app.npcMemoryService.currentCaseId,
+            promise: window.app.npcMemoryService.getPromises('waiter').find(item => item.id === 'thomas-family-protection'),
+            trust: window.app.npcMemoryService.getMemory('waiter').trust,
+            insights: ['full_confession_kane', 'joe_arranged_safe_lodging', 'thomas_family_protected']
+                .filter(id => window.app.inventory.hasInsight(id))
+        }))));
         await assertPromise(page, 'fulfilled', pendingTrust + 6);
         await page.waitForFunction(() => window.app.inventory.hasInsight('thomas_family_protected'));
         await page.screenshot({ path: `${output}/promise-kept-confirmed.png`, fullPage: true });
