@@ -148,7 +148,7 @@ try {
                 };
             }));
             const clipped = buttonMetrics.filter(button =>
-                button.left < -1 || button.right > window.innerWidth + 1 ||
+                button.left < -1 || button.right > viewport.width + 1 ||
                 button.scrollWidth > button.clientWidth + 1
             );
             if (clipped.length) {
