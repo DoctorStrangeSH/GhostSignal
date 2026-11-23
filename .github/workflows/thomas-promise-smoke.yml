@@ -1,0 +1,37 @@
+name: Thomas promise acceptance
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promise-acceptance:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install browser test tooling
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Start static web server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/ghost-promise-server.log 2>&1 &
+          echo $! > /tmp/ghost-promise-server.pid
+      - name: Exercise kept and broken promise paths in isolated browser contexts
+        run: node scripts/thomas-promise-smoke.mjs
+      - name: Upload promise acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghost-signal-thomas-promise-acceptance
+          path: artifacts/thomas-promise-smoke/*.png
+          if-no-files-found: warn
+          retention-days: 7
