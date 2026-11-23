@@ -1694,8 +1694,8 @@ test("Thomas's protection promise needs a real family confirmation, not just Kan
 
     let joeHasHelped = false;
     engine.setRelationshipService({
-        hasCompletedInteraction(npcId, ruleId) {
-            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat" && joeHasHelped;
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "protect_staff" && joeHasHelped ? 1 : 0;
         },
         toJSON() { return {}; }
     });
@@ -1759,8 +1759,8 @@ test("leaking Thomas's first shelter blocks safety confirmation until a differen
     });
     inventory.insights.push("full_confession_kane");
     engine.setRelationshipService({
-        hasCompletedInteraction(npcId, ruleId) {
-            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat";
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "protect_staff" ? 1 : 0;
         },
         toJSON() { return {}; }
     });
