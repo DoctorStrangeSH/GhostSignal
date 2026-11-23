@@ -587,9 +587,12 @@ try {
                 progress.dialogueData === null;
         }, completedCaseOneRunId, { timeout: 15000 });
         await page.screenshot({ path: `${output}/${name}-case-one-replay-clean.png`, fullPage: true });
+        await waitForModalQueueToSettle(page);
 
         // Reset an actually active replay. The run is discarded, but completed
         // outcomes, reputation, achievements and playthrough numbering survive.
+        await page.keyboard.press('Escape');
+        await page.locator('#screen-main-menu.active').waitFor();
         const persistentBeforeReset = await page.evaluate(() => ({
             completedRunIds: [...(window.app?.progress?.completedRunIds || [])],
             solvedCases: [...(window.app?.progress?.solvedCases || [])],
@@ -614,6 +617,9 @@ try {
                 progress?.inventoryData === null &&
                 progress?.caseData === null &&
                 progress?.boardData === null &&
+                progress?.activeRunStartedGameMinute === null &&
+                Array.isArray(progress?.activeCaseDialogueNpcIds) &&
+                progress.activeCaseDialogueNpcIds.length === 0 &&
                 progress?.trackerData?.activeRunId === null &&
                 progress?.trackerData?.activeCaseId === null;
         }, { timeout: 15000 });
