@@ -175,11 +175,11 @@ try {
         await waitForGame(page);
         await page.locator('#btn-continue:not(.hidden)').click();
         await page.locator('#screen-case-active.active').waitFor();
-        await page.waitForFunction(() =>
+        await page.waitForFunction(expectedTrust =>
             window.app?.npcMemoryService?.getPromises('waiter')
                 ?.some(item => item.id === 'thomas-family-protection' && item.status === 'fulfilled') &&
-            window.app?.npcMemoryService?.getMemory('waiter')?.trust === keptTrustAfterResolution
-        );
+            window.app?.npcMemoryService?.getMemory('waiter')?.trust === expectedTrust,
+        keptTrustAfterResolution);
         await page.evaluate(() => window.app.loadCase('case-002'));
         await startThomasCall(page);
         await page.waitForFunction(() =>
@@ -214,11 +214,11 @@ try {
         await page.keyboard.press('Control+s');
         await page.reload({ waitUntil: 'domcontentloaded' });
         await waitForGame(page);
-        await page.waitForFunction(() =>
+        await page.waitForFunction(expectedTrust =>
             window.app?.npcMemoryService?.getPromises('waiter')
                 ?.some(item => item.id === 'thomas-family-protection' && item.status === 'broken') &&
-            window.app?.npcMemoryService?.getMemory('waiter')?.trust === brokenTrustBeforeAbandon - 8
-        );
+            window.app?.npcMemoryService?.getMemory('waiter')?.trust === expectedTrust,
+        brokenTrustBeforeAbandon - 8);
         await page.evaluate(() => window.app.loadCase('case-002'));
         await startThomasCall(page);
         await page.waitForFunction(() =>
