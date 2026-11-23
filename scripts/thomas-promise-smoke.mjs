@@ -222,7 +222,7 @@ try {
         await page.evaluate(() => window.app.loadCase('case-002'));
         await startThomasCall(page);
         await page.waitForFunction(() =>
-            window.app.dialogueEngine.currentNode.id === 'promise_broken_opening'
+            window.app.dialogueEngine.currentNode.id === 'past_broken_promise_opening'
         );
         await page.screenshot({ path: `${output}/thomas-remembers-broken-promise.png`, fullPage: true });
     } finally {
