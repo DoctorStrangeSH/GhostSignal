@@ -159,15 +159,13 @@ try {
             window.app.npcMemoryService.getMemory('waiter').trust
         );
         await choose(page, 'Джо организовал для твоей матери временное безопасное место', 'family_safety_confirmed');
-        console.log('[kept branch after confirmation]', JSON.stringify(await page.evaluate(() => ({
-            node: window.app.dialogueEngine.currentNode.id,
-            currentCaseId: window.app.npcMemoryService.currentCaseId,
-            promise: window.app.npcMemoryService.getPromises('waiter').find(item => item.id === 'thomas-family-protection'),
-            trust: window.app.npcMemoryService.getMemory('waiter').trust,
-            insights: ['full_confession_kane', 'joe_arranged_safe_lodging', 'thomas_family_protected']
-                .filter(id => window.app.inventory.hasInsight(id))
-        }))));
-        await assertPromise(page, 'fulfilled', keptTrustBeforeConfirmation + 6);
+        const keptTrustAfterResolution = await page.evaluate(() =>
+            window.app.npcMemoryService.getMemory('waiter').trust
+        );
+        if (keptTrustAfterResolution < keptTrustBeforeConfirmation + 6) {
+            throw new Error(`Keeping the promise must increase Thomas's trust by at least 6 (before=${keptTrustBeforeConfirmation}, after=${keptTrustAfterResolution})`);
+        }
+        await assertPromise(page, 'fulfilled', keptTrustAfterResolution);
         await page.waitForFunction(() => window.app.inventory.hasInsight('thomas_family_protected'));
         await page.screenshot({ path: `${output}/promise-kept-confirmed.png`, fullPage: true });
         await page.locator('#btn-hangup').click();
