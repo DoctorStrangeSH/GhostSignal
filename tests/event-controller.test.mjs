@@ -760,7 +760,7 @@ test("EventController queues a second narrative modal until the first Bootstrap 
 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
-    assert.deepEqual(controller.pendingModalData, []);
+    assert.equal(controller.pendingModalData.length, 0, "disposed controller leaves no queued modal payloads");
 
     controller.bind();
     eventBus.emit("modal:show", { title: "После перезапуска", body: "Очередь доступна", footer: "OK" });
