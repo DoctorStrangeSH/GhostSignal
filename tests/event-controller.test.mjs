@@ -899,7 +899,7 @@ test("real case completion settles Thomas's promise and applies community reputa
             setInterval: () => 1,
             clearInterval() {},
             setTimeout() {},
-            document: { getElementById: () => ({ classList: { add() {} } }) }
+            document: { getElementById: () => null }
         });
         vm.runInContext(
             readFileSync(resolve(root, "assets/js/npc/npcMemoryService.js"), "utf8") +
