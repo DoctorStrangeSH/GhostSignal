@@ -974,4 +974,4 @@ test("real case completion settles Thomas's promise and applies community reputa
         );
     }
 });
-\n
+
