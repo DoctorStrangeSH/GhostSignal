@@ -976,3 +976,95 @@ test("real case completion settles Thomas's promise and applies community reputa
     }
 });
 
+test("real Inventory insight events resolve Thomas's promise through EventController exactly once", () => {
+    const eventBus = createEventBus();
+    const context = vm.createContext({
+        console,
+        Date,
+        events: eventBus,
+        getObjectById() { return null; },
+        getObjectsByIds() { return []; }
+    });
+    for (const path of [
+        "assets/js/npc/npcMemoryService.js",
+        "assets/js/systems/inventory.js"
+    ]) {
+        vm.runInContext(
+            readFileSync(resolve(root, path), "utf8"),
+            context,
+            { filename: path }
+        );
+    }
+
+    const memory = vm.runInContext(
+        "new NPCMemoryService(null, 'case-002')",
+        context
+    );
+    memory.recordPromise("waiter", {
+        id: "thomas-family-protection",
+        text: "Обеспечить безопасность семьи Томаса",
+        caseId: "case-002",
+        fulfillment: { type: "insight_gained", insightId: "thomas_family_protected" },
+        fulfilledTrustDelta: 6,
+        brokenTrustDelta: -8
+    });
+    const trustBefore = memory.getTrust("waiter");
+    const inventory = vm.runInContext("new Inventory()", context);
+    const reputationChanges = [];
+    const reputationSystem = {
+        changeFactionReputation(...args) { reputationChanges.push(args); },
+        toJSON() { return { factionReputation: { witnesses: 55, residents: 53 } }; }
+    };
+    const app = {
+        progress: {},
+        npcMemoryService: memory,
+        reputationSystem,
+        inventory,
+        _quickSave() {},
+        _saveProgress() {}
+    };
+    const EventController = loadEventController({
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController(app, eventBus);
+    controller.bind();
+
+    try {
+        inventory.addInsight("full_confession_kane");
+        assert.equal(memory.getPromises("waiter")[0].status, "pending");
+        assert.equal(reputationChanges.length, 0,
+            "Kane's confession is not proof that Thomas's family is safe");
+
+        inventory.addInsight("thomas_family_protected");
+        assert.equal(memory.getPromises("waiter")[0].status, "fulfilled");
+        assert.equal(memory.getTrust("waiter"), trustBefore + 6);
+        assert.equal(memory.hasLongTermMemoryTag(
+            "waiter", "promise_kept:thomas-family-protection"
+        ), true);
+        assert.deepEqual(reputationChanges.map(change => change.slice(0, 2)), [
+            ["witnesses", 5],
+            ["residents", 3]
+        ]);
+        assert.ok(app.progress.npcMemoryData,
+            "the promise resolution should be persisted through npc:memory_changed");
+
+        eventBus.emit("insight:gained", { insightId: "thomas_family_protected" });
+        assert.equal(memory.getTrust("waiter"), trustBefore + 6);
+        assert.equal(reputationChanges.length, 2,
+            "duplicate insight delivery must not apply trust or faction reputation twice");
+
+        context.savedPromiseMemory = JSON.parse(JSON.stringify(memory.toJSON()));
+        const restored = vm.runInContext(
+            "NPCMemoryService.fromJSON(savedPromiseMemory, 'case-002')",
+            context
+        );
+        assert.equal(restored.getPromises("waiter")[0].status, "fulfilled");
+        assert.equal(restored.getTrust("waiter"), trustBefore + 6);
+        assert.equal(restored.hasLongTermMemoryTag(
+            "waiter", "promise_kept:thomas-family-protection"
+        ), true);
+    } finally {
+        controller.dispose();
+    }
+});
