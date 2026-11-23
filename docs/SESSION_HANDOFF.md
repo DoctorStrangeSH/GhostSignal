@@ -1382,3 +1382,15 @@ Next: implement an explicit, case-authored route graph (edges with travel minute
 - Work remains on branch `feat/save-schema-migrations`; PR #128 remains open; `main` is untouched.
 
 Next: finish CI/Visual smoke, then manually verify reload during a normal question, an evidence reaction, and case-002 bartender dialogue. After that, proceed to cross-case state isolation and save migration recovery checks.
+
+
+## 2026-11-23: PR #178 merged — responsive audit and modal FIFO
+
+- PR #178 merged into `main` with squash commit `00e559501c6b56a6a419b11d64bc34eb23a667f2`; tested PR head `d7c75dad0f5b6a00dcadf0e2d6298a633accb8d6`.
+- All four workflows passed on that exact head: Quality checks, Responsive audit, Visual smoke, Thomas promise acceptance.
+- Mobile investigation toolbar sizing is consolidated in `assets/css/responsive.css`, the stylesheet loaded after `layout.css`; map/wait/hint labels and the full-width abandon action are covered by responsive browser assertions.
+- EventController pending modal payload is a FIFO array; queued windows are advanced only after Bootstrap `hidden.bs.modal`. Disposal clears pending payloads; dispose/rebind lifecycle has regression coverage.
+- Existing save/resume infrastructure is present: SaveController stores `dialogueData`; app restore validates case ID and active NPC dialogue ID; DialogueEngine and CallInterface have dedicated save/resume tests. This is not yet proof of full application reload acceptance.
+- Next task: add/verify full app-level browser acceptance for interrupted calls across reload, preserving exact NPC, case-specific dialogue ID, current node and transcript without replaying memory/time/relationship effects. Also verify stale/cross-case snapshots are rejected.
+- Do not serialize transient modal notification FIFO into save data. Persist only the authored active dialogue snapshot already represented by `dialogueData`.
+- Keep the two existing investigations as the release scope; do not start case-003 before both are manually accepted and 1.0 checklist is closed.
