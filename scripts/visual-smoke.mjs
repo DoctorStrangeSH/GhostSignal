@@ -133,6 +133,8 @@ try {
         await page.locator('.case-btn[data-case-id="case-001"]').click();
         await page.locator('#screen-case-active.active').waitFor();
         await page.locator('#scene-container .scene-art').first().waitFor();
+        const initialCaseOneRunId = await page.evaluate(() => window.app?.progress?.activeRunId);
+        if (!initialCaseOneRunId) throw new Error(`${name}: initial case-one run ID was not created`);
         await page.screenshot({ path: `${output}/${name}-investigation.png`, fullPage: true });
 
         // Introductory narrative overlays are part of gameplay, on both screen sizes.
@@ -552,29 +554,89 @@ try {
         await page.screenshot({ path: `${output}/${name}-case-one-perfect-ending.png`, fullPage: true });
         await waitForModalQueueToSettle(page);
 
+        const completedCaseOneRunId = await page.evaluate(() => window.app?.progress?.lastCompletedRunId);
+        if (!completedCaseOneRunId || completedCaseOneRunId !== initialCaseOneRunId) {
+            throw new Error(`${name}: completed case-one run identity was not preserved`);
+        }
+
+        // Replay the same solved case through the case list. A new playthrough
+        // must start with empty evidence while lifetime history stays intact.
         await page.keyboard.press('Escape');
         await page.locator('#screen-main-menu.active').waitFor();
+        await page.locator('#btn-open-cases').click();
+        await page.locator('#screen-cases.active .case-btn[data-case-id="case-001"]').click();
+        await page.locator('#screen-case-active.active').waitFor();
+        await page.locator('#scene-container .scene-art').first().waitFor();
+        const replayRunId = await page.evaluate(() => window.app?.progress?.activeRunId);
+        if (!replayRunId || replayRunId === completedCaseOneRunId) {
+            throw new Error(`${name}: replay did not receive a fresh run ID`);
+        }
+        await page.waitForFunction(previousRunId => {
+            const progress = window.app?.progress;
+            const inventory = window.app?.inventory;
+            return progress?.activeCase === 'case-001' &&
+                progress?.activeRunId && progress.activeRunId !== previousRunId &&
+                progress.completedRunIds?.includes(previousRunId) &&
+                progress.solvedCases?.includes('case-001') &&
+                progress.trackerData?.stats?.casesHistory?.some(record =>
+                    record.runId === previousRunId && record.endingId === 'case-001-perfect') &&
+                inventory?.items?.length === 0 &&
+                inventory?.evidence?.length === 0 &&
+                inventory?.insights?.length === 0 &&
+                window.app?.caseManager?.evidenceFound === 0 &&
+                progress.dialogueData === null;
+        }, completedCaseOneRunId, { timeout: 15000 });
+        await page.screenshot({ path: `${output}/${name}-case-one-replay-clean.png`, fullPage: true });
+
+        // Reset an actually active replay. The run is discarded, but completed
+        // outcomes, reputation, achievements and playthrough numbering survive.
+        const persistentBeforeReset = await page.evaluate(() => ({
+            completedRunIds: [...(window.app?.progress?.completedRunIds || [])],
+            solvedCases: [...(window.app?.progress?.solvedCases || [])],
+            lastCompletedRunId: window.app?.progress?.lastCompletedRunId,
+            playthroughSequence: window.app?.progress?.playthroughSequence,
+            history: (window.app?.progress?.trackerData?.stats?.casesHistory || [])
+                .map(record => [record.runId, record.result, record.endingId]),
+            achievements: JSON.stringify(window.app?.progress?.achievementData || null),
+            reputation: JSON.stringify(window.app?.progress?.reputationData || null)
+        }));
         await page.locator('#btn-options').click();
         await page.locator('#btn-reset-case').waitFor();
         page.once('dialog', dialog => dialog.accept());
         await page.locator('#btn-reset-case').click();
         await page.locator('#screen-main-menu.active').waitFor();
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
+        await page.waitForFunction(() => {
+            const progress = window.app?.progress;
+            return progress?.activeCase === null &&
+                progress?.activeRunId === null &&
+                progress?.dialogueData === null &&
+                progress?.inventoryData === null &&
+                progress?.caseData === null &&
+                progress?.boardData === null &&
+                progress?.trackerData?.activeRunId === null &&
+                progress?.trackerData?.activeCaseId === null;
+        }, { timeout: 15000 });
+        const persistentAfterReset = await page.evaluate(() => ({
+            completedRunIds: [...(window.app?.progress?.completedRunIds || [])],
+            solvedCases: [...(window.app?.progress?.solvedCases || [])],
+            lastCompletedRunId: window.app?.progress?.lastCompletedRunId,
+            playthroughSequence: window.app?.progress?.playthroughSequence,
+            history: (window.app?.progress?.trackerData?.stats?.casesHistory || [])
+                .map(record => [record.runId, record.result, record.endingId]),
+            achievements: JSON.stringify(window.app?.progress?.achievementData || null),
+            reputation: JSON.stringify(window.app?.progress?.reputationData || null)
+        }));
+        if (JSON.stringify(persistentAfterReset) !== JSON.stringify(persistentBeforeReset)) {
+            throw new Error(`${name}: case reset changed lifetime progression or replay history`);
+        }
+        await page.screenshot({ path: `${output}/${name}-case-one-reset-clean.png`, fullPage: true });
         await page.locator('#btn-continue').waitFor({ state: 'attached' });
         if (!await page.locator('#btn-continue').evaluate(button => button.classList.contains('hidden'))) {
-            throw new Error(`${name}: Continue remains available after case restart`);
+            throw new Error(`${name}: Continue remains available after resetting the replay`);
         }
 
-        // A fresh investigation must remain playable after the first case was
-        // restarted; the previous case must not leak into the new save.
-        // The reset reloads the entire app. Wait for the new controller and
-        // case list to finish binding before opening a different investigation.
-        await page.waitForFunction(() => Boolean(
-            window.app?.caseListUI && window.app?.navigationController &&
-            window.app?.progress?.activeCase === null
-        ));
-        // Reset can enqueue an achievement/narrative modal after the menu is
-        // ready. Drain the modal queue before interacting with the case button.
+        // After reset the same app can open the other investigation cleanly.
         await waitForModalQueueToSettle(page);
         await page.locator('#btn-open-cases').click();
         await page.locator('#screen-cases.active .case-btn[data-case-id="case-002"]').click();
