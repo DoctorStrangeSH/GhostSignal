@@ -172,7 +172,7 @@ const DIALOGUE_BARTENDER_CASE2 = {
                         text: "Томасу и его матери всё ещё угрожали. Можно организовать для них временное безопасное место?",
                         nextNode: "joe_safe_lodging_arranged",
                         tone: "calm",
-                        condition: "all:hasInsight:full_confession_kane&npc_action_completed:joe-reassures-thomas-after-threat&not:hasInsight:joe_arranged_safe_lodging",
+                        condition: "all:hasInsight:full_confession_kane&npc_goal_progress_at_least:protect_staff:1&not:hasInsight:joe_arranged_safe_lodging",
                         hiddenWhenUnavailable: true
                     },
 

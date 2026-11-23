@@ -905,6 +905,7 @@ test("Joe's follow-up is visible only after Joe personally completed his support
         hasCompletedInteraction(npcId, ruleId) {
             return npcId === "bartender" && completed.has(ruleId);
         },
+        getGoalProgress() { return 0; },
         toJSON() { return {}; }
     });
     engine.startDialogue("dialogue-bartender-case2");
@@ -918,6 +919,32 @@ test("Joe's follow-up is visible only after Joe personally completed his support
     assert.equal(engine.selectAnswer(response.index).id, "joe_helped_thomas");
     assert.match(engine.currentNode.text, /поговорил с Томасом/i);
     assert.equal(engine._checkCondition("npc_action_completed:unknown-action"), false);
+});
+
+
+
+test("Joe can arrange Thomas's safe lodging after any completed staff-protection support action", () => {
+    const { engine } = createDialogueHarness();
+    engine.inventory.addInsight("full_confession_kane");
+    let protectionProgress = 0;
+    engine.setRelationshipService({
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "protect_staff" ? protectionProgress : 0;
+        },
+        toJSON() { return {}; }
+    });
+    engine.startDialogue("dialogue-bartender-case2");
+
+    const shelterText = "Томасу и его матери всё ещё угрожали. Можно организовать для них временное безопасное место?";
+    assert.equal(engine.getAvailableAnswers().some(answer => answer.text === shelterText), false,
+        "full confession alone must not imply that Joe has supported Thomas");
+
+    protectionProgress = 1;
+    const shelterAnswer = engine.getAvailableAnswers().find(answer => answer.text === shelterText);
+    assert.ok(shelterAnswer, "a completed protect_staff support action should unlock the shelter request");
+    assert.equal(shelterAnswer.nextNode, "joe_safe_lodging_arranged");
+    assert.equal(engine.selectAnswer(shelterAnswer.index).id, "joe_safe_lodging_arranged");
+    assert.match(engine.currentNode.text, /пока он сам не подтвердит/i);
 });
 
 test("Lora does not describe an off-screen investigation before she actually acts", () => {
@@ -1667,8 +1694,8 @@ test("Thomas's protection promise needs a real family confirmation, not just Kan
 
     let joeHasHelped = false;
     engine.setRelationshipService({
-        hasCompletedInteraction(npcId, ruleId) {
-            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat" && joeHasHelped;
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "protect_staff" && joeHasHelped ? 1 : 0;
         },
         toJSON() { return {}; }
     });
@@ -1732,8 +1759,8 @@ test("leaking Thomas's first shelter blocks safety confirmation until a differen
     });
     inventory.insights.push("full_confession_kane");
     engine.setRelationshipService({
-        hasCompletedInteraction(npcId, ruleId) {
-            return npcId === "bartender" && ruleId === "joe-reassures-thomas-after-threat";
+        getGoalProgress(npcId, goalId) {
+            return npcId === "bartender" && goalId === "protect_staff" ? 1 : 0;
         },
         toJSON() { return {}; }
     });
