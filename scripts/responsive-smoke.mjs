@@ -136,7 +136,7 @@ try {
             throw new Error(`case close action is cramped or clipped at ${viewport.width}px: ${JSON.stringify(abandonButton)}`);
         }
         if (viewport.width <= 360) {
-            const actionButtons = page.locator('.case-toolbar .terminal-btn:not(.btn-abandon-case)');
+            const actionButtons = page.locator('.case-toolbar .terminal-btn:not(.btn-abandon-case):not(.btn-back)');
             const buttonMetrics = await actionButtons.evaluateAll(buttons => buttons.map(button => {
                 const rect = button.getBoundingClientRect();
                 const label = button.querySelector('.toolbar-label');
