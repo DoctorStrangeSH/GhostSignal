@@ -139,17 +139,23 @@ try {
             const actionButtons = page.locator('.case-toolbar .terminal-btn:not(.btn-abandon-case)');
             const buttonMetrics = await actionButtons.evaluateAll(buttons => buttons.map(button => {
                 const rect = button.getBoundingClientRect();
+                const label = button.querySelector('.toolbar-label');
+                const icon = button.querySelector('.toolbar-icon');
                 return {
-                    label: button.textContent.trim(),
+                    label: label?.textContent.trim() || button.textContent.trim(),
                     left: Math.round(rect.left * 10) / 10,
                     right: Math.round(rect.right * 10) / 10,
                     clientWidth: button.clientWidth,
-                    scrollWidth: button.scrollWidth
+                    scrollWidth: button.scrollWidth,
+                    labelVisible: label ? getComputedStyle(label).display !== 'none' : true,
+                    decorativeIconHidden: icon ? getComputedStyle(icon).display === 'none' : false
                 };
             }));
             const clipped = buttonMetrics.filter(button =>
                 button.left < -1 || button.right > viewport.width + 1 ||
-                button.scrollWidth > button.clientWidth + 1
+                button.scrollWidth > button.clientWidth + 1 ||
+                !button.labelVisible ||
+                (viewport.width <= 360 && !button.decorativeIconHidden)
             );
             if (clipped.length) {
                 throw new Error(`investigation action labels are clipped at ${viewport.width}px: ${JSON.stringify(clipped)}`);
