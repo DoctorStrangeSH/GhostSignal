@@ -49,11 +49,30 @@ async function settleIncomingCalls(page) {
 }
 
 async function assertNoPageOverflow(page, label, width) {
-    const metrics = await page.evaluate(() => ({
-        viewport: document.documentElement.clientWidth,
-        document: document.documentElement.scrollWidth,
-        body: document.body.scrollWidth
-    }));
+    const metrics = await page.evaluate(() => {
+        const viewport = document.documentElement.clientWidth;
+        const offenders = [...document.querySelectorAll('body *')].map(element => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+                tag: element.tagName.toLowerCase(),
+                id: element.id || null,
+                className: typeof element.className === 'string' ? element.className : '',
+                right: Math.round(rect.right * 10) / 10,
+                left: Math.round(rect.left * 10) / 10,
+                width: Math.round(rect.width * 10) / 10,
+                position: style.position,
+                whiteSpace: style.whiteSpace
+            };
+        }).filter(item => item.right > viewport + 1 || item.left < -1)
+            .sort((a, b) => b.right - a.right).slice(0, 12);
+        return {
+            viewport,
+            document: document.documentElement.scrollWidth,
+            body: document.body.scrollWidth,
+            offenders
+        };
+    });
     if (metrics.document > metrics.viewport + 2 || metrics.body > metrics.viewport + 2) {
         throw new Error(`${label} at ${width}px: horizontal overflow ${JSON.stringify(metrics)}`);
     }
@@ -81,8 +100,8 @@ try {
         await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.locator('#screen-main-menu.active').waitFor();
-        await assertNoPageOverflow(page, 'main menu', viewport.width);
         await page.screenshot({ path: `${output}/${name}-menu.png`, fullPage: true });
+        await assertNoPageOverflow(page, 'main menu', viewport.width);
 
         await page.locator('#btn-achievements').click();
         await page.locator('#screen-achievements.active .achievement-screen-header h2').waitFor();
