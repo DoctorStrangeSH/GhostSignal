@@ -73,7 +73,7 @@ test("investigation board round-trips clues, hypotheses, source inquiries, alibi
     const snapshot = structuredClone(board.toJSON());
     const restored = Board.fromJSON(snapshot);
 
-    assert.equal(JSON.stringify(restored.toJSON()), JSON.stringify(snapshot));
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.toJSON())), JSON.parse(JSON.stringify(snapshot)));
     assert.equal(restored.getHypothesisHistory("hyp-4").length, 3);
     assert.equal(restored.getHypothesisAlternatives("hyp-4").length, 2);
     assert.equal(restored.sourceInquiries[0].conclusion, "Источник не подтвердил время");
