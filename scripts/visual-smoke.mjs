@@ -801,7 +801,7 @@ try {
                     entry.speaker === rendered[index].speaker &&
                     entry.text === rendered[index].text
                 );
-        }, { timeout: 10000 });
+        }, null, { timeout: 10000 });
         const interruptedDialogueSnapshot = await page.evaluate(() => ({
             dialogue: window.app.dialogueEngine.toJSON(),
             transcript: Array.from(document.querySelectorAll('#dialogue-messages .dialogue-message'))
