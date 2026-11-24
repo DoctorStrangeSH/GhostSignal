@@ -7,6 +7,7 @@ try {
     const page = await browser.newPage({ viewport });
     await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.bootstrap?.Modal && document.querySelector('#universal-modal'));
+    await page.waitForFunction(() => window.app?.eventController?.bound && window.app.eventController.events?.emit);
     const modal = page.locator('#universal-modal');
     await page.evaluate(async () => {
       const root = document.querySelector('#universal-modal');
@@ -14,18 +15,16 @@ try {
       opener.id = 'modal-audit-opener';
       opener.textContent = 'Открыть диалог';
       document.body.prepend(opener);
-      const instance = bootstrap.Modal.getOrCreateInstance(root, { backdrop: true, keyboard: true, focus: true });
-      opener.addEventListener('click', () => instance.show());
       const shown = new Promise(resolve => root.addEventListener('shown.bs.modal', resolve, { once: true }));
-      const title = document.querySelector('#modal-title');
-      const body = document.querySelector('#modal-body');
-      const footer = document.querySelector('#modal-footer');
-      title.textContent = 'ПРОВЕРКА ДЛИННОГО ДИАЛОГА';
-      body.innerHTML = Array.from({ length: 72 }, (_, i) =>
+      const body = Array.from({ length: 72 }, (_, i) =>
         '<p>Сообщение расследования ' + (i + 1) + ': свидетель подтверждает последовательность событий и уточняет детали показаний. ' +
         'Детектив фиксирует источник информации, сопоставляет время, место и независимые свидетельства, не теряя контекст предыдущих ответов.</p>'
       ).join('');
-      footer.innerHTML = '<button class="btn btn-warning" id="modal-audit-action">Продолжить</button>';
+      opener.addEventListener('click', () => window.app.eventController.events.emit('modal:show', {
+        title: 'ПРОВЕРКА ДЛИННОГО ДИАЛОГА',
+        body,
+        footer: '<button class="btn btn-warning" id="modal-audit-action">Продолжить</button>'
+      }));
       opener.click();
       await shown;
     });
