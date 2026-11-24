@@ -1426,3 +1426,6 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - `dispose()` unregisters the new show listener and resets the transition state.
 - Added a focused unit regression that simulates Bootstrap's pre-`.show` transition state; existing Playwright queue audit sends 10 events synchronously and asserts FIFO/no loss on 320/390/1440 px.
 - CI status on the prior PR head was queued. Re-check all five workflows on the new head; do not merge on queued checks.
+
+
+- Added a strict CallInterface resume event assertion: only `call:connected` with `resumed: true` may be emitted; resume must not replay call-start or dialogue/TTS side effects.
