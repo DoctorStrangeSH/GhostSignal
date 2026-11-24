@@ -1507,3 +1507,8 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 
 - Added dialogue-graph reachability assertions: every authored claim node in the audited dialogue packs must be reachable from the start node or a conditional entry rule through answer links.
 - Browser persistence acceptance now checks two distinct rumor chains: a statement tied to rumor A is excluded from A's corroboration choices but remains eligible for rumor B when it is independent of B.
+
+- Fixed a UI/domain mismatch: source-picker origin NPC filtering now considers only active claims. A superseded rumor statement no longer blocks a later firsthand observation from the same NPC.
+- Added regression coverage for a superseded rumor claim revised into an independent firsthand statement while a second active witness remains the rumor origin.
+- GitHub Actions API inspection found seven runs on prior head `b34c8aa` (six PR workflows and one push run); all were queued at inspection time. These do not validate the newer head.
+- Next: inspect workflow runs for the latest head `87663f86dfe270c3fd9a8859de75fd38893da5eb`.
