@@ -190,6 +190,9 @@ class App {
         this.investigationBoard = InvestigationBoard.fromJSON(this.progress.boardData);
         // Legacy snapshots had no case ID; associate them with the active saved case.
         this.investigationBoard.setCase(this.progress.activeCase, true);
+        // A clue on the board is still owned by the player, but is no longer
+        // available for a second placement from the inventory pool.
+        this.inventory.reconcileBoardEvidence(this.investigationBoard.evidenceOnBoard);
         this.dialogueEngine.setInvestigationBoard(this.investigationBoard);
         this.boardUI = new BoardUI('board-area'); this.boardUI.setBoard(this.investigationBoard); this.boardUI.setInventory(this.inventory); this.boardUI.setMemoryService(this.npcMemoryService); this.boardUI.setLocationManager(this.locationManager); this.boardUI.setRelationshipService(this.npcRelationshipService);
 
