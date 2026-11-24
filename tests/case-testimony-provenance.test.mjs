@@ -45,14 +45,14 @@ test("case 002 rumor retelling and firsthand testimony are not conflated", () =>
     const rumorRetelling = bartender.joe_challenges_visitor_overclaim.claim;
     assert.equal(rumorRetelling.directObservation, false);
     assert.deepEqual(Array.from(rumorRetelling.referencesRumorIds), ["detective-overstated-visitor-identity"]);
-    assert.equal(bartender.kane_at_bar?.claim?.directObservation, true);
+    assert.equal(bartender.returned_vial?.claim?.directObservation, true);
 
     const rival = loadDialogue("assets/data/cases/case-002/dialogues/rival.js");
-    assert.equal(rival.caught_in_lie?.claim?.directObservation, true);
-    assert.equal(rival.kane_formal_objection?.claim?.directObservation, true);
+    assert.equal(rival.confrontation?.claim?.directObservation, true);
+    assert.equal(rival.partial_return?.claim?.directObservation, true);
 
     const waiter = loadDialogue("assets/data/cases/case-002/dialogues/waiter.js");
-    for (const nodeId of ["waiter_kane_at_poisoning", "protection_revision", "photo_observation_comparison"]) {
+    for (const nodeId of ["protection", "protection_revision", "testimony_reconsiders"]) {
         const claim = waiter[nodeId]?.claim;
         if (claim) assert.equal(typeof claim.directObservation, "boolean");
     }
