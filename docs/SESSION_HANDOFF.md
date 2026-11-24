@@ -1417,3 +1417,12 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - На текущем PR head созданы все пять workflow: Quality, Responsive, Visual Smoke, Thomas Promise Acceptance, Modal UX. Все пять пока `queued`; не объявлять их успешными. Проверить завершение на одном SHA перед merge.
 - Не сериализовать transient modal FIFO; сохранять только активный разговор через `dialogueData`.
 - Не начинать третье дело до ручной приёмки обоих текущих расследований и release checklist 1.0.
+
+
+## 2026-11-24: Bootstrap opening race fixed in PR #180
+
+- Found an opening-transition race: Bootstrap dispatches `show.bs.modal` before the modal receives `.show`; class-only queue detection could miss rapid narrative events in this interval.
+- EventController now tracks `modalIsShowing` from `show.bs.modal`, clears it on hide/hidden, and queues new events while opening.
+- `dispose()` unregisters the new show listener and resets the transition state.
+- Added a focused unit regression that simulates Bootstrap's pre-`.show` transition state; existing Playwright queue audit sends 10 events synchronously and asserts FIFO/no loss on 320/390/1440 px.
+- CI status on the prior PR head was queued. Re-check all five workflows on the new head; do not merge on queued checks.
