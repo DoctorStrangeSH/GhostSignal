@@ -30,6 +30,10 @@ try {
       await shown;
     });
     await modal.waitFor({ state: 'visible' });
+    const openerCaptured = await page.evaluate(() =>
+      window.app.eventController.modalReturnFocusElement?.id === 'modal-audit-opener'
+    );
+    if (!openerCaptured) throw new Error('modal opener was not captured for focus restoration');
     const metrics = await page.evaluate(() => {
       const root = document.querySelector('#universal-modal');
       const dialog = root.querySelector('.modal-dialog');
