@@ -27,3 +27,5 @@ jobs:
           echo $! > /tmp/ghost-modal-server.pid
       - name: Audit long dialogs and close behavior
         run: node scripts/modal-ux-audit.mjs
+      - name: Audit keyboard focus containment and restoration
+        run: node scripts/modal-keyboard-audit.mjs
