@@ -117,6 +117,42 @@ try {
       throw new Error(viewport.name + ': removed clue state did not survive a second reload');
     }
 
+    // Switching investigations must not carry clues, hypotheses or alibis
+    // from the previous case into the new case.
+    const switched = await page.evaluate(() => {
+      const app = window.app;
+      if (!app.loadCase('case-002')) throw new Error('could not start case-002');
+      return {
+        caseId: app.investigationBoard.caseId,
+        activeCase: app.progress.activeCase,
+        placedEvidence: app.investigationBoard.evidenceOnBoard,
+        hypotheses: app.investigationBoard.hypotheses,
+        alibis: app.investigationBoard.alibiClaims,
+        oldClueOwned: app.inventory.hasItem('guest_book')
+      };
+    });
+    if (switched.caseId !== 'case-002' || switched.activeCase !== 'case-002' ||
+        switched.placedEvidence.length || switched.hypotheses.length ||
+        switched.alibis.length || switched.oldClueOwned) {
+      throw new Error(viewport.name + ': previous investigation state leaked into case-002');
+    }
+    if (!await page.evaluate(() => window.app._quickSave())) {
+      throw new Error(viewport.name + ': could not save case-002 after switching');
+    }
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.app?.investigationBoard &&
+      window.app?.progress?.activeCase === 'case-002', null, { timeout: 20000 });
+    await page.locator('#loading-screen').waitFor({ state: 'detached', timeout: 20000 });
+    const caseTwoRestored = await page.evaluate(() => ({
+      caseId: window.app.investigationBoard.caseId,
+      placedEvidence: window.app.investigationBoard.evidenceOnBoard,
+      hypotheses: window.app.investigationBoard.hypotheses
+    }));
+    if (caseTwoRestored.caseId !== 'case-002' ||
+        caseTwoRestored.placedEvidence.length || caseTwoRestored.hypotheses.length) {
+      throw new Error(viewport.name + ': case-002 reload restored data from case-001');
+    }
+
     if (pageErrors.length) throw new Error(viewport.name + ': browser errors: ' + pageErrors.join(' | '));
     console.log(JSON.stringify({
       viewport: viewport.name,
