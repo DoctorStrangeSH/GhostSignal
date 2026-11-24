@@ -59,6 +59,7 @@ test("rumor provenance stays unverified until the detective records a source inq
     const hypothesisId = board.addHypothesis("Мэри могла помочь Блэквуду скрыться");
     assert.ok(hypothesisId);
     assert.equal(board.linkHypothesis(hypothesisId, "statement", "porter-rumor-claim", "pending"), true);
+    assert.equal(board.linkHypothesis(hypothesisId, "statement", "porter-followup-claim", "pending"), true);
 
     const sourceReview = board.reviewHypothesisSources(hypothesisId, statements);
     assert.equal(sourceReview.sources[0].origin, "unverified");
