@@ -1359,3 +1359,6 @@
 - [x] Добавлена проверка, что opener действительно сохранён до закрытия модального окна.
 - [ ] Проверить CI на актуальном head `4c8a20e7b82d239dd5c116c36eea0e7eedc23700`; новый push Quality gate пока queued. Не считать исправления прошедшими до фактического результата.
 - [ ] После Quality gate — проверить browser persistence, modal UX, promise acceptance, responsive и visual smoke на одном SHA.
+
+- [x] На последнем кодовом checkpoint применены исправления из CI-лога; после них добавлен дополнительный capture opener на `show.bs.modal` и проверка его сохранения.
+- [ ] Последний branch head после синхронизации документации: `1dc09d6a8460d2221816a527ca6f543d1c05490c`. Для него семь workflow runs зарегистрированы, но все jobs всё ещё `queued` и имеют `runner: null`; результатов повторного Quality gate пока нет.
