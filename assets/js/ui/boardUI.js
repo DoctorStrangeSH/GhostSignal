@@ -848,8 +848,20 @@ class BoardUI {
         const review = this.board.reviewHypothesisSources(hypothesis.id, statements);
         const rumors = [...new Set(review.sources.flatMap(source => source.linkedRumorIds))];
         const inquiries = (this.board.sourceInquiries || []).filter(i => i.hypothesisId === hypothesis.id);
+        const originNpcIds = new Set(review.sources
+            .filter(source => source.linkedRumorIds.length)
+            .map(source => source.npcId).filter(Boolean));
+        const alreadyUsedWitnessIds = new Set(inquiries.flatMap(inquiry =>
+            inquiry.leads.filter(lead => lead.kind === 'statement').map(lead => lead.npcId).filter(Boolean)));
         const options = [
-            ...statements.filter(s => s.status !== 'superseded').map(s => ({ key: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) + ' — ' + (s.summary || s.value) })),
+            ...statements.filter(statement => statement.status !== 'superseded' &&
+                statement.directObservation === true &&
+                !originNpcIds.has(statement.npcId) &&
+                !alreadyUsedWitnessIds.has(statement.npcId))
+                .map(statement => ({
+                    key: 'statement:' + statement.id,
+                    label: 'Личное наблюдение: ' + (statement.sourceName || statement.npcId) + ' — ' + (statement.summary || statement.value)
+                })),
             ...evidenceIds.map(id => ({ key: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
         ].map(o => `<option value="${this._escapeHTML(o.key)}">${this._escapeHTML(o.label)}</option>`).join('');
         if (!rumors.length && !inquiries.length) return '';
@@ -868,7 +880,7 @@ class BoardUI {
                 ${i.conclusion ? `<p>Вывод детектива: ${this._escapeHTML(i.conclusion)}</p>` : ''}
                 ${i.status === 'open' && hypothesis.status === 'open' ? `
                     <form class="hypothesis-form inquiry-lead-form" data-id="${this._escapeHTML(i.id)}">
-                        <select class="terminal-input" required><option value="">Выберите найденный источник</option>${options}</select>
+                        <select class="terminal-input" required><option value="">Выберите независимый источник</option>${options}</select>
                         <input class="terminal-input" maxlength="500" required placeholder="Что именно вы выяснили?">
                         <button class="terminal-btn btn-sm" type="submit">ЗАПИСАТЬ СВЯЗЬ</button>
                     </form>
