@@ -32,6 +32,7 @@ const DIALOGUE_CORONER = {
             analysis_results: {
                 speaker: "npc",
                 text: "Хлоралгидрат. Сильное снотворное. Концентрация — примерно три грамма. Не смертельная, но достаточная, чтобы усыпить взрослого мужчину на шесть-восемь часов. Ваш подозреваемый знал дозировку — или ему просто повезло не убить жертву.",
+                claim: {"id":"case001-coroner-toxicology-result","topic":"blackwood-toxicology","value":"chloral_hydrate_detected_in_whiskey_approximately_three_grams","summary":"Доктор Харрис сообщает о хлоралгидрате в виски в концентрации около трёх граммов","sourceName":"Доктор Харрис, коронер","location":"Городской морг","circumstances":"Профессиональный лабораторный анализ; точную дозу и методику сверить с письменным заключением","directObservation":true},
                 mood: "professional",
                 innerThought: "Три грамма. Точно рассчитанная доза. Преступник имел медицинские знания или доступ к справочникам.",
                 givesInsight: "toxicology_result",
@@ -118,6 +119,7 @@ const DIALOGUE_CORONER = {
             more_details: {
                 speaker: "npc",
                 text: "Есть одна деталь. На стакане были отпечатки. Не только жертвы. Женские. Маленькие пальцы — возможно, горничной. Я отправил образцы в лабораторию, но результат будет через пару дней.",
+                claim: {"id":"case001-coroner-unidentified-fingerprints","topic":"glass-fingerprints","value":"small-female-fingerprints-found-on-glass-identity-not-confirmed","summary":"На стакане найдены небольшие отпечатки женских пальцев, личность пока не установлена","sourceName":"Доктор Харрис, коронер","location":"Городской морг","circumstances":"Предварительное лабораторное наблюдение; принадлежность отпечатков Мэри ещё не подтверждена","directObservation":true},
                 mood: "informative",
                 innerThought: "Отпечатки горничной на стакане. Это улика!",
                 givesInsight: "fingerprints_on_glass",
