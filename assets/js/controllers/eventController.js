@@ -96,7 +96,19 @@ class EventController {
             // Bootstrap marks the transition before the .show class is added.
             // Track the lifecycle event so synchronous narrative bursts cannot
             // race the opening animation and silently lose queued windows.
-            this.modalShowHandler = () => { this.modalIsShowing = true; };
+            this.modalShowHandler = () => {
+                this.modalIsShowing = true;
+                // Capture the opener at the Bootstrap lifecycle boundary as well
+                // as at modal:show. This covers callers that open the modal
+                // through a shared event queue or trigger Bootstrap directly.
+                if (!this.modalReturnFocusElement && typeof document !== 'undefined') {
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement !== document.body &&
+                        !this.modalElement.contains(activeElement)) {
+                        this.modalReturnFocusElement = activeElement;
+                    }
+                }
+            };
             this.modalHideHandler = () => {
                 this.modalIsShowing = false;
                 this.modalIsHiding = true;
