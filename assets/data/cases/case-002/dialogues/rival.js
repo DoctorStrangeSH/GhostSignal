@@ -82,6 +82,7 @@ const DIALOGUE_RIVAL_FULL = {
                     location: "Офис Виктора Кейна",
                     timeLabel: "Допрос после сбора свидетельств",
                     circumstances: "Алиби изложено в ответ на вопрос о его присутствии в баре",
+                    directObservation: true,
                     deception: { deliberate: true, motive: "self_preservation" }
                 },
                 answers: [
@@ -173,7 +174,8 @@ const DIALOGUE_RIVAL_FULL = {
                     timeLabel: "Повторный разговор после сопоставления показаний",
                     circumstances: "Уточнение собственных слов после предъявления показаний Томаса",
                     revisesClaimId: "kane-left-before-poisoning",
-                    revisionReason: "confronted_with_witness"
+                    revisionReason: "confronted_with_witness",
+                    directObservation: true
                 },
                 answers: [
                     { text: "Я зафиксировал изменение ваших показаний.", nextNode: "interview_paused", tone: "calm" },
