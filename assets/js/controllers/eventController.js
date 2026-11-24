@@ -120,7 +120,8 @@ class EventController {
                 )).filter(element => {
                     if (element.getAttribute('aria-hidden') === 'true') return false;
                     const style = typeof getComputedStyle === 'function' ? getComputedStyle(element) : null;
-                    return element.getClientRects().length > 0 &&
+                    return element.tabIndex >= 0 && !element.matches(':disabled') &&
+                        element.getClientRects().length > 0 &&
                         (!style || (style.visibility !== 'hidden' && style.display !== 'none'));
                 });
 
@@ -135,10 +136,10 @@ class EventController {
                 const active = document.activeElement;
                 const focusOutside = !this.modalElement.contains(active);
 
-                if (event.shiftKey && (active === first || focusOutside)) {
+                if (event.shiftKey && (active === first || active === this.modalElement || focusOutside)) {
                     event.preventDefault();
                     last.focus();
-                } else if (!event.shiftKey && (active === last || focusOutside)) {
+                } else if (!event.shiftKey && (active === last || active === this.modalElement || focusOutside)) {
                     event.preventDefault();
                     first.focus();
                 }
