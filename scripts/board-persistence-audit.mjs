@@ -80,8 +80,29 @@ try {
         directObservation: true
       });
       if (!witnessClaim.added) throw new Error('could not record the independent witness statement');
-      if (!app.investigationBoard.linkHypothesis(hypothesisId, 'statement', 'acceptance-rumor-origin', 'pending')) {
-        throw new Error('could not link the rumor-origin statement to the hypothesis');
+      const crossRumorWitness = app.npcMemoryService.recordClaim('neighbor', {
+        id: 'acceptance-cross-rumor-witness',
+        topic: 'blackwood-departure-independent-detail',
+        value: 'neighbor-personally-saw-a-lantern-lit-in-the-east-wing',
+        summary: 'Сосед лично видел свет в восточном крыле',
+        sourceName: 'Сосед',
+        directObservation: true,
+        referencesRumorIds: ['acceptance-rumor-001']
+      });
+      if (!crossRumorWitness.added) throw new Error('could not record the cross-rumor firsthand statement');
+      const secondRumorOrigin = app.npcMemoryService.recordClaim('journalist', {
+        id: 'acceptance-second-rumor-origin',
+        topic: 'blackwood-second-rumor',
+        value: 'journalist-repeats-a-report-about-a-carriage',
+        summary: 'Журналист пересказывает сообщение о карете',
+        sourceName: 'Журналист',
+        directObservation: false,
+        referencesRumorIds: ['acceptance-rumor-002']
+      });
+      if (!secondRumorOrigin.added) throw new Error('could not record the second rumor origin');
+      if (!app.investigationBoard.linkHypothesis(hypothesisId, 'statement', 'acceptance-rumor-origin', 'pending') ||
+          !app.investigationBoard.linkHypothesis(hypothesisId, 'statement', 'acceptance-second-rumor-origin', 'pending')) {
+        throw new Error('could not link rumor-origin statements to the hypothesis');
       }
       app.boardUI.render();
       if (!app.boardUI.container.querySelector('.inquiry-start[data-rumor="acceptance-rumor-001"]')) {
@@ -102,12 +123,21 @@ try {
       .filter({ hasText: 'Журнал регистрации' }).waitFor({ state: 'visible' });
 
     await page.locator('#board-area .inquiry-start[data-rumor="acceptance-rumor-001"]').click();
-    const inquiryForm = page.locator('#board-area .inquiry-lead-form');
+    const inquiryForm = page.locator('#board-area .inquiry-lead-form').first();
     const eligibleSources = await inquiryForm.locator('select option').evaluateAll(options =>
       options.map(option => ({ value: option.value, label: option.textContent })));
     if (!eligibleSources.some(option => option.value === 'statement:acceptance-independent-witness') ||
+        eligibleSources.some(option => option.value === 'statement:acceptance-cross-rumor-witness') ||
         eligibleSources.some(option => option.value === 'statement:acceptance-rumor-origin')) {
-      throw new Error(viewport.name + ': source inquiry offered an original rumor witness or hid the independent firsthand witness');
+      throw new Error(viewport.name + ': first rumor inquiry offered a dependent witness or hid an independent firsthand witness');
+    }
+    await page.locator('#board-area .inquiry-start[data-rumor="acceptance-rumor-002"]').click();
+    const secondInquiryForm = page.locator('#board-area .inquiry-lead-form').nth(1);
+    const secondEligibleSources = await secondInquiryForm.locator('select option').evaluateAll(options =>
+      options.map(option => option.value));
+    if (!secondEligibleSources.includes('statement:acceptance-cross-rumor-witness') ||
+        secondEligibleSources.includes('statement:acceptance-second-rumor-origin')) {
+      throw new Error(viewport.name + ': source options were not scoped to the second rumor chain');
     }
     await inquiryForm.locator('select').selectOption('statement:acceptance-independent-witness');
     await inquiryForm.locator('input').fill('Сопоставить время наблюдения Джо с журналом отеля');
@@ -153,6 +183,8 @@ try {
         inquiry: inquiry ? JSON.parse(JSON.stringify(inquiry)) : null,
         rumorOrigin: app.npcMemoryService.getStatementById('acceptance-rumor-origin'),
         independentWitness: app.npcMemoryService.getStatementById('acceptance-independent-witness'),
+        crossRumorWitness: app.npcMemoryService.getStatementById('acceptance-cross-rumor-witness'),
+        secondRumorOrigin: app.npcMemoryService.getStatementById('acceptance-second-rumor-origin'),
         alibi: app.investigationBoard.alibiClaims.find(claim => claim.id === expected.alibiId) || null,
         boardSnapshot: app.investigationBoard.toJSON()
       };
@@ -196,7 +228,10 @@ try {
     }
     if (restored.rumorOrigin?.directObservation !== false ||
         !restored.rumorOrigin?.referencesRumorIds?.includes('acceptance-rumor-001') ||
-        restored.independentWitness?.directObservation !== true) {
+        restored.independentWitness?.directObservation !== true ||
+        restored.crossRumorWitness?.directObservation !== true ||
+        !restored.crossRumorWitness?.referencesRumorIds?.includes('acceptance-rumor-001') ||
+        !restored.secondRumorOrigin?.referencesRumorIds?.includes('acceptance-rumor-002')) {
       throw new Error(viewport.name + ': witness provenance was not restored accurately');
     }
 
