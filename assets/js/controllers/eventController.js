@@ -17,6 +17,8 @@ class EventController {
         this.modalElement = null;
         this.modalHiddenHandler = null;
         this.modalHideHandler = null;
+        this.modalKeydownHandler = null;
+        this.modalReturnFocusElement = null;
         this.modalIsHiding = false;
     }
 
