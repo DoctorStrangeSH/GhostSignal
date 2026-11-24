@@ -133,3 +133,27 @@ test("restored board counters advance beyond existing IDs and case reset clears 
     assert.equal(restored.nextInquiryId, 1);
     assert.equal(restored.nextAlibiId, 1);
 });
+
+
+test("inventory restoration keeps board clues owned but removes them from the available clue pool", () => {
+    const context = vm.createContext({
+        getObjectById: id => evidence.get(id) || null,
+        events: { emit() {} }
+    });
+    const source = readFileSync(resolve(root, "assets/js/systems/inventory.js"), "utf8");
+    vm.runInContext(source + "\\nglobalThis.InventoryExport = Inventory;", context);
+    const inventory = context.InventoryExport.fromJSON({
+        items: ["magnifying_glass", "guest_book", "hidden_note"],
+        evidence: ["guest_book", "hidden_note"],
+        insights: ["missing_page"],
+        currentWeight: 3
+    });
+
+    assert.equal(inventory.reconcileBoardEvidence(["guest_book"]), 1);
+    assert.equal(JSON.stringify(inventory.evidence), JSON.stringify(["hidden_note"]));
+    assert.equal(inventory.hasItem("guest_book"), true,
+        "placing a clue on the board does not remove ownership of the physical item");
+    assert.equal(inventory.hasInsight("missing_page"), true);
+    assert.equal(inventory.reconcileBoardEvidence(["guest_book"]), 0,
+        "reconciliation is safe to run more than once");
+});
