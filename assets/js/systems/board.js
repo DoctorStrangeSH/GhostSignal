@@ -845,8 +845,18 @@ class InvestigationBoard {
         if (!hypothesis || !rumor || this.sourceInquiries.some(i => i.hypothesisId === hypothesisId && i.rumorId === rumor)) return null;
         const review = this.reviewHypothesisSources(hypothesisId, statements);
         if (!review?.sources.some(s => s.linkedRumorIds.includes(rumor))) return null;
+        const originSources = review.sources
+            .filter(source => source.status === 'active' && source.linkedRumorIds.includes(rumor))
+            .map(source => ({
+                statementId: source.id,
+                npcId: source.npcId,
+                sourceName: statements.find(statement => statement.id === source.id)?.sourceName || source.npcId,
+                directObservation: statements.find(statement => statement.id === source.id)?.directObservation === true
+            }))
+            .filter(source => typeof source.npcId === 'string' && source.npcId);
+        if (!originSources.length) return null;
         const inquiry = { id: 'inquiry-' + this.nextInquiryId++, hypothesisId, rumorId: rumor,
-            status: 'open', leads: [], history: [{ action: 'opened', rumorId: rumor }] };
+            status: 'open', originSources, leads: [], history: [{ action: 'opened', rumorId: rumor }] };
         this.sourceInquiries.push(inquiry);
         events.emit('board:updated', { action: 'inquiry_opened', id: inquiry.id });
         return inquiry.id;
@@ -858,10 +868,27 @@ class InvestigationBoard {
         const source = String(sourceId ?? '').trim().slice(0, 240);
         const explanation = String(note ?? '').trim().slice(0, 500);
         if (!inquiry || !source || !explanation || !['statement', 'evidence'].includes(kind)) return false;
-        if (kind === 'statement' && !context.statements?.some(s => s.id === source && s.status !== 'superseded')) return false;
+        const statement = kind === 'statement'
+            ? context.statements?.find(item => item.id === source && item.status !== 'superseded')
+            : null;
+        if (kind === 'statement' && (!statement || typeof statement.npcId !== 'string' || !statement.npcId)) return false;
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return false;
         if (inquiry.leads.some(lead => lead.kind === kind && lead.sourceId === source)) return false;
-        const lead = { kind, sourceId: source, note: explanation };
+        // A second statement from the original rumor witness is not independent
+        // corroboration. Nor are two claims from the same witness independent
+        // of each other. Keep this check in the domain layer, not only in UI.
+        if (statement && (
+            (inquiry.originSources || []).some(origin => origin.npcId === statement.npcId) ||
+            inquiry.leads.some(lead => lead.kind === 'statement' && lead.npcId === statement.npcId)
+        )) return false;
+        const lead = {
+            kind, sourceId: source, note: explanation,
+            ...(statement ? {
+                npcId: statement.npcId,
+                sourceName: statement.sourceName || statement.npcId,
+                directObservation: statement.directObservation === true
+            } : {})
+        };
         inquiry.leads.push(lead);
         inquiry.history.push({ action: 'lead_added', ...lead });
         events.emit('board:updated', { action: 'inquiry_lead_added', id });
@@ -942,7 +969,23 @@ class InvestigationBoard {
                 id: i.id, hypothesisId: i.hypothesisId, rumorId: i.rumorId,
                 status: i.status === 'closed' ? 'closed' : 'open',
                 conclusion: typeof i.conclusion === 'string' ? i.conclusion : undefined,
-                leads: Array.isArray(i.leads) ? i.leads.filter(l => l && ['statement', 'evidence'].includes(l.kind) && typeof l.sourceId === 'string' && typeof l.note === 'string').map(l => ({ ...l })) : [],
+                originSources: Array.isArray(i.originSources) ? i.originSources
+                    .filter(source => source && typeof source.statementId === 'string' &&
+                        typeof source.npcId === 'string' && source.npcId)
+                    .map(source => ({
+                        statementId: source.statementId.slice(0, 240),
+                        npcId: source.npcId.slice(0, 64),
+                        sourceName: typeof source.sourceName === 'string' ? source.sourceName.slice(0, 120) : source.npcId,
+                        directObservation: source.directObservation === true
+                    })) : [],
+                leads: Array.isArray(i.leads) ? i.leads
+                    .filter(l => l && ['statement', 'evidence'].includes(l.kind) && typeof l.sourceId === 'string' && typeof l.note === 'string')
+                    .map(l => ({
+                        kind: l.kind, sourceId: l.sourceId.slice(0, 240), note: l.note.slice(0, 500),
+                        ...(typeof l.npcId === 'string' && l.npcId ? { npcId: l.npcId.slice(0, 64) } : {}),
+                        ...(typeof l.sourceName === 'string' ? { sourceName: l.sourceName.slice(0, 120) } : {}),
+                        ...(typeof l.directObservation === 'boolean' ? { directObservation: l.directObservation } : {})
+                    })) : [],
                 history: Array.isArray(i.history) ? i.history.filter(h => h && typeof h.action === 'string').map(h => ({ ...h })) : []
             })) : [];
             board.nextInquiryId = Math.max(1, Number.isSafeInteger(json.nextInquiryId) ? json.nextInquiryId : 1,
