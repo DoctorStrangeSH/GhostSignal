@@ -83,7 +83,11 @@ try {
     if (!(await actionButton.evaluate(element => element === document.activeElement))) {
       throw new Error('Shift+Tab from the modal root did not wrap to the last focusable control');
     }
+    const hiddenEvent = page.evaluate(() => new Promise(resolve => {
+      document.querySelector('#universal-modal').addEventListener('hidden.bs.modal', resolve, { once: true });
+    }));
     await page.keyboard.press('Escape');
+    await hiddenEvent;
     await modal.waitFor({ state: 'hidden' });
     const focusRestored = await page.locator('#modal-audit-opener').evaluate(element => element === document.activeElement);
     if (!focusRestored) throw new Error('focus was not restored to the modal opener');
