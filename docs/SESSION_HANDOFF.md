@@ -1474,3 +1474,12 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Existing checks retained: mobile 390×844 and desktop 1440×900; board clue and inventory reconciliation; remove clue → save → reload; case-001 → case-002 isolation → save → reload.
 - Latest code commit: 2fd538544f106a7abe60355daf2dbf2bd65eb6f9. Previous observed head af7e2d45d2d8ae829cd5bf434d7979f38d2407de had four workflows queued; for the new SHA workflow runs had not yet appeared at the time of this handoff. Do not report CI PASS.
 - PR #180 remains open and `main` is untouched. Next: inspect Actions/logs on the new head, fix any confirmed failures, then add/check source-inquiry and witness-statement history UI acceptance and complete two-case manual acceptance.
+
+
+## 2026-11-24: PR #180 — witness provenance / source inquiry acceptance
+
+- Extended `scripts/board-persistence-audit.mjs` with an end-to-end browser flow: create a rumor-origin statement from the porter (`directObservation: false`, linked rumor ID), create a separate direct observation from the bartender, attach the rumor statement to a player hypothesis, start the source inquiry through the actual UI button, add the witness statement as a lead through the form, and close it with a detective-authored conclusion.
+- After full reload, the browser audit checks the closed inquiry, lead source, conclusion, and accurate restoration of both witness provenance flags / rumor references. Existing board, hypothesis revision/alternative, alibi, clue inventory reconciliation, removal, and cross-case checks remain.
+- Added `tests/source-provenance.test.mjs`: unverified rumor origin, direct-observation metadata, unknown rumor rejection, missing-source rejection, duplicate-lead rejection, inquiry closure, and board/NPC-memory round trip.
+- Latest code SHA: `ffa8e9a69af39edf33dffe0c3570954a6bc70a87`. PR #180 remains open; `main` is untouched. CI runs had not yet appeared for this new SHA at last check; five workflows on the previous head were queued. Do not report PASS until all five pass on the same latest SHA.
+- Next: confirm Actions results; then inspect authored dialogue claims in both cases for source independence, revisions and contradictions, and add targeted regressions for any concrete defects.
