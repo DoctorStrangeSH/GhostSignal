@@ -770,6 +770,7 @@ test("EventController queues a second narrative modal until the first Bootstrap 
 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
+    assert.equal(listeners.get("keydown").size, 0, "disposed controller removes the modal keyboard trap");
     assert.equal(controller.pendingModalData.length, 0, "disposed controller leaves no queued modal payloads");
 
     controller.bind();
