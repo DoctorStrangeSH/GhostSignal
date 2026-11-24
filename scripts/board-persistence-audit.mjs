@@ -182,6 +182,9 @@ try {
     if (restored.inquiry?.id !== expected.inquiryId ||
         restored.inquiry?.status !== 'closed' ||
         restored.inquiry?.leads?.[0]?.sourceId !== 'acceptance-independent-witness' ||
+        restored.inquiry?.leads?.[0]?.npcId !== 'bartender' ||
+        restored.inquiry?.leads?.[0]?.directObservation !== true ||
+        !restored.inquiry?.originSources?.some(source => source.npcId === 'porter') ||
         restored.inquiry?.conclusion !== 'Сведения портье пока не подтверждены независимым источником') {
       throw new Error(viewport.name + ': source inquiry, its lead or detective conclusion was not restored');
     }
