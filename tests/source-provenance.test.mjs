@@ -52,6 +52,15 @@ test("rumor provenance stays unverified until the detective records a source inq
         referencesRumorIds: ["mary-left-hotel"],
         sourceName: "Сосед"
     });
+    const rumorChainWitness = memory.recordClaim("shopkeeper", {
+        id: "shopkeeper-repeats-rumor",
+        topic: "blackwood_departure",
+        value: "Мэри видела, как Блэквуд покинул отель",
+        summary: "Продавец лично слышал пересказ этой истории",
+        directObservation: true,
+        referencesRumorIds: ["mary-left-hotel"],
+        sourceName: "Продавец"
+    });
     const witness = memory.recordClaim("bartender", {
         id: "bartender-direct-claim",
         topic: "blackwood_departure",
@@ -64,6 +73,7 @@ test("rumor provenance stays unverified until the detective records a source inq
     assert.equal(rumor.added, true);
     assert.equal(sameWitnessFollowup.added, true);
     assert.equal(secondhandWitness.added, true);
+    assert.equal(rumorChainWitness.added, true);
     assert.equal(witness.added, true);
     const statements = memory.getStatements();
     const hypothesisId = board.addHypothesis("Мэри могла помочь Блэквуду скрыться");
@@ -87,6 +97,9 @@ test("rumor provenance stays unverified until the detective records a source inq
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "neighbor-secondhand-claim",
         "Сосед пересказывает чужие слова", { statements, evidenceIds: [] }), false,
         "a secondhand retelling is not independent firsthand corroboration");
+    assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "shopkeeper-repeats-rumor",
+        "Продавец лично слышал тот же слух", { statements, evidenceIds: [] }), false,
+        "firsthand knowledge that a rumor was repeated does not verify the rumor itself");
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
         "Сопоставить личное наблюдение Джо со словами портье", { statements, evidenceIds: [] }), true);
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
