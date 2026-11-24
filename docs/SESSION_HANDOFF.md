@@ -1494,3 +1494,13 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Updated `docs/CASE_PACK_AUTHORING.md` with the claim schema and authoring rules.
 - Latest code commit for this stage: `f3fec70f1489823eb3375db0731e1e4824781df1`. PR #180 remains open; `main` is untouched. The workflow-run and combined-status lookups returned no results for the latest SHA; do not claim CI PASS. The new tests have not been executed in a local runtime in this session.
 - Next: obtain Actions results on the latest head, fix any failures, then perform an actual playthrough acceptance of both cases to ensure the authored claims are emitted when dialogue nodes are reached.
+
+## 2026-11-24 continuation — dialogue claim integration and per-rumor source eligibility
+
+- Added `tests/dialogue-claim-integration.test.mjs`: instantiates the real DialogueEngine in a VM with a minimal memory-service spy; verifies claim registration when the testimony node is reached, stable dialogue/node IDs, and no duplicate write on leaving the node.
+- Added `.github/workflows/quality-gate.yml` for PRs, pushes to `test/modal-keyboard-focus-audit`, and manual dispatch. It runs `npm run build` (syntax check, data validation, all Node tests) and Playwright browser persistence/visual smoke audits.
+- Refactored `BoardUI._renderSourceInquiries`: eligible witness choices are now computed per rumor inquiry, rather than globally across all rumor chains. A firsthand claim tied to rumor A can still be considered for rumor B if it is not part of B's source chain.
+- Expanded browser acceptance with two distinct rumor chains and a cross-rumor firsthand statement; expanded source provenance tests to cover same-chain rejection and different-chain eligibility.
+- Latest edits touch `assets/js/ui/boardUI.js`, `tests/dialogue-claim-integration.test.mjs`, `scripts/board-persistence-audit.mjs`, `tests/source-provenance.test.mjs`, and `.github/workflows/quality-gate.yml`.
+- CI has not been confirmed: the available PR workflow-run lookup currently returns no runs and the local runtime was not used to execute tests. Do not report PASS until an actual Actions result is visible.
+- Next: inspect Actions results, fix any failures, then perform a real browser playthrough of both cases and verify that authored claims are registered only when their dialogue nodes are reached.
