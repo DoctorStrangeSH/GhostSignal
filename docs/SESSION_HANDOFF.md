@@ -1404,3 +1404,15 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Modal UX Playwright audit covers 320×720, 390×844, 1440×900, long content scrolling, header/close bounds, horizontal overflow, and Escape close.
 - Next: audit Tab/Shift+Tab focus containment and restoration, Escape policy for important narrative dialogs, and rapid 5–10 modal event delivery in browser (FIFO unit coverage already exists).
 - Then verify full application reload/resume for interrupted conversations without replaying memory/time/relationship side effects. Keep release scope to the two current cases; do not start case-003 until 1.0 acceptance is complete.
+
+
+## 2026-11-24: PR #180 — продолжение проверки восстановления и модалок
+
+- Branch: `test/modal-keyboard-focus-audit`; PR #180 открыт, main не затронута.
+- Добавлен `tests/app-dialogue-restore.test.mjs`: проверяет разрешённое восстановление активного разговора и отбрасывание устаревшего/cross-case/cross-dialogue snapshot; также проверяет очистку snapshot при отказе CallInterface.
+- Playwright Visual Smoke теперь сравнивает полный DialogueEngine snapshot и видимый транскрипт до/после reload.
+- Modal keyboard audit проверяет Tab/Shift+Tab, фокус на корне модалки, Escape и возврат фокуса.
+- Modal queue audit проверяет 10 сообщений в FIFO на трёх размерах viewport.
+- Последний head при обновлении handoff: `d5175df57f4b122fd8e17d217646f26adf30125a`. Пять GitHub Actions workflow были queued; не объявлять их успешными. После добавления app restore unit tests SHA изменился — проверить свежие CI runs перед merge.
+- Не сериализовать transient modal FIFO; сохранять только активный разговор через `dialogueData`.
+- Не начинать третье дело до ручной приёмки обоих текущих расследований и release checklist 1.0.
