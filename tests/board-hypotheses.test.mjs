@@ -212,8 +212,9 @@ test('rumor inquiry requires observed references, discovered leads and persists 
     assert.equal(board.closeSourceInquiry(id, 'Это всего лишь пересказ'), false);
     assert.equal(board.addSourceInquiryLead(id, 'statement', 'old', 'Старая версия', { statements }), false);
     assert.equal(board.addSourceInquiryLead(id, 'evidence', 'unknown', 'Не найдена', { evidenceIds: [] }), false);
-    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Свидетель повторяет слух', { statements }), true);
-    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Повтор', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Исходный пересказ не является независимым источником', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-b', 'Независимое личное наблюдение официанта', { statements }), true);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-b', 'Повтор', { statements }), false);
     assert.equal(board.addSourceInquiryLead(id, 'evidence', 'log', 'Запись не совпадает со временем', { evidenceIds: ['log'] }), true);
     const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(restored.sourceInquiries[0].leads.length, 2);
@@ -241,7 +242,8 @@ test('investigation checklist tracks player-created source inquiries without inv
     assert.equal(leads()[0].status, 'pending');
     assert.match(leads()[0].text, /Найдите доступное показание/);
     assert.doesNotMatch(leads()[0].text, /личность посетителя установлена/);
-    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-a', 'Это пересказ', { statements }), false);\n    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-b', 'Независимое личное наблюдение', { statements }), true);
+    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-a', 'Это пересказ', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-b', 'Независимое личное наблюдение', { statements }), true);
     assert.equal(leads()[0].status, 'available');
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(loaded.getInvestigationChecklist({ statements }).nextActions.find(item => item.id === inquiry).status, 'available');
