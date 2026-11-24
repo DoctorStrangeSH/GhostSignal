@@ -54,6 +54,7 @@ test("investigation board round-trips clues, hypotheses, source inquiries, alibi
         rumorId: "rumor-17",
         status: "closed",
         conclusion: "Источник не подтвердил время",
+        originSources: [],
         leads: [{ kind: "evidence", sourceId: "hidden_note", note: "Сверить с оригиналом" }],
         history: [{ action: "opened", rumorId: "rumor-17" }, { action: "closed", note: "Источник не подтвердил время" }]
     }];
