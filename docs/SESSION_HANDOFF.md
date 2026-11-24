@@ -1511,12 +1511,12 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Fixed a UI/domain mismatch: source-picker origin NPC filtering now considers only active claims. A superseded rumor statement no longer blocks a later firsthand observation from the same NPC.
 - Added regression coverage for a superseded rumor claim revised into an independent firsthand statement while a second active witness remains the rumor origin.
 - GitHub Actions API inspection found seven runs on prior head `b34c8aa` (six PR workflows and one push run); all were queued at inspection time. These do not validate the newer head.
-- Next: inspect workflow runs for the latest head `87663f86dfe270c3fd9a8859de75fd38893da5eb`.
+- Latest checked head at this checkpoint: `07f549dd90a66e7107a71ffe41238ea5859387f6`. Seven PR/push workflow runs were registered, but all jobs remained queued with `runner: null`; CI PASS is not confirmed. Investigate GitHub Actions runner availability.
 
 ## 2026-11-24 continuation — real dialogue claim integration
 
 - Expanded `tests/dialogue-claim-integration.test.mjs` to load the real authored dialogue files for both investigations (five case-001 dialogues and three case-002 dialogues), find a route to each authored claim node, and traverse that route through the real `DialogueEngine`.
 - Each claim is asserted to be recorded exactly once and only after its node is reached, with the expected NPC, dialogue, node, and direct-observation metadata.
 - Latest branch head at this checkpoint: `9d9958355e2bf1bd69460f1e0ebca0805ddb93de`. PR #180 remains open; `main` remains untouched.
-- Seven Actions checks were registered for this head, but all were still `queued` at inspection. CI is not PASS; investigate runner queue / wait for actual results.
+- Seven Actions checks were registered for the code head, but all remained `queued` and had no assigned runner (`runner: null`). CI is not PASS; investigate runner availability.
 - Next: complete desktop/mobile browser acceptance for both cases, including story transitions and endings, after CI becomes executable.
