@@ -1394,3 +1394,13 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Next task: add/verify full app-level browser acceptance for interrupted calls across reload, preserving exact NPC, case-specific dialogue ID, current node and transcript without replaying memory/time/relationship effects. Also verify stale/cross-case snapshots are rejected.
 - Do not serialize transient modal notification FIFO into save data. Persist only the authored active dialogue snapshot already represented by `dialogueData`.
 - Keep the two existing investigations as the release scope; do not start case-003 before both are manually accepted and 1.0 checklist is closed.
+
+## 2026-11-24: PR #179 merged — modal UX and accessibility
+
+- PR #179 merged into main with squash commit 7eda2cb19b2284f2a7883adab36d9f4f234d0283; tested PR head 1cf5eff6753f0ceb266481fcadb4dbdc16caa0aa.
+- All five workflows passed on that exact head: Quality, Responsive Audit, Visual Smoke, Thomas Promise Acceptance, Modal UX Audit.
+- Long modal content is constrained to viewport height using 100dvh; .modal-body is a flex scroll region so the header and footer remain reachable.
+- Universal modal now has aria-labelledby="modal-title"; close button has Russian accessible label «Закрыть окно».
+- Modal UX Playwright audit covers 320×720, 390×844, 1440×900, long content scrolling, header/close bounds, horizontal overflow, and Escape close.
+- Next: audit Tab/Shift+Tab focus containment and restoration, Escape policy for important narrative dialogs, and rapid 5–10 modal event delivery in browser (FIFO unit coverage already exists).
+- Then verify full application reload/resume for interrupted conversations without replaying memory/time/relationship side effects. Keep release scope to the two current cases; do not start case-003 until 1.0 acceptance is complete.
