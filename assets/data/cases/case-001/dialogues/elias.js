@@ -48,7 +48,7 @@ const DIALOGUE_ELIAS = {
             changed_mind: {
                 speaker: "npc",
                 text: "Да. За день до отъезда. Он позвонил мне и сказал: «Элиас, я не могу. Я не могу бросить жену. Она угрожает покончить с собой.»",
-                claim: {"id":"case001-elias-heard-blackwood-cancel-plan","topic":"blackwood-cancelled-escape","value":"blackwood-called-elias-and-said-he-would-not-leave-his-wife","summary":"Элиас утверждает, что Блэквуд позвонил ему и отказался от побега","sourceName":"Элиас","circumstances":"Элиас лично слышал звонок, но угрозу жены пересказывает со слов Блэквуда","directObservation":false},
+                claim: {"id":"case001-elias-heard-blackwood-cancel-plan","topic":"blackwood-cancelled-escape","value":"blackwood-called-elias-and-said-he-would-not-leave-his-wife","summary":"Элиас утверждает, что Блэквуд позвонил ему и отказался от побега","sourceName":"Элиас","circumstances":"Элиас лично слышал, как Блэквуд отказался от побега; угрозу жены он знает только со слов Блэквуда","directObservation":true},
                 mood: "conflicted",
                 innerThought: "Жена угрожала суицидом. Это объясняет, почему он остался.",
                 givesInsight: "wife_suicide_threat",
