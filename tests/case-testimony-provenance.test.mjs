@@ -13,7 +13,27 @@ function loadDialogue(path) {
     assert.ok(declaration, path + ": dialogue data declaration is missing");
     const context = vm.createContext({ registerData() {} });
     vm.runInContext(source + `\nglobalThis.__dialogue = ${declaration[1]};`, context);
-    return context.__dialogue.tree.nodes;
+    return context.__dialogue;
+}
+
+function assertClaimNodesReachable(dialogue, label) {
+    const nodes = dialogue.tree.nodes;
+    const pending = [dialogue.tree.start,
+        ...(Array.isArray(dialogue.tree.entryRules) ? dialogue.tree.entryRules.map(rule => rule.nodeId) : [])];
+    const visited = new Set();
+    while (pending.length) {
+        const nodeId = pending.pop();
+        if (!nodeId || visited.has(nodeId) || !nodes[nodeId]) continue;
+        visited.add(nodeId);
+        for (const answer of nodes[nodeId].answers || []) {
+            if (answer.nextNode) pending.push(answer.nextNode);
+        }
+    }
+    for (const [nodeId, node] of Object.entries(nodes)) {
+        if (node.claim) {
+            assert.ok(visited.has(nodeId), label + "/" + nodeId + ": testimony claim is unreachable from dialogue entry");
+        }
+    }
 }
 
 const caseOne = [
@@ -26,7 +46,9 @@ const caseOne = [
 
 test("case 001 critical testimony records source, context and observation limits", () => {
     for (const [file, nodeIds] of caseOne) {
-        const nodes = loadDialogue(`assets/data/cases/case-001/dialogues/${file}`);
+        const dialogue = loadDialogue(`assets/data/cases/case-001/dialogues/${file}`);
+        const nodes = dialogue.tree.nodes;
+        assertClaimNodesReachable(dialogue, "case-001/" + file);
         for (const nodeId of nodeIds) {
             const claim = nodes[nodeId]?.claim;
             assert.ok(claim, `${file}/${nodeId}: critical testimony must be recorded as a claim`);
@@ -41,17 +63,23 @@ test("case 001 critical testimony records source, context and observation limits
 });
 
 test("case 002 rumor retelling and firsthand testimony are not conflated", () => {
-    const bartender = loadDialogue("assets/data/cases/case-002/dialogues/bartender_case2.js");
+    const bartenderDialogue = loadDialogue("assets/data/cases/case-002/dialogues/bartender_case2.js");
+    assertClaimNodesReachable(bartenderDialogue, "case-002/bartender_case2.js");
+    const bartender = bartenderDialogue.tree.nodes;
     const rumorRetelling = bartender.joe_challenges_visitor_overclaim.claim;
     assert.equal(rumorRetelling.directObservation, false);
     assert.deepEqual(Array.from(rumorRetelling.referencesRumorIds), ["detective-overstated-visitor-identity"]);
     assert.equal(bartender.returned_vial?.claim?.directObservation, true);
 
-    const rival = loadDialogue("assets/data/cases/case-002/dialogues/rival.js");
+    const rivalDialogue = loadDialogue("assets/data/cases/case-002/dialogues/rival.js");
+    assertClaimNodesReachable(rivalDialogue, "case-002/rival.js");
+    const rival = rivalDialogue.tree.nodes;
     assert.equal(rival.confrontation?.claim?.directObservation, true);
     assert.equal(rival.partial_return?.claim?.directObservation, true);
 
-    const waiter = loadDialogue("assets/data/cases/case-002/dialogues/waiter.js");
+    const waiterDialogue = loadDialogue("assets/data/cases/case-002/dialogues/waiter.js");
+    assertClaimNodesReachable(waiterDialogue, "case-002/waiter.js");
+    const waiter = waiterDialogue.tree.nodes;
     for (const nodeId of ["protection", "protection_revision", "testimony_reconsiders"]) {
         const claim = waiter[nodeId]?.claim;
         assert.ok(claim, `waiter/${nodeId}: testimony revision must remain linked to its source claim`);
