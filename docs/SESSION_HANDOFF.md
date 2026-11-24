@@ -1463,3 +1463,14 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Последний кодовый commit: d1fea608a46513b1f9bdc507b41f8e7651674c8. На нём пять workflow запущены, но все jobs ещё queued. CI не считать успешным.
 - PR #180 остаётся открытым; main не затронута. Следующий шаг — дождаться и проверить все пять workflow на одном SHA, затем исправить падения и повторить проверки.
 - Не начинать case-003 до ручной приёмки обоих расследований и release checklist 1.0.
+
+
+## 2026-11-24: PR #180 — расширение browser acceptance доски
+
+- Проверены фактические selectors BoardUI: board slot uses `.board-slot[data-slot-id]`; clue title is `.slot-evidence-name`; evidence pool item uses `data-evidence-id`. `#loading-screen` is dynamically created by LoadingScreen and removed after bootstrap, so the wait is valid.
+- Проверены реальные данные case-001: `guest_book` exists in objects.js and is a takeable evidence item.
+- Browser audit now creates a base hypothesis, links guest_book, creates an alternative hypothesis, revises the base title and checks that title, history, alternative group and alternative history survive a full reload.
+- Browser audit also creates a sourced approximate alibi claim tied to guest_book and checks precision/uncertainty after reload.
+- Existing checks retained: mobile 390×844 and desktop 1440×900; board clue and inventory reconciliation; remove clue → save → reload; case-001 → case-002 isolation → save → reload.
+- Latest code commit: 2fd538544f106a7abe60355daf2dbf2bd65eb6f9. Previous observed head af7e2d45d2d8ae829cd5bf434d7979f38d2407de had four workflows queued; for the new SHA workflow runs had not yet appeared at the time of this handoff. Do not report CI PASS.
+- PR #180 remains open and `main` is untouched. Next: inspect Actions/logs on the new head, fix any confirmed failures, then add/check source-inquiry and witness-statement history UI acceptance and complete two-case manual acceptance.
