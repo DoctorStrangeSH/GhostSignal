@@ -873,7 +873,8 @@ class InvestigationBoard {
             : null;
         if (kind === 'statement' && (
             !statement || typeof statement.npcId !== 'string' || !statement.npcId ||
-            statement.directObservation !== true
+            statement.directObservation !== true ||
+            statement.referencesRumorIds?.includes(inquiry.rumorId)
         )) return false;
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return false;
         if (inquiry.leads.some(lead => lead.kind === kind && lead.sourceId === source)) return false;
