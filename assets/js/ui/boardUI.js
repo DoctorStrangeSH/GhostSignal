@@ -850,7 +850,8 @@ class BoardUI {
         const inquiries = (this.board.sourceInquiries || []).filter(i => i.hypothesisId === hypothesis.id);
         const renderInquiryOptions = inquiry => {
             const originNpcIds = new Set(review.sources
-                .filter(source => source.linkedRumorIds.includes(inquiry.rumorId))
+                .filter(source => source.status === 'active' &&
+                    source.linkedRumorIds.includes(inquiry.rumorId))
                 .map(source => source.npcId).filter(Boolean));
             const alreadyUsedWitnessIds = new Set(inquiry.leads
                 .filter(lead => lead.kind === 'statement')
