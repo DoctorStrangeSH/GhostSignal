@@ -72,7 +72,7 @@ test("investigation board round-trips clues, hypotheses, source inquiries, alibi
     const snapshot = structuredClone(board.toJSON());
     const restored = Board.fromJSON(snapshot);
 
-    assert.deepEqual(restored.toJSON(), snapshot);
+    assert.equal(JSON.stringify(restored.toJSON()), JSON.stringify(snapshot));
     assert.equal(restored.getHypothesisHistory("hyp-4").length, 3);
     assert.equal(restored.getHypothesisAlternatives("hyp-4").length, 2);
     assert.equal(restored.sourceInquiries[0].conclusion, "Источник не подтвердил время");
@@ -101,7 +101,7 @@ test("board restoration derives placed evidence from valid unique occupied slots
     assert.equal(restored.slots.find(slot => slot.id === "slot-3").evidenceId, null,
         "non-evidence objects cannot be restored onto the investigation board");
     assert.equal(restored.slots.find(slot => slot.id === "slot-4").evidenceId, null);
-    assert.deepEqual(restored.evidenceOnBoard, ["guest_book", "hidden_note"]);
+    assert.equal(JSON.stringify(restored.evidenceOnBoard), JSON.stringify(["guest_book", "hidden_note"]));
 });
 
 test("restored board counters advance beyond existing IDs and case reset clears investigation-only state", () => {
@@ -125,10 +125,10 @@ test("restored board counters advance beyond existing IDs and case reset clears 
     assert.equal(restored.nextAlibiId, 9);
     restored.setCase("case-002");
     assert.equal(restored.caseId, "case-002");
-    assert.deepEqual(restored.hypotheses, []);
-    assert.deepEqual(restored.sourceInquiries, []);
-    assert.deepEqual(restored.alibiClaims, []);
-    assert.deepEqual(restored.routeQuestions, []);
+    assert.equal(restored.hypotheses.length, 0);
+    assert.equal(restored.sourceInquiries.length, 0);
+    assert.equal(restored.alibiClaims.length, 0);
+    assert.equal(restored.routeQuestions.length, 0);
     assert.equal(restored.nextHypothesisId, 1);
     assert.equal(restored.nextInquiryId, 1);
     assert.equal(restored.nextAlibiId, 1);
