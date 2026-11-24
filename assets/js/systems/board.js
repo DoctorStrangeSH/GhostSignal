@@ -932,7 +932,7 @@ class InvestigationBoard {
             slots: this.slots.map(s => ({ id: s.id, evidenceId: s.evidenceId })),
             evidenceOnBoard: [...this.evidenceOnBoard],
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
-            sourceInquiries: this.sourceInquiries.map(i => ({ ...i, leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
+            sourceInquiries: this.sourceInquiries.map(i => ({ ...i, originSources: (Array.isArray(i.originSources) ? i.originSources : []).map(source => ({ ...source })), leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
             alibiClaims: this.alibiClaims.map(c => ({ ...c })),
             routeQuestions: this.routeQuestions.map(q => ({ ...q, ids: [...q.ids] })),
             nextAlibiId: this.nextAlibiId,
