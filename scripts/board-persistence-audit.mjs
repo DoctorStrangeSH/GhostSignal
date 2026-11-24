@@ -103,6 +103,12 @@ try {
 
     await page.locator('#board-area .inquiry-start[data-rumor="acceptance-rumor-001"]').click();
     const inquiryForm = page.locator('#board-area .inquiry-lead-form');
+    const eligibleSources = await inquiryForm.locator('select option').evaluateAll(options =>
+      options.map(option => ({ value: option.value, label: option.textContent })));
+    if (!eligibleSources.some(option => option.value === 'statement:acceptance-independent-witness') ||
+        eligibleSources.some(option => option.value === 'statement:acceptance-rumor-origin')) {
+      throw new Error(viewport.name + ': source inquiry offered an original rumor witness or hid the independent firsthand witness');
+    }
     await inquiryForm.locator('select').selectOption('statement:acceptance-independent-witness');
     await inquiryForm.locator('input').fill('Сопоставить время наблюдения Джо с журналом отеля');
     await inquiryForm.locator('button[type="submit"]').click();
