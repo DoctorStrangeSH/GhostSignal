@@ -119,6 +119,9 @@ test("real authored testimony nodes are recorded only when reached through dialo
         const authoredDialogue = loadAuthoredDialogue(path);
         for (const [nodeId, node] of Object.entries(authoredDialogue.tree.nodes)) {
             if (!node.claim) continue;
+            assert.ok(node.claim.id, path + "/" + nodeId + ": every authored claim needs a stable ID");
+            assert.equal(typeof node.claim.directObservation, "boolean",
+                path + "/" + nodeId + ": every authored claim must state its observation provenance");
             const route = findClaimRoute(authoredDialogue, nodeId);
             assert.ok(route, path + "/" + nodeId + ": claim node must have a playable route");
             const dialogue = JSON.parse(JSON.stringify(authoredDialogue));
