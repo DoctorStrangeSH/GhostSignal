@@ -96,4 +96,20 @@ test("rumor provenance stays unverified until the detective records a source inq
     assert.deepEqual(Array.from(restoredInquiry.originSources, source => source.npcId), ["porter", "porter"]);
     assert.equal(restoredInquiry.conclusion,
         "Показание портье пока не подтверждено независимым источником");
+
+    const legacyHypothesisId = restoredBoard.addHypothesis("Старая проверка из сохранения");
+    assert.equal(restoredBoard.linkHypothesis(legacyHypothesisId, "statement", "porter-rumor-claim", "pending"), true);
+    restoredBoard.sourceInquiries.push({
+        id: "inquiry-legacy",
+        hypothesisId: legacyHypothesisId,
+        rumorId: "mary-left-hotel",
+        status: "open",
+        leads: [],
+        history: []
+    });
+    assert.equal(restoredBoard.addSourceInquiryLead("inquiry-legacy", "statement", "porter-followup-claim",
+        "Попытка выдать повтор слов портье за независимый источник", {
+            statements: restoredMemory.getStatements(),
+            evidenceIds: []
+        }), false, "legacy open inquiries must derive the original witness from saved statements");
 });
