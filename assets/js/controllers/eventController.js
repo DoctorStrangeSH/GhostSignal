@@ -14,6 +14,8 @@ class EventController {
         this.pendingModalData = [];
         this.modalReturnFocusElement = null;
         this.modalKeydownHandler = null;
+        this.modalBackdropHandler = null;
+        this.activeModalData = null;
         this.modalElement = null;
         this.modalShowHandler = null;
         this.modalHideHandler = null;
@@ -100,6 +102,7 @@ class EventController {
                 this.modalIsHiding = true;
             };
             this.modalHiddenHandler = () => {
+                this.activeModalData = null;
                 this.modalIsShowing = false;
                 this.modalIsHiding = false;
                 const next = this.pendingModalData.shift();
@@ -122,7 +125,15 @@ class EventController {
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
             this.modalKeydownHandler = (event) => {
-                if (event.key !== 'Tab' || !this.modalElement?.classList.contains('show')) return;
+                if (!this.modalElement?.classList.contains('show')) return;
+                if (event.key === 'Escape' && this.activeModalData?.dismissible === false) {
+                    // Required narrative choices must not disappear through Escape;
+                    // stop Bootstrap's own keyboard handler on the same modal.
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+                if (event.key !== 'Tab') return;
 
                 const focusable = Array.from(this.modalElement.querySelectorAll(
                     'a[href], area[href], input:not([disabled]), select:not([disabled]), ' +
@@ -156,6 +167,12 @@ class EventController {
                 }
             };
             this.modalElement.addEventListener('keydown', this.modalKeydownHandler);
+            this.modalBackdropHandler = (event) => {
+                if (event.target !== this.modalElement || this.activeModalData?.dismissible !== false) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            };
+            this.modalElement.addEventListener('click', this.modalBackdropHandler);
         }
         on('modal:show', (data) => {
             if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
@@ -611,6 +628,9 @@ class EventController {
         const title = document.getElementById('modal-title');
         const footer = document.getElementById('modal-footer');
         if (!body || !title || !footer || !this.modalElement) return;
+        this.activeModalData = data;
+        const closeButton = this.modalElement.querySelector?.('.modal-header .btn-close');
+        if (closeButton) closeButton.hidden = data.dismissible === false;
         title.innerHTML = data.title || '';
         body.innerHTML = data.body || '';
         footer.innerHTML = data.footer || '';
@@ -651,10 +671,15 @@ class EventController {
         if (this.modalElement && this.modalKeydownHandler) {
             this.modalElement.removeEventListener('keydown', this.modalKeydownHandler);
         }
+        if (this.modalElement && this.modalBackdropHandler) {
+            this.modalElement.removeEventListener('click', this.modalBackdropHandler);
+        }
         this.modalShowHandler = null;
         this.modalHideHandler = null;
         this.modalHiddenHandler = null;
         this.modalKeydownHandler = null;
+        this.modalBackdropHandler = null;
+        this.activeModalData = null;
         this.modalIsShowing = false;
         this.modalIsHiding = false;
         this.pendingModalData = [];
