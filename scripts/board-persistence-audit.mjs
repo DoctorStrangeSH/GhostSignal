@@ -49,8 +49,19 @@ try {
       if (!app.investigationBoard.reviseHypothesis(
         hypothesisId, 'Журнал могли изменить после полуночи перед исчезновением'
       )) throw new Error('could not revise the original hypothesis');
+      const alibiId = app.investigationBoard.addAlibiClaim({
+        subject: 'Томас',
+        location: 'Отель «Гранд»',
+        startMinute: 600,
+        endMinute: 630,
+        kind: 'evidence',
+        sourceId: 'guest_book',
+        precision: 'approximate',
+        uncertaintyMinutes: 10
+      }, { evidenceIds: ['guest_book'] });
+      if (!alibiId) throw new Error('could not create a sourced alibi claim');
       if (!app._quickSave()) throw new Error('quickSave returned false');
-      return { hypothesisId, alternativeId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
+      return { hypothesisId, alternativeId, alibiId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
     });
     if (placed.boardData.slots.find(slot => slot.id === 'slot-1')?.evidenceId !== 'guest_book') {
       throw new Error(viewport.name + ': clue was not included in the saved slot');
@@ -66,6 +77,7 @@ try {
     const expected = await page.evaluate(() => ({
       hypothesisId: window.app.investigationBoard.hypotheses[0]?.id,
       alternativeId: window.app.investigationBoard.hypotheses[1]?.id,
+      alibiId: window.app.investigationBoard.alibiClaims[0]?.id,
       boardData: window.app.investigationBoard.toJSON()
     }));
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -94,6 +106,7 @@ try {
         alternativeId: alternative?.id || null,
         alternativeGroupId: alternative?.alternativeGroupId || null,
         alternativeHistory: alternative?.history || [],
+        alibi: app.investigationBoard.alibiClaims.find(claim => claim.id === expected.alibiId) || null,
         boardSnapshot: app.investigationBoard.toJSON()
       };
     }, expected);
@@ -118,6 +131,12 @@ try {
         restored.alternativeGroupId !== expected.hypothesisId ||
         !restored.alternativeHistory.some(item => item.action === 'alternative_created')) {
       throw new Error(viewport.name + ': alternative hypothesis group/history was not restored');
+    }
+    if (restored.alibi?.id !== expected.alibiId ||
+        restored.alibi?.sourceId !== 'guest_book' ||
+        restored.alibi?.precision !== 'approximate' ||
+        restored.alibi?.uncertaintyMinutes !== 10) {
+      throw new Error(viewport.name + ': sourced alibi claim was not restored');
     }
 
     const removed = await page.evaluate(() => {
