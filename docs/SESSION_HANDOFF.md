@@ -1440,3 +1440,14 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Пока не помечать конкретные игровые окна как non-dismissible, пока не проверены все вызовы modal:show; не превращать все окна в ловушки.
 - CI на новом head ещё не подтверждён. Следующий шаг: проверить Actions, затем аудитировать вызовы модалок и пометить только действительно обязательные решения; далее проверить сохранение доски дедукции и гипотез.
 - main не затронута; PR #180 остаётся открытым. Не начинать case-003 до завершения 1.0 acceptance.
+
+
+## 2026-11-24: PR #180 — восстановление доски и инвентаря
+
+- SaveController уже сохраняет boardData; App восстанавливает его и назначает активное дело. Не создавать параллельный persistence layer.
+- В board.js fromJSON теперь восстанавливает evidenceOnBoard только из занятых валидных слотов. Устранены stale IDs, дубликаты и предметы, не являющиеся уликами.
+- Inventory получил reconcileBoardEvidence(); App вызывает его после восстановления доски. Улика остаётся во владении игрока (items), но не отображается как свободная улика для повторного размещения.
+- Добавлен tests/board-persistence.test.mjs с round-trip, corrupt snapshot, counters, case reset и inventory reconciliation.
+- Последний кодовый commit: a643ed2385981925cffb8e2d5fd011f953ee2dd1. CI на этом SHA пока не подтверждён.
+- Следующий шаг: проверить Quality/Responsive/Visual Smoke/Thomas Promise/Modal UX CI; затем Playwright acceptance полного цикла clue placement/save/reload на 390×844 и 1440×900. Далее проверить гипотезы/альтернативы/историю и алиби.
+- PR #180 остаётся open, main не изменена. Не начинать case-003 до закрытия 1.0 acceptance.
