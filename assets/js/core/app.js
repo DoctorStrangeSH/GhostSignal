@@ -397,9 +397,16 @@ class App {
         if (!snapshot) return false;
 
         const sameCase = snapshot.caseId === caseId;
+        // Reject cross-case snapshots before resolving the NPC's active dialogue.
+        // Resolving first can trigger case-specific lookup side effects for stale data.
+        if (!sameCase) {
+            this.progress.dialogueData = null;
+            return false;
+        }
+
         const expectedDialogueId = this.npcManager?.getDialogueForNPC?.(snapshot.npcId);
         const belongsToActiveCase = expectedDialogueId === snapshot.dialogueId;
-        const restored = sameCase && belongsToActiveCase &&
+        const restored = belongsToActiveCase &&
             this.callInterface?.restoreActiveDialogue(snapshot);
 
         if (!restored) this.progress.dialogueData = null;
