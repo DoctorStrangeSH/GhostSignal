@@ -13,6 +13,7 @@ class EventController {
         this.pageHideHandler = null;
         this.pendingModalData = [];
         this.modalReturnFocusElement = null;
+        this.modalKeydownHandler = null;
         this.modalElement = null;
         this.modalHiddenHandler = null;
         this.modalHideHandler = null;
@@ -110,6 +111,40 @@ class EventController {
             };
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
+            this.modalKeydownHandler = (event) => {
+                if (event.key !== 'Tab' || !this.modalElement?.classList.contains('show')) return;
+
+                const focusable = Array.from(this.modalElement.querySelectorAll(
+                    'a[href], area[href], input:not([disabled]), select:not([disabled]), ' +
+                    'textarea:not([disabled]), button:not([disabled]), iframe, object, embed, ' +
+                    '[contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+                )).filter(element => {
+                    if (element.getAttribute('aria-hidden') === 'true') return false;
+                    const style = typeof getComputedStyle === 'function' ? getComputedStyle(element) : null;
+                    return element.getClientRects().length > 0 &&
+                        (!style || (style.visibility !== 'hidden' && style.display !== 'none'));
+                });
+
+                if (focusable.length === 0) {
+                    event.preventDefault();
+                    this.modalElement.focus();
+                    return;
+                }
+
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                const active = document.activeElement;
+                const focusOutside = !this.modalElement.contains(active);
+
+                if (event.shiftKey && (active === first || focusOutside)) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && (active === last || focusOutside)) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            };
+            this.modalElement.addEventListener('keydown', this.modalKeydownHandler);
         }
         on('modal:show', (data) => {
             if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
@@ -599,8 +634,12 @@ class EventController {
         if (this.modalElement && this.modalHiddenHandler) {
             this.modalElement.removeEventListener('hidden.bs.modal', this.modalHiddenHandler);
         }
+        if (this.modalElement && this.modalKeydownHandler) {
+            this.modalElement.removeEventListener('keydown', this.modalKeydownHandler);
+        }
         this.modalHideHandler = null;
         this.modalHiddenHandler = null;
+        this.modalKeydownHandler = null;
         this.modalIsHiding = false;
         this.pendingModalData = [];
         this.modalElement = null;
