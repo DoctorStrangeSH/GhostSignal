@@ -676,6 +676,86 @@ test("a replay gets a new run ID and ending while permanent rewards remain first
 });
 
 
+test("EventController queues narrative bursts while Bootstrap is still opening before .show", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const modalElement = {
+        classList: {
+            contains(name) { return classes.has(name); },
+            add(name) { classes.add(name); },
+            remove(name) { classes.delete(name); }
+        },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name).add(handler);
+        },
+        removeEventListener(name, handler) { listeners.get(name)?.delete(handler); },
+        dispatch(name) {
+            for (const handler of listeners.get(name) || []) handler();
+        },
+        contains() { return false; }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    document.activeElement = document.body;
+    let showCalls = 0;
+    const EventController = loadEventController({
+        document,
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    return {
+                        show() {
+                            showCalls++;
+                            // Bootstrap dispatches show.bs.modal immediately,
+                            // while the fade/backdrop transition has not yet
+                            // added the .show class to the modal element.
+                            modalElement.dispatch("show.bs.modal");
+                        }
+                    };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", { title: "Первое окно", body: "Открывается", footer: "OK" });
+    assert.equal(showCalls, 1);
+    assert.equal(classes.has("show"), false, "opening transition has not applied .show yet");
+    assert.equal(controller.modalIsShowing, true);
+
+    eventBus.emit("modal:show", { title: "Второе окно", body: "Следом", footer: "OK" });
+    eventBus.emit("modal:show", { title: "Третье окно", body: "Третье", footer: "OK" });
+    assert.equal(showCalls, 1, "new windows must queue while the first opening transition is active");
+    assert.equal(controller.pendingModalData.length, 2);
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    classes.add("show");
+    modalElement.dispatch("shown.bs.modal");
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+
+    assert.equal(showCalls, 2, "the next window opens only after the previous window is fully hidden");
+    assert.equal(elements["modal-title"].innerHTML, "Второе окно");
+    assert.equal(controller.modalIsShowing, true);
+    assert.equal(controller.pendingModalData.length, 1);
+
+    controller.dispose();
+    assert.equal(listeners.get("show.bs.modal").size, 0, "dispose removes the opening lifecycle listener");
+    assert.equal(controller.modalIsShowing, false);
+});
+
+
 test("EventController queues a second narrative modal until the first Bootstrap transition is hidden", () => {
     const eventBus = createEventBus();
     const listeners = new Map();
