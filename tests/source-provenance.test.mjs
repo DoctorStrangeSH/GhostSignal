@@ -34,6 +34,15 @@ test("rumor provenance stays unverified until the detective records a source inq
         referencesRumorIds: ["mary-left-hotel"],
         sourceName: "Фрэнк, портье"
     });
+    const sameWitnessFollowup = memory.recordClaim("porter", {
+        id: "porter-followup-claim",
+        topic: "blackwood_departure",
+        value: "Мэри видела, как Блэквуд покинул отель",
+        summary: "Портье повторяет ту же историю",
+        directObservation: false,
+        referencesRumorIds: ["mary-left-hotel"],
+        sourceName: "Фрэнк, портье"
+    });
     const witness = memory.recordClaim("bartender", {
         id: "bartender-direct-claim",
         topic: "blackwood_departure",
@@ -44,6 +53,7 @@ test("rumor provenance stays unverified until the detective records a source inq
     });
 
     assert.equal(rumor.added, true);
+    assert.equal(sameWitnessFollowup.added, true);
     assert.equal(witness.added, true);
     const statements = memory.getStatements();
     const hypothesisId = board.addHypothesis("Мэри могла помочь Блэквуду скрыться");
@@ -57,8 +67,12 @@ test("rumor provenance stays unverified until the detective records a source inq
 
     const inquiryId = board.startSourceInquiry(hypothesisId, "mary-left-hotel", statements);
     assert.ok(inquiryId);
+    assert.deepEqual(Array.from(board.sourceInquiries[0].originSources, source => source.npcId), ["porter", "porter"]);
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "missing-statement",
         "Проверить источник", { statements, evidenceIds: [] }), false);
+    assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "porter-followup-claim",
+        "Портье повторяет собственную историю", { statements, evidenceIds: [] }), false,
+        "the original rumor witness cannot be counted as independent corroboration");
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
         "Сопоставить личное наблюдение Джо со словами портье", { statements, evidenceIds: [] }), true);
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
@@ -75,6 +89,10 @@ test("rumor provenance stays unverified until the detective records a source inq
     assert.equal(restoredMemory.getStatementById("bartender-direct-claim").directObservation, true);
     assert.equal(restoredInquiry.status, "closed");
     assert.equal(restoredInquiry.leads[0].sourceId, "bartender-direct-claim");
+    assert.equal(restoredInquiry.leads[0].npcId, "bartender");
+    assert.equal(restoredInquiry.leads[0].sourceName, "Джо, владелец бара");
+    assert.equal(restoredInquiry.leads[0].directObservation, true);
+    assert.deepEqual(Array.from(restoredInquiry.originSources, source => source.npcId), ["porter", "porter"]);
     assert.equal(restoredInquiry.conclusion,
         "Показание портье пока не подтверждено независимым источником");
 });
