@@ -141,7 +141,7 @@ class DialogueEngine {
             this.memoryService.recordDialogueStarted(dialogue.npcId, dialogue.id);
             this._recordNodeMemory(this.currentNode);
         }
-        this._processNodeEffects(startNode);
+        this._processNodeEffects(this.currentNode);
         
         if (this.gameTime) {
             this.gameTime.advance(CONFIG.time.costs.dialogue);
@@ -252,7 +252,7 @@ class DialogueEngine {
                     text: this.currentNode.text
                 });
                 this._recordNodeMemory(this.currentNode);
-                this._processNodeEffects(endNode);
+                this._processNodeEffects(this.currentNode);
             }
             
             if (this.onNodeChange) this.onNodeChange(this.currentNode);
@@ -281,7 +281,7 @@ class DialogueEngine {
         });
 
         this._recordNodeMemory(this.currentNode);
-        this._processNodeEffects(nextNode);
+        this._processNodeEffects(this.currentNode);
         
         if (this.gameTime) {
             this.gameTime.advance(CONFIG.time.costs.dialogue);
