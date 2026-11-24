@@ -29,3 +29,5 @@ jobs:
         run: node scripts/modal-ux-audit.mjs
       - name: Audit keyboard focus containment and restoration
         run: node scripts/modal-keyboard-audit.mjs
+      - name: Audit rapid narrative queue delivery
+        run: node scripts/modal-queue-audit.mjs
