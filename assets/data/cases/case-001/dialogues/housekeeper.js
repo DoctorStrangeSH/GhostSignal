@@ -100,6 +100,7 @@ const DIALOGUE_HOUSEKEEPER = {
             timeline_match: {
                 speaker: "npc",
                 text: "Я не убивала его! Клянусь! Я ушла из номера в 22:00. Он был жив. Он просто... просто спал. Я думала, он напился.",
+                claim: {"id":"case001-mary-last-saw-blackwood-alive","topic":"blackwood-last-seen-alive-by-mary","value":"mary-left-room-at-22-blackwood-was-alive-and-asleep","summary":"Мэри утверждает, что ушла из номера в 22:00, оставив Блэквуда живым","sourceName":"Мэри, горничная","location":"Номер 304, отель «Гранд»","timeLabel":"Около 22:00, накануне исчезновения","circumstances":"Самоотчёт участницы событий; требует независимой проверки","directObservation":true},
                 mood: "desperate",
                 innerThought: "Спал? Или был без сознания от снотворного?",
                 answers: [
@@ -121,6 +122,7 @@ const DIALOGUE_HOUSEKEEPER = {
             full_confession: {
                 speaker: "npc",
                 text: "Я подсыпала снотворное в его стакан. Он выпил и уснул. А потом... потом я вывезла его в тележке для белья. Я не убивала! Он был жив! Я просто хотела, чтобы он исчез из моей жизни. Так же, как я исчезла из его.",
+                claim: {"id":"case001-mary-confesses-sedative-and-removal","topic":"blackwood-removal-from-room","value":"mary-put-sedative-in-drink-and-removed-blackwood-in-laundry-cart","summary":"Мэри признаёт, что подсыпала снотворное и вывезла Блэквуда на тележке для белья","sourceName":"Мэри, горничная","location":"Номер 304 и служебные коридоры отеля «Гранд»","circumstances":"Признание самой участницы; не считать подтверждённым без проверки места и улик","directObservation":true},
                 mood: "crying",
                 innerThought: "Вот оно. Полное признание.",
                 givesInsight: "mary_full_confession",
@@ -133,6 +135,7 @@ const DIALOGUE_HOUSEKEEPER = {
             chain_trick_explanation: {
                 speaker: "npc",
                 text: "Я знала, что вы заметите цепочку. У меня была тонкая стальная проволока с загнутым концом. Я вышла, прикрыла дверь и через щель зацепила цепочку, сдвинув её в скобу. Думала, следов не останется. Видимо, кусочек проволоки сломался и застрял там.",
+                claim: {"id":"case001-mary-explains-chain-trick","topic":"room-304-chain-lock","value":"mary-used-bent-wire-to-slide-door-chain-into-bracket-from-outside","summary":"Мэри объясняет, как с помощью проволоки защёлкнула цепочку снаружи","sourceName":"Мэри, горничная","location":"Дверь номера 304","circumstances":"Самоотчёт о способе инсценировки; проверить по найденному фрагменту проволоки","directObservation":true},
                 mood: "ashamed",
                 innerThought: "Значит, цепочка была частью инсценировки. Запертая комната оказалась ловушкой для следствия.",
                 givesInsight: "chain_trick_confirmed",
@@ -144,6 +147,7 @@ const DIALOGUE_HOUSEKEEPER = {
             where_is_he: {
                 speaker: "npc",
                 text: "В подвале отеля. Там есть старая кладовка. Я приносила ему еду. Он был в порядке. Просто спал. А потом... потом я испугалась и не знала, что делать.",
+                claim: {"id":"case001-mary-reveals-blackwood-location","topic":"blackwood-location","value":"blackwood-was-kept-in-old-storage-room-in-hotel-basement","summary":"Мэри указывает старую кладовую в подвале как место, где находился Блэквуд","sourceName":"Мэри, горничная","location":"Подвал отеля «Гранд»","circumstances":"Сообщение участницы событий; местонахождение нужно подтвердить физически","directObservation":true},
                 mood: "crying",
                 innerThought: "Блэквуд в подвале! Он жив!",
                 givesInsight: "blackwood_location_revealed",
