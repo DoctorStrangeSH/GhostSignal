@@ -42,8 +42,15 @@ try {
       if (!app.investigationBoard.linkHypothesis(hypothesisId, 'evidence', 'guest_book', 'for')) {
         throw new Error('could not link the clue to the hypothesis');
       }
+      const alternativeId = app.investigationBoard.createAlternativeHypothesis(
+        hypothesisId, 'Запись могла быть изменена до исчезновения'
+      );
+      if (!alternativeId) throw new Error('could not create an alternative hypothesis');
+      if (!app.investigationBoard.reviseHypothesis(
+        hypothesisId, 'Журнал могли изменить после полуночи перед исчезновением'
+      )) throw new Error('could not revise the original hypothesis');
       if (!app._quickSave()) throw new Error('quickSave returned false');
-      return { hypothesisId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
+      return { hypothesisId, alternativeId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
     });
     if (placed.boardData.slots.find(slot => slot.id === 'slot-1')?.evidenceId !== 'guest_book') {
       throw new Error(viewport.name + ': clue was not included in the saved slot');
@@ -58,6 +65,7 @@ try {
 
     const expected = await page.evaluate(() => ({
       hypothesisId: window.app.investigationBoard.hypotheses[0]?.id,
+      alternativeId: window.app.investigationBoard.hypotheses[1]?.id,
       boardData: window.app.investigationBoard.toJSON()
     }));
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -70,6 +78,7 @@ try {
       const app = window.app;
       const slot = app.investigationBoard.slots.find(item => item.id === 'slot-1');
       const hypothesis = app.investigationBoard.hypotheses.find(item => item.id === expected.hypothesisId);
+      const alternative = app.investigationBoard.hypotheses.find(item => item.id === expected.alternativeId);
       const pool = app.boardUI?.container?.querySelector('[data-evidence-id="guest_book"]');
       return {
         activeCase: app.progress.activeCase,
@@ -79,7 +88,12 @@ try {
         clueInAvailableInventory: app.inventory.evidence.includes('guest_book'),
         clueInRenderedPool: Boolean(pool),
         hypothesisId: hypothesis?.id || null,
+        hypothesisTitle: hypothesis?.title || null,
+        hypothesisHistory: hypothesis?.history || [],
         hypothesisLink: hypothesis?.links?.find(link => link.sourceId === 'guest_book') || null,
+        alternativeId: alternative?.id || null,
+        alternativeGroupId: alternative?.alternativeGroupId || null,
+        alternativeHistory: alternative?.history || [],
         boardSnapshot: app.investigationBoard.toJSON()
       };
     }, expected);
@@ -95,6 +109,15 @@ try {
         restored.hypothesisLink?.sourceId !== 'guest_book' ||
         restored.hypothesisLink?.stance !== 'for') {
       throw new Error(viewport.name + ': hypothesis or its evidence link was not restored');
+    }
+    if (restored.hypothesisTitle !== 'Журнал могли изменить после полуночи перед исчезновением' ||
+        !restored.hypothesisHistory.some(item => item.action === 'revised')) {
+      throw new Error(viewport.name + ': revised hypothesis title/history was not restored');
+    }
+    if (restored.alternativeId !== expected.alternativeId ||
+        restored.alternativeGroupId !== expected.hypothesisId ||
+        !restored.alternativeHistory.some(item => item.action === 'alternative_created')) {
+      throw new Error(viewport.name + ': alternative hypothesis group/history was not restored');
     }
 
     const removed = await page.evaluate(() => {
