@@ -1413,6 +1413,7 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Playwright Visual Smoke теперь сравнивает полный DialogueEngine snapshot и видимый транскрипт до/после reload.
 - Modal keyboard audit проверяет Tab/Shift+Tab, фокус на корне модалки, Escape и возврат фокуса.
 - Modal queue audit проверяет 10 сообщений в FIFO на трёх размерах viewport.
-- Последний head при обновлении handoff: `d5175df57f4b122fd8e17d217646f26adf30125a`. Пять GitHub Actions workflow были queued; не объявлять их успешными. После добавления app restore unit tests SHA изменился — проверить свежие CI runs перед merge.
+- Добавлен `tests/app-dialogue-restore.test.mjs` с пятью сценариями: валидное восстановление, старый case, неверный dialogue ID, отсутствующий диалог NPC и отказ CallInterface. Скрипт входит в `node --test` через стандартный `npm test`.
+- На текущем PR head созданы все пять workflow: Quality, Responsive, Visual Smoke, Thomas Promise Acceptance, Modal UX. Все пять пока `queued`; не объявлять их успешными. Проверить завершение на одном SHA перед merge.
 - Не сериализовать transient modal FIFO; сохранять только активный разговор через `dialogueData`.
 - Не начинать третье дело до ручной приёмки обоих текущих расследований и release checklist 1.0.
