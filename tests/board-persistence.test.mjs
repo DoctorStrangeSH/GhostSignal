@@ -141,7 +141,7 @@ test("inventory restoration keeps board clues owned but removes them from the av
         events: { emit() {} }
     });
     const source = readFileSync(resolve(root, "assets/js/systems/inventory.js"), "utf8");
-    vm.runInContext(source + "\\nglobalThis.InventoryExport = Inventory;", context);
+    vm.runInContext(source + "\nglobalThis.InventoryExport = Inventory;", context);
     const inventory = context.InventoryExport.fromJSON({
         items: ["magnifying_glass", "guest_book", "hidden_note"],
         evidence: ["guest_book", "hidden_note"],
