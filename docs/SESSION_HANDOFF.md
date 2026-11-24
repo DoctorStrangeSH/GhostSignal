@@ -1486,11 +1486,11 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 
 ## 2026-11-24: PR #180 — source independence and authored testimony coverage
 
-- Domain guard: source-inquiry statement leads require `directObservation === true`, must come from an NPC other than every origin witness of the rumor, and cannot reuse a witness already represented by another statement lead.
+- Domain guard: source-inquiry statement leads require `directObservation === true`, must come from an NPC other than every origin witness of the rumor, cannot reuse a witness already represented by another statement lead, and cannot carry `referencesRumorIds` for the same rumor. A person who personally heard a retelling is not firsthand evidence of the underlying event.
 - New inquiries persist `originSources` snapshots (statement ID, NPC ID/name, observation flag). Statement leads persist NPC identity and observation metadata. Legacy open inquiries derive origin witnesses from their hypothesis-linked statements when the snapshot is absent.
 - Board UI explains the independence rule, shows who supplied each statement and whether it is firsthand, and filters the selector to eligible firsthand witnesses.
 - Added 19 material claims across all five case-001 dialogue packs. Case-002's existing rumor retelling by Joe remains explicitly secondhand (`directObservation: false`, `referencesRumorIds`); previously unmarked firsthand claims by Joe, Kane and Thomas are now explicit.
 - Added `tests/case-testimony-provenance.test.mjs`; expanded `tests/source-provenance.test.mjs` for same-witness rejection, secondhand-retelling rejection, independent firsthand acceptance, metadata restoration, and legacy inquiry fallback. Expanded `scripts/board-persistence-audit.mjs` to verify UI eligibility and persisted witness provenance.
 - Updated `docs/CASE_PACK_AUTHORING.md` with the claim schema and authoring rules.
-- Latest known branch commit: `4106f16e2e3c625fc369eecbca256974e6c29741`. PR #180 remains open; `main` is untouched. The workflow-run and combined-status lookups returned no results for the latest SHA; do not claim CI PASS. The new tests have not been executed in a local runtime in this session.
+- Latest code commit for this stage: `f3fec70f1489823eb3375db0731e1e4824781df1`. PR #180 remains open; `main` is untouched. The workflow-run and combined-status lookups returned no results for the latest SHA; do not claim CI PASS. The new tests have not been executed in a local runtime in this session.
 - Next: obtain Actions results on the latest head, fix any failures, then perform an actual playthrough acceptance of both cases to ensure the authored claims are emitted when dialogue nodes are reached.
