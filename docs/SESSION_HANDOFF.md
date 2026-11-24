@@ -1504,3 +1504,6 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Latest edits touch `assets/js/ui/boardUI.js`, `tests/dialogue-claim-integration.test.mjs`, `scripts/board-persistence-audit.mjs`, `tests/source-provenance.test.mjs`, and `.github/workflows/quality-gate.yml`.
 - CI has not been confirmed: the available PR workflow-run lookup currently returns no runs and the local runtime was not used to execute tests. Do not report PASS until an actual Actions result is visible.
 - Next: inspect Actions results, fix any failures, then perform a real browser playthrough of both cases and verify that authored claims are registered only when their dialogue nodes are reached.
+
+- Added dialogue-graph reachability assertions: every authored claim node in the audited dialogue packs must be reachable from the start node or a conditional entry rule through answer links.
+- Browser persistence acceptance now checks two distinct rumor chains: a statement tied to rumor A is excluded from A's corroboration choices but remains eligible for rumor B when it is independent of B.
