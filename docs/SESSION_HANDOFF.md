@@ -1433,7 +1433,7 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 
 ## 2026-11-24: PR #180 — явная политика закрытия сюжетных модалок
 
-- Последний зафиксированный head на момент этой записи: dba15739e6e334b7c056e7188bd08db6d97ac86d.
+- Последний кодовый commit на момент этой записи: a55cca7ce94bc14a1d7399bc289ab37a810c75b4. Затем обновлены Roadmap/Handoff; после документационных коммитов проверить CI на новом итоговом head.
 - В EventController добавлен параметр dismissible: обычные окна закрываются как раньше; dismissible: false блокирует Escape и backdrop click и скрывает крестик.
 - Добавлен unit-тест на блокировку Escape/backdrop для обязательного окна и сохранение Escape для обычного.
 - Добавлен Playwright аудит scripts/modal-dismissal-audit.mjs и шаг в Modal UX workflow.
