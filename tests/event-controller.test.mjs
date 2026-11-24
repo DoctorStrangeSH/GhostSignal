@@ -701,9 +701,17 @@ test("EventController queues a second narrative modal until the first Bootstrap 
         "modal-body": { innerHTML: "" },
         "modal-footer": { innerHTML: "" }
     };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    const opener = {
+        isConnected: true,
+        disabled: false,
+        focus() { document.activeElement = this; }
+    };
+    document.activeElement = opener;
+    modalElement.contains = () => false;
     let showCalls = 0;
     const EventController = loadEventController({
-        document: { getElementById: id => elements[id] || null },
+        document,
         bootstrap: {
             Modal: {
                 getOrCreateInstance() {
@@ -757,6 +765,8 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     modalElement.dispatch("hide.bs.modal");
     classes.delete("show");
     modalElement.dispatch("hidden.bs.modal");
+    assert.equal(document.activeElement, opener, "focus returns to the original opener after the entire queued sequence");
+    assert.equal(controller.modalReturnFocusElement, null);
 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
