@@ -877,8 +877,12 @@ class InvestigationBoard {
         // A second statement from the original rumor witness is not independent
         // corroboration. Nor are two claims from the same witness independent
         // of each other. Keep this check in the domain layer, not only in UI.
+        const originSources = Array.isArray(inquiry.originSources) && inquiry.originSources.length
+            ? inquiry.originSources
+            : this.reviewHypothesisSources(inquiry.hypothesisId, context.statements || []).sources
+                .filter(origin => origin.status === 'active' && origin.linkedRumorIds.includes(inquiry.rumorId));
         if (statement && (
-            (inquiry.originSources || []).some(origin => origin.npcId === statement.npcId) ||
+            originSources.some(origin => origin.npcId === statement.npcId) ||
             inquiry.leads.some(lead => lead.kind === 'statement' && lead.npcId === statement.npcId)
         )) return false;
         const lead = {
