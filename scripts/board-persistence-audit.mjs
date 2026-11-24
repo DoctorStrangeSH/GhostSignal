@@ -1,0 +1,132 @@
+import { chromium } from 'playwright';
+
+const browser = await chromium.launch({ headless: true });
+const viewports = [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop', width: 1440, height: 900 }
+];
+
+try {
+  for (const viewport of viewports) {
+    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+    await context.addInitScript(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('detective_archive_')) localStorage.removeItem(key);
+      }
+    });
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+
+    await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.app?.inventory && window.app?.investigationBoard &&
+      window.app?.saveController && window.app?.caseController, null, { timeout: 20000 });
+    await page.locator('#loading-screen').waitFor({ state: 'detached', timeout: 20000 });
+
+    const started = await page.evaluate(() => window.app.loadCase('case-001'));
+    if (!started) throw new Error(viewport.name + ': could not start case-001');
+
+    const placed = await page.evaluate(() => {
+      const app = window.app;
+      if (!app.inventory.addItem('guest_book')) throw new Error('could not acquire guest_book');
+      const slotId = 'slot-1';
+      if (!app.investigationBoard.placeEvidence('guest_book', slotId)) {
+        throw new Error('could not place guest_book on the investigation board');
+      }
+      const hypothesisId = app.investigationBoard.addHypothesis('Запись в журнале могла быть изменена после полуночи');
+      if (!hypothesisId) throw new Error('could not create a hypothesis');
+      if (!app.investigationBoard.linkHypothesis(hypothesisId, 'evidence', 'guest_book', 'for')) {
+        throw new Error('could not link the clue to the hypothesis');
+      }
+      if (!app._quickSave()) throw new Error('quickSave returned false');
+      return { hypothesisId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
+    });
+    if (placed.boardData.slots.find(slot => slot.id === 'slot-1')?.evidenceId !== 'guest_book') {
+      throw new Error(viewport.name + ': clue was not included in the saved slot');
+    }
+    if (placed.inventoryData.evidence.includes('guest_book')) {
+      throw new Error(viewport.name + ': placed clue remains in the saved available inventory pool');
+    }
+
+    await page.locator('.sidebar-tab[data-tab="tab-board"]').click();
+    await page.locator('#board-area .board-slot[data-slot-id="slot-1"] .slot-evidence-name')
+      .filter({ hasText: 'Журнал регистрации' }).waitFor({ state: 'visible' });
+
+    const expected = await page.evaluate(() => ({
+      hypothesisId: window.app.investigationBoard.hypotheses[0]?.id,
+      boardData: window.app.investigationBoard.toJSON()
+    }));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.app?.investigationBoard && window.app?.inventory &&
+      window.app?.progress?.activeCase === 'case-001', null, { timeout: 20000 });
+    await page.locator('#loading-screen').waitFor({ state: 'detached', timeout: 20000 });
+    await page.locator('.sidebar-tab[data-tab="tab-board"]').click();
+
+    const restored = await page.evaluate(expected => {
+      const app = window.app;
+      const slot = app.investigationBoard.slots.find(item => item.id === 'slot-1');
+      const hypothesis = app.investigationBoard.hypotheses.find(item => item.id === expected.hypothesisId);
+      const pool = app.boardUI?.container?.querySelector('[data-evidence-id="guest_book"]');
+      return {
+        activeCase: app.progress.activeCase,
+        slotEvidence: slot?.evidenceId || null,
+        evidenceOnBoard: app.investigationBoard.evidenceOnBoard,
+        inventoryOwnsClue: app.inventory.hasItem('guest_book'),
+        clueInAvailableInventory: app.inventory.evidence.includes('guest_book'),
+        clueInRenderedPool: Boolean(pool),
+        hypothesisId: hypothesis?.id || null,
+        hypothesisLink: hypothesis?.links?.find(link => link.sourceId === 'guest_book') || null,
+        boardSnapshot: app.investigationBoard.toJSON()
+      };
+    }, expected);
+
+    if (restored.activeCase !== 'case-001') throw new Error(viewport.name + ': active case was not restored');
+    if (restored.slotEvidence !== 'guest_book') throw new Error(viewport.name + ': clue was lost from the board after reload');
+    if (!restored.evidenceOnBoard.includes('guest_book')) throw new Error(viewport.name + ': evidenceOnBoard was not restored');
+    if (!restored.inventoryOwnsClue) throw new Error(viewport.name + ': player no longer owns the placed clue');
+    if (restored.clueInAvailableInventory || restored.clueInRenderedPool) {
+      throw new Error(viewport.name + ': placed clue is incorrectly available for duplicate placement');
+    }
+    if (restored.hypothesisId !== expected.hypothesisId ||
+        restored.hypothesisLink?.sourceId !== 'guest_book' ||
+        restored.hypothesisLink?.stance !== 'for') {
+      throw new Error(viewport.name + ': hypothesis or its evidence link was not restored');
+    }
+
+    const removed = await page.evaluate(() => {
+      const app = window.app;
+      const result = app.investigationBoard.removeEvidence('slot-1');
+      if (result !== 'guest_book') throw new Error('could not remove clue from restored board');
+      if (!app.inventory.evidence.includes('guest_book')) {
+        throw new Error('removed clue was not returned to the available evidence pool');
+      }
+      if (!app._quickSave()) throw new Error('could not save after removing clue');
+      return true;
+    });
+    if (!removed) throw new Error(viewport.name + ': remove/recovery step failed');
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.app?.investigationBoard && window.app?.inventory &&
+      window.app?.progress?.activeCase === 'case-001', null, { timeout: 20000 });
+    await page.locator('#loading-screen').waitFor({ state: 'detached', timeout: 20000 });
+    const removalRestored = await page.evaluate(() => ({
+      slotEvidence: window.app.investigationBoard.slots.find(slot => slot.id === 'slot-1')?.evidenceId || null,
+      available: window.app.inventory.evidence.includes('guest_book')
+    }));
+    if (removalRestored.slotEvidence || !removalRestored.available) {
+      throw new Error(viewport.name + ': removed clue state did not survive a second reload');
+    }
+
+    if (pageErrors.length) throw new Error(viewport.name + ': browser errors: ' + pageErrors.join(' | '));
+    console.log(JSON.stringify({
+      viewport: viewport.name,
+      status: 'PASS',
+      clueRestoredAfterReload: true,
+      hypothesisLinkRestored: true,
+      clueReturnedAfterRemovalAndReload: true
+    }));
+    await context.close();
+  }
+} finally {
+  await browser.close();
+}
