@@ -911,13 +911,24 @@ class InvestigationBoard {
     static fromJSON(json) {
         const board = new InvestigationBoard();
         if (json) {
-            json.slots?.forEach(savedSlot => {
-                const slot = board.slots.find(s => s.id === savedSlot.id);
-                if (slot && savedSlot.evidenceId) {
-                    slot.evidenceId = savedSlot.evidenceId;
-                }
+            // Rebuild the board inventory from the actual slots. Older or
+            // partially written saves could contain duplicate/stale IDs in
+            // evidenceOnBoard, which made clues disappear from both the board
+            // and the detective's inventory after a reload.
+            const placedEvidence = new Set();
+            const savedSlots = Array.isArray(json.slots) ? json.slots : [];
+            savedSlots.forEach(savedSlot => {
+                if (!savedSlot || typeof savedSlot.id !== 'string' ||
+                    typeof savedSlot.evidenceId !== 'string' || !savedSlot.evidenceId) return;
+                const slot = board.slots.find(item => item.id === savedSlot.id);
+                if (!slot || placedEvidence.has(savedSlot.evidenceId)) return;
+                const evidence = typeof getObjectById === 'function'
+                    ? getObjectById(savedSlot.evidenceId) : null;
+                if (!evidence?.isEvidence) return;
+                slot.evidenceId = savedSlot.evidenceId;
+                placedEvidence.add(savedSlot.evidenceId);
             });
-            board.evidenceOnBoard = Array.isArray(json.evidenceOnBoard) ? json.evidenceOnBoard : [];
+            board.evidenceOnBoard = [...placedEvidence];
             board.caseId = typeof json.caseId === 'string' ? json.caseId : null;
             board.hypotheses = Array.isArray(json.hypotheses) ? json.hypotheses.filter(h => h && typeof h.id === 'string' && typeof h.title === 'string').map(h => ({
                 id: h.id, title: h.title, status: h.status === 'abandoned' ? 'abandoned' : 'open',
