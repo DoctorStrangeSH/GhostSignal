@@ -785,6 +785,31 @@ try {
             window.app?.progress?.dialogueData?.dialogueId === 'dialogue-journalist' &&
             window.app?.progress?.dialogueData?.nodeId === 'investigation'
         );
+
+        // Capture both the serialized dialogue and the rendered transcript
+        // before a hard reload. Resume must restore the exact history, not just
+        // the current node, and must not duplicate the opening/player messages.
+        await page.waitForFunction(() => {
+            const history = window.app?.dialogueEngine?.getHistory?.() || [];
+            const rendered = Array.from(document.querySelectorAll('#dialogue-messages .dialogue-message'))
+                .map(element => ({
+                    speaker: element.classList.contains('player-message') ? 'player' : 'npc',
+                    text: element.querySelector('.message-text')?.textContent?.trim() || ''
+                }));
+            return history.length > 0 && history.length === rendered.length &&
+                history.every((entry, index) =>
+                    entry.speaker === rendered[index].speaker &&
+                    entry.text === rendered[index].text
+                );
+        }, { timeout: 10000 });
+        const interruptedDialogueSnapshot = await page.evaluate(() => ({
+            dialogue: window.app.dialogueEngine.toJSON(),
+            transcript: Array.from(document.querySelectorAll('#dialogue-messages .dialogue-message'))
+                .map(element => ({
+                    speaker: element.classList.contains('player-message') ? 'player' : 'npc',
+                    text: element.querySelector('.message-text')?.textContent?.trim() || ''
+                }))
+        }));
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('#loading-screen').waitFor({ state: 'detached' });
         await page.locator('#screen-main-menu.active').waitFor();
@@ -797,6 +822,21 @@ try {
             window.app?.dialogueEngine?.currentDialogue?.id === 'dialogue-journalist' &&
             window.app?.dialogueEngine?.currentNode?.id === 'investigation'
         );
+        await page.waitForFunction(expected => {
+            const snapshot = window.app?.dialogueEngine?.toJSON();
+            const rendered = Array.from(document.querySelectorAll('#dialogue-messages .dialogue-message'))
+                .map(element => ({
+                    speaker: element.classList.contains('player-message') ? 'player' : 'npc',
+                    text: element.querySelector('.message-text')?.textContent?.trim() || ''
+                }));
+            return snapshot &&
+                snapshot.dialogueId === expected.dialogue.dialogueId &&
+                snapshot.npcId === expected.dialogue.npcId &&
+                snapshot.nodeId === expected.dialogue.nodeId &&
+                snapshot.stableNodeId === expected.dialogue.stableNodeId &&
+                JSON.stringify(snapshot.history) === JSON.stringify(expected.dialogue.history) &&
+                JSON.stringify(rendered) === JSON.stringify(expected.transcript);
+        }, interruptedDialogueSnapshot, { timeout: 10000 });
         await page.locator('#dialogue-answers .answer-btn').filter({
             hasText: 'У вас есть доказательства? Покажите.'
         }).waitFor({ state: 'visible' });
