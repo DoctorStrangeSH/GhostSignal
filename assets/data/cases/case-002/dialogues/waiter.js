@@ -924,7 +924,8 @@ const DIALOGUE_WAITER = {
                     sourceName: "Томас",
                     location: "Бар «У Джо»",
                     timeLabel: "Вечер отравления",
-                    circumstances: "Официальное показание после согласования защиты семьи свидетеля"
+                    circumstances: "Официальное показание после согласования защиты семьи свидетеля",
+                    directObservation: true
                 },
                 answers: [
                     { text: "Посмотри на эту фотографию. Хочу уточнить твои показания.", nextNode: "protection_revision", tone: "direct", condition: "hasItem:bar_photo" },
