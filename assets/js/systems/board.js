@@ -871,7 +871,10 @@ class InvestigationBoard {
         const statement = kind === 'statement'
             ? context.statements?.find(item => item.id === source && item.status !== 'superseded')
             : null;
-        if (kind === 'statement' && (!statement || typeof statement.npcId !== 'string' || !statement.npcId)) return false;
+        if (kind === 'statement' && (
+            !statement || typeof statement.npcId !== 'string' || !statement.npcId ||
+            statement.directObservation !== true
+        )) return false;
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return false;
         if (inquiry.leads.some(lead => lead.kind === kind && lead.sourceId === source)) return false;
         // A second statement from the original rumor witness is not independent
