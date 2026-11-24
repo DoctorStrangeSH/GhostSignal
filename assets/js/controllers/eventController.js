@@ -12,10 +12,12 @@ class EventController {
         this.bound = false;
         this.pageHideHandler = null;
         this.pendingModalData = [];
+        this.modalReturnFocusElement = null;
         this.modalElement = null;
         this.modalHiddenHandler = null;
         this.modalHideHandler = null;
         this.modalIsHiding = false;
+        this.modalReturnFocusElement = null;
     }
 
     _subscribe(name, handler) {
@@ -91,7 +93,20 @@ class EventController {
             this.modalHiddenHandler = () => {
                 this.modalIsHiding = false;
                 const next = this.pendingModalData.shift();
-                if (next) this._showModal(next);
+                if (next) {
+                    this._showModal(next);
+                    return;
+                }
+
+                // Restore keyboard focus only after the final modal in a queued
+                // narrative sequence has closed. Intermediate windows must not
+                // send focus behind the next dialog.
+                const returnTarget = this.modalReturnFocusElement;
+                this.modalReturnFocusElement = null;
+                if (returnTarget?.isConnected && !returnTarget.disabled &&
+                    typeof returnTarget.focus === 'function') {
+                    returnTarget.focus({ preventScroll: true });
+                }
             };
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
@@ -104,6 +119,14 @@ class EventController {
                 // single pending payload silently discarded earlier dialogue.
                 this.pendingModalData.push(data);
                 return;
+            }
+
+            // Remember the control that launched this modal sequence. Keep it
+            // until the final queued dialog closes, not between queued dialogs.
+            const activeElement = typeof document !== 'undefined' ? document.activeElement : null;
+            if (!this.modalReturnFocusElement && activeElement && activeElement !== document.body &&
+                !this.modalElement.contains(activeElement)) {
+                this.modalReturnFocusElement = activeElement;
             }
             this._showModal(data);
         });
