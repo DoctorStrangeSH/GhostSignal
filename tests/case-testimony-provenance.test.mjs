@@ -54,6 +54,7 @@ test("case 002 rumor retelling and firsthand testimony are not conflated", () =>
     const waiter = loadDialogue("assets/data/cases/case-002/dialogues/waiter.js");
     for (const nodeId of ["protection", "protection_revision", "testimony_reconsiders"]) {
         const claim = waiter[nodeId]?.claim;
-        if (claim) assert.equal(typeof claim.directObservation, "boolean");
+        assert.ok(claim, `waiter/${nodeId}: testimony revision must remain linked to its source claim`);
+        assert.equal(claim.directObservation, true);
     }
 });
