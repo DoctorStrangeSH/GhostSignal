@@ -60,6 +60,33 @@ try {
         uncertaintyMinutes: 10
       }, { evidenceIds: ['guest_book'] });
       if (!alibiId) throw new Error('could not create a sourced alibi claim');
+
+      const rumorClaim = app.npcMemoryService.recordClaim('porter', {
+        id: 'acceptance-rumor-origin',
+        topic: 'blackwood_departure',
+        value: 'Мэри видела, как Блэквуд покинул отель',
+        summary: 'Мэри якобы видела уход Блэквуда',
+        sourceName: 'Фрэнк, портье',
+        directObservation: false,
+        referencesRumorIds: ['acceptance-rumor-001']
+      });
+      if (!rumorClaim.added) throw new Error('could not record the rumor-origin witness statement');
+      const witnessClaim = app.npcMemoryService.recordClaim('bartender', {
+        id: 'acceptance-independent-witness',
+        topic: 'blackwood_departure',
+        value: 'В два часа ночи чёрный ход был закрыт',
+        summary: 'Владелец бара проверил чёрный ход около двух часов',
+        sourceName: 'Джо, владелец бара',
+        directObservation: true
+      });
+      if (!witnessClaim.added) throw new Error('could not record the independent witness statement');
+      if (!app.investigationBoard.linkHypothesis(hypothesisId, 'statement', 'acceptance-rumor-origin', 'pending')) {
+        throw new Error('could not link the rumor-origin statement to the hypothesis');
+      }
+      app.boardUI.render();
+      if (!app.boardUI.container.querySelector('.inquiry-start[data-rumor="acceptance-rumor-001"]')) {
+        throw new Error('source inquiry action was not rendered for the linked rumor');
+      }
       if (!app._quickSave()) throw new Error('quickSave returned false');
       return { hypothesisId, alternativeId, alibiId, boardData: app.progress.boardData, inventoryData: app.progress.inventoryData };
     });
@@ -74,10 +101,20 @@ try {
     await page.locator('#board-area .board-slot[data-slot-id="slot-1"] .slot-evidence-name')
       .filter({ hasText: 'Журнал регистрации' }).waitFor({ state: 'visible' });
 
+    await page.locator('#board-area .inquiry-start[data-rumor="acceptance-rumor-001"]').click();
+    const inquiryForm = page.locator('#board-area .inquiry-lead-form');
+    await inquiryForm.locator('select').selectOption('statement:acceptance-independent-witness');
+    await inquiryForm.locator('input').fill('Сопоставить время наблюдения Джо с журналом отеля');
+    await inquiryForm.locator('button[type="submit"]').click();
+    const closeInquiryForm = page.locator('#board-area .inquiry-close-form');
+    await closeInquiryForm.locator('input').fill('Сведения портье пока не подтверждены независимым источником');
+    await closeInquiryForm.locator('button[type="submit"]').click();
+
     const expected = await page.evaluate(() => ({
       hypothesisId: window.app.investigationBoard.hypotheses[0]?.id,
       alternativeId: window.app.investigationBoard.hypotheses[1]?.id,
       alibiId: window.app.investigationBoard.alibiClaims[0]?.id,
+      inquiryId: window.app.investigationBoard.sourceInquiries[0]?.id,
       boardData: window.app.investigationBoard.toJSON()
     }));
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -91,6 +128,7 @@ try {
       const slot = app.investigationBoard.slots.find(item => item.id === 'slot-1');
       const hypothesis = app.investigationBoard.hypotheses.find(item => item.id === expected.hypothesisId);
       const alternative = app.investigationBoard.hypotheses.find(item => item.id === expected.alternativeId);
+      const inquiry = app.investigationBoard.sourceInquiries.find(item => item.id === expected.inquiryId);
       const pool = app.boardUI?.container?.querySelector('[data-evidence-id="guest_book"]');
       return {
         activeCase: app.progress.activeCase,
@@ -106,6 +144,9 @@ try {
         alternativeId: alternative?.id || null,
         alternativeGroupId: alternative?.alternativeGroupId || null,
         alternativeHistory: alternative?.history || [],
+        inquiry: inquiry ? JSON.parse(JSON.stringify(inquiry)) : null,
+        rumorOrigin: app.npcMemoryService.getStatementById('acceptance-rumor-origin'),
+        independentWitness: app.npcMemoryService.getStatementById('acceptance-independent-witness'),
         alibi: app.investigationBoard.alibiClaims.find(claim => claim.id === expected.alibiId) || null,
         boardSnapshot: app.investigationBoard.toJSON()
       };
@@ -137,6 +178,17 @@ try {
         restored.alibi?.precision !== 'approximate' ||
         restored.alibi?.uncertaintyMinutes !== 10) {
       throw new Error(viewport.name + ': sourced alibi claim was not restored');
+    }
+    if (restored.inquiry?.id !== expected.inquiryId ||
+        restored.inquiry?.status !== 'closed' ||
+        restored.inquiry?.leads?.[0]?.sourceId !== 'acceptance-independent-witness' ||
+        restored.inquiry?.conclusion !== 'Сведения портье пока не подтверждены независимым источником') {
+      throw new Error(viewport.name + ': source inquiry, its lead or detective conclusion was not restored');
+    }
+    if (restored.rumorOrigin?.directObservation !== false ||
+        !restored.rumorOrigin?.referencesRumorIds?.includes('acceptance-rumor-001') ||
+        restored.independentWitness?.directObservation !== true) {
+      throw new Error(viewport.name + ': witness provenance was not restored accurately');
     }
 
     const removed = await page.evaluate(() => {
