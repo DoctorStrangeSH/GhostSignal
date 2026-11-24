@@ -50,11 +50,14 @@ try {
       observed.push(actualTitle);
 
       const hidden = page.locator('#universal-modal');
-      const hiddenPromise = hidden.evaluate(element => new Promise(resolve =>
-        element.addEventListener('hidden.bs.modal', resolve, { once: true })
-      ));
+      await page.evaluate(() => {
+        const root = document.querySelector('#universal-modal');
+        window.__modalQueueAuditHidden = new Promise(resolve =>
+          root.addEventListener('hidden.bs.modal', resolve, { once: true })
+        );
+      });
       await page.locator('#modal-footer [data-bs-dismiss="modal"]').click();
-      await hiddenPromise;
+      await page.evaluate(() => window.__modalQueueAuditHidden);
 
       if (index < expected.length - 1) {
         const nextTitle = expected[index + 1].title;
