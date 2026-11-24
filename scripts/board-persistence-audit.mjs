@@ -10,9 +10,13 @@ try {
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
     await context.addInitScript(() => {
+      // Clear only on the first document of this isolated browser context.
+      // sessionStorage survives reloads, so the save under test remains intact.
+      if (sessionStorage.getItem('__ghost_board_audit_cleaned') === '1') return;
       for (const key of Object.keys(localStorage)) {
         if (key.startsWith('detective_archive_')) localStorage.removeItem(key);
       }
+      sessionStorage.setItem('__ghost_board_audit_cleaned', '1');
     });
     const page = await context.newPage();
     const pageErrors = [];
