@@ -1520,3 +1520,15 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Latest branch head at this checkpoint: `9d9958355e2bf1bd69460f1e0ebca0805ddb93de`. PR #180 remains open; `main` remains untouched.
 - Seven Actions checks were registered for the code head, but all remained `queued` and had no assigned runner (`runner: null`). CI is not PASS; investigate runner availability.
 - Next: complete desktop/mobile browser acceptance for both cases, including story transitions and endings, after CI becomes executable.
+
+## 2026-11-24 continuation — first real CI failure triage
+
+- The first executed checks exposed seven unit-test failures and one modal keyboard audit failure; Responsive audit passed.
+- Fixed stale cross-case dialogue snapshot handling so case mismatch is rejected before NPC dialogue lookup.
+- Fixed DialogueEngine node-effect calls to use the normalized current node, preserving stable node IDs in authored testimony claims.
+- Updated source inquiry fixtures to require a real origin witness and an independent firsthand corroborating witness; same-source hearsay is explicitly rejected.
+- Normalized source inquiry `originSources` in serialization and made board snapshot comparison insensitive to JSON key order.
+- Normalized VM-originated call event payloads before deep equality assertions.
+- Modal keyboard audit now waits for Bootstrap's actual `hidden.bs.modal` lifecycle event; EventController also captures the opener at `show.bs.modal`, with a new assertion that capture occurred.
+- Current code head: `4c8a20e7b82d239dd5c116c36eea0e7eedc23700`. A new push Quality gate is queued. No PASS claimed yet.
+- Next: inspect the new Quality gate logs, fix remaining failures, then verify all browser workflows on the same latest SHA.
