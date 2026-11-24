@@ -88,6 +88,15 @@ class Inventory {
     }
 
     // Вернуть ранее собранную улику в доступный пул после снятия с доски.
+    // Keep clues already mounted on the investigation board out of the
+    // available inventory pool when restoring older or partially inconsistent saves.
+    reconcileBoardEvidence(boardEvidenceIds = []) {
+        const placed = new Set(Array.isArray(boardEvidenceIds) ? boardEvidenceIds : []);
+        const previousCount = this.evidence.length;
+        this.evidence = this.evidence.filter(evidenceId => !placed.has(evidenceId));
+        return previousCount - this.evidence.length;
+    }
+
     addToEvidence(evidenceId) {
         const object = getObjectById(evidenceId);
         if (!object?.isEvidence || !this.items.includes(evidenceId) || this.evidence.includes(evidenceId)) {
