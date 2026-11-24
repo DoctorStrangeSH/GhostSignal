@@ -15,10 +15,10 @@ class EventController {
         this.modalReturnFocusElement = null;
         this.modalKeydownHandler = null;
         this.modalElement = null;
-        this.modalHiddenHandler = null;
+        this.modalShowHandler = null;
         this.modalHideHandler = null;
-        this.modalKeydownHandler = null;
-        this.modalReturnFocusElement = null;
+        this.modalHiddenHandler = null;
+        this.modalIsShowing = false;
         this.modalIsHiding = false;
     }
 
@@ -91,8 +91,16 @@ class EventController {
         // во время перехода предыдущего окна, оставляя backdrop без владельца.
         this.modalElement = typeof document !== 'undefined' ? document.getElementById('universal-modal') : null;
         if (this.modalElement && !this.modalHiddenHandler) {
-            this.modalHideHandler = () => { this.modalIsHiding = true; };
+            // Bootstrap marks the transition before the .show class is added.
+            // Track the lifecycle event so synchronous narrative bursts cannot
+            // race the opening animation and silently lose queued windows.
+            this.modalShowHandler = () => { this.modalIsShowing = true; };
+            this.modalHideHandler = () => {
+                this.modalIsShowing = false;
+                this.modalIsHiding = true;
+            };
             this.modalHiddenHandler = () => {
+                this.modalIsShowing = false;
                 this.modalIsHiding = false;
                 const next = this.pendingModalData.shift();
                 if (next) {
@@ -110,6 +118,7 @@ class EventController {
                     returnTarget.focus({ preventScroll: true });
                 }
             };
+            this.modalElement.addEventListener('show.bs.modal', this.modalShowHandler);
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
             this.modalKeydownHandler = (event) => {
@@ -151,7 +160,7 @@ class EventController {
         on('modal:show', (data) => {
             if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
             if (!this.modalElement) return;
-            if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
+            if (this.modalElement.classList.contains('show') || this.modalIsShowing || this.modalIsHiding) {
                 // Preserve every narrative event in arrival order. Replacing a
                 // single pending payload silently discarded earlier dialogue.
                 this.pendingModalData.push(data);
@@ -630,6 +639,9 @@ class EventController {
     }
 
     dispose() {
+        if (this.modalElement && this.modalShowHandler) {
+            this.modalElement.removeEventListener('show.bs.modal', this.modalShowHandler);
+        }
         if (this.modalElement && this.modalHideHandler) {
             this.modalElement.removeEventListener('hide.bs.modal', this.modalHideHandler);
         }
@@ -639,9 +651,11 @@ class EventController {
         if (this.modalElement && this.modalKeydownHandler) {
             this.modalElement.removeEventListener('keydown', this.modalKeydownHandler);
         }
+        this.modalShowHandler = null;
         this.modalHideHandler = null;
         this.modalHiddenHandler = null;
         this.modalKeydownHandler = null;
+        this.modalIsShowing = false;
         this.modalIsHiding = false;
         this.pendingModalData = [];
         this.modalReturnFocusElement = null;
