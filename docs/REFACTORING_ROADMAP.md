@@ -1241,3 +1241,6 @@
 - [x] dispose снимает `show.bs.modal` listener и сбрасывает состояние lifecycle.
 - [x] Добавлен unit regression, моделирующий Bootstrap до появления класса `.show`.
 - [ ] Подтвердить Quality и Modal UX CI на одном последнем SHA; до этого не считать исправление принятым.
+
+
+- [x] Дополнен тест восстановления звонка: после resume разрешено только событие `call:connected` с `resumed: true`; повторный `call:started` и повторные TTS/диалоговые события не допускаются.
