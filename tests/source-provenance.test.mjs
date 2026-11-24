@@ -154,3 +154,43 @@ test("rumor provenance stays unverified until the detective records a source inq
             evidenceIds: []
         }), false, "legacy open inquiries must derive the original witness from saved statements");
 });
+
+test("superseded rumor statements do not block a later firsthand claim from the same witness", () => {
+    const NPCMemoryService = loadClass("assets/js/npc/npcMemoryService.js", "NPCMemoryServiceExport", "NPCMemoryService");
+    const Board = loadClass("assets/js/systems/board.js", "InvestigationBoardExport", "InvestigationBoard");
+    const memory = new NPCMemoryService(null, "case-001");
+    const board = new Board();
+    board.setCase("case-001");
+
+    const original = memory.recordClaim("porter", {
+        id: "porter-superseded-rumor", topic: "departure", value: "mary-left-at-midnight",
+        summary: "Старое показание портье", directObservation: false,
+        referencesRumorIds: ["mary-left-hotel"], sourceName: "Фрэнк"
+    });
+    const revised = memory.recordClaim("porter", {
+        id: "porter-revised-observation", topic: "departure", value: "porter-saw-mary-leave-at-22",
+        summary: "Фрэнк уточнил время, которое видел лично", directObservation: true,
+        revisesClaimId: "porter-superseded-rumor", sourceName: "Фрэнк"
+    });
+    const otherOrigin = memory.recordClaim("journalist", {
+        id: "journalist-rumor-origin", topic: "carriage", value: "carriage-left-hotel",
+        summary: "Журналист передал слух о карете", directObservation: false,
+        referencesRumorIds: ["mary-left-hotel"], sourceName: "Журналист"
+    });
+    assert.equal(original.added, true);
+    assert.equal(revised.added, true);
+    assert.equal(otherOrigin.added, true);
+
+    const hypothesisId = board.addHypothesis("Проверка времени ухода");
+    assert.equal(board.linkHypothesis(hypothesisId, "statement", "porter-superseded-rumor", "pending"), true);
+    assert.equal(board.linkHypothesis(hypothesisId, "statement", "journalist-rumor-origin", "pending"), true);
+    const inquiryId = board.startSourceInquiry(hypothesisId, "mary-left-hotel", memory.getStatements());
+    assert.ok(inquiryId);
+    assert.deepEqual(Array.from(board.sourceInquiries[0].originSources, source => source.npcId), ["journalist"]);
+    assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "porter-revised-observation",
+        "Сопоставить новое личное наблюдение Фрэнка", { statements: memory.getStatements(), evidenceIds: [] }), true);
+
+    const uiSource = readFileSync(resolve(root, "assets/js/ui/boardUI.js"), "utf8");
+    assert.ok(uiSource.includes("source.status === 'active' &&"),
+        "the UI must use the same active-source rule as the domain layer");
+});
