@@ -1189,3 +1189,107 @@ test("real Inventory insight events resolve Thomas's promise through EventContro
         controller.dispose();
     }
 });
+
+
+test("required narrative modals ignore Escape and backdrop clicks while ordinary modals remain dismissible", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const closeButton = { hidden: false };
+    const modalElement = {
+        classList: { contains: name => classes.has(name), add: name => classes.add(name), remove: name => classes.delete(name) },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, []);
+            listeners.get(name).push(handler);
+        },
+        removeEventListener(name, handler) {
+            listeners.set(name, (listeners.get(name) || []).filter(item => item !== handler));
+        },
+        querySelector(selector) { return selector === ".modal-header .btn-close" ? closeButton : null; },
+        contains() { return false; },
+        dispatch(name, event) {
+            for (const handler of [...(listeners.get(name) || [])]) {
+                handler(event);
+                if (event.immediateStopped) break;
+            }
+        }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    document.activeElement = document.body;
+    let bootstrapEscapeCalls = 0;
+    let bootstrapBackdropCalls = 0;
+    let hideCalls = 0;
+    const EventController = loadEventController({
+        document,
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    // Simulate Bootstrap registering its dismiss handlers after
+                    // EventController has installed its protective listeners.
+                    modalElement.addEventListener("keydown", event => {
+                        if (event.key === "Escape") { bootstrapEscapeCalls++; hideCalls++; }
+                    });
+                    modalElement.addEventListener("click", event => {
+                        if (event.target === modalElement) { bootstrapBackdropCalls++; hideCalls++; }
+                    });
+                    return { show() { classes.add("show"); }, hide() { hideCalls++; } };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", {
+        title: "Важный выбор",
+        body: "Нужно принять сюжетное решение.",
+        footer: "Выберите действие",
+        dismissible: false
+    });
+    assert.equal(closeButton.hidden, true, "required choice hides the close control");
+
+    const escape = {
+        key: "Escape", prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("keydown", escape);
+    assert.equal(escape.prevented, true);
+    assert.equal(bootstrapEscapeCalls, 0, "Bootstrap must not receive Escape for a required choice");
+
+    const backdrop = {
+        target: modalElement, prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("click", backdrop);
+    assert.equal(backdrop.prevented, true);
+    assert.equal(bootstrapBackdropCalls, 0, "Bootstrap must not receive backdrop clicks for a required choice");
+    assert.equal(hideCalls, 0, "protected modal remains open");
+
+    // A regular informational modal keeps the default Bootstrap dismissal behavior.
+    classes.delete("show");
+    eventBus.emit("modal:show", {
+        title: "Справка",
+        body: "Обычное информационное окно.",
+        footer: "Закрыть"
+    });
+    assert.equal(closeButton.hidden, false, "ordinary modal keeps its close control");
+    const ordinaryEscape = {
+        key: "Escape", prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("keydown", ordinaryEscape);
+    assert.equal(bootstrapEscapeCalls, 1, "ordinary modal still delegates Escape to Bootstrap");
+    controller.dispose();
+    assert.equal((listeners.get("click") || []).length, 0, "backdrop guard is removed on dispose");
+});
