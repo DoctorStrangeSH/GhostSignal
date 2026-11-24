@@ -36,6 +36,7 @@ const DIALOGUE_WIFE = {
             how_she_found_out: {
                 speaker: "npc",
                 text: "Я наняла частного детектива. Он предоставил мне фотографии. Отчёты. Распечатки звонков. Я знала о каждом их шаге.",
+                claim: {"id":"case001-victoria-received-investigation-materials","topic":"blackwood-affair-investigation","value":"private-investigator-gave-victoria-photos-reports-and-call-records","summary":"Виктория сообщает, что частный детектив передал ей фотографии, отчёты и распечатки звонков","sourceName":"Виктория Блэквуд","location":"Особняк Блэквудов","circumstances":"Виктория лично получила материалы, но содержание и происхождение документов требуют отдельной проверки","directObservation":true},
                 mood: "cold",
                 innerThought: "Она следила за ними. Хладнокровно.",
                 givesInsight: "wife_knew_everything",
@@ -58,6 +59,7 @@ const DIALOGUE_WIFE = {
             threats_question: {
                 speaker: "npc",
                 text: "Угрожала? Нет. Я просто сказала ему, что если он уйдёт — я расскажу всем о его долгах. О его махинациях. О том, что его бизнес — финансовая пирамида. Он бы потерял всё.",
+                claim: {"id":"case001-victoria-admits-financial-threat","topic":"victoria-threatened-blackwood","value":"victoria-threatened-to-expose-blackwoods-debts-and-business-fraud-if-he-left","summary":"Виктория признаёт, что угрожала раскрыть долги и махинации мужа, если он уйдёт","sourceName":"Виктория Блэквуд","location":"Особняк Блэквудов","circumstances":"Прямое признание собственных слов, но не доказательство причастности к исчезновению","directObservation":true},
                 mood: "cold",
                 innerThought: "Шантаж. Она держала его на крючке.",
                 givesInsight: "wife_blackmail",
@@ -79,6 +81,7 @@ const DIALOGUE_WIFE = {
             alibi: {
                 speaker: "npc",
                 text: "Здесь. Одна. Смотрела на дождь и думала о том, как моя жизнь превратилась в дешёвый детективный роман.",
+                claim: {"id":"case001-victoria-alibi-statement","topic":"victoria-location-night-of-disappearance","value":"victoria-says-she-was-alone-at-home","summary":"Виктория утверждает, что вечером находилась дома одна","sourceName":"Виктория Блэквуд","location":"Особняк Блэквудов","timeLabel":"Вечер исчезновения","circumstances":"Самоотчёт без названных свидетелей; алиби не подтверждено","directObservation":true},
                 mood: "wistful",
                 innerThought: "Алиби нет. Но и прямых улик тоже.",
                 answers: [
