@@ -25,6 +25,7 @@ try {
         body,
         footer: '<button class="btn btn-warning" id="modal-audit-action">Продолжить</button>'
       }));
+      opener.focus();
       opener.click();
       await shown;
     });
