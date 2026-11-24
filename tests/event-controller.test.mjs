@@ -1225,6 +1225,7 @@ test("required narrative modals ignore Escape and backdrop clicks while ordinary
     let bootstrapEscapeCalls = 0;
     let bootstrapBackdropCalls = 0;
     let hideCalls = 0;
+    let bootstrapHandlersInstalled = false;
     const EventController = loadEventController({
         document,
         bootstrap: {
@@ -1232,12 +1233,15 @@ test("required narrative modals ignore Escape and backdrop clicks while ordinary
                 getOrCreateInstance() {
                     // Simulate Bootstrap registering its dismiss handlers after
                     // EventController has installed its protective listeners.
-                    modalElement.addEventListener("keydown", event => {
-                        if (event.key === "Escape") { bootstrapEscapeCalls++; hideCalls++; }
-                    });
-                    modalElement.addEventListener("click", event => {
-                        if (event.target === modalElement) { bootstrapBackdropCalls++; hideCalls++; }
-                    });
+                    if (!bootstrapHandlersInstalled) {
+                        bootstrapHandlersInstalled = true;
+                        modalElement.addEventListener("keydown", event => {
+                            if (event.key === "Escape") { bootstrapEscapeCalls++; hideCalls++; }
+                        });
+                        modalElement.addEventListener("click", event => {
+                            if (event.target === modalElement) { bootstrapBackdropCalls++; hideCalls++; }
+                        });
+                    }
                     return { show() { classes.add("show"); }, hide() { hideCalls++; } };
                 }
             }
@@ -1290,6 +1294,8 @@ test("required narrative modals ignore Escape and backdrop clicks while ordinary
     };
     modalElement.dispatch("keydown", ordinaryEscape);
     assert.equal(bootstrapEscapeCalls, 1, "ordinary modal still delegates Escape to Bootstrap");
+    const backdropGuard = controller.modalBackdropHandler;
     controller.dispose();
-    assert.equal((listeners.get("click") || []).length, 0, "backdrop guard is removed on dispose");
+    assert.equal((listeners.get("click") || []).includes(backdropGuard), false,
+        "backdrop guard is removed on dispose without disturbing Bootstrap listeners");
 });
