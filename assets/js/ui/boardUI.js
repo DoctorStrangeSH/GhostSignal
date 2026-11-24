@@ -856,6 +856,7 @@ class BoardUI {
         const options = [
             ...statements.filter(statement => statement.status !== 'superseded' &&
                 statement.directObservation === true &&
+                !statement.referencesRumorIds?.length &&
                 !originNpcIds.has(statement.npcId) &&
                 !alreadyUsedWitnessIds.has(statement.npcId))
                 .map(statement => ({
