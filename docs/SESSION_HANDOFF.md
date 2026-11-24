@@ -1451,3 +1451,15 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Последний кодовый commit: a643ed2385981925cffb8e2d5fd011f953ee2dd1. CI на этом SHA пока не подтверждён.
 - Следующий шаг: проверить Quality/Responsive/Visual Smoke/Thomas Promise/Modal UX CI; затем Playwright acceptance полного цикла clue placement/save/reload на 390×844 и 1440×900. Далее проверить гипотезы/альтернативы/историю и алиби.
 - PR #180 остаётся open, main не изменена. Не начинать case-003 до закрытия 1.0 acceptance.
+
+
+## 2026-11-24: PR #180 — browser acceptance для сохранения доски
+
+- Добавлен scripts/board-persistence-audit.mjs; он запускается после visual-smoke в .github/workflows/visual-smoke.yml.
+- Проверяемые viewport: 390×844 и 1440×900.
+- Сценарий очищает detective_archive_* только один раз на изолированный browser context. sessionStorage marker сохраняет тестовое состояние между reload; это важно, иначе сам тест стирал бы save на каждом перезапуске страницы.
+- Полный путь: case-001 → добавить guest_book → поместить в slot-1 → создать hypothesis + link → quickSave → reload → проверить slot/evidenceOnBoard/items/evidence pool/hypothesis link → снять улику → убедиться, что она вернулась в пул → quickSave + reload → проверить удаление.
+- Дополнительно: перейти в case-002 и проверить, что улики, гипотезы, алиби и предметы case-001 не перетекают в новое дело; сохранить и перезагрузить case-002.
+- Последний кодовый commit: d1fea608a46513b1f9bdc507b41f8e7651674c8. На нём пять workflow запущены, но все jobs ещё queued. CI не считать успешным.
+- PR #180 остаётся открытым; main не затронута. Следующий шаг — дождаться и проверить все пять workflow на одном SHA, затем исправить падения и повторить проверки.
+- Не начинать case-003 до ручной приёмки обоих расследований и release checklist 1.0.
