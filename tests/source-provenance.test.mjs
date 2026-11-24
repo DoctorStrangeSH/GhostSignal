@@ -43,6 +43,15 @@ test("rumor provenance stays unverified until the detective records a source inq
         referencesRumorIds: ["mary-left-hotel"],
         sourceName: "Фрэнк, портье"
     });
+    const secondhandWitness = memory.recordClaim("neighbor", {
+        id: "neighbor-secondhand-claim",
+        topic: "blackwood_departure",
+        value: "Мэри видела, как Блэквуд покинул отель",
+        summary: "Сосед слышал эту историю от других",
+        directObservation: false,
+        referencesRumorIds: ["mary-left-hotel"],
+        sourceName: "Сосед"
+    });
     const witness = memory.recordClaim("bartender", {
         id: "bartender-direct-claim",
         topic: "blackwood_departure",
@@ -54,6 +63,7 @@ test("rumor provenance stays unverified until the detective records a source inq
 
     assert.equal(rumor.added, true);
     assert.equal(sameWitnessFollowup.added, true);
+    assert.equal(secondhandWitness.added, true);
     assert.equal(witness.added, true);
     const statements = memory.getStatements();
     const hypothesisId = board.addHypothesis("Мэри могла помочь Блэквуду скрыться");
@@ -74,6 +84,9 @@ test("rumor provenance stays unverified until the detective records a source inq
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "porter-followup-claim",
         "Портье повторяет собственную историю", { statements, evidenceIds: [] }), false,
         "the original rumor witness cannot be counted as independent corroboration");
+    assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "neighbor-secondhand-claim",
+        "Сосед пересказывает чужие слова", { statements, evidenceIds: [] }), false,
+        "a secondhand retelling is not independent firsthand corroboration");
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
         "Сопоставить личное наблюдение Джо со словами портье", { statements, evidenceIds: [] }), true);
     assert.equal(board.addSourceInquiryLead(inquiryId, "statement", "bartender-direct-claim",
