@@ -66,8 +66,10 @@ test("restoring an interrupted case-specific call uses the saved dialogue id", (
     assert.equal(call.timerStarted, true);
     assert.equal(status.textContent, "СОЕДИНЁН");
     assert.equal(wave.style.display, "none");
-    assert.ok(events.some(event => event.name === "call:connected" &&
-        event.detail.npcId === "bartender" && event.detail.resumed === true));
+    assert.deepEqual(events, [{
+        name: "call:connected",
+        detail: { npcId: "bartender", resumed: true }
+    }], "resume must not replay call:started, ringtone, TTS, or dialogue side-effect events");
 });
 
 
