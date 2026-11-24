@@ -31,3 +31,5 @@ jobs:
         run: node scripts/modal-keyboard-audit.mjs
       - name: Audit rapid narrative queue delivery
         run: node scripts/modal-queue-audit.mjs
+      - name: Audit required narrative modal dismissal policy
+        run: node scripts/modal-dismissal-audit.mjs
