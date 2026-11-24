@@ -200,8 +200,11 @@ test('rumor inquiry requires observed references, discovered leads and persists 
     board.setCase('case-one');
     const hypothesis = board.addHypothesis('Оба свидетеля повторяют один слух');
     board.linkHypothesis(hypothesis, 'statement', 'claim-a', 'pending');
-    const statements = [{ id: 'claim-a', status: 'active', corroboratesRumorIds: ['rumor-one'] },
-        { id: 'old', status: 'superseded' }];
+    const statements = [
+        { id: 'claim-a', npcId: 'bartender', status: 'active', directObservation: false, corroboratesRumorIds: ['rumor-one'] },
+        { id: 'claim-b', npcId: 'waiter', status: 'active', directObservation: true, sourceName: 'Официант' },
+        { id: 'old', npcId: 'porter', status: 'superseded', directObservation: true }
+    ];
     assert.equal(board.startSourceInquiry(hypothesis, 'unseen', statements), null);
     const id = board.startSourceInquiry(hypothesis, 'rumor-one', statements);
     assert.equal(id, 'inquiry-1');
@@ -209,8 +212,9 @@ test('rumor inquiry requires observed references, discovered leads and persists 
     assert.equal(board.closeSourceInquiry(id, 'Это всего лишь пересказ'), false);
     assert.equal(board.addSourceInquiryLead(id, 'statement', 'old', 'Старая версия', { statements }), false);
     assert.equal(board.addSourceInquiryLead(id, 'evidence', 'unknown', 'Не найдена', { evidenceIds: [] }), false);
-    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Свидетель повторяет слух', { statements }), true);
-    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Повтор', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-a', 'Исходный пересказ не является независимым источником', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-b', 'Независимое личное наблюдение официанта', { statements }), true);
+    assert.equal(board.addSourceInquiryLead(id, 'statement', 'claim-b', 'Повтор', { statements }), false);
     assert.equal(board.addSourceInquiryLead(id, 'evidence', 'log', 'Запись не совпадает со временем', { evidenceIds: ['log'] }), true);
     const restored = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(restored.sourceInquiries[0].leads.length, 2);
@@ -228,14 +232,18 @@ test('investigation checklist tracks player-created source inquiries without inv
     board.setCase('case-002');
     const hypothesis = board.addHypothesis('Слух о <посетителе>');
     board.linkHypothesis(hypothesis, 'statement', 'claim-a', 'pending');
-    const statements = [{ id: 'claim-a', status: 'active', corroboratesRumorIds: ['rumor-one'] }];
+    const statements = [
+        { id: 'claim-a', npcId: 'bartender', status: 'active', directObservation: false, corroboratesRumorIds: ['rumor-one'] },
+        { id: 'claim-b', npcId: 'waiter', status: 'active', directObservation: true, sourceName: 'Официант' }
+    ];
     const inquiry = board.startSourceInquiry(hypothesis, 'rumor-one', statements);
     const leads = () => board.getInvestigationChecklist({ statements }).nextActions.filter(item => item.id === inquiry);
     assert.equal(leads().length, 1);
     assert.equal(leads()[0].status, 'pending');
     assert.match(leads()[0].text, /Найдите доступное показание/);
     assert.doesNotMatch(leads()[0].text, /личность посетителя установлена/);
-    board.addSourceInquiryLead(inquiry, 'statement', 'claim-a', 'Это пересказ', { statements });
+    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-a', 'Это пересказ', { statements }), false);
+    assert.equal(board.addSourceInquiryLead(inquiry, 'statement', 'claim-b', 'Независимое личное наблюдение', { statements }), true);
     assert.equal(leads()[0].status, 'available');
     const loaded = runtime.restore(JSON.parse(JSON.stringify(board.toJSON())));
     assert.equal(loaded.getInvestigationChecklist({ statements }).nextActions.find(item => item.id === inquiry).status, 'available');

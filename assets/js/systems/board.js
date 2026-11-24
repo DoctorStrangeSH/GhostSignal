@@ -845,8 +845,18 @@ class InvestigationBoard {
         if (!hypothesis || !rumor || this.sourceInquiries.some(i => i.hypothesisId === hypothesisId && i.rumorId === rumor)) return null;
         const review = this.reviewHypothesisSources(hypothesisId, statements);
         if (!review?.sources.some(s => s.linkedRumorIds.includes(rumor))) return null;
+        const originSources = review.sources
+            .filter(source => source.status === 'active' && source.linkedRumorIds.includes(rumor))
+            .map(source => ({
+                statementId: source.id,
+                npcId: source.npcId,
+                sourceName: statements.find(statement => statement.id === source.id)?.sourceName || source.npcId,
+                directObservation: statements.find(statement => statement.id === source.id)?.directObservation === true
+            }))
+            .filter(source => typeof source.npcId === 'string' && source.npcId);
+        if (!originSources.length) return null;
         const inquiry = { id: 'inquiry-' + this.nextInquiryId++, hypothesisId, rumorId: rumor,
-            status: 'open', leads: [], history: [{ action: 'opened', rumorId: rumor }] };
+            status: 'open', originSources, leads: [], history: [{ action: 'opened', rumorId: rumor }] };
         this.sourceInquiries.push(inquiry);
         events.emit('board:updated', { action: 'inquiry_opened', id: inquiry.id });
         return inquiry.id;
@@ -858,10 +868,35 @@ class InvestigationBoard {
         const source = String(sourceId ?? '').trim().slice(0, 240);
         const explanation = String(note ?? '').trim().slice(0, 500);
         if (!inquiry || !source || !explanation || !['statement', 'evidence'].includes(kind)) return false;
-        if (kind === 'statement' && !context.statements?.some(s => s.id === source && s.status !== 'superseded')) return false;
+        const statement = kind === 'statement'
+            ? context.statements?.find(item => item.id === source && item.status !== 'superseded')
+            : null;
+        if (kind === 'statement' && (
+            !statement || typeof statement.npcId !== 'string' || !statement.npcId ||
+            statement.directObservation !== true ||
+            statement.referencesRumorIds?.includes(inquiry.rumorId)
+        )) return false;
         if (kind === 'evidence' && !context.evidenceIds?.includes(source)) return false;
         if (inquiry.leads.some(lead => lead.kind === kind && lead.sourceId === source)) return false;
-        const lead = { kind, sourceId: source, note: explanation };
+        // A second statement from the original rumor witness is not independent
+        // corroboration. Nor are two claims from the same witness independent
+        // of each other. Keep this check in the domain layer, not only in UI.
+        const originSources = Array.isArray(inquiry.originSources) && inquiry.originSources.length
+            ? inquiry.originSources
+            : this.reviewHypothesisSources(inquiry.hypothesisId, context.statements || []).sources
+                .filter(origin => origin.status === 'active' && origin.linkedRumorIds.includes(inquiry.rumorId));
+        if (statement && (
+            originSources.some(origin => origin.npcId === statement.npcId) ||
+            inquiry.leads.some(lead => lead.kind === 'statement' && lead.npcId === statement.npcId)
+        )) return false;
+        const lead = {
+            kind, sourceId: source, note: explanation,
+            ...(statement ? {
+                npcId: statement.npcId,
+                sourceName: statement.sourceName || statement.npcId,
+                directObservation: statement.directObservation === true
+            } : {})
+        };
         inquiry.leads.push(lead);
         inquiry.history.push({ action: 'lead_added', ...lead });
         events.emit('board:updated', { action: 'inquiry_lead_added', id });
@@ -897,7 +932,7 @@ class InvestigationBoard {
             slots: this.slots.map(s => ({ id: s.id, evidenceId: s.evidenceId })),
             evidenceOnBoard: [...this.evidenceOnBoard],
             hypotheses: this.hypotheses.map(h => ({ ...h, links: h.links.map(l => ({ ...l })), history: h.history.map(v => ({ ...v })) })),
-            sourceInquiries: this.sourceInquiries.map(i => ({ ...i, leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
+            sourceInquiries: this.sourceInquiries.map(i => ({ ...i, originSources: (Array.isArray(i.originSources) ? i.originSources : []).map(source => ({ ...source })), leads: i.leads.map(l => ({ ...l })), history: i.history.map(h => ({ ...h })) })),
             alibiClaims: this.alibiClaims.map(c => ({ ...c })),
             routeQuestions: this.routeQuestions.map(q => ({ ...q, ids: [...q.ids] })),
             nextAlibiId: this.nextAlibiId,
@@ -911,13 +946,24 @@ class InvestigationBoard {
     static fromJSON(json) {
         const board = new InvestigationBoard();
         if (json) {
-            json.slots?.forEach(savedSlot => {
-                const slot = board.slots.find(s => s.id === savedSlot.id);
-                if (slot && savedSlot.evidenceId) {
-                    slot.evidenceId = savedSlot.evidenceId;
-                }
+            // Rebuild the board inventory from the actual slots. Older or
+            // partially written saves could contain duplicate/stale IDs in
+            // evidenceOnBoard, which made clues disappear from both the board
+            // and the detective's inventory after a reload.
+            const placedEvidence = new Set();
+            const savedSlots = Array.isArray(json.slots) ? json.slots : [];
+            savedSlots.forEach(savedSlot => {
+                if (!savedSlot || typeof savedSlot.id !== 'string' ||
+                    typeof savedSlot.evidenceId !== 'string' || !savedSlot.evidenceId) return;
+                const slot = board.slots.find(item => item.id === savedSlot.id);
+                if (!slot || placedEvidence.has(savedSlot.evidenceId)) return;
+                const evidence = typeof getObjectById === 'function'
+                    ? getObjectById(savedSlot.evidenceId) : null;
+                if (!evidence?.isEvidence) return;
+                slot.evidenceId = savedSlot.evidenceId;
+                placedEvidence.add(savedSlot.evidenceId);
             });
-            board.evidenceOnBoard = Array.isArray(json.evidenceOnBoard) ? json.evidenceOnBoard : [];
+            board.evidenceOnBoard = [...placedEvidence];
             board.caseId = typeof json.caseId === 'string' ? json.caseId : null;
             board.hypotheses = Array.isArray(json.hypotheses) ? json.hypotheses.filter(h => h && typeof h.id === 'string' && typeof h.title === 'string').map(h => ({
                 id: h.id, title: h.title, status: h.status === 'abandoned' ? 'abandoned' : 'open',
@@ -931,7 +977,23 @@ class InvestigationBoard {
                 id: i.id, hypothesisId: i.hypothesisId, rumorId: i.rumorId,
                 status: i.status === 'closed' ? 'closed' : 'open',
                 conclusion: typeof i.conclusion === 'string' ? i.conclusion : undefined,
-                leads: Array.isArray(i.leads) ? i.leads.filter(l => l && ['statement', 'evidence'].includes(l.kind) && typeof l.sourceId === 'string' && typeof l.note === 'string').map(l => ({ ...l })) : [],
+                originSources: Array.isArray(i.originSources) ? i.originSources
+                    .filter(source => source && typeof source.statementId === 'string' &&
+                        typeof source.npcId === 'string' && source.npcId)
+                    .map(source => ({
+                        statementId: source.statementId.slice(0, 240),
+                        npcId: source.npcId.slice(0, 64),
+                        sourceName: typeof source.sourceName === 'string' ? source.sourceName.slice(0, 120) : source.npcId,
+                        directObservation: source.directObservation === true
+                    })) : [],
+                leads: Array.isArray(i.leads) ? i.leads
+                    .filter(l => l && ['statement', 'evidence'].includes(l.kind) && typeof l.sourceId === 'string' && typeof l.note === 'string')
+                    .map(l => ({
+                        kind: l.kind, sourceId: l.sourceId.slice(0, 240), note: l.note.slice(0, 500),
+                        ...(typeof l.npcId === 'string' && l.npcId ? { npcId: l.npcId.slice(0, 64) } : {}),
+                        ...(typeof l.sourceName === 'string' ? { sourceName: l.sourceName.slice(0, 120) } : {}),
+                        ...(typeof l.directObservation === 'boolean' ? { directObservation: l.directObservation } : {})
+                    })) : [],
                 history: Array.isArray(i.history) ? i.history.filter(h => h && typeof h.action === 'string').map(h => ({ ...h })) : []
             })) : [];
             board.nextInquiryId = Math.max(1, Number.isSafeInteger(json.nextInquiryId) ? json.nextInquiryId : 1,

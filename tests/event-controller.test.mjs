@@ -676,6 +676,86 @@ test("a replay gets a new run ID and ending while permanent rewards remain first
 });
 
 
+test("EventController queues narrative bursts while Bootstrap is still opening before .show", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const modalElement = {
+        classList: {
+            contains(name) { return classes.has(name); },
+            add(name) { classes.add(name); },
+            remove(name) { classes.delete(name); }
+        },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name).add(handler);
+        },
+        removeEventListener(name, handler) { listeners.get(name)?.delete(handler); },
+        dispatch(name) {
+            for (const handler of listeners.get(name) || []) handler();
+        },
+        contains() { return false; }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    document.activeElement = document.body;
+    let showCalls = 0;
+    const EventController = loadEventController({
+        document,
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    return {
+                        show() {
+                            showCalls++;
+                            // Bootstrap dispatches show.bs.modal immediately,
+                            // while the fade/backdrop transition has not yet
+                            // added the .show class to the modal element.
+                            modalElement.dispatch("show.bs.modal");
+                        }
+                    };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", { title: "Первое окно", body: "Открывается", footer: "OK" });
+    assert.equal(showCalls, 1);
+    assert.equal(classes.has("show"), false, "opening transition has not applied .show yet");
+    assert.equal(controller.modalIsShowing, true);
+
+    eventBus.emit("modal:show", { title: "Второе окно", body: "Следом", footer: "OK" });
+    eventBus.emit("modal:show", { title: "Третье окно", body: "Третье", footer: "OK" });
+    assert.equal(showCalls, 1, "new windows must queue while the first opening transition is active");
+    assert.equal(controller.pendingModalData.length, 2);
+    assert.equal(elements["modal-title"].innerHTML, "Первое окно");
+
+    classes.add("show");
+    modalElement.dispatch("shown.bs.modal");
+    modalElement.dispatch("hide.bs.modal");
+    classes.delete("show");
+    modalElement.dispatch("hidden.bs.modal");
+
+    assert.equal(showCalls, 2, "the next window opens only after the previous window is fully hidden");
+    assert.equal(elements["modal-title"].innerHTML, "Второе окно");
+    assert.equal(controller.modalIsShowing, true);
+    assert.equal(controller.pendingModalData.length, 1);
+
+    controller.dispose();
+    assert.equal(listeners.get("show.bs.modal").size, 0, "dispose removes the opening lifecycle listener");
+    assert.equal(controller.modalIsShowing, false);
+});
+
+
 test("EventController queues a second narrative modal until the first Bootstrap transition is hidden", () => {
     const eventBus = createEventBus();
     const listeners = new Map();
@@ -701,9 +781,17 @@ test("EventController queues a second narrative modal until the first Bootstrap 
         "modal-body": { innerHTML: "" },
         "modal-footer": { innerHTML: "" }
     };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    const opener = {
+        isConnected: true,
+        disabled: false,
+        focus() { document.activeElement = this; }
+    };
+    document.activeElement = opener;
+    modalElement.contains = () => false;
     let showCalls = 0;
     const EventController = loadEventController({
-        document: { getElementById: id => elements[id] || null },
+        document,
         bootstrap: {
             Modal: {
                 getOrCreateInstance() {
@@ -757,9 +845,12 @@ test("EventController queues a second narrative modal until the first Bootstrap 
     modalElement.dispatch("hide.bs.modal");
     classes.delete("show");
     modalElement.dispatch("hidden.bs.modal");
+    assert.equal(document.activeElement, opener, "focus returns to the original opener after the entire queued sequence");
+    assert.equal(controller.modalReturnFocusElement, null);
 
     controller.dispose();
     assert.equal(listeners.get("hidden.bs.modal").size, 0);
+    assert.equal(listeners.get("keydown").size, 0, "disposed controller removes the modal keyboard trap");
     assert.equal(controller.pendingModalData.length, 0, "disposed controller leaves no queued modal payloads");
 
     controller.bind();
@@ -1097,4 +1188,114 @@ test("real Inventory insight events resolve Thomas's promise through EventContro
     } finally {
         controller.dispose();
     }
+});
+
+
+test("required narrative modals ignore Escape and backdrop clicks while ordinary modals remain dismissible", () => {
+    const eventBus = createEventBus();
+    const listeners = new Map();
+    const classes = new Set();
+    const closeButton = { hidden: false };
+    const modalElement = {
+        classList: { contains: name => classes.has(name), add: name => classes.add(name), remove: name => classes.delete(name) },
+        addEventListener(name, handler) {
+            if (!listeners.has(name)) listeners.set(name, []);
+            listeners.get(name).push(handler);
+        },
+        removeEventListener(name, handler) {
+            listeners.set(name, (listeners.get(name) || []).filter(item => item !== handler));
+        },
+        querySelector(selector) { return selector === ".modal-header .btn-close" ? closeButton : null; },
+        contains() { return false; },
+        dispatch(name, event) {
+            for (const handler of [...(listeners.get(name) || [])]) {
+                handler(event);
+                if (event.immediateStopped) break;
+            }
+        }
+    };
+    const elements = {
+        "universal-modal": modalElement,
+        "modal-title": { innerHTML: "" },
+        "modal-body": { innerHTML: "" },
+        "modal-footer": { innerHTML: "" }
+    };
+    const document = { activeElement: null, body: {}, getElementById: id => elements[id] || null };
+    document.activeElement = document.body;
+    let bootstrapEscapeCalls = 0;
+    let bootstrapBackdropCalls = 0;
+    let hideCalls = 0;
+    let bootstrapHandlersInstalled = false;
+    const EventController = loadEventController({
+        document,
+        bootstrap: {
+            Modal: {
+                getOrCreateInstance() {
+                    // Simulate Bootstrap registering its dismiss handlers after
+                    // EventController has installed its protective listeners.
+                    if (!bootstrapHandlersInstalled) {
+                        bootstrapHandlersInstalled = true;
+                        modalElement.addEventListener("keydown", event => {
+                            if (event.key === "Escape") { bootstrapEscapeCalls++; hideCalls++; }
+                        });
+                        modalElement.addEventListener("click", event => {
+                            if (event.target === modalElement) { bootstrapBackdropCalls++; hideCalls++; }
+                        });
+                    }
+                    return { show() { classes.add("show"); }, hide() { hideCalls++; } };
+                }
+            }
+        },
+        setInterval: () => 1,
+        clearInterval() {}
+    });
+    const controller = new EventController({ progress: null }, eventBus);
+    controller.bind();
+
+    eventBus.emit("modal:show", {
+        title: "Важный выбор",
+        body: "Нужно принять сюжетное решение.",
+        footer: "Выберите действие",
+        dismissible: false
+    });
+    assert.equal(closeButton.hidden, true, "required choice hides the close control");
+
+    const escape = {
+        key: "Escape", prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("keydown", escape);
+    assert.equal(escape.prevented, true);
+    assert.equal(bootstrapEscapeCalls, 0, "Bootstrap must not receive Escape for a required choice");
+
+    const backdrop = {
+        target: modalElement, prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("click", backdrop);
+    assert.equal(backdrop.prevented, true);
+    assert.equal(bootstrapBackdropCalls, 0, "Bootstrap must not receive backdrop clicks for a required choice");
+    assert.equal(hideCalls, 0, "protected modal remains open");
+
+    // A regular informational modal keeps the default Bootstrap dismissal behavior.
+    classes.delete("show");
+    eventBus.emit("modal:show", {
+        title: "Справка",
+        body: "Обычное информационное окно.",
+        footer: "Закрыть"
+    });
+    assert.equal(closeButton.hidden, false, "ordinary modal keeps its close control");
+    const ordinaryEscape = {
+        key: "Escape", prevented: false, immediateStopped: false,
+        preventDefault() { this.prevented = true; },
+        stopImmediatePropagation() { this.immediateStopped = true; }
+    };
+    modalElement.dispatch("keydown", ordinaryEscape);
+    assert.equal(bootstrapEscapeCalls, 1, "ordinary modal still delegates Escape to Bootstrap");
+    const backdropGuard = controller.modalBackdropHandler;
+    controller.dispose();
+    assert.equal((listeners.get("click") || []).includes(backdropGuard), false,
+        "backdrop guard is removed on dispose without disturbing Bootstrap listeners");
 });

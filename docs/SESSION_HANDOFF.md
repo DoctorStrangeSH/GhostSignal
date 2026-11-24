@@ -1404,3 +1404,134 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Modal UX Playwright audit covers 320×720, 390×844, 1440×900, long content scrolling, header/close bounds, horizontal overflow, and Escape close.
 - Next: audit Tab/Shift+Tab focus containment and restoration, Escape policy for important narrative dialogs, and rapid 5–10 modal event delivery in browser (FIFO unit coverage already exists).
 - Then verify full application reload/resume for interrupted conversations without replaying memory/time/relationship side effects. Keep release scope to the two current cases; do not start case-003 until 1.0 acceptance is complete.
+
+
+## 2026-11-24: PR #180 — продолжение проверки восстановления и модалок
+
+- Branch: `test/modal-keyboard-focus-audit`; PR #180 открыт, main не затронута.
+- Добавлен `tests/app-dialogue-restore.test.mjs`: проверяет разрешённое восстановление активного разговора и отбрасывание устаревшего/cross-case/cross-dialogue snapshot; также проверяет очистку snapshot при отказе CallInterface.
+- Playwright Visual Smoke теперь сравнивает полный DialogueEngine snapshot и видимый транскрипт до/после reload.
+- Modal keyboard audit проверяет Tab/Shift+Tab, фокус на корне модалки, Escape и возврат фокуса.
+- Modal queue audit проверяет 10 сообщений в FIFO на трёх размерах viewport.
+- Добавлен `tests/app-dialogue-restore.test.mjs` с пятью сценариями: валидное восстановление, старый case, неверный dialogue ID, отсутствующий диалог NPC и отказ CallInterface. Скрипт входит в `node --test` через стандартный `npm test`.
+- На текущем PR head созданы все пять workflow: Quality, Responsive, Visual Smoke, Thomas Promise Acceptance, Modal UX. Все пять пока `queued`; не объявлять их успешными. Проверить завершение на одном SHA перед merge.
+- Не сериализовать transient modal FIFO; сохранять только активный разговор через `dialogueData`.
+- Не начинать третье дело до ручной приёмки обоих текущих расследований и release checklist 1.0.
+
+
+## 2026-11-24: Bootstrap opening race fixed in PR #180
+
+- Found an opening-transition race: Bootstrap dispatches `show.bs.modal` before the modal receives `.show`; class-only queue detection could miss rapid narrative events in this interval.
+- EventController now tracks `modalIsShowing` from `show.bs.modal`, clears it on hide/hidden, and queues new events while opening.
+- `dispose()` unregisters the new show listener and resets the transition state.
+- Added a focused unit regression that simulates Bootstrap's pre-`.show` transition state; existing Playwright queue audit sends 10 events synchronously and asserts FIFO/no loss on 320/390/1440 px.
+- CI status on the prior PR head was queued. Re-check all five workflows on the new head; do not merge on queued checks.
+
+
+- Added a strict CallInterface resume event assertion: only `call:connected` with `resumed: true` may be emitted; resume must not replay call-start or dialogue/TTS side effects.
+
+
+## 2026-11-24: PR #180 — явная политика закрытия сюжетных модалок
+
+- Последний кодовый commit на момент этой записи: a55cca7ce94bc14a1d7399bc289ab37a810c75b4. Затем обновлены Roadmap/Handoff; после документационных коммитов проверить CI на новом итоговом head.
+- В EventController добавлен параметр dismissible: обычные окна закрываются как раньше; dismissible: false блокирует Escape и backdrop click и скрывает крестик.
+- Добавлен unit-тест на блокировку Escape/backdrop для обязательного окна и сохранение Escape для обычного.
+- Добавлен Playwright аудит scripts/modal-dismissal-audit.mjs и шаг в Modal UX workflow.
+- Пока не помечать конкретные игровые окна как non-dismissible, пока не проверены все вызовы modal:show; не превращать все окна в ловушки.
+- CI на новом head ещё не подтверждён. Следующий шаг: проверить Actions, затем аудитировать вызовы модалок и пометить только действительно обязательные решения; далее проверить сохранение доски дедукции и гипотез.
+- main не затронута; PR #180 остаётся открытым. Не начинать case-003 до завершения 1.0 acceptance.
+
+
+## 2026-11-24: PR #180 — восстановление доски и инвентаря
+
+- SaveController уже сохраняет boardData; App восстанавливает его и назначает активное дело. Не создавать параллельный persistence layer.
+- В board.js fromJSON теперь восстанавливает evidenceOnBoard только из занятых валидных слотов. Устранены stale IDs, дубликаты и предметы, не являющиеся уликами.
+- Inventory получил reconcileBoardEvidence(); App вызывает его после восстановления доски. Улика остаётся во владении игрока (items), но не отображается как свободная улика для повторного размещения.
+- Добавлен tests/board-persistence.test.mjs с round-trip, corrupt snapshot, counters, case reset и inventory reconciliation.
+- Последний кодовый commit: a643ed2385981925cffb8e2d5fd011f953ee2dd1. CI на этом SHA пока не подтверждён.
+- Следующий шаг: проверить Quality/Responsive/Visual Smoke/Thomas Promise/Modal UX CI; затем Playwright acceptance полного цикла clue placement/save/reload на 390×844 и 1440×900. Далее проверить гипотезы/альтернативы/историю и алиби.
+- PR #180 остаётся open, main не изменена. Не начинать case-003 до закрытия 1.0 acceptance.
+
+
+## 2026-11-24: PR #180 — browser acceptance для сохранения доски
+
+- Добавлен scripts/board-persistence-audit.mjs; он запускается после visual-smoke в .github/workflows/visual-smoke.yml.
+- Проверяемые viewport: 390×844 и 1440×900.
+- Сценарий очищает detective_archive_* только один раз на изолированный browser context. sessionStorage marker сохраняет тестовое состояние между reload; это важно, иначе сам тест стирал бы save на каждом перезапуске страницы.
+- Полный путь: case-001 → добавить guest_book → поместить в slot-1 → создать hypothesis + link → quickSave → reload → проверить slot/evidenceOnBoard/items/evidence pool/hypothesis link → снять улику → убедиться, что она вернулась в пул → quickSave + reload → проверить удаление.
+- Дополнительно: перейти в case-002 и проверить, что улики, гипотезы, алиби и предметы case-001 не перетекают в новое дело; сохранить и перезагрузить case-002.
+- Последний кодовый commit: d1fea608a46513b1f9bdc507b41f8e7651674c8. На нём пять workflow запущены, но все jobs ещё queued. CI не считать успешным.
+- PR #180 остаётся открытым; main не затронута. Следующий шаг — дождаться и проверить все пять workflow на одном SHA, затем исправить падения и повторить проверки.
+- Не начинать case-003 до ручной приёмки обоих расследований и release checklist 1.0.
+
+
+## 2026-11-24: PR #180 — расширение browser acceptance доски
+
+- Проверены фактические selectors BoardUI: board slot uses `.board-slot[data-slot-id]`; clue title is `.slot-evidence-name`; evidence pool item uses `data-evidence-id`. `#loading-screen` is dynamically created by LoadingScreen and removed after bootstrap, so the wait is valid.
+- Проверены реальные данные case-001: `guest_book` exists in objects.js and is a takeable evidence item.
+- Browser audit now creates a base hypothesis, links guest_book, creates an alternative hypothesis, revises the base title and checks that title, history, alternative group and alternative history survive a full reload.
+- Browser audit also creates a sourced approximate alibi claim tied to guest_book and checks precision/uncertainty after reload.
+- Existing checks retained: mobile 390×844 and desktop 1440×900; board clue and inventory reconciliation; remove clue → save → reload; case-001 → case-002 isolation → save → reload.
+- Latest code commit: 2fd538544f106a7abe60355daf2dbf2bd65eb6f9. Previous observed head af7e2d45d2d8ae829cd5bf434d7979f38d2407de had four workflows queued; for the new SHA workflow runs had not yet appeared at the time of this handoff. Do not report CI PASS.
+- PR #180 remains open and `main` is untouched. Next: inspect Actions/logs on the new head, fix any confirmed failures, then add/check source-inquiry and witness-statement history UI acceptance and complete two-case manual acceptance.
+
+
+## 2026-11-24: PR #180 — witness provenance / source inquiry acceptance
+
+- Extended `scripts/board-persistence-audit.mjs` with an end-to-end browser flow: create a rumor-origin statement from the porter (`directObservation: false`, linked rumor ID), create a separate direct observation from the bartender, attach the rumor statement to a player hypothesis, start the source inquiry through the actual UI button, add the witness statement as a lead through the form, and close it with a detective-authored conclusion.
+- After full reload, the browser audit checks the closed inquiry, lead source, conclusion, and accurate restoration of both witness provenance flags / rumor references. Existing board, hypothesis revision/alternative, alibi, clue inventory reconciliation, removal, and cross-case checks remain.
+- Added `tests/source-provenance.test.mjs`: unverified rumor origin, direct-observation metadata, unknown rumor rejection, missing-source rejection, duplicate-lead rejection, inquiry closure, and board/NPC-memory round trip.
+- Latest code SHA: `ffa8e9a69af39edf33dffe0c3570954a6bc70a87`. PR #180 remains open; `main` is untouched. CI runs had not yet appeared for this new SHA at last check; five workflows on the previous head were queued. Do not report PASS until all five pass on the same latest SHA.
+- Next: confirm Actions results; then inspect authored dialogue claims in both cases for source independence, revisions and contradictions, and add targeted regressions for any concrete defects.
+
+## 2026-11-24: PR #180 — source independence and authored testimony coverage
+
+- Domain guard: source-inquiry statement leads require `directObservation === true`, must come from an NPC other than every origin witness of the rumor, cannot reuse a witness already represented by another statement lead, and cannot carry `referencesRumorIds` for the same rumor. A person who personally heard a retelling is not firsthand evidence of the underlying event.
+- New inquiries persist `originSources` snapshots (statement ID, NPC ID/name, observation flag). Statement leads persist NPC identity and observation metadata. Legacy open inquiries derive origin witnesses from their hypothesis-linked statements when the snapshot is absent.
+- Board UI explains the independence rule, shows who supplied each statement and whether it is firsthand, and filters the selector to eligible firsthand witnesses.
+- Added 19 material claims across all five case-001 dialogue packs. Case-002's existing rumor retelling by Joe remains explicitly secondhand (`directObservation: false`, `referencesRumorIds`); previously unmarked firsthand claims by Joe, Kane and Thomas are now explicit.
+- Added `tests/case-testimony-provenance.test.mjs`; expanded `tests/source-provenance.test.mjs` for same-witness rejection, secondhand-retelling rejection, independent firsthand acceptance, metadata restoration, and legacy inquiry fallback. Expanded `scripts/board-persistence-audit.mjs` to verify UI eligibility and persisted witness provenance.
+- Updated `docs/CASE_PACK_AUTHORING.md` with the claim schema and authoring rules.
+- Historical code checkpoint: `f3fec70f1489823eb3375db0731e1e4824781df1`. PR #180 remains open; `main` is untouched. Current Actions lookups return seven queued jobs with no assigned runner; do not claim CI PASS.
+- Next: obtain Actions results on the latest head, fix any failures, then perform an actual playthrough acceptance of both cases to ensure the authored claims are emitted when dialogue nodes are reached.
+
+## 2026-11-24 continuation — dialogue claim integration and per-rumor source eligibility
+
+- Added `tests/dialogue-claim-integration.test.mjs`: instantiates the real DialogueEngine in a VM with a minimal memory-service spy; verifies claim registration when the testimony node is reached, stable dialogue/node IDs, and no duplicate write on leaving the node.
+- Added `.github/workflows/quality-gate.yml` for PRs, pushes to `test/modal-keyboard-focus-audit`, and manual dispatch. It runs `npm run build` (syntax check, data validation, all Node tests) and Playwright browser persistence/visual smoke audits.
+- Refactored `BoardUI._renderSourceInquiries`: eligible witness choices are now computed per rumor inquiry, rather than globally across all rumor chains. A firsthand claim tied to rumor A can still be considered for rumor B if it is not part of B's source chain.
+- Expanded browser acceptance with two distinct rumor chains and a cross-rumor firsthand statement; expanded source provenance tests to cover same-chain rejection and different-chain eligibility.
+- Latest edits touch `assets/js/ui/boardUI.js`, `tests/dialogue-claim-integration.test.mjs`, `scripts/board-persistence-audit.mjs`, `tests/source-provenance.test.mjs`, and `.github/workflows/quality-gate.yml`.
+- CI has not been confirmed: the available PR workflow-run lookup currently returns no runs and the local runtime was not used to execute tests. Do not report PASS until an actual Actions result is visible.
+- Next: inspect Actions results, fix any failures, then perform a real browser playthrough of both cases and verify that authored claims are registered only when their dialogue nodes are reached.
+
+- Added dialogue-graph reachability assertions: every authored claim node in the audited dialogue packs must be reachable from the start node or a conditional entry rule through answer links.
+- Browser persistence acceptance now checks two distinct rumor chains: a statement tied to rumor A is excluded from A's corroboration choices but remains eligible for rumor B when it is independent of B.
+
+- Fixed a UI/domain mismatch: source-picker origin NPC filtering now considers only active claims. A superseded rumor statement no longer blocks a later firsthand observation from the same NPC.
+- Added regression coverage for a superseded rumor claim revised into an independent firsthand statement while a second active witness remains the rumor origin.
+- The `b34c8aa` run list is historical and does not validate newer heads. Current runner status is recorded in the latest checkpoint below.
+- Latest checked head at this checkpoint: `07f549dd90a66e7107a71ffe41238ea5859387f6`. Seven PR/push workflow runs were registered, but all jobs remained queued with `runner: null`; CI PASS is not confirmed. Investigate GitHub Actions runner availability.
+
+## 2026-11-24 continuation — real dialogue claim integration
+
+- Expanded `tests/dialogue-claim-integration.test.mjs` to load the real authored dialogue files for both investigations (five case-001 dialogues and three case-002 dialogues), find a route to each authored claim node, and traverse that route through the real `DialogueEngine`.
+- Each claim is asserted to be recorded exactly once and only after its node is reached, with the expected NPC, dialogue, node, and direct-observation metadata.
+- Latest branch head at this checkpoint: `9d9958355e2bf1bd69460f1e0ebca0805ddb93de`. PR #180 remains open; `main` remains untouched.
+- Seven Actions checks were registered for the code head, but all remained `queued` and had no assigned runner (`runner: null`). CI is not PASS; investigate runner availability.
+- Next: complete desktop/mobile browser acceptance for both cases, including story transitions and endings, after CI becomes executable.
+
+## 2026-11-24 continuation — first real CI failure triage
+
+- The first executed checks exposed seven unit-test failures and one modal keyboard audit failure; Responsive audit passed.
+- Fixed stale cross-case dialogue snapshot handling so case mismatch is rejected before NPC dialogue lookup.
+- Fixed DialogueEngine node-effect calls to use the normalized current node, preserving stable node IDs in authored testimony claims.
+- Updated source inquiry fixtures to require a real origin witness and an independent firsthand corroborating witness; same-source hearsay is explicitly rejected.
+- Normalized source inquiry `originSources` in serialization and made board snapshot comparison insensitive to JSON key order.
+- Normalized VM-originated call event payloads before deep equality assertions.
+- Modal keyboard audit now waits for Bootstrap's actual `hidden.bs.modal` lifecycle event; EventController also captures the opener at `show.bs.modal`, with a new assertion that capture occurred.
+- Current code head: `4c8a20e7b82d239dd5c116c36eea0e7eedc23700`. A new push Quality gate is queued. No PASS claimed yet.
+- Next: inspect the new Quality gate logs, fix remaining failures, then verify all browser workflows on the same latest SHA.
+
+- Latest branch head after documentation synchronization: `1dc09d6a8460d2221816a527ca6f543d1c05490c`.
+- Seven workflows are registered on that head, but every job remains queued with `runner: null`; no rerun result is available yet. Do not claim CI PASS.

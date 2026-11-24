@@ -12,9 +12,15 @@ class EventController {
         this.bound = false;
         this.pageHideHandler = null;
         this.pendingModalData = [];
+        this.modalReturnFocusElement = null;
+        this.modalKeydownHandler = null;
+        this.modalBackdropHandler = null;
+        this.activeModalData = null;
         this.modalElement = null;
-        this.modalHiddenHandler = null;
+        this.modalShowHandler = null;
         this.modalHideHandler = null;
+        this.modalHiddenHandler = null;
+        this.modalIsShowing = false;
         this.modalIsHiding = false;
     }
 
@@ -87,23 +93,115 @@ class EventController {
         // во время перехода предыдущего окна, оставляя backdrop без владельца.
         this.modalElement = typeof document !== 'undefined' ? document.getElementById('universal-modal') : null;
         if (this.modalElement && !this.modalHiddenHandler) {
-            this.modalHideHandler = () => { this.modalIsHiding = true; };
+            // Bootstrap marks the transition before the .show class is added.
+            // Track the lifecycle event so synchronous narrative bursts cannot
+            // race the opening animation and silently lose queued windows.
+            this.modalShowHandler = () => {
+                this.modalIsShowing = true;
+                // Capture the opener at the Bootstrap lifecycle boundary as well
+                // as at modal:show. This covers callers that open the modal
+                // through a shared event queue or trigger Bootstrap directly.
+                if (!this.modalReturnFocusElement && typeof document !== 'undefined') {
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement !== document.body &&
+                        !this.modalElement.contains(activeElement)) {
+                        this.modalReturnFocusElement = activeElement;
+                    }
+                }
+            };
+            this.modalHideHandler = () => {
+                this.modalIsShowing = false;
+                this.modalIsHiding = true;
+            };
             this.modalHiddenHandler = () => {
+                this.activeModalData = null;
+                this.modalIsShowing = false;
                 this.modalIsHiding = false;
                 const next = this.pendingModalData.shift();
-                if (next) this._showModal(next);
+                if (next) {
+                    this._showModal(next);
+                    return;
+                }
+
+                // Restore keyboard focus only after the final modal in a queued
+                // narrative sequence has closed. Intermediate windows must not
+                // send focus behind the next dialog.
+                const returnTarget = this.modalReturnFocusElement;
+                this.modalReturnFocusElement = null;
+                if (returnTarget?.isConnected && !returnTarget.disabled &&
+                    typeof returnTarget.focus === 'function') {
+                    returnTarget.focus({ preventScroll: true });
+                }
             };
+            this.modalElement.addEventListener('show.bs.modal', this.modalShowHandler);
             this.modalElement.addEventListener('hide.bs.modal', this.modalHideHandler);
             this.modalElement.addEventListener('hidden.bs.modal', this.modalHiddenHandler);
+            this.modalKeydownHandler = (event) => {
+                if (!this.modalElement?.classList.contains('show')) return;
+                if (event.key === 'Escape' && this.activeModalData?.dismissible === false) {
+                    // Required narrative choices must not disappear through Escape;
+                    // stop Bootstrap's own keyboard handler on the same modal.
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+                if (event.key !== 'Tab') return;
+
+                const focusable = Array.from(this.modalElement.querySelectorAll(
+                    'a[href], area[href], input:not([disabled]), select:not([disabled]), ' +
+                    'textarea:not([disabled]), button:not([disabled]), iframe, object, embed, ' +
+                    '[contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+                )).filter(element => {
+                    if (element.getAttribute('aria-hidden') === 'true') return false;
+                    const style = typeof getComputedStyle === 'function' ? getComputedStyle(element) : null;
+                    return element.tabIndex >= 0 && !element.matches(':disabled') &&
+                        element.getClientRects().length > 0 &&
+                        (!style || (style.visibility !== 'hidden' && style.display !== 'none'));
+                });
+
+                if (focusable.length === 0) {
+                    event.preventDefault();
+                    this.modalElement.focus();
+                    return;
+                }
+
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                const active = document.activeElement;
+                const focusOutside = !this.modalElement.contains(active);
+
+                if (event.shiftKey && (active === first || active === this.modalElement || focusOutside)) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && (active === last || active === this.modalElement || focusOutside)) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            };
+            this.modalElement.addEventListener('keydown', this.modalKeydownHandler);
+            this.modalBackdropHandler = (event) => {
+                if (event.target !== this.modalElement || this.activeModalData?.dismissible !== false) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            };
+            this.modalElement.addEventListener('click', this.modalBackdropHandler);
         }
         on('modal:show', (data) => {
             if (!this.modalElement && typeof document !== 'undefined') this.modalElement = document.getElementById('universal-modal');
             if (!this.modalElement) return;
-            if (this.modalElement.classList.contains('show') || this.modalIsHiding) {
+            if (this.modalElement.classList.contains('show') || this.modalIsShowing || this.modalIsHiding) {
                 // Preserve every narrative event in arrival order. Replacing a
                 // single pending payload silently discarded earlier dialogue.
                 this.pendingModalData.push(data);
                 return;
+            }
+
+            // Remember the control that launched this modal sequence. Keep it
+            // until the final queued dialog closes, not between queued dialogs.
+            const activeElement = typeof document !== 'undefined' ? document.activeElement : null;
+            if (!this.modalReturnFocusElement && activeElement && activeElement !== document.body &&
+                !this.modalElement.contains(activeElement)) {
+                this.modalReturnFocusElement = activeElement;
             }
             this._showModal(data);
         });
@@ -542,6 +640,9 @@ class EventController {
         const title = document.getElementById('modal-title');
         const footer = document.getElementById('modal-footer');
         if (!body || !title || !footer || !this.modalElement) return;
+        this.activeModalData = data;
+        const closeButton = this.modalElement.querySelector?.('.modal-header .btn-close');
+        if (closeButton) closeButton.hidden = data.dismissible === false;
         title.innerHTML = data.title || '';
         body.innerHTML = data.body || '';
         footer.innerHTML = data.footer || '';
@@ -570,16 +671,31 @@ class EventController {
     }
 
     dispose() {
+        if (this.modalElement && this.modalShowHandler) {
+            this.modalElement.removeEventListener('show.bs.modal', this.modalShowHandler);
+        }
         if (this.modalElement && this.modalHideHandler) {
             this.modalElement.removeEventListener('hide.bs.modal', this.modalHideHandler);
         }
         if (this.modalElement && this.modalHiddenHandler) {
             this.modalElement.removeEventListener('hidden.bs.modal', this.modalHiddenHandler);
         }
+        if (this.modalElement && this.modalKeydownHandler) {
+            this.modalElement.removeEventListener('keydown', this.modalKeydownHandler);
+        }
+        if (this.modalElement && this.modalBackdropHandler) {
+            this.modalElement.removeEventListener('click', this.modalBackdropHandler);
+        }
+        this.modalShowHandler = null;
         this.modalHideHandler = null;
         this.modalHiddenHandler = null;
+        this.modalKeydownHandler = null;
+        this.modalBackdropHandler = null;
+        this.activeModalData = null;
+        this.modalIsShowing = false;
         this.modalIsHiding = false;
         this.pendingModalData = [];
+        this.modalReturnFocusElement = null;
         this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.pageHideHandler);

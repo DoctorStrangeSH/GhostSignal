@@ -36,6 +36,7 @@ const DIALOGUE_ELIAS = {
             what_he_did: {
                 speaker: "npc",
                 text: "Я купил билеты на поезд. На два имени. Джонатан Смит и Мэри Смит. Фальшивые паспорта. Они должны были уехать вместе.",
+                claim: {"id":"case001-elias-bought-train-tickets","topic":"planned-escape","value":"elias-bought-two-train-tickets-and-arranged-false-passports-for-blackwood-and-mary","summary":"Элиас признаёт, что купил два билета и организовал поддельные паспорта для побега","sourceName":"Элиас","location":"Бар «У Джо»","circumstances":"Элиас лично организовал билеты и документы","directObservation":true},
                 mood: "serious",
                 innerThought: "Два билета. Он подтверждает план побега.",
                 givesInsight: "elias_confirms_plan",
@@ -47,6 +48,7 @@ const DIALOGUE_ELIAS = {
             changed_mind: {
                 speaker: "npc",
                 text: "Да. За день до отъезда. Он позвонил мне и сказал: «Элиас, я не могу. Я не могу бросить жену. Она угрожает покончить с собой.»",
+                claim: {"id":"case001-elias-heard-blackwood-cancel-plan","topic":"blackwood-cancelled-escape","value":"blackwood-called-elias-and-said-he-would-not-leave-his-wife","summary":"Элиас утверждает, что Блэквуд позвонил ему и отказался от побега","sourceName":"Элиас","circumstances":"Элиас лично слышал, как Блэквуд отказался от побега; угрозу жены он знает только со слов Блэквуда","directObservation":true},
                 mood: "conflicted",
                 innerThought: "Жена угрожала суицидом. Это объясняет, почему он остался.",
                 givesInsight: "wife_suicide_threat",
@@ -69,6 +71,7 @@ const DIALOGUE_ELIAS = {
             decision: {
                 speaker: "npc",
                 text: "Он решил остаться. Позвонил Мэри и сказал, что всё кончено. Она... она была в ярости. Я слышал её крик по телефону.",
+                claim: {"id":"case001-elias-heard-mary-on-phone","topic":"mary-reaction-to-cancelled-escape","value":"elias-heard-mary-shouting-after-blackwood-called-her","summary":"Элиас слышал крик Мэри по телефону после разговора с Блэквудом","sourceName":"Элиас","circumstances":"Элиас слышал голос, но не видел реакцию Мэри и не может подтвердить её действия","directObservation":true},
                 mood: "sad",
                 innerThought: "Мэри была в ярости. Это подтверждает её мотив.",
                 answers: [

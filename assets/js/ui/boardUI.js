@@ -848,22 +848,44 @@ class BoardUI {
         const review = this.board.reviewHypothesisSources(hypothesis.id, statements);
         const rumors = [...new Set(review.sources.flatMap(source => source.linkedRumorIds))];
         const inquiries = (this.board.sourceInquiries || []).filter(i => i.hypothesisId === hypothesis.id);
-        const options = [
-            ...statements.filter(s => s.status !== 'superseded').map(s => ({ key: 'statement:' + s.id, label: 'Показание: ' + (s.sourceName || s.npcId) + ' — ' + (s.summary || s.value) })),
-            ...evidenceIds.map(id => ({ key: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
-        ].map(o => `<option value="${this._escapeHTML(o.key)}">${this._escapeHTML(o.label)}</option>`).join('');
+        const renderInquiryOptions = inquiry => {
+            const originNpcIds = new Set(review.sources
+                .filter(source => source.status === 'active' &&
+                    source.linkedRumorIds.includes(inquiry.rumorId))
+                .map(source => source.npcId).filter(Boolean));
+            const alreadyUsedWitnessIds = new Set(inquiry.leads
+                .filter(lead => lead.kind === 'statement')
+                .map(lead => lead.npcId).filter(Boolean));
+            return [
+                ...statements.filter(statement => statement.status !== 'superseded' &&
+                    statement.directObservation === true &&
+                    !statement.referencesRumorIds?.includes(inquiry.rumorId) &&
+                    !originNpcIds.has(statement.npcId) &&
+                    !alreadyUsedWitnessIds.has(statement.npcId))
+                    .map(statement => ({
+                        key: 'statement:' + statement.id,
+                        label: 'Личное наблюдение: ' + (statement.sourceName || statement.npcId) + ' — ' + (statement.summary || statement.value)
+                    })),
+                ...evidenceIds.map(id => ({ key: 'evidence:' + id, label: 'Улика: ' + (getObjectById(id)?.name || id) }))
+            ].map(option => `<option value="${this._escapeHTML(option.key)}">${this._escapeHTML(option.label)}</option>`).join('');
+        };
         if (!rumors.length && !inquiries.length) return '';
         return `<div class="hypothesis-source-review"><strong>РАССЛЕДОВАНИЕ ЦЕПОЧКИ СЛУХА</strong>
-            <p>Найдите свидетеля, сопоставьте сведения с уликами и запишите собственный вывод. Записи не доказывают правдивость слуха.</p>
+            <p>Найдите независимый источник, сопоставьте сведения с уликами и запишите собственный вывод. Показания того же свидетеля не считаются независимым подтверждением. Даже личное наблюдение требует проверки.</p>
             ${hypothesis.status === 'open' ? rumors.filter(r => !inquiries.some(i => i.rumorId === r)).map(r =>
                 `<button type="button" class="terminal-btn btn-sm inquiry-start" data-hypothesis="${this._escapeHTML(hypothesis.id)}" data-rumor="${this._escapeHTML(r)}">ПРОВЕРИТЬ СЛУХ ${this._escapeHTML(r)}</button>`).join('') : ''}
             ${inquiries.map(i => `<section class="testimony-entry">
                 <strong>${this._escapeHTML(i.rumorId)} · ${i.status === 'closed' ? 'ВЫВОД ЗАПИСАН' : 'ПРОВЕРЯЕТСЯ'}</strong>
-                <ul>${i.leads.map(l => `<li>${l.kind === 'statement' ? 'Показание' : 'Улика'} ${this._escapeHTML(l.sourceId)}: ${this._escapeHTML(l.note)}</li>`).join('') || '<li>Пока нет проверенных связей.</li>'}</ul>
+                <ul>${i.leads.map(l => {
+                    const origin = l.kind === 'statement'
+                        ? `${this._escapeHTML(l.sourceName || l.npcId || l.sourceId)} · ${l.directObservation === true ? 'личное наблюдение' : 'непроверенное сообщение'}`
+                        : this._escapeHTML(l.sourceId);
+                    return `<li>${l.kind === 'statement' ? 'Свидетель' : 'Улика'} ${origin}: ${this._escapeHTML(l.note)}</li>`;
+                }).join('') || '<li>Пока нет проверенных связей.</li>'}</ul>
                 ${i.conclusion ? `<p>Вывод детектива: ${this._escapeHTML(i.conclusion)}</p>` : ''}
                 ${i.status === 'open' && hypothesis.status === 'open' ? `
                     <form class="hypothesis-form inquiry-lead-form" data-id="${this._escapeHTML(i.id)}">
-                        <select class="terminal-input" required><option value="">Выберите найденный источник</option>${options}</select>
+                        <select class="terminal-input" required><option value="">Выберите независимый источник</option>${renderInquiryOptions(i)}</select>
                         <input class="terminal-input" maxlength="500" required placeholder="Что именно вы выяснили?">
                         <button class="terminal-btn btn-sm" type="submit">ЗАПИСАТЬ СВЯЗЬ</button>
                     </form>

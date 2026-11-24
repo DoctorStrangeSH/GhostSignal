@@ -82,6 +82,7 @@ const DIALOGUE_PORTER = {
             know_woman: {
                 speaker: "npc",
                 text: "Я не разглядел лица. Но на ней была форма горничной. И... красный шарф. Я запомнил шарф.",
+                claim: {"id":"case001-porter-red-scarf","topic":"woman-seen-with-blackwood","value":"woman-wore-maid-uniform-and-red-scarf-face-not-seen","summary":"Фрэнк видел женщину в форме горничной и красном шарфе, но не разглядел её лица","sourceName":"Фрэнк, ночной портье","location":"Отель «Гранд»","timeLabel":"За день до исчезновения","circumstances":"Свидетель описывает одежду; личность женщины не установлена","directObservation":true},
                 mood: "nervous",
                 innerThought: "Красный шарф. Важная деталь.",
                 givesInsight: "red_scarf_detail",
@@ -105,6 +106,7 @@ const DIALOGUE_PORTER = {
             relationship: {
                 speaker: "npc",
                 text: "Я не спрашивал. Но однажды я видел, как она выходила из его номера в слезах. А он стоял в дверях и кричал: «Ты не уйдёшь от меня! Ты моя!»",
+                claim: {"id":"case001-porter-witnessed-threat","topic":"blackwood-maid-relationship","value":"porter-saw-mary-leave-room-crying-and-blackwood-shout-at-her","summary":"Фрэнк видел, как Мэри вышла из номера в слезах, а Блэквуд кричал ей вслед","sourceName":"Фрэнк, ночной портье","location":"Коридор отеля «Гранд»","timeLabel":"Неустановленный день до исчезновения","circumstances":"Фрэнк лично видел сцену, но не знает, что ей предшествовало","directObservation":true},
                 mood: "shocked",
                 innerThought: "Он угрожал ей. Мотив для неё — самооборона или месть?",
                 givesInsight: "abusive_relationship",
@@ -128,6 +130,7 @@ const DIALOGUE_PORTER = {
             smell_description: {
                 speaker: "npc",
                 text: "Сладкий, приторный. Как цветы, но с химией. Горничная сказала, что это освежитель. Но освежители так не пахнут. Я знаю, я их покупаю.",
+                claim: {"id":"case001-porter-chemical-smell","topic":"room-304-chemical-smell","value":"sweet-chemical-smell-detected-in-room-304","summary":"Фрэнк сам почувствовал в номере 304 сладкий химический запах","sourceName":"Фрэнк, ночной портье","location":"Номер 304, отель «Гранд»","circumstances":"Наблюдение касается запаха; его происхождение Фрэнк не установил","directObservation":true},
                 mood: "suspicious",
                 innerThought: "Горничная солгала о запахе. Почему?",
                 givesInsight: "maid_lied_about_smell",
@@ -139,6 +142,7 @@ const DIALOGUE_PORTER = {
             maid_said: {
                 speaker: "npc",
                 text: "Да, Мэри. Она сказала: «Не беспокойтесь, Фрэнк, это просто новый освежитель. Мистер Блэквуд любит цветочные ароматы». Но я ей не поверил.",
+                claim: {"id":"case001-porter-heard-mary-explanation","topic":"room-304-smell-explanation","value":"mary-told-porter-the-smell-was-new-air-freshener","summary":"Мэри объяснила Фрэнку запах новым освежителем воздуха","sourceName":"Фрэнк, ночной портье","location":"Отель «Гранд»","circumstances":"Фрэнк лично слышал объяснение Мэри, но не проверял состав средства","directObservation":true},
                 mood: "suspicious",
                 innerThought: "Мэри явно что-то скрывает. Нужно допросить её.",
                 answers: [
@@ -157,6 +161,7 @@ const DIALOGUE_PORTER = {
             last_sighting: {
                 speaker: "npc",
                 text: "В 21:00. Он вернулся из бара. Поднялся в номер. Больше я его не видел. А утром... номер был пуст. Дверь заперта изнутри.",
+                claim: {"id":"case001-porter-last-sighting","topic":"blackwood-last-sighting","value":"blackwood-returned-from-bar-at-21-and-entered-room-304","summary":"Фрэнк видел, как Блэквуд вернулся из бара около 21:00 и поднялся в номер 304","sourceName":"Фрэнк, ночной портье","location":"Отель «Гранд»","timeLabel":"Около 21:00, накануне исчезновения","circumstances":"Последнее личное наблюдение Фрэнка; после этого он не видел Блэквуда","directObservation":true},
                 mood: "scared",
                 innerThought: "Заперта изнутри. Как он исчез?",
                 givesInsight: "locked_from_inside",
@@ -211,6 +216,7 @@ const DIALOGUE_PORTER = {
             visitors: {
                 speaker: "npc",
                 text: "За день до исчезновения приходил какой-то человек. Высокий, в чёрной шляпе. Спрашивал Блэквуда. Я сказал, что его нет. Он ушёл, но я заметил — он направился в бар.",
+                claim: {"id":"case001-porter-unidentified-visitor","topic":"unidentified-visitor-at-hotel","value":"unknown-man-in-black-hat-asked-for-blackwood-and-went-to-bar","summary":"Неизвестный мужчина в чёрной шляпе спрашивал Блэквуда и затем направился в бар","sourceName":"Фрэнк, ночной портье","location":"Отель «Гранд»","timeLabel":"За день до исчезновения","circumstances":"Фрэнк видел посетителя, но не установил его личность","directObservation":true},
                 mood: "nervous",
                 innerThought: "Человек в шляпе. Элиас? Или кто-то другой?",
                 givesInsight: "mystery_visitor",
@@ -251,6 +257,7 @@ const DIALOGUE_PORTER = {
             argument: {
                 speaker: "npc",
                 text: "Я слышал крики. Она кричала: «Ты обещал! Ты клялся!» А он отвечал: «Всё кончено. Я остаюсь с женой.»",
+                claim: {"id":"case001-porter-heard-final-argument","topic":"blackwood-maid-final-argument","value":"porter-heard-mary-and-blackwood-argue-about-broken-promise-and-wife","summary":"Фрэнк слышал спор Мэри и Блэквуда о нарушенном обещании и его решении остаться с женой","sourceName":"Фрэнк, ночной портье","location":"Отель «Гранд»","circumstances":"Фрэнк слышал только часть разговора и не знает всей предыстории","directObservation":true},
                 mood: "sad",
                 innerThought: "Он бросил её. Мотив для убийства?",
                 givesInsight: "lovers_quarrel",

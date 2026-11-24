@@ -804,7 +804,8 @@ const DIALOGUE_BARTENDER_CASE2 = {
                     sourceName: "Джо, бармен",
                     location: "Бар «У Джо»",
                     timeLabel: "Вечер отравления",
-                    circumstances: "Повторное показание после признания, что Кейн заплатил ему за молчание"
+                    circumstances: "Повторное показание после признания, что Кейн заплатил ему за молчание",
+                    directObservation: true
                 },
                 answers: [
                     { text: "Почему вы не рассказали это сразу?", nextNode: "why_hide" }
