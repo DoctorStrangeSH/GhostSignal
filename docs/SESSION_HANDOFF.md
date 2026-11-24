@@ -1492,7 +1492,7 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 - Added 19 material claims across all five case-001 dialogue packs. Case-002's existing rumor retelling by Joe remains explicitly secondhand (`directObservation: false`, `referencesRumorIds`); previously unmarked firsthand claims by Joe, Kane and Thomas are now explicit.
 - Added `tests/case-testimony-provenance.test.mjs`; expanded `tests/source-provenance.test.mjs` for same-witness rejection, secondhand-retelling rejection, independent firsthand acceptance, metadata restoration, and legacy inquiry fallback. Expanded `scripts/board-persistence-audit.mjs` to verify UI eligibility and persisted witness provenance.
 - Updated `docs/CASE_PACK_AUTHORING.md` with the claim schema and authoring rules.
-- Latest code commit for this stage: `f3fec70f1489823eb3375db0731e1e4824781df1`. PR #180 remains open; `main` is untouched. The workflow-run and combined-status lookups returned no results for the latest SHA; do not claim CI PASS. The new tests have not been executed in a local runtime in this session.
+- Historical code checkpoint: `f3fec70f1489823eb3375db0731e1e4824781df1`. PR #180 remains open; `main` is untouched. Current Actions lookups return seven queued jobs with no assigned runner; do not claim CI PASS.
 - Next: obtain Actions results on the latest head, fix any failures, then perform an actual playthrough acceptance of both cases to ensure the authored claims are emitted when dialogue nodes are reached.
 
 ## 2026-11-24 continuation — dialogue claim integration and per-rumor source eligibility
@@ -1510,7 +1510,7 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 
 - Fixed a UI/domain mismatch: source-picker origin NPC filtering now considers only active claims. A superseded rumor statement no longer blocks a later firsthand observation from the same NPC.
 - Added regression coverage for a superseded rumor claim revised into an independent firsthand statement while a second active witness remains the rumor origin.
-- GitHub Actions API inspection found seven runs on prior head `b34c8aa` (six PR workflows and one push run); all were queued at inspection time. These do not validate the newer head.
+- The `b34c8aa` run list is historical and does not validate newer heads. Current runner status is recorded in the latest checkpoint below.
 - Latest checked head at this checkpoint: `07f549dd90a66e7107a71ffe41238ea5859387f6`. Seven PR/push workflow runs were registered, but all jobs remained queued with `runner: null`; CI PASS is not confirmed. Investigate GitHub Actions runner availability.
 
 ## 2026-11-24 continuation — real dialogue claim integration
