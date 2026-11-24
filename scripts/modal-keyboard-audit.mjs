@@ -73,6 +73,16 @@ try {
     if (!(await closeButton.evaluate(element => element === document.activeElement))) {
       throw new Error('Tab did not wrap focus to the first modal control');
     }
+    await modal.focus();
+    await page.keyboard.press('Tab');
+    if (!(await closeButton.evaluate(element => element === document.activeElement))) {
+      throw new Error('Tab from the modal root did not enter the first focusable control');
+    }
+    await modal.focus();
+    await page.keyboard.press('Shift+Tab');
+    if (!(await actionButton.evaluate(element => element === document.activeElement))) {
+      throw new Error('Shift+Tab from the modal root did not wrap to the last focusable control');
+    }
     await page.keyboard.press('Escape');
     await modal.waitFor({ state: 'hidden' });
     const focusRestored = await page.locator('#modal-audit-opener').evaluate(element => element === document.activeElement);
