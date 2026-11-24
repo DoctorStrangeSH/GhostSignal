@@ -18,7 +18,6 @@ class EventController {
         this.modalHiddenHandler = null;
         this.modalHideHandler = null;
         this.modalIsHiding = false;
-        this.modalReturnFocusElement = null;
     }
 
     _subscribe(name, handler) {
@@ -642,6 +641,7 @@ class EventController {
         this.modalKeydownHandler = null;
         this.modalIsHiding = false;
         this.pendingModalData = [];
+        this.modalReturnFocusElement = null;
         this.modalElement = null;
         if (this.pageHideHandler && typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.pageHideHandler);
