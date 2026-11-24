@@ -1429,3 +1429,14 @@ Next: finish CI/Visual smoke, then manually verify reload during a normal questi
 
 
 - Added a strict CallInterface resume event assertion: only `call:connected` with `resumed: true` may be emitted; resume must not replay call-start or dialogue/TTS side effects.
+
+
+## 2026-11-24: PR #180 — явная политика закрытия сюжетных модалок
+
+- Последний зафиксированный head на момент этой записи: dba15739e6e334b7c056e7188bd08db6d97ac86d.
+- В EventController добавлен параметр dismissible: обычные окна закрываются как раньше; dismissible: false блокирует Escape и backdrop click и скрывает крестик.
+- Добавлен unit-тест на блокировку Escape/backdrop для обязательного окна и сохранение Escape для обычного.
+- Добавлен Playwright аудит scripts/modal-dismissal-audit.mjs и шаг в Modal UX workflow.
+- Пока не помечать конкретные игровые окна как non-dismissible, пока не проверены все вызовы modal:show; не превращать все окна в ловушки.
+- CI на новом head ещё не подтверждён. Следующий шаг: проверить Actions, затем аудитировать вызовы модалок и пометить только действительно обязательные решения; далее проверить сохранение доски дедукции и гипотез.
+- main не затронута; PR #180 остаётся открытым. Не начинать case-003 до завершения 1.0 acceptance.
