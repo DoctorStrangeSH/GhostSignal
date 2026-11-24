@@ -68,3 +68,35 @@ The data validator checks references, active NPC ownership, case-specific dialog
 ## Adding a future case
 
 A new case is not part of the 1.0 release merely because its files exist. First complete the two-case end-to-end pass and verify that the shared-character ownership debt is resolved. Then add the new pack and validate that starting it cannot mutate the other cases' active state or long-term profile data.
+
+## Witness claims and source provenance
+
+A dialogue node that records a material statement must declare a `claim` object. The dialogue engine stores it in the active NPC case memory when the node is reached.
+
+Minimum shape:
+
+```js
+claim: {
+    id: "stable-unique-claim-id",
+    topic: "shared-comparison-topic",
+    value: "normalized-claim-value",
+    summary: "Краткое содержание показания",
+    sourceName: "Имя свидетеля",
+    circumstances: "Что именно свидетель мог наблюдать и какие есть ограничения",
+    directObservation: true
+}
+```
+
+Rules:
+
+- `id` is stable and unique within the investigation; never reuse it for a different statement.
+- `topic` groups claims that can meaningfully contradict or revise one another. Do not group unrelated facts just because they concern the same person.
+- `value` describes the actual assertion, not the detective's interpretation of it.
+- `directObservation: true` means the speaker personally observed the event described by the claim. It does not mean the claim is true, complete, unbiased, or independently verified.
+- Use `directObservation: false` when the speaker repeats another person's account, relies on a rumor, or reports an event they did not witness. Add `referencesRumorIds` when the known rumor chain is available.
+- Include `location`, `timeLabel`, and `circumstances` when they materially limit the testimony. Explicitly preserve uncertainty: an unseen face is not an identified person; a nearby presence is not proof of an action.
+- Use `revisesClaimId` or `revisesActiveClaimTopic` for a genuine correction of an earlier statement. Do not overwrite history or create a second independent witness from a revised statement by the same NPC.
+- `corroboratesRumorIds` and `refutesRumorIds` must be used only when the NPC has a firsthand claim that actually supports or challenges that rumor. A retelling is not corroboration.
+- A secondhand report and a firsthand observation from the same NPC are not independent witnesses. The source-inquiry board rejects same-witness and non-firsthand testimony as independent corroboration; it preserves source identity and observation status across saves.
+
+The detective may record a lead and write a conclusion, but neither action automatically changes a rumor into a fact or declares a person guilty. Evidence, testimony, uncertainty, and the detective's interpretation must remain distinguishable.
